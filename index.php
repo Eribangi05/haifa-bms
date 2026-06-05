@@ -1,9 +1,20 @@
 <?php
 // ==================== DATABASE CONFIGURATION ====================
-$db_host = 'sql105.infinityfree.com';
-$db_name = 'if0_41625146_nightpulse';   // CHANGE THIS
-$db_user = 'if0_41625146';              // CHANGE THIS
-$db_pass = 'Uwizeye2026';             // CHANGE THIS
+$db_host = 'sql.freedb.tech';
+$db_port = '3306';                     // default MySQL port
+$db_name = 'freedb_gRE2FJkn';
+$db_user = 'u_HC79Cw';
+$db_pass = 'YOUR_PASSWORD';            // 👈 REPLACE with the actual password from FreeDB
+
+try {
+    // Include port in the DSN
+    $pdo = new PDO("mysql:host=$db_host;port=$db_port;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+session_start();
+// ... (rest of your code remains exactly the same)
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
