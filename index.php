@@ -4,7 +4,7 @@ $db_host = 'sql.freedb.tech';
 $db_port = '3306';                     // default MySQL port
 $db_name = 'freedb_gRE2FJkn';
 $db_user = 'u_HC79Cw';
-$db_pass = 'YOUR_PASSWORD';            // 👈 REPLACE with the actual password from FreeDB
+$db_pass = '7AqQbrKMglhJ';            // 👈 REPLACE with the actual password from FreeDB
 
 try {
     // Include port in the DSN
