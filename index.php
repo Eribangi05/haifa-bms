@@ -6,6 +6,8 @@ $db_name = 'freedb_gRE2FJkn';
 $db_user = 'u_HC79Cw';
 $db_pass = '7AqQbrKMglhJ';            // 👈 REPLACE with the actual password from FreeDB
 
+$db_port = '3306';
+
 try {
     // Include port in the DSN
     $pdo = new PDO("mysql:host=$db_host;port=$db_port;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
@@ -13,7 +15,9 @@ try {
 } catch(PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // ... (rest of your code remains exactly the same)
 
 try {
