@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
-// Abasare brand palette (logo navy, gold, Rwanda green accents) - original identity, configurable here.
+// Rwanda flag palette: sky blue #00A1DE (darkened to #0077B0 for text contrast), sun yellow #FAD201, green #20603D.
 export const C = {
-  primary: '#0B3A9E', primaryDark: '#082B75', gold: '#F5B700', sky: '#1A5FB4',
+  primary: '#0077B0', primaryDark: '#005A87', gold: '#FAD201', sky: '#00A1DE', green: '#20603D',
   bg: '#F3F6FB', card: '#FFFFFF', ink: '#0F1B3D', muted: '#5A6685', line: '#DAE1EF',
   danger: '#C0392B', dangerBg: '#FDECEA', warn: '#8A6500', warnBg: '#FFF4CC', okBg: '#E3F4EC',
 };

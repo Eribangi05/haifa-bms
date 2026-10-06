@@ -6,6 +6,7 @@ import { C, S } from './theme';
 export function Screen({ children, scroll = true, footer }: { children: React.ReactNode; scroll?: boolean; footer?: React.ReactNode }) {
   return (
     <SafeAreaView style={S.screen} edges={['top', 'bottom']}>
+      <FlagStripe height={8} />
       {scroll ? <ScrollView contentContainerStyle={S.pad} keyboardShouldPersistTaps="handled">{children}</ScrollView> : <View style={S.fill}>{children}</View>}
       {footer ? <View style={{ padding: 12, backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line }}>{footer}</View> : null}
     </SafeAreaView>
@@ -55,12 +56,20 @@ export const Chip = ({ text, onPress, on }: { text: string; onPress: () => void;
 );
 
 export const Header = ({ title, onBack, right }: { title: string; onBack?: () => void; right?: React.ReactNode }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.line }}>
-    {onBack ? <Pressable onPress={onBack} accessibilityLabel="Back" style={{ padding: 8, marginRight: 4 }}><Text style={{ fontSize: 22, color: C.primary }}>{'‹'}</Text></Pressable> : null}
-    <Text style={[S.h2, { flex: 1 }]} numberOfLines={1}>{title}</Text>{right}
+  <View>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, backgroundColor: C.card }}>
+      {onBack ? <Pressable onPress={onBack} accessibilityLabel="Back" style={{ padding: 8, marginRight: 4 }}><Text style={{ fontSize: 22, color: C.primary }}>{'‹'}</Text></Pressable> : null}
+      <Text style={[S.h2, { flex: 1 }]} numberOfLines={1}>{title}</Text>{right}
+    </View>
+    <FlagStripe height={5} />
   </View>
 );
 
 export const Money = ({ n, style }: { n: number | null | undefined; style?: object }) => <Text style={style}>{n == null ? '-' : Math.round(n).toLocaleString('en-US')} RWF</Text>;
 export const Empty = ({ text }: { text: string }) => <View style={{ padding: 28, alignItems: 'center' }}><Text style={[S.muted, { textAlign: 'center' }]}>{text}</Text></View>;
 export const Spinner = () => <View style={{ padding: 24 }}><ActivityIndicator color={C.primary} size="large" /></View>;
+
+/** Rwanda flag bands (sky blue, sun yellow, green) used as a brand accent. */
+export function FlagStripe({ height = 6 }: { height?: number }) {
+  return <View style={{ height, flexDirection: 'column' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={{ flex: 2, backgroundColor: C.sky }} /><View style={{ flex: 1, backgroundColor: C.gold }} /><View style={{ flex: 1, backgroundColor: C.green }} /></View>;
+}

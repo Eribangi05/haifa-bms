@@ -223,7 +223,7 @@ function ActiveTrip({ trip, pos, reload }: { trip: any; pos: { lat: number; lng:
         {hourly && st === 'IN_PROGRESS' ? <Text style={S.muted}>{t('ab.job.timer')}: {Math.floor(elapsedMin / 60)}h {elapsedMin % 60}m / {ab.hours}h</Text> : null}
       </View> : null}
       <Text style={[S.muted, { marginVertical: 4 }]}>{trip.pickup.name}{hourly ? '' : ` → ${trip.destination.name}`}{trip.pickup.note ? `\n${trip.pickup.note}` : ''}</Text>
-      <MapBox center={pos ?? trip.pickup} markers={[{ ...trip.pickup, color: '#0B3A9E', label: 'P' }, { ...trip.destination, color: '#C0392B', label: 'D' }, ...(pos ? [{ ...pos, color: '#1A5FB4', label: '' }] : [])]} height={170} zoom={14} />
+      <MapBox center={pos ?? trip.pickup} markers={[{ ...trip.pickup, color: '#0077B0', label: 'P' }, { ...trip.destination, color: '#C0392B', label: 'D' }, ...(pos ? [{ ...pos, color: '#1A5FB4', label: '' }] : [])]} height={170} zoom={14} />
       <View style={{ height: 10, }} />
       {['DRIVER_ASSIGNED', 'DRIVER_ARRIVING'].includes(st) ? <View style={{ gap: 8 }}>
         <Btn kind="ghost" title={t('drv.navigate')} onPress={() => nav_(trip.pickup.lat, trip.pickup.lng)} />
