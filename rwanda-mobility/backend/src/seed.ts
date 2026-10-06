@@ -1,0 +1,140 @@
+import { pool, q, q1 } from './db.js';
+import { ROLE_PERMISSIONS } from './rbac.js';
+import { migrate } from './migrate.js';
+import { config } from './config.js';
+import { hashPassword, encrypt, newTotpSecret, totpUri } from './util/crypto.js';
+
+// Kigali operating zone: coarse bounding polygon (ASSUMPTION: replace with surveyed boundary).
+const KIGALI_RING: [number, number][] = [[29.97, -2.06], [30.22, -2.06], [30.22, -1.84], [29.97, -1.84], [29.97, -2.06]];
+
+const SERVICES = [
+  // id, en, rw, vehicle_types, min_cap, comfort, pax, luggage, phase, enabled, sort
+  ['moto', 'Moto', 'Moto', ['moto'], 1, false, 1, 'Small bag', 1, true, 1],
+  ['standard', 'Standard car', 'Imodoka isanzwe', ['car'], 1, false, 4, '2 bags', 1, true, 2],
+  ['comfort', 'Comfort car', 'Imodoka y\'icyubahiro', ['car'], 1, true, 4, '2 bags', 2, false, 3],
+  ['family', 'Family / group', 'Imodoka y\'umuryango', ['minivan'], 6, false, 6, '4 bags', 2, false, 4],
+  ['airport', 'Airport transfer', 'Kujya/Kuva ku kibuga', ['car', 'minivan'], 1, false, 4, '3 bags', 2, false, 5],
+  ['intercity', 'Intercity ride', 'Urugendo hagati y\'imijyi', ['car', 'minivan'], 1, false, 4, '3 bags', 3, false, 6],
+  ['goods', 'Pickup / light goods', 'Gutwara ibintu bito', ['pickup'], 1, false, 2, 'Cargo bed', 3, false, 7],
+  ['cargo', 'Truck / cargo', 'Ikamyo', ['truck'], 1, false, 2, 'Cargo', 3, false, 8],
+] as const;
+
+// Placeholder tariffs (ASSUMPTION: must be replaced by the approved/regulated fare schedule before launch).
+const RULES: Record<string, Partial<Record<string, number>>> = {
+  moto: { base_fare: 400, per_km: 250, per_min: 20, minimum_fare: 800, booking_fee: 0, wait_per_min: 20 },
+  standard: { base_fare: 1000, per_km: 700, per_min: 40, minimum_fare: 2000, booking_fee: 0, wait_per_min: 50 },
+  comfort: { base_fare: 1500, per_km: 900, per_min: 50, minimum_fare: 3000, booking_fee: 0, wait_per_min: 60 },
+  family: { base_fare: 2000, per_km: 1000, per_min: 60, minimum_fare: 4000, booking_fee: 0, wait_per_min: 80 },
+  airport: { base_fare: 1500, per_km: 750, per_min: 40, minimum_fare: 4000, booking_fee: 0, wait_per_min: 60, airport_fee: 2000 },
+};
+
+const PLACES: [string, string, number, number, boolean][] = [
+  ['Kigali International Airport (Kanombe)', 'Ikibuga cy\'indege cya Kigali', -1.9686, 30.1395, true],
+  ['Nyabugogo Bus Park', 'Gare ya Nyabugogo', -1.9386, 30.0446, true],
+  ['Kigali Convention Centre', 'Kigali Convention Centre', -1.9540, 30.0927, false],
+  ['Kigali Heights', 'Kigali Heights', -1.9552, 30.0929, false],
+  ['Kimironko Market', 'Isoko rya Kimironko', -1.9496, 30.1262, false],
+  ['Remera Giporoso', 'Remera Giporoso', -1.9569, 30.1105, false],
+  ['Downtown / Kigali City Tower', 'Mu mujyi rwagati', -1.9441, 30.0619, false],
+  ['Kacyiru', 'Kacyiru', -1.9396, 30.0884, false],
+  ['Nyamirambo', 'Nyamirambo', -1.9780, 30.0447, false],
+  ['Gisozi Genocide Memorial', 'Urwibutso rwa Gisozi', -1.9304, 30.0603, false],
+  ['CHUK Hospital', 'CHUK', -1.9519, 30.0610, false],
+  ['King Faisal Hospital', 'King Faisal', -1.9448, 30.0881, false],
+  ['Amahoro Stadium', 'Sitade Amahoro', -1.9546, 30.1048, false],
+  ['Kicukiro Centre', 'Kicukiro', -1.9777, 30.1068, false],
+];
+
+const LEDGER: [string, string, string][] = [
+  ['PROVIDER_CLEARING', 'Mobile-money provider clearing', 'asset'],
+  ['CASH_WITH_DRIVERS', 'Cash collected held by drivers', 'asset'],
+  ['CORPORATE_RECEIVABLE', 'Corporate accounts receivable', 'asset'],
+  ['PLATFORM_BANK', 'Platform bank / settlement account', 'asset'],
+  ['DRIVER_PAYABLE', 'Owed to drivers', 'liability'],
+  ['PAYOUT_CLEARING', 'Payouts in flight', 'liability'],
+  ['TAX_PAYABLE', 'Taxes collected for authorities', 'liability'],
+  ['COMMISSION_REVENUE', 'Platform commission revenue', 'revenue'],
+  ['FEE_REVENUE', 'Payout and service fee revenue', 'revenue'],
+  ['PROCESSOR_FEES', 'Payment processing fees', 'expense'],
+  ['PROMO_EXPENSE', 'Platform-funded discounts', 'expense'],
+  ['REFUNDS', 'Refunds', 'expense'],
+  ['ADJUSTMENTS', 'Manual adjustments', 'expense'],
+];
+
+const FLAGS: [string, boolean, string][] = [
+  ['payments.mtn_momo', true, 'MTN MoMo payments (sandbox/simulator until live credentials)'],
+  ['payments.airtel_money', false, 'Airtel Money (adapter skeleton, PENDING INTEGRATION)'],
+  ['payments.wallet', false, 'Prepaid wallet (needs legal/financial review)'],
+  ['pricing.negotiated', false, 'Passenger-proposed fares (check legality)'],
+  ['pricing.surge', false, 'Demand-based pricing (disabled until approved)'],
+  ['booking.scheduled', true, 'Scheduled rides'],
+  ['corporate.enabled', true, 'Corporate accounts'],
+  ['fleet.enabled', true, 'Fleet operator portal'],
+  ['promotions.enabled', true, 'Promotions and referrals'],
+  ['payouts.automated', false, 'Automated MoMo disbursements (PENDING INTEGRATION)'],
+  ['auth.social', false, 'Google/Apple sign-in (PENDING INTEGRATION)'],
+  ['notifications.whatsapp', false, 'WhatsApp Business (needs approval)'],
+];
+
+export async function seedCore() {
+  await migrate(false);
+  await q(`insert into service_zones(id,name,polygon) values ('kigali','Kigali',$1) on conflict do nothing`, [JSON.stringify(KIGALI_RING)]);
+  for (const s of SERVICES) {
+    await q(`insert into service_categories(id,name_en,name_rw,vehicle_types,min_capacity,requires_comfort,passenger_capacity,luggage,phase,enabled,sort)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) on conflict do nothing`, [...s]);
+    await q(`insert into zone_services(zone_id,service_id,enabled) values ('kigali',$1,$2) on conflict do nothing`, [s[0], s[9]]);
+  }
+  for (const [sid, r] of Object.entries(RULES)) {
+    const exists = await q1('select 1 from pricing_rules where service_id=$1', [sid]);
+    if (exists) continue;
+    await q(`insert into pricing_rules(service_id,zone_id,base_fare,per_km,per_min,minimum_fare,booking_fee,wait_per_min,airport_fee,status)
+             values ($1,'kigali',$2,$3,$4,$5,$6,$7,$8,'active')`,
+      [sid, r.base_fare, r.per_km, r.per_min, r.minimum_fare, r.booking_fee ?? 0, r.wait_per_min ?? 0, r.airport_fee ?? 0]);
+  }
+  if (!(await q1("select 1 from commission_rules where service_id is null and fleet_id is null and driver_id is null"))) {
+    // Default 15% (ASSUMPTION; configurable and approval-gated). Moto 12%.
+    await q(`insert into commission_rules(kind,percent_bps,status,note) values ('percent',1500,'active','platform default')`);
+    await q(`insert into commission_rules(service_id,kind,percent_bps,status,note) values ('moto','percent',1200,'active','moto default')`);
+  }
+  const docs: [string, string, boolean, boolean][] = [];
+  for (const vt of ['moto', 'car', 'minivan', 'pickup', 'truck']) {
+    docs.push([vt, 'national_id', true, true], [vt, 'driving_licence', true, true], [vt, 'profile_photo', true, false],
+      [vt, 'vehicle_registration', true, true], [vt, 'insurance', true, true], [vt, 'transport_permit', false, true]);
+    if (vt !== 'moto') docs.push([vt, 'inspection', true, true]);
+  }
+  for (const d of docs) await q('insert into document_requirements(vehicle_type,doc_type,mandatory,requires_expiry) values ($1,$2,$3,$4) on conflict do nothing', d);
+  for (const p of PLACES) {
+    if (!(await q1('select 1 from places where name_en=$1', [p[0]])))
+      await q("insert into places(name_en,name_rw,lat,lng,zone_id,designated_pickup) values ($1,$2,$3,$4,'kigali',$5)", [p[0], p[1], p[2], p[3], p[4]]);
+  }
+  for (const [c, n, t] of LEDGER) await q('insert into ledger_accounts values ($1,$2,$3) on conflict do nothing', [c, n, t]);
+  for (const [k, e, d] of FLAGS) await q('insert into feature_flags(key,enabled,description) values ($1,$2,$3) on conflict do nothing', [k, e, d]);
+  for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
+    await q('insert into roles(name) values ($1) on conflict do nothing', [role]);
+    for (const p of perms) await q('insert into role_permissions values ($1,$2) on conflict do nothing', [role, p]);
+  }
+  await q(`insert into promotions(code,kind,value,max_discount,min_fare,per_user_limit,first_ride_only,budget)
+           values ('WELCOME','percent',20,1500,1500,1,true,500000) on conflict do nothing`);
+}
+
+export async function createStaff(email: string, password: string, role: string, name = email) {
+  const secret = newTotpSecret();
+  const u = await q1<{ id: string }>(
+    `insert into users(email,password_hash,display_name,mfa_secret_enc,mfa_enabled) values ($1,$2,$3,$4,true)
+     on conflict (email) do update set password_hash=excluded.password_hash, mfa_secret_enc=excluded.mfa_secret_enc returning id`,
+    [email, await hashPassword(password), name, encrypt(secret)]);
+  await q('insert into user_roles values ($1,$2) on conflict do nothing', [u!.id, role]);
+  return { id: u!.id, totpSecret: secret };
+}
+
+if (process.argv[1]?.endsWith('seed.ts')) {
+  (async () => {
+    await seedCore();
+    console.log('core seed done (zones, services, pricing, commissions, places, ledger, flags, roles)');
+    if (config.bootstrapAdminPassword.length >= 12) {
+      const a = await createStaff(config.bootstrapAdminEmail, config.bootstrapAdminPassword, 'super_admin', 'Super Admin');
+      console.log(`super admin: ${config.bootstrapAdminEmail}\nTOTP secret (add to authenticator app NOW, shown once): ${a.totpSecret}\n${totpUri(a.totpSecret, config.bootstrapAdminEmail)}`);
+    } else console.log('Set BOOTSTRAP_ADMIN_PASSWORD (>=12 chars) to create the first super admin.');
+    await pool.end();
+  })().catch((e) => { console.error(e); process.exit(1); });
+}
