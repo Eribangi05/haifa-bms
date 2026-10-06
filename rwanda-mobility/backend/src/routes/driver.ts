@@ -138,7 +138,7 @@ export async function driverRoutes(app: FastifyInstance) {
         coalesce(sum(fare_subtotal+tax-discount) filter (where payment_method in ('mtn_momo','airtel_money')),0)::int mobile_money_collected,
         coalesce(sum(discount),0)::int platform_funded_discounts
       from driver_earnings where driver_id=$1 and (created_at at time zone 'Africa/Kigali') >= ${since}`, [req.auth!.id]);
-    const daily = await q(`select to_char(created_at at time zone 'Africa/Kigali','YYYY-MM-DD') day, count(*)::int trips, sum(net)::int net, sum(commission)::int commission
+    const daily = await q(`select to_char(created_at at time zone 'Africa/Kigali','YYYY-MM-DD') as day, count(*)::int trips, sum(net)::int net, sum(commission)::int commission
       from driver_earnings where driver_id=$1 and created_at > now() - interval '31 days' group by 1 order by 1 desc`, [req.auth!.id]);
     const dp = await q1<any>('select completed_count, cancel_count, accepted_count, rating_avg from driver_profiles where user_id=$1', [req.auth!.id]);
     return { period: b.period, ...t, daily, completed_trips: dp.completed_count, cancellations: dp.cancel_count, rating: Number(dp.rating_avg), balance: await driverBalance(req.auth!.id) };

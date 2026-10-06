@@ -9,7 +9,7 @@ A ride-hailing and transport platform for Rwanda (Kigali first): passengers book
 | Operations console | [`admin-web/`](admin-web) | Dependency-free SPA served by the backend at `/admin/` |
 | Documentation | [`docs/`](docs) | Architecture, API, security, operations, status |
 
-> **Read [`docs/FEATURE_STATUS.md`](docs/FEATURE_STATUS.md) first.** It says exactly which features are tested, simulated, or still need credentials. In short: the backend is thoroughly tested; **payments run against a local simulator until you add MTN credentials; the Android app builds but has not been run on a device**; and nothing here is regulatory approval.
+> **Read [`docs/FEATURE_STATUS.md`](docs/FEATURE_STATUS.md) first.** It says exactly which features are tested, simulated, or still need credentials. In short: the backend is thoroughly tested, and the app's screens pass two browser end-to-end journeys (passenger and driver) against a live server; **payments run against a local simulator until you add MTN credentials; the Android APK builds but has not been run on a device**; and nothing here is regulatory approval.
 
 ## 60-second tour
 
@@ -18,7 +18,7 @@ cd backend && cp .env.example .env && npm install
 createdb rwanda_mobility && npm run migrate
 BOOTSTRAP_ADMIN_PASSWORD='a-long-passphrase' npm run seed     # prints the admin TOTP secret once
 OTP_DEV_ECHO=true npm run dev                                  # API + console on http://localhost:8080/admin/
-npm test                                                       # 85 tests, real PostgreSQL
+npm test                                                       # 88 tests, real PostgreSQL
 ```
 Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 npx expo start --android` - see [`docs/ANDROID_BUILD.md`](docs/ANDROID_BUILD.md).
 

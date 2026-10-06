@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import type { KV, TokenStore, Tokens } from './net';
 
 /** Non-sensitive UI state only (language, recents, outbox of non-secret requests). */
@@ -13,9 +14,12 @@ export const kv: KV = {
 const TOKEN_KEY = 'rm_tokens';
 export const tokenStore: TokenStore = {
   async get() {
+    // Web preview has no keystore: sessionStorage-equivalent via AsyncStorage (localStorage). Native always uses SecureStore.
+    if (Platform.OS === 'web') { const s = await AsyncStorage.getItem(TOKEN_KEY); return s ? (JSON.parse(s) as Tokens) : null; }
     try { const s = await SecureStore.getItemAsync(TOKEN_KEY); return s ? (JSON.parse(s) as Tokens) : null; } catch { return null; }
   },
   async set(t) {
+    if (Platform.OS === 'web') { if (t) await AsyncStorage.setItem(TOKEN_KEY, JSON.stringify(t)); else await AsyncStorage.removeItem(TOKEN_KEY); return; }
     try { if (t) await SecureStore.setItemAsync(TOKEN_KEY, JSON.stringify(t)); else await SecureStore.deleteItemAsync(TOKEN_KEY); } catch { /* keystore unavailable */ }
   },
 };

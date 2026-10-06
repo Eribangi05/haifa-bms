@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -9,6 +9,7 @@ import { kv } from '../lib/storage';
 import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner } from '../ui/components';
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
+import { showAlert } from '../ui/dialog';
 import { SosButton } from './shared';
 
 const DOC_LABEL: Record<string, string> = { national_id: 'National ID', driving_licence: 'Driving licence', profile_photo: 'Profile photo', vehicle_registration: 'Vehicle registration', insurance: 'Insurance', inspection: 'Inspection / roadworthiness', transport_permit: 'Transport permit' };
@@ -53,7 +54,7 @@ function Onboarding({ status, reload }: { status: any; reload: () => void }) {
         </Card> : null}
         {v ? <Card><Text style={S.h2}>{t('drv.docs')}</Text>
           {need.map((r: any) => <DocRow key={r.doc_type} req={r} docs={status.documents.filter((d: any) => d.doc_type === r.doc_type)} editable reload={reload} />)}
-        </Card> : <Banner text={t('drv.app.title')} />}
+        </Card> : <Banner text={t('drv.savefirst')} />}
         {editable && v ? <Btn big title={t('drv.submit')} onPress={submit} loading={busy} /> : null}
       </Screen></View>
   );
@@ -64,7 +65,8 @@ function DocRow({ req, docs, reload, editable }: { req: any; docs: any[]; reload
   const last = docs[0];
   const upload = (uri: string, name: string, type: string) => run(async () => {
     const fd = new FormData(); fd.append('doc_type', req.doc_type); if (expiry) fd.append('expiry_date', expiry);
-    fd.append('file', { uri, name, type } as any);
+    if (Platform.OS === 'web') fd.append('file', await (await fetch(uri)).blob(), name);   // web needs a real Blob; native uses the {uri,name,type} form
+    else fd.append('file', { uri, name, type } as any);
     await client.post('/drivers/documents', undefined, { form: fd, timeoutMs: 40000 }); setOpen(false); say(t('drv.upload')); reload();
   });
   const camera = async () => { const p = await ImagePicker.requestCameraPermissionsAsync(); if (!p.granted) return; const r = await ImagePicker.launchCameraAsync({ quality: 0.6 }); if (!r.canceled) await upload(r.assets[0].uri, 'photo.jpg', 'image/jpeg'); };
@@ -180,7 +182,7 @@ function ActiveTrip({ trip, pos, reload }: { trip: any; pos: { lat: number; lng:
         <Btn kind="ghost" title={t('drv.navigate')} onPress={() => nav_(trip.pickup.lat, trip.pickup.lng)} />
         {st === 'DRIVER_ASSIGNED' ? <Btn title={t('drv.enroute')} onPress={() => act('en-route')} loading={busy} big /> : null}
         <Btn title={t('drv.arrived')} onPress={() => act('arrived')} loading={busy} big />
-        <Btn kind="ghost" title={t('drv.cancel')} onPress={() => Alert.alert(t('drv.cancel'), '', [{ text: t('common.no') }, { text: t('drv.reason.safety'), onPress: () => run(async () => { await client.post(`/bookings/${trip.id}/cancel`, { reason: 'safety_concern', as: 'driver' }); reload(); }) }, { text: t('drv.reason.other'), onPress: () => run(async () => { await client.post(`/bookings/${trip.id}/cancel`, { reason: 'other', as: 'driver' }); reload(); }) }])} /></View> : null}
+        <Btn kind="ghost" title={t('drv.cancel')} onPress={() => showAlert(t('drv.cancel'), '', [{ text: t('common.no') }, { text: t('drv.reason.safety'), onPress: () => run(async () => { await client.post(`/bookings/${trip.id}/cancel`, { reason: 'safety_concern', as: 'driver' }); reload(); }) }, { text: t('drv.reason.other'), onPress: () => run(async () => { await client.post(`/bookings/${trip.id}/cancel`, { reason: 'other', as: 'driver' }); reload(); }) }])} /></View> : null}
       {['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(st) ? <View style={{ gap: 8 }}>
         <Field label={t('drv.enterpin')} value={pin} onChangeText={(x) => setPin(x.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" maxLength={4} style={{ fontSize: 30, textAlign: 'center', letterSpacing: 10 }} />
         <Btn title={t('drv.start')} onPress={() => run(async () => { try { await client.post(`/bookings/${trip.id}/start`, { pin }); setPin(''); } catch (e) { pinErr(e); } finally { reload(); } })} loading={busy} disabled={pin.length !== 4} big />
@@ -206,7 +208,7 @@ export function Earnings() {
       {!d ? <Spinner /> : <Card>
         <Text style={S.muted}>{t('drv.net')}</Text><Money n={d.net} style={{ fontSize: 34, fontWeight: '800', color: C.primary }} />
         {([['drv.trips', d.trips], ['drv.fares', d.total_fares], ['drv.commission', d.commission], ['drv.cash', d.cash_collected], ['drv.momo', d.mobile_money_collected]] as const).map(([k, v]) => <View key={k} style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{t(k as any)}</Text><Text style={S.body}>{k === 'drv.trips' ? v : `${Number(v).toLocaleString('en-US')} RWF`}</Text></View>)}
-        <View style={S.between}><Text style={S.body}>{t('drv.rating')}</Text><Text style={S.body}>★ {d.rating}</Text></View>
+        <View style={S.between}><Text style={S.body}>{t('drv.rating')}</Text><Text style={S.body}>{d.rating > 0 ? `★ ${d.rating}` : '—'}</Text></View>
       </Card>}
       {bal ? <Card><Text style={S.h2}>{t('drv.wallet')}</Text>
         <View style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{t('drv.eligible')}</Text><Money n={bal.eligible_payout} style={{ fontWeight: '800', color: C.primary }} /></View>
@@ -214,7 +216,7 @@ export function Earnings() {
         <Field label={t('drv.payout.amount')} value={amt} onChangeText={(x) => setAmt(x.replace(/\D/g, ''))} keyboardType="number-pad" />
         <Btn title={t('drv.payout.request')} loading={busy} disabled={!Number(amt)} onPress={() => run(async () => { await client.post('/drivers/me/payouts', { amount: Number(amt) }); setAmt(''); w.reload(); po.reload(); e.reload(); })} /></Card> : null}
       {po.data?.payouts?.length ? <Card><Text style={S.h2}>{t('drv.payout.history')}</Text>{po.data.payouts.map((p: any) => <View key={p.id} style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{new Date(p.requested_at).toLocaleDateString('en-GB')}</Text><Money n={p.amount} /><Pill tone={p.status === 'PAID' ? 'ok' : p.status === 'REJECTED' ? 'bad' : 'warn'} text={p.status} /></View>)}</Card> : null}
-      {w.data?.transactions?.length ? <Card><Text style={S.h2}>{t('drv.wallet')}</Text>{w.data.transactions.slice(0, 12).map((x: any) => <View key={x.id} style={[S.between, { paddingVertical: 3 }]}><Text style={[S.muted, { flex: 1 }]} numberOfLines={1}>{x.memo}</Text><Text style={{ color: x.credit ? C.primary : C.danger }}>{x.credit ? '+' + x.credit : '−' + x.debit}</Text></View>)}</Card> : null}
+      {w.data?.transactions?.length ? <Card><Text style={S.h2}>{t('drv.activity')}</Text>{w.data.transactions.slice(0, 12).map((x: any) => <View key={x.id} style={[S.between, { paddingVertical: 3 }]}><Text style={[S.muted, { flex: 1 }]} numberOfLines={1}>{x.memo}</Text><Text style={{ color: x.credit ? C.primary : C.danger }}>{x.credit ? '+' + x.credit : '−' + x.debit}</Text></View>)}</Card> : null}
     </View>
   );
 }

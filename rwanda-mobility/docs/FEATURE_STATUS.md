@@ -2,7 +2,7 @@
 
 Labels (assigned by evidence, not intent):
 
-* **TESTED** - implemented and exercised by automated tests that pass (`backend`: 85 tests against real PostgreSQL; `mobile`: 10 tests of the network layer).
+* **TESTED** - implemented and exercised by automated tests that pass: `backend` 88 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities); `mobile` 10 tests of the network layer; and two browser end-to-end scripts (32 steps) that drive the real React Native screens against a live backend.
 * **IMPLEMENTED** - code exists and type-checks (and the Android bundle compiles) but has **no automated or on-device test**.
 * **SIMULATED** - works against a local stand-in, not the real external system.
 * **PENDING INTEGRATION** - needs third-party credentials/approval or a build-out not done here.
@@ -12,9 +12,12 @@ Labels (assigned by evidence, not intent):
 
 | Verified | Not verified |
 |---|---|
-| All backend business rules via integration tests; admin console renders and works against a live server (Chromium, real login with TOTP); Android JS bundle compiles with Hermes; Android release APK builds (see `ANDROID_BUILD.md`) | **The Android app has not been run on a device or emulator** (no emulator/KVM in the build environment). UI layout, map WebView behaviour, permission prompts, camera/document upload and polling on real hardware are unverified. No iOS build. |
-| Payment adapter logic against an in-repo simulator | **No call has been made to MTN's real sandbox or production** (no credentials). |
-| Fare/commission/ledger arithmetic | No load testing; no penetration test; no accessibility audit; Kinyarwanda copy not reviewed by a native speaker. |
+| All backend business rules via integration tests; a smoke sweep that calls every registered route (800+ calls, six identities, junk bodies) and asserts no 5xx | **The Android app has not been run on a device or emulator** (no KVM in the build environment, so no emulator). Native-only behaviour is unverified: the WebView map, permission prompts, camera, SecureStore, `geo:` navigation hand-off, back button, layout on real small screens. |
+| The app's real screens run end to end in Chromium (via react-native-web) against a live server: **passenger** journey (language, OTP, consent, landmark, prices, confirm, assignment, PIN, SOS, completion, cash, rating through the offline outbox, history, offline booking queued then sent exactly once) and **driver** journey (apply, upload 5 documents through the file picker, submit, review, consent, online, GPS heartbeat, offer with earnings, accept, arrive by GPS, wrong/correct PIN, complete, cash, earnings, offline) | The web build uses a different storage/dialog/map path from native (guarded by `Platform.OS`); passing on web does not prove the native build |
+| Admin console renders and works against a live server (Chromium, real login with TOTP) | MTN's real sandbox/production: **no call has been made** (no credentials); payment logic is verified against an in-repo simulator |
+| Android **release APK builds** (Gradle, Hermes, R8): package `rw.mobility.app`, arm64, ~28 MB, debug-signed | iOS build; Play Store packaging; load, penetration and accessibility testing; a native-speaker review of the Kinyarwanda copy |
+
+> **Bugs found by the UI end-to-end run that unit/API tests had missed** (now fixed and covered by regression tests): `GET /drivers/me/earnings` returned HTTP 500 (reserved SQL alias); an empty JSON body on action endpoints (`/accept`, `/arrived`...) was rejected by the server; a deletion request locked users out of their own session. Treat first device testing the same way: expect findings.
 
 ## Matrix
 
@@ -75,9 +78,10 @@ Labels (assigned by evidence, not intent):
 | | Loyalty points, subscriptions | NOT BUILT |
 | Admin | KPI dashboard, drivers, bookings, support, safety, pricing, finance, privacy, settings, audit, staff | TESTED (APIs) + exercised in a browser smoke test |
 | | Live map | IMPLEMENTED (needs map tiles) |
-| Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings | IMPLEMENTED (type-checked, bundled, APK built; **not device-tested**) |
+| Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android) | IMPLEMENTED (type-checked, APK built; **not run on a device**) |
+| | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e, 32 steps) |
 | | Network layer: retry/backoff, idempotency keys, single-flight refresh, persistent outbox | TESTED |
-| | iOS | NOT BUILT/UNTESTED |
+| | iOS | NOT BUILT/UNTESTED (code is shared; no iOS build produced) |
 | | Background location | NOT BUILT (foreground only; disclosed) |
 | Ops | Health/ready endpoints, jobs, retention, structured logs | IMPLEMENTED |
 | | Backups, monitoring, alerting | operator task (documented) |

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, Switch, Text, View } from 'react-native';
+import { Linking, Modal, Pressable, Switch, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useApp, useAsync, usePoll } from '../lib/app';
 import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner } from '../ui/components';
 import { C, S } from '../ui/theme';
+import { showAlert } from '../ui/dialog';
 import { uuid } from '../lib/net';
 
 /** Safety actions look different from normal actions: red, always labelled, one tap to open, explicit send. */
@@ -52,7 +53,7 @@ export function Profile() {
   const load = () => { client.get('/users/me/emergency-contacts').then((r) => setContacts(r.contacts)).catch(() => {}); };
   useEffect(() => { load(); client.get('/users/me/referral').then(setRef).catch(() => {}); client.get('/businesses/mine').then((r) => setBiz(r.businesses)).catch(() => {}); }, []); // eslint-disable-line
   const save = () => run(async () => { await client.patch('/users/me', { display_name: name || undefined, notif_prefs: prefs }); await refreshMe(); say(t('common.save')); });
-  const priv = (kind: 'deletion' | 'access') => run(async () => { await client.post('/users/me/privacy-requests', { kind }); Alert.alert(t('prof.privacy'), t('prof.delete.confirm')); });
+  const priv = (kind: 'deletion' | 'access') => run(async () => { await client.post('/users/me/privacy-requests', { kind }); showAlert(t('prof.privacy'), t('prof.delete.confirm')); });
   const becomeDriver = () => run(async () => { await client.post('/drivers/enroll'); await client.refresh(); await refreshMe(); setMode('driver'); });
   return (
     <View style={S.screen}><Header title={t('prof.title')} onBack={() => nav.pop()} />
@@ -70,7 +71,7 @@ export function Profile() {
         {biz.length ? <Card><Text style={S.h2}>{t('prof.business')}</Text>{biz.map((b) => <View key={b.id} style={{ marginTop: 6 }}><Text style={S.body}>{b.legal_name} · {b.role}</Text>{b.status !== 'active' ? <Pill tone="warn" text={t('biz.pending')} /> : <Pill text="active" />}</View>)}</Card> : null}
         {!me?.roles.includes('driver') ? <Card><Text style={S.h2}>{t('prof.driver')}</Text><Text style={S.muted}>{t('drv.become.sub')}</Text><View style={{ height: 8 }} /><Btn kind="gold" title={t('drv.enroll')} onPress={becomeDriver} loading={busy} /></Card> : <Btn kind="ghost" title={t('drv.mode')} onPress={() => setMode('driver')} />}
         <View style={{ height: 10 }} />
-        <Card><Text style={S.h2}>{t('prof.privacy')}</Text><Btn kind="ghost" title={t('prof.export')} onPress={() => priv('access')} /><View style={{ height: 8 }} /><Btn kind="ghost" title={t('prof.delete')} onPress={() => Alert.alert(t('prof.delete'), t('prof.delete.confirm'), [{ text: t('common.cancel') }, { text: t('common.confirm'), style: 'destructive', onPress: () => priv('deletion') }])} /></Card>
+        <Card><Text style={S.h2}>{t('prof.privacy')}</Text><Btn kind="ghost" title={t('prof.export')} onPress={() => priv('access')} /><View style={{ height: 8 }} /><Btn kind="ghost" title={t('prof.delete')} onPress={() => showAlert(t('prof.delete'), t('prof.delete.confirm'), [{ text: t('common.cancel') }, { text: t('common.confirm'), style: 'destructive', onPress: () => priv('deletion') }])} /></Card>
         <Btn kind="ghost" title={t('common.signout')} onPress={signOut} />
       </Screen></View>
   );

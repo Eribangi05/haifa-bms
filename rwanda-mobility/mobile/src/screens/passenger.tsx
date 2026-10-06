@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useApp, useAsync, usePoll } from '../lib/app';
 import { ApiError, uuid } from '../lib/net';
@@ -7,6 +7,7 @@ import { kv, loadJson, saveJson } from '../lib/storage';
 import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner } from '../ui/components';
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
+import { showAlert } from '../ui/dialog';
 import { KIGALI, POLL_MS } from '../config';
 import { SosButton } from './shared';
 
@@ -214,7 +215,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
   if (!b) return <Screen>{poll.error && !poll.error.isNetwork ? <Banner kind="bad" text={poll.error.message} /> : <Spinner />}<Btn kind="ghost" title={t('common.back')} onPress={() => nav.reset('home')} /></Screen>;
 
   const st: string = b.status;
-  const cancel = () => Alert.alert(t('trip.cancel.confirm'), ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED'].includes(st) ? t('trip.cancel.fee') : '', [
+  const cancel = () => showAlert(t('trip.cancel.confirm'), ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED'].includes(st) ? t('trip.cancel.fee') : '', [
     { text: t('common.no') }, { text: t('common.yes'), style: 'destructive', onPress: () => run(async () => { await client.post(`/bookings/${b.id}/cancel`, { reason: 'changed_mind' }, { retry: true }); poll.reload(); }) }]);
   const share = () => run(async () => { const r = await client.post(`/bookings/${b.id}/share`, {}); await Share.share({ message: `${t('trip.share.msg')} ${r.url}` }); });
   const mapMarkers = [{ lat: b.pickup.lat, lng: b.pickup.lng, label: t('home.pickup'), color: '#00704A' }, { lat: b.destination.lat, lng: b.destination.lng, label: t('home.dest'), color: '#C0392B' }, ...(b.driver_location ? [{ lat: b.driver_location.lat, lng: b.driver_location.lng, label: t('trip.driver'), color: '#1A5FB4' }] : [])];
@@ -238,7 +239,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
 
         {live && b.driver ? <Card>
           <Text style={S.muted}>{t('trip.verify')}</Text>
-          <Text style={[S.h2, { marginTop: 4 }]}>{b.driver.name} · ★ {b.driver.rating?.toFixed?.(1) ?? b.driver.rating}</Text>
+          <Text style={[S.h2, { marginTop: 4 }]}>{b.driver.name} · {b.driver.rating_count > 0 ? `★ ${Number(b.driver.rating).toFixed(1)}` : t('trip.newdriver')}</Text>
           <Text style={S.body}>{b.vehicle?.color} {b.vehicle?.make} {b.vehicle?.model}</Text>
           <View style={{ backgroundColor: C.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14, alignSelf: 'flex-start', marginTop: 8 }}><Text style={{ fontSize: 24, fontWeight: '800', letterSpacing: 3 }}>{b.vehicle?.plate}</Text></View>
         </Card> : null}

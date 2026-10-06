@@ -5,7 +5,7 @@ import { Banner, Btn, Chip, Field, Screen } from '../ui/components';
 import { C, S } from '../ui/theme';
 import { APP_NAME } from '../config';
 import { ApiError } from '../lib/net';
-import { loadJson, saveJson } from '../lib/storage';
+import { tokenStore } from '../lib/storage';
 
 export function Welcome() {
   const { t, lang, setLang, nav } = useApp();
@@ -60,7 +60,6 @@ export function Otp({ params }: { params: { phone: string; referral?: string; de
     setErr('');
     try {
       const r = await client.post('/auth/otp/verify', { phone: params.phone, code, language: lang, referral_code: params.referral }, { auth: false });
-      const { tokenStore } = await import('../lib/storage');
       await tokenStore.set({ access_token: r.access_token, refresh_token: r.refresh_token });
       await signedIn(r.roles);
     } catch (e: any) { setErr(e.message); }

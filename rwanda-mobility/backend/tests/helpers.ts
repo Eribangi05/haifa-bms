@@ -28,7 +28,8 @@ export async function boot(dbName = 'rwanda_mobility_test') {
   await migrate(false);
   await seed.seedCore();
   await db.q("insert into system_settings(key,value) values ('otp.max_per_hour_ip','1000000'),('otp.resend_cooldown_s','0') on conflict (key) do update set value=excluded.value");
-  const app = await buildApp();
+  const routes: { method: string; url: string }[] = [];
+  const app = await buildApp({ onRoute: (r) => { for (const m of ([] as string[]).concat(r.method as any)) if (m !== 'HEAD' && m !== 'OPTIONS') routes.push({ method: m, url: r.url }); } });
   await app.ready();
 
   const api = async (method: string, url: string, o: { token?: string; body?: any; headers?: Record<string, string>; payload?: any } = {}) => {
@@ -112,5 +113,5 @@ export async function boot(dbName = 'rwanda_mobility_test') {
     await db.q('update driver_profiles set is_online=false');
   };
   const close = async () => { await app.close(); await db.pool.end(); };
-  return { app, api, reset, register, staff, driver, estimate, book, runTrip, db, close, crypto, phone };
+  return { app, api, routes, reset, register, staff, driver, estimate, book, runTrip, db, close, crypto, phone };
 }

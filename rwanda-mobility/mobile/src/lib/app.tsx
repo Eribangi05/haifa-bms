@@ -52,7 +52,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     langRef.current = l; setLangState(l); void kv.set('rm_lang', l);
-    void client.patch('/users/me', { preferred_language: l }).catch(() => { /* not signed in or offline: stored locally */ });
+    void tokenStore.get().then((tk) => { if (tk) client.patch('/users/me', { preferred_language: l }).catch(() => { /* offline: stored locally, synced on next sign-in */ }); });
   }, [client]);
   const t = useCallback((k: TKey, v?: Record<string, string | number>) => translate(lang, k, v), [lang]);
 

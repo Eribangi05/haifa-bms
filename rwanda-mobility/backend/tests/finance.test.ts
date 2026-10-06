@@ -229,3 +229,22 @@ test('dashboard separates gross booking value, platform revenue and cash collect
   const an2 = await t.api('GET', '/admin/analytics', { token: an.token });
   assert.ok(!JSON.stringify(an2.json).includes('+250'), 'no PII in analytics');
 });
+
+test('driver earnings report (day/week/month) matches the earnings records, split by payment channel', async () => {
+  const p = await t.register(); const d = await t.driver({ vehicle: 'moto' });
+  const a = await trip(p, d, 'cash'); const b = await trip(p, d, 'mtn_momo');
+  const ea = await earnings(a.id), eb = await earnings(b.id);
+  for (const period of ['day', 'week', 'month']) {
+    const r = await t.api('GET', `/drivers/me/earnings?period=${period}`, { token: d.token });
+    assert.equal(r.status, 200, period);
+    assert.equal(r.json.trips, 2);
+    assert.equal(r.json.net, ea.net + eb.net);
+    assert.equal(r.json.commission, ea.commission + eb.commission);
+    assert.equal(r.json.total_fares, a.fare + b.fare);
+    assert.equal(r.json.cash_collected, a.fare); assert.equal(r.json.mobile_money_collected, b.fare);
+    assert.equal(r.json.completed_trips, 2); assert.ok(r.json.daily.length >= 1);
+    assert.equal(r.json.balance.payable, ea.net + eb.net);
+  }
+  assert.equal((await t.api('GET', '/drivers/me/earnings?period=year', { token: d.token })).status, 400);
+  assert.equal((await t.api('GET', '/drivers/me/earnings', { token: (await t.register()).token })).status, 403, 'passengers cannot read driver earnings');
+});
