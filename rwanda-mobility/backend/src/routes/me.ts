@@ -72,7 +72,6 @@ export async function meRoutes(app: FastifyInstance) {
     const open = await q1("select 1 from privacy_requests where user_id=$1 and kind=$2 and status in ('open','in_progress')", [req.auth!.id, b.kind]);
     if (open) throw conflict('already_open', 'You already have an open request of this type');
     const r = await q1<any>("insert into privacy_requests(user_id,kind,notes,due_at) values ($1,$2,$3, now() + interval '30 days') returning id, kind, status, due_at", [req.auth!.id, b.kind, b.notes ?? null]);
-    if (b.kind === 'deletion') await q("update users set status='deletion_requested' where id=$1 and status='active'", [req.auth!.id]);
     await audit(actorOf(req), 'privacy.request', 'privacy_request', r.id, undefined, { kind: b.kind });
     return r;
   });
