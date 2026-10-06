@@ -23,10 +23,16 @@ import { businessRoutes } from './routes/business.js';
 import { adminRoutes } from './routes/admin.js';
 import { adminFinanceRoutes } from './routes/adminFinance.js';
 
-export async function buildApp() {
+export async function buildApp(opts: { onRoute?: (r: { method: string | string[]; url: string; config?: any }) => void } = {}) {
   const app = Fastify({
     logger: process.env.QUIET === '1' ? false : { level: 'info', redact: ['req.headers.authorization', 'req.headers["x-callback-token"]'] },
     trustProxy: true, bodyLimit: 1_000_000, genReqId: () => crypto.randomUUID(),
+  });
+  if (opts.onRoute) app.addHook('onRoute', (r) => opts.onRoute!({ method: r.method, url: r.url }));
+  // Mobile clients often send Content-Type: application/json with no body on action endpoints (accept, arrived...). Treat as {}.
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => {
+    if (!body || !String(body).trim()) return done(null, {});
+    try { done(null, JSON.parse(String(body))); } catch { const e: any = new Error('Malformed JSON'); e.statusCode = 400; e.code = 'bad_json'; done(e, undefined); }
   });
   await app.register(cors, { origin: true, exposedHeaders: ['x-request-id'] });
   await app.register(jwt, { secret: config.jwtSecret });

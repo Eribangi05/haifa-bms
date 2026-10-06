@@ -193,3 +193,12 @@ test('security headers and generic errors: no stack traces leak', async () => {
   const nf = await t.api('GET', '/nope');
   assert.equal(nf.status, 404);
 });
+
+test('empty JSON bodies on action endpoints are accepted and malformed JSON gets a clean 400', async () => {
+  const p = await t.register(); const d = await t.driver({ vehicle: 'moto' });
+  const { res } = await t.book(p.token); const id = res.json.booking.id;
+  const a = await t.api('POST', `/bookings/${id}/accept`, { token: d.token, headers: { 'content-type': 'application/json' } });
+  assert.equal(a.status, 200);
+  const bad = await t.api('POST', '/auth/otp/request', { headers: { 'content-type': 'application/json' }, payload: '{not json' });
+  assert.equal(bad.status, 400);
+});

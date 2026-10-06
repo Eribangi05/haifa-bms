@@ -4,7 +4,7 @@ import { q } from '../db.js';
 
 export type Route = { distance_m: number; duration_s: number; source: 'osrm' | 'estimate' };
 const SPEED_KMH: Record<string, number> = { moto: 28, car: 24, minivan: 22, pickup: 22, truck: 20 };
-const ROAD_FACTOR = 1.35;   // straight line -> typical Kigali road distance (ASSUMPTION; calibrate with real trips)
+const ROAD_FACTOR = 1.5;    // measured: OSRM road distance / straight line averaged 1.51 over 5 Kigali routes (scripts/map-eval.ts). Recalibrate with real trips.
 
 export function estimateRoute(a: LatLng, b: LatLng, vehicle = 'car'): Route {
   const d = Math.round(haversineM(a, b) * ROAD_FACTOR);

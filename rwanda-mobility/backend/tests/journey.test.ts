@@ -379,3 +379,29 @@ test('SOS records an incident and never claims anyone was contacted', async () =
   const urgent = await t.db.q1<any>("select priority, sensitive from support_cases where subject like $1", [`SOS ${inc.ref}%`]);
   assert.equal(urgent.priority, 'urgent'); assert.equal(urgent.sensitive, true);
 });
+
+test('referrals: both sides are rewarded once, after the referee’s first paid trip; self-referral is impossible', async () => {
+  const referrer = await t.register(); const d = await t.driver({ vehicle: 'moto' });
+  const code = (await t.api('GET', '/users/me/referral', { token: referrer.token })).json.code;
+  assert.ok(code);
+  const ph = t.phone();
+  const o = await t.api('POST', '/auth/otp/request', { body: { phone: ph } });
+  const v = await t.api('POST', '/auth/otp/verify', { body: { phone: ph, code: o.json.dev_code, referral_code: code } });
+  const referee = { token: v.json.access_token, id: v.json.user.id };
+  const ref = await t.db.q1<any>('select * from referrals where referee_id=$1', [referee.id]);
+  assert.equal(ref.referrer_id, referrer.id); assert.equal(ref.status, 'pending');
+  const { res } = await t.book(referee.token); const id = res.json.booking.id;
+  const done = await t.runTrip(referee, d, id);
+  assert.equal((await t.db.q<any>('select 1 from promotions where user_id is not null')).length, 0, 'no reward before payment');
+  await t.api('POST', `/bookings/${id}/cash-collected`, { token: d.token, body: { amount: done.final_fare } });
+  const rewards = await t.db.q<any>('select user_id, value from promotions where user_id is not null');
+  assert.deepEqual(rewards.map((r: any) => r.user_id).sort(), [referrer.id, referee.id].sort());
+  assert.equal((await t.db.q1<any>('select status from referrals where id=$1', [ref.id])).status, 'rewarded');
+  // a reward voucher is only usable by its owner
+  const stranger = await t.register();
+  const code2 = rewards[0].value && (await t.db.q1<any>('select code from promotions where user_id=$1', [referrer.id])).code;
+  const e = await t.estimate(stranger.token, { service_id: 'moto', promo_code: code2 });
+  assert.equal(e.json.options[0].promo.error, 'promo_not_eligible');
+  // self-referral rejected by the database
+  await assert.rejects(() => t.db.q('insert into referrals(referrer_id, referee_id) values ($1,$1)', [referrer.id]), /check/);
+});

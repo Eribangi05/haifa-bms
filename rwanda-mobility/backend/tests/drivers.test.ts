@@ -170,3 +170,16 @@ test('dispatcher can manually assign and reassign; ineligible drivers are refuse
   assert.ok(ev.some((e: any) => /manual assignment/.test(e.reason)));
   assert.equal((await t.api('POST', `/admin/bookings/${id}/assign`, { token: p.token, body: { driver_id: d2.id, reason: 'hack attempt' } })).status, 403);
 });
+
+test('an existing passenger can enroll as a driver without gaining any dispatch rights', async () => {
+  const u = await t.register();
+  assert.equal((await t.api('GET', '/drivers/me/status', { token: u.token })).status, 403);
+  assert.equal((await t.api('POST', '/drivers/enroll', { token: u.token })).status, 200);
+  // role claims live in the JWT: sign in again to pick up the driver role
+  const o = await t.api('POST', '/auth/otp/request', { body: { phone: u.phone } });
+  const v = await t.api('POST', '/auth/otp/verify', { body: { phone: u.phone, code: o.json.dev_code } });
+  assert.ok(v.json.roles.includes('driver') && v.json.roles.includes('passenger'));
+  const st = await t.api('GET', '/drivers/me/status', { token: v.json.access_token });
+  assert.equal(st.json.profile.status, 'APPLICATION_STARTED'); assert.equal(st.json.permission.can_work, false);
+  assert.equal((await t.api('PATCH', '/drivers/me/availability', { token: v.json.access_token, body: { online: true } })).status, 403);
+});

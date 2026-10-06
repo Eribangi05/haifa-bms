@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
-import { requireRole, actorOf } from '../guards.js';
+import { requireRole, anyAuth, actorOf } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, notFound, forbidden } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
@@ -16,6 +16,15 @@ const KNOWN_DOCS = ['national_id', 'driving_licence', 'profile_photo', 'vehicle_
 
 export async function driverRoutes(app: FastifyInstance) {
   const drv = { preHandler: requireRole('driver') };
+
+  /** An existing passenger starts the (separate, gated) driver onboarding. Grants no permission to receive trips. */
+  app.post('/drivers/enroll', { preHandler: anyAuth }, async (req) => {
+    await tx(async (c) => {
+      await q("insert into user_roles values ($1,'driver') on conflict do nothing", [req.auth!.id], c);
+      await q('insert into driver_profiles(user_id) values ($1) on conflict do nothing', [req.auth!.id], c);
+    });
+    return { ok: true, note: 'Complete your application and documents. You cannot receive trips until you are approved.' };
+  });
 
   app.post('/drivers/applications', drv, async (req) => {
     const b = parse(z.object({

@@ -98,7 +98,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
     options.push({
       service_id: s.id, name_en: s.name_en, name_rw: s.name_rw, capacity: s.passenger_capacity, luggage: s.luggage,
       available, reason, quote_id: quoteId, fare: bd, distance_m: rt.distance_m, duration_s: rt.duration_s, route_source: rt.source,
-      pickup_eta_s: near.length ? Math.round((Math.min(...near) * 1.35) / 1000 / 24 * 3600) : null, nearby_drivers: scheduled ? undefined : near.length,
+      pickup_eta_s: near.length ? Math.round((Math.min(...near) * 1.5) / 1000 / 24 * 3600) : null, nearby_drivers: scheduled ? undefined : near.length,
       promo: promo ? (promo.ok ? { code: promo.code, discount: promo.discount } : { error: promo.reason }) : undefined,
       is_estimate: true,
     });
