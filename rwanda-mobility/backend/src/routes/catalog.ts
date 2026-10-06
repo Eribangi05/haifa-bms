@@ -12,7 +12,7 @@ import { config } from '../config.js';
 
 export async function catalogRoutes(app: FastifyInstance) {
   app.get('/config', async () => ({
-    app_name: 'Abasare', currency: 'RWF', languages: ['rw', 'en'], country_code: '+250',
+    app_name: 'Abasare', currency: 'RWF', languages: ['rw', 'fr', 'en'], country_code: '+250',
     payment_methods: [
       { id: 'cash', enabled: true },
       { id: 'mtn_momo', enabled: await flag('payments.mtn_momo'), simulated: config.momo.mode === 'simulator' },
@@ -24,17 +24,17 @@ export async function catalogRoutes(app: FastifyInstance) {
   }));
 
   app.get('/services', async () => ({
-    services: await q('select id,name_en,name_rw,description_en,description_rw,passenger_capacity,luggage,phase from service_categories where enabled order by sort'),
+    services: await q('select id,name_en,name_rw,name_fr,description_en,description_rw,description_fr,passenger_capacity,luggage,phase from service_categories where enabled order by sort'),
   }));
 
   app.get('/places/search', { preHandler: anyAuth }, async (req) => {
-    const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'en']).default('en') }), req.query);
+    const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);
     return { places: await searchPlaces(b.q, b.lang) };
   });
   app.get('/places/popular', async (req) => {
-    const { lang } = parse(z.object({ lang: z.enum(['rw', 'en']).default('en') }), req.query);
-    const r = await q<any>('select id, name_en, name_rw, kind, lat, lng, designated_pickup from places order by designated_pickup desc, name_en');
-    return { places: r.map((p) => ({ id: p.id, name: lang === 'rw' && p.name_rw ? p.name_rw : p.name_en, kind: p.kind, lat: p.lat, lng: p.lng, designated_pickup: p.designated_pickup })) };
+    const { lang } = parse(z.object({ lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);
+    const r = await q<any>('select id, name_en, name_rw, name_fr, kind, lat, lng, designated_pickup from places order by designated_pickup desc, name_en');
+    return { places: r.map((p) => ({ id: p.id, name: (lang === 'rw' ? p.name_rw : lang === 'fr' ? p.name_fr : null) || p.name_en, kind: p.kind, lat: p.lat, lng: p.lng, designated_pickup: p.designated_pickup })) };
   });
   app.get('/coverage', async () => ({ zones: await q('select id, name, polygon from service_zones where active') }));
   app.get('/coverage/check', async (req) => {

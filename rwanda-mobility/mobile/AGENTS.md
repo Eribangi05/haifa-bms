@@ -9,7 +9,7 @@ Expo ships breaking changes each SDK (this project: SDK 57, React Native 0.86). 
 - `App.tsx`: tiny state-based router (stack in `src/lib/app.tsx`; hardware back handled). Deliberately **not** Expo Router: few screens, no deep links needed yet.
 - `src/lib/net.ts`: platform-free API client (timeouts, backoff, single-flight token refresh, idempotency keys, persistent outbox). Unit-tested in `tests/net.test.ts` with plain Node: **keep it free of React Native imports**.
 - `src/lib/app.tsx`: context (session, language, connectivity, outbox flushing), `usePoll` (back-off polling), `useAsync`.
-- `src/lib/i18n.ts`: `en` is the source; `rw` is typed `Record<keyof en, string>` so a missing Kinyarwanda string is a compile error. Add French/Kiswahili by adding a dictionary.
+- `src/lib/i18n.ts` + `src/lib/locales/{en,rw,fr}.ts`: `en` is the source; `rw` and `fr` are typed `Record<keyof en, string>` so a missing string is a compile error. Add a language by adding a locale file and registering it in `DICTS`/`LANGS`. **One language per session, never mixed**: server codes (statuses, document types, payment methods, eligibility reasons) go through `label(lang, prefix, code)`; server fields come as `name_rw/name_fr/name_en` and are read with `pick(lang, obj, 'name')`; the backend localises error messages by the `accept-language` header.
 - `src/screens/*`: `auth`, `passenger`, `driver`, `shared`. `src/ui/*`: components, theme, `MapBox` (native WebView) and `MapView.web.tsx` (iframe) sharing `mapHtml.ts`.
 - `e2e/`: Playwright scripts (passenger, driver) against a running backend.
 
@@ -19,7 +19,7 @@ Expo ships breaking changes each SDK (this project: SDK 57, React Native 0.86). 
 3. Tokens live in SecureStore (native); AsyncStorage holds non-sensitive UI state only.
 4. Safety actions (SOS) look different from normal actions and never claim an agency was contacted.
 5. Driver screens: large targets, minimal typing while moving, and "use only when stopped" reminder.
-6. User-visible text goes through `t()`; Kinyarwanda strings need to fit (test on a 360 px wide screen).
+6. User-visible text goes through `t()` (never hard-code English, even for banners or accessibility labels); Kinyarwanda strings need to fit (test on a 360 px wide screen).
 
 ## Commands
 ```bash

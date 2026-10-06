@@ -16,12 +16,12 @@ const ACCESS_TTL = 15 * 60;
 const REFRESH_TTL_DAYS = 30;
 const STAFF_SESSION_HOURS = 8;
 
-export async function requestOtp(phone: string, dev: Device, lang: 'rw' | 'en' = 'rw') {
+export async function requestOtp(phone: string, dev: Device, lang: 'rw' | 'fr' | 'en' = 'rw') {
   const [cooldown, perPhone, perIp, ttl] = await Promise.all([
     getSetting('otp.resend_cooldown_s'), getSetting('otp.max_per_hour_phone'), getSetting('otp.max_per_hour_ip'), getSetting('otp.ttl_s')]);
   const last = await q1<{ created_at: Date }>('select created_at from otp_challenges where phone=$1 order by created_at desc limit 1', [phone]);
   if (last && Date.now() - last.created_at.getTime() < cooldown * 1000)
-    throw new AppError(429, 'otp_cooldown', `Wait ${cooldown}s before requesting another code`);
+    throw new AppError(429, 'otp_cooldown', `Wait ${cooldown}s before requesting another code`, { seconds: cooldown });
   const hr = await q1<{ p: number; i: number }>(
     `select count(*) filter (where phone=$1)::int p, count(*) filter (where ip=$2)::int i
      from otp_challenges where created_at > now() - interval '1 hour'`, [phone, dev.ip ?? null]);
@@ -53,7 +53,7 @@ export async function verifyOtp(phone: string, code: string, dev: Device, sign: 
       const n = await q1<{ n: number }>("select count(*)::int n from users where device_fingerprint=$1 and created_at > now() - interval '24 hours'", [dev.id]);
       if (n!.n >= 3) throw new AppError(429, 'suspicious_registration', 'Too many accounts created from this device');
     }
-    const lang = opts.lang === 'en' ? 'en' : 'rw';
+    const lang = opts.lang === 'en' || opts.lang === 'fr' ? opts.lang : 'rw';
     user = await tx(async (c) => {
       const u = await q1<any>(
         `insert into users(phone, preferred_language, device_fingerprint, referral_code) values ($1,$2,$3,$4) returning *`,

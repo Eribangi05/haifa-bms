@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { useApp, useAsync } from '../lib/app';
-import { Banner, Btn, Chip, Field, Screen } from '../ui/components';
+import { Banner, Btn, FadeIn, Field, IconBadge, LangPicker, Screen } from '../ui/components';
 import { C, S } from '../ui/theme';
 import { APP_NAME } from '../config';
 import { ApiError } from '../lib/net';
@@ -9,18 +9,23 @@ import { tokenStore } from '../lib/storage';
 
 export function Welcome() {
   const { t, lang, setLang, nav } = useApp();
+  const feats: [string, string][] = [['🛡️', t('welcome.f1')], ['💰', t('welcome.f2')], ['🆘', t('welcome.f3')], ['🚗', t('welcome.f4')]];
   return (
     <Screen footer={<Btn title={t('common.continue')} onPress={() => nav.replace('phone')} big />}>
-      <View style={{ alignItems: 'center', marginTop: 40, marginBottom: 28 }}>
-        <Image source={require('../../assets/logo.png')} accessibilityLabel={APP_NAME} style={{ width: 150, height: 150, borderRadius: 32, marginBottom: 14 }} />
-        <Text style={[S.h1, { textAlign: 'center' }]}>{APP_NAME}</Text>
-        <Text style={[S.muted, { textAlign: 'center', marginTop: 6, fontSize: 15 }]}>{t('app.tagline')}</Text>
-      </View>
-      <Text style={[S.h2, { marginBottom: 10 }]}>{t('auth.language')}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        <Chip text="Kinyarwanda" on={lang === 'rw'} onPress={() => setLang('rw')} />
-        <Chip text="English" on={lang === 'en'} onPress={() => setLang('en')} />
-      </View>
+      <FadeIn>
+        <View style={{ alignItems: 'center', marginTop: 24, marginBottom: 20, backgroundColor: C.card, borderRadius: 28, paddingVertical: 22, paddingHorizontal: 16, borderWidth: 1, borderColor: C.line }}>
+          <Image source={require('../../assets/logo.png')} accessibilityLabel={APP_NAME} style={{ width: 170, height: 170, borderRadius: 36, marginBottom: 12 }} />
+          <Text accessibilityRole="header" style={[S.h1, { textAlign: 'center' }]}>{APP_NAME}</Text>
+          <Text style={[S.muted, { textAlign: 'center', marginTop: 6, fontSize: 15 }]}>{t('app.tagline')}</Text>
+        </View>
+      </FadeIn>
+      <FadeIn delay={120}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 18 }}>
+          {feats.map(([g, l]) => <View key={l} style={{ width: '50%', paddingRight: 8, paddingBottom: 8 }}><View style={[S.row, { backgroundColor: C.card, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: C.line }]}><IconBadge glyph={g} size={36} /><Text style={[S.body, { flex: 1, marginLeft: 8, fontSize: 13, fontWeight: '600' }]}>{l}</Text></View></View>)}
+        </View>
+      </FadeIn>
+      <Text accessibilityRole="header" style={[S.h2, { marginBottom: 10 }]}>{t('auth.language')}</Text>
+      <LangPicker lang={lang} onPick={setLang} />
     </Screen>
   );
 }

@@ -11,6 +11,9 @@ import { Cars } from './src/screens/cars';
 import { Spinner } from './src/ui/components';
 import { C } from './src/ui/theme';
 
+// Respect the user's font-size setting but cap it so layouts do not break (accessibility vs. layout).
+(Text as any).defaultProps = { ...((Text as any).defaultProps ?? {}), maxFontSizeMultiplier: 1.4 };
+
 function Router() {
   const { ready, nav, toast } = useApp();
   const route = nav.stack[nav.stack.length - 1];

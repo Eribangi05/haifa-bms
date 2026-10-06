@@ -61,7 +61,7 @@ export async function decideRefund(approver: Actor, refundId: string, approve: b
 // ---------------- payouts ----------------
 export async function requestPayout(ownerId: string, amount: number, kind: 'driver' | 'fleet' = 'driver') {
   const [min, fee] = await Promise.all([getSetting('payout.min_amount'), getSetting('payout.fee')]);
-  if (!Number.isInteger(amount) || amount < min) throw badRequest('below_minimum', `Minimum payout is ${min} RWF`);
+  if (!Number.isInteger(amount) || amount < min) throw badRequest('below_minimum', `Minimum payout is ${min} RWF`, { min });
   const dp = kind === 'driver' ? await q1<any>('select payout_provider, payout_msisdn from driver_profiles where user_id=$1', [ownerId]) : await q1<any>('select phone as payout_msisdn, \'mtn_momo\' as payout_provider from users where id=$1', [ownerId]);
   if (!dp?.payout_msisdn) throw badRequest('no_payout_account', 'Add a payout mobile-money number first');
   if (amount <= fee) throw badRequest('below_fee');

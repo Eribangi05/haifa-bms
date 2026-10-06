@@ -101,3 +101,14 @@ A driver's **eligible payout** = `DRIVER_PAYABLE - CASH_WITH_DRIVERS` (floored a
 2. Ranking: ETA, minus a small idle-time credit, plus a penalty for the unexcused-rejection rate. Excused reasons (safety, connectivity, platform error...) never count.
 3. Strategy settings: `dispatch.group_size` (1 = sequential, N = small group), expanding radius per round, offer timeout, max rounds. After max rounds -> `NO_DRIVER_FOUND` with alternatives.
 4. A background job (every 3 s) expires offers and advances searches; manual assign/reassign is available to dispatchers.
+
+## Languages
+
+The app is trilingual: Kinyarwanda (`rw`, default), French (`fr`) and English (`en`). **The UI must never mix languages**, so everything user-facing the server sends is localised per request; an `rw`/`fr` user must never see English text.
+
+- Request language: the client sends `Accept-Language: rw|fr|en`; `reqLang()` in `src/services/errmsg.ts` reads the first tag (default `en`). A user's stored choice is `users.preferred_language`.
+- Errors: `code` and `details` are stable; only `message` is localised (`localizeError()`, called from the error/404/500 handlers in `src/app.ts`). Codes with a `{min}`-style placeholder get the values from `details`. A code with no table entry returns a generic message in the user's language, never English. `tests/i18n.test.ts` fails if a user-facing code lacks an entry.
+- Notifications/SMS: `DEFAULT_TEMPLATES` in `src/services/i18n.ts` (every template in every language; enumerated params such as `status`, `doc`, `phase` are translated by `VALUE_LABELS`). Admin overrides in `notification_templates` are per (key, lang).
+- Catalogue data: `name_rw/name_fr/name_en` (+ descriptions) on `service_categories`, `name_*` on `places`; fare lines carry `label_en/label_rw/label_fr`; FAQ entries `q_*/a_*`.
+
+Adding a language (say `xx`): add it to `SUPPORTED_LANGS`, the `Lang` unions, the zod enums (`routes/auth.ts`, `routes/catalog.ts`, `routes/me.ts`) and `/config` `languages`; add an `xx` entry to every template, `VALUE_LABELS`, the error table, `Line` labels in `services/pricing.ts` and the FAQ; add `name_xx`/`description_xx` columns in a migration (with backfill) and seed data; extend `tests/i18n.test.ts`. The mobile app keeps its own locale files in `mobile/src/lib/locales`.

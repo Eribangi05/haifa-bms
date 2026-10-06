@@ -18,11 +18,21 @@ const PRIORITY: Record<string, [string, number, boolean]> = {   // priority, SLA
 };
 
 export const FAQ = [
-  { id: 'cancel', q_en: 'How do I cancel a ride?', a_en: 'Open your active trip and tap Cancel. Cancelling soon after a driver is assigned is free.', q_rw: 'Nakwemeza gute guhagarika urugendo?', a_rw: 'Fungura urugendo rwawe ukande Guhagarika. Guhagarika mu gihe gito nyuma yo guhabwa umushoferi nta kiguzi.' },
-  { id: 'pin', q_en: 'What is the trip PIN?', a_en: 'A 4-digit code shown only to you. Give it to your driver to start the trip after checking their plate.', q_rw: 'PIN y\'urugendo ni iki?', a_rw: 'Ni kode y\'imibare 4 igaragara kuri wowe gusa. Iyihe umushoferi nyuma yo kureba plaque.' },
-  { id: 'pay', q_en: 'How can I pay?', a_en: 'Pay cash to the driver or with MTN Mobile Money. Payment is confirmed by the provider, not by a screenshot.', q_rw: 'Nishyura nte?', a_rw: 'Ushobora kwishyura amafaranga mu ntoki cyangwa MTN Mobile Money.' },
-  { id: 'lost', q_en: 'I left something in the vehicle', a_en: 'Open the trip in History and tap Report a problem > Lost item.', q_rw: 'Nibagiwe ikintu mu kinyabiziga', a_rw: 'Fungura urugendo mu Mateka ukande Gutanga ikibazo > Ikintu cyatakaye.' },
-  { id: 'sos', q_en: 'What if I feel unsafe?', a_en: 'Use the SOS button. We record your trip and location and alert our team. Also call 112 (police) or 912 (ambulance).', q_rw: 'Nabigenza nte ntishimiye umutekano?', a_rw: 'Koresha buto ya SOS. Duhita twandika urugendo n\'aho uri tukamenyesha itsinda ryacu. Hamagara na 112 (Polisi) cyangwa 912 (ambulance).' },
+  { id: 'cancel', q_en: 'How do I cancel a ride?', a_en: 'Open your active trip and tap Cancel. Cancelling soon after a driver is assigned is free.',
+    q_rw: 'Nahagarika nte urugendo?', a_rw: 'Fungura urugendo rwawe urimo hanyuma ukande "Guhagarika". Guhagarika mu gihe gito nyuma yo guhabwa umushoferi nta kiguzi bisaba.',
+    q_fr: 'Comment annuler une course ?', a_fr: 'Ouvrez votre course en cours et appuyez sur Annuler. L\'annulation peu de temps après l\'attribution d\'un chauffeur est gratuite.' },
+  { id: 'pin', q_en: 'What is the trip PIN?', a_en: 'A 4-digit code shown only to you. Give it to your driver to start the trip after checking their plate.',
+    q_rw: 'PIN y\'urugendo ni iki?', a_rw: 'Ni kode y\'imibare 4 igaragara kuri wowe wenyine. Yihe umushoferi kugira ngo urugendo rutangire, nyuma yo kugenzura plaque y\'imodoka ye.',
+    q_fr: 'Qu\'est-ce que le code PIN de la course ?', a_fr: 'C\'est un code à 4 chiffres visible uniquement par vous. Donnez-le à votre chauffeur pour démarrer la course, après avoir vérifié sa plaque.' },
+  { id: 'pay', q_en: 'How can I pay?', a_en: 'Pay cash to the driver or with MTN Mobile Money. Payment is confirmed by the provider, not by a screenshot.',
+    q_rw: 'Nishyura nte?', a_rw: 'Ushobora kwishyura mu ntoki umushoferi cyangwa ukoresheje MTN Mobile Money. Kwishyura byemezwa na MTN, ntibyemezwa n\'ifoto y\'ubutumwa.',
+    q_fr: 'Comment puis-je payer ?', a_fr: 'Payez en espèces au chauffeur ou avec MTN Mobile Money. Le paiement est confirmé par l\'opérateur, et non par une capture d\'écran.' },
+  { id: 'lost', q_en: 'I left something in the vehicle', a_en: 'Open the trip in History and tap Report a problem > Lost item.',
+    q_rw: 'Nibagiwe ikintu mu modoka', a_rw: 'Fungura urugendo mu mateka y\'ingendo, ukande "Gutanga ikibazo" hanyuma uhitemo "Ikintu cyatakaye".',
+    q_fr: 'J\'ai oublié un objet dans le véhicule', a_fr: 'Ouvrez la course dans l\'Historique, puis appuyez sur Signaler un problème > Objet perdu.' },
+  { id: 'sos', q_en: 'What if I feel unsafe?', a_en: 'Use the SOS button. We record your trip and location and alert our team. Also call 112 (police) or 912 (ambulance).',
+    q_rw: 'Nakora iki niba numva ntatekanye?', a_rw: 'Kanda buto ya SOS. Duhita twandika urugendo n\'aho uri, tukamenyesha itsinda ryacu. Hamagara kandi 112 (Polisi) cyangwa 912 (ambulance).',
+    q_fr: 'Que faire si je ne me sens pas en sécurité ?', a_fr: 'Utilisez le bouton SOS. Nous enregistrons votre course et votre position et alertons notre équipe. Appelez aussi le 112 (police) ou le 912 (ambulance).' },
 ];
 
 export async function supportRoutes(app: FastifyInstance) {

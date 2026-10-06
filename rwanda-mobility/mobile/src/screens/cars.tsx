@@ -21,7 +21,7 @@ export function Cars() {
   });
   return (
     <View style={S.screen}><Header title={t('ab.cars.title')} onBack={() => nav.pop()} />
-      <Screen>
+      <Screen embedded>
         {cars && !cars.length && !adding ? <Empty text={t('ab.cars.empty')} /> : null}
         {(cars ?? []).map((c) => (
           <Card key={c.id}>

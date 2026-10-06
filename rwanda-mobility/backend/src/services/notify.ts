@@ -1,5 +1,5 @@
 import { q, q1, type Db, pool } from '../db.js';
-import { DEFAULT_TEMPLATES, render } from './i18n.js';
+import { DEFAULT_TEMPLATES, render, localizeParams, type Lang } from './i18n.js';
 import { sms } from '../providers/sms.js';
 
 type Opts = { critical?: boolean; db?: Db };
@@ -13,7 +13,8 @@ export async function notify(userId: string, key: string, params: Record<string,
   const u = await q1<{ preferred_language: string; phone: string | null; notif_prefs: any }>(
     'select preferred_language, phone, notif_prefs from users where id=$1', [userId], db);
   if (!u) return;
-  const lang = DEFAULT_TEMPLATES[key]?.[u.preferred_language] ? u.preferred_language : 'en';
+  const lang = (DEFAULT_TEMPLATES[key]?.[u.preferred_language as Lang] ? u.preferred_language : 'en') as Lang;
+  params = localizeParams(params, lang);
   const over = await q1<{ title: string; body: string }>('select title, body from notification_templates where key=$1 and lang=$2', [key, lang], db);
   const tpl = over ?? DEFAULT_TEMPLATES[key]?.[lang];
   if (!tpl) return;

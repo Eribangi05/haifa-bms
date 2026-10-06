@@ -31,10 +31,10 @@ export async function route(a: LatLng, b: LatLng, vehicle = 'car'): Promise<Rout
 export const etaS = (from: LatLng, to: LatLng, vehicle = 'car') => estimateRoute(from, to, vehicle).duration_s;
 
 export type PlaceHit = { id?: string; name: string; lat: number; lng: number; kind: string; source: 'local' | 'nominatim' };
-export async function searchPlaces(text: string, lang: 'rw' | 'en'): Promise<PlaceHit[]> {
+export async function searchPlaces(text: string, lang: 'rw' | 'fr' | 'en'): Promise<PlaceHit[]> {
   const like = `%${text.replace(/[%_]/g, '')}%`;
-  const rows = await q<any>(`select id, name_en, name_rw, kind, lat, lng from places where name_en ilike $1 or name_rw ilike $1 order by designated_pickup desc, name_en limit 8`, [like]);
-  const out: PlaceHit[] = rows.map((r) => ({ id: r.id, name: lang === 'rw' && r.name_rw ? r.name_rw : r.name_en, lat: r.lat, lng: r.lng, kind: r.kind, source: 'local' }));
+  const rows = await q<any>(`select id, name_en, name_rw, name_fr, kind, lat, lng from places where name_en ilike $1 or name_rw ilike $1 or name_fr ilike $1 order by designated_pickup desc, name_en limit 8`, [like]);
+  const out: PlaceHit[] = rows.map((r) => ({ id: r.id, name: (lang === 'rw' ? r.name_rw : lang === 'fr' ? r.name_fr : null) || r.name_en, lat: r.lat, lng: r.lng, kind: r.kind, source: 'local' }));
   if (config.mapProvider === 'osrm' && out.length < 5) {
     try {
       const u = `${config.nominatimUrl}/search?format=json&limit=5&countrycodes=rw&q=${encodeURIComponent(text)}`;

@@ -24,7 +24,7 @@ export async function applyAbasare(userId: string, a: ApplyIn) {
   const since = new Date(a.licence_since);
   if (Number.isNaN(since.getTime()) || since > new Date()) throw badRequest('invalid_licence_date');
   const years = (Date.now() - since.getTime()) / (365.25 * 86400e3);
-  if (years < minYears) throw badRequest('licence_too_new', `You need to have held a driving licence for at least ${minYears} years`);
+  if (years < minYears) throw badRequest('licence_too_new', `You need to have held a driving licence for at least ${minYears} years`, { years: minYears });
   if (!a.transmissions.length || !a.classes.length) throw badRequest('skills_required');
   return tx(async (c) => {
     const dp = await q1<any>('select status, abasare_status from driver_profiles where user_id=$1 for update', [userId], c);
@@ -61,7 +61,7 @@ export async function decideAbasare(staff: Actor, driverId: string, decision: 'a
     if (to !== 'approved') await q("update dispatch_offers set status='cancelled' where driver_id=$1 and status='pending'", [driverId], c);
     await audit(staff, 'abasare.decision', 'driver', driverId, { status: dp.abasare_status }, { status: to, reason }, c);
   });
-  await notify(driverId, 'driver_decision', { status: `Abasare ${to}`, reason: reason ?? '' });
+  await notify(driverId, 'driver_decision', { status: `abasare_${to}`, reason: reason ?? '' });
   return { ok: true, abasare_status: to };
 }
 
@@ -92,7 +92,7 @@ export async function submitHandover(driverId: string, bookingId: string, phase:
   const b = await tx(async (c) => {
     const b = await ownAbasareTrip(driverId, bookingId, phase, c);
     const n = await q1<{ n: number }>('select count(*)::int n from handover_photos where booking_id=$1 and phase=$2', [bookingId, phase], c);
-    if (n!.n < minPhotos) throw badRequest('photos_required', `Take at least ${minPhotos} photos of the car`);
+    if (n!.n < minPhotos) throw badRequest('photos_required', `Take at least ${minPhotos} photos of the car`, { min: minPhotos });
     if (phase === 'dropoff') {
       const pu = await q1<any>("select odometer_km from abasare_handovers where booking_id=$1 and phase='pickup'", [bookingId], c);
       if (pu?.odometer_km != null && d.odometer_km < pu.odometer_km) throw badRequest('odometer_decreased', 'Drop-off odometer cannot be lower than at pickup');
@@ -104,7 +104,7 @@ export async function submitHandover(driverId: string, bookingId: string, phase:
     await logEvent(c, bookingId, 'handover_submitted', { id: driverId, role: 'driver' }, { phase, odometer_km: d.odometer_km, fuel_percent: d.fuel_percent, photos: n!.n });
     return b;
   });
-  await notify(b.passenger_id, 'handover_submitted', { phase: phase === 'pickup' ? 'pickup' : 'drop-off' });
+  await notify(b.passenger_id, 'handover_submitted', { phase: phase === 'pickup' ? 'pickup' : 'dropoff' });
   return { ok: true };
 }
 
@@ -119,7 +119,7 @@ export async function respondHandover(ownerId: string, bookingId: string, phase:
     const h = await q1<any>('select * from abasare_handovers where booking_id=$1 and phase=$2 for update', [bookingId, phase], c);
     if (!h) throw conflict('not_recorded_yet', 'The driver has not recorded this check yet');
     if (h.owner_response === 'ok') throw conflict('already_confirmed', 'You already confirmed this record');
-    if (phase === 'dropoff' && Date.now() - new Date(h.created_at).getTime() > window * 60000) throw conflict('window_closed', `Issues can be reported within ${window} minutes of drop-off. Contact support.`);
+    if (phase === 'dropoff' && Date.now() - new Date(h.created_at).getTime() > window * 60000) throw conflict('window_closed', `Issues can be reported within ${window} minutes of drop-off. Contact support.`, { minutes: window });
     await q('update abasare_handovers set owner_response=$3, owner_note=$4, owner_responded_at=now() where booking_id=$1 and phase=$2', [bookingId, phase, response, note ?? null], c);
     await logEvent(c, bookingId, 'handover_response', { id: ownerId, role: 'passenger' }, { phase, response }, note);
     let caseRef: string | null = null;

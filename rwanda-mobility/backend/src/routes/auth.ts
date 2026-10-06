@@ -1,3 +1,4 @@
+import { reqLang } from '../services/errmsg.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
@@ -8,19 +9,22 @@ import { anyAuth } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { audit } from '../services/audit.js';
 
+// language from the body, else the Accept-Language header, else Kinyarwanda (the product default)
+const headerLang = (req: { headers: Record<string, any> }) => (req.headers['accept-language'] ? reqLang(req.headers['accept-language']) : 'rw');
+
 export async function authRoutes(app: FastifyInstance) {
   const sign = (p: any, ttl: number) => app.jwt.sign(p, { expiresIn: ttl });
   const dev = (req: any) => ({ id: (req.headers['x-device-id'] as string) || undefined, name: (req.headers['x-device-name'] as string) || undefined, ip: req.ip });
   const phone = z.string().transform((s, ctx) => normalizePhone(s) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a valid Rwandan mobile number (+250 7XX XXX XXX)' }), z.NEVER));
 
   app.post('/auth/otp/request', { config: { rateLimit: { max: Number(process.env.AUTH_RATE_MAX ?? 20), timeWindow: '1 minute' } } }, async (req) => {
-    const b = parse(z.object({ phone, language: z.enum(['rw', 'en']).default('rw') }), req.body);
-    return auth.requestOtp(b.phone, dev(req), b.language);
+    const b = parse(z.object({ phone, language: z.enum(['rw', 'fr', 'en']).optional() }), req.body);
+    return auth.requestOtp(b.phone, dev(req), b.language ?? headerLang(req));
   });
 
   app.post('/auth/otp/verify', { config: { rateLimit: { max: Number(process.env.AUTH_RATE_MAX ?? 20), timeWindow: '1 minute' } } }, async (req) => {
-    const b = parse(z.object({ phone, code: z.string().regex(/^\d{6}$/), role: z.enum(['passenger', 'driver']).default('passenger'), language: z.enum(['rw', 'en']).optional(), referral_code: z.string().max(20).optional() }), req.body);
-    return auth.verifyOtp(b.phone, b.code, dev(req), sign, { lang: b.language, role: b.role, referral: b.referral_code });
+    const b = parse(z.object({ phone, code: z.string().regex(/^\d{6}$/), role: z.enum(['passenger', 'driver']).default('passenger'), language: z.enum(['rw', 'fr', 'en']).optional(), referral_code: z.string().max(20).optional() }), req.body);
+    return auth.verifyOtp(b.phone, b.code, dev(req), sign, { lang: b.language ?? headerLang(req), role: b.role, referral: b.referral_code });
   });
 
   app.post('/auth/refresh', async (req) => {

@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Image, Linking, Modal, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useApp, useAsync, usePoll } from '../lib/app';
+import { label, pick } from '../lib/i18n';
 import { ApiError, uuid } from '../lib/net';
 import { kv, loadJson, saveJson } from '../lib/storage';
-import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner } from '../ui/components';
+import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner, Stepper } from '../ui/components';
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
 import { showAlert } from '../ui/dialog';
@@ -186,7 +187,7 @@ export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: st
               <Card style={{ borderColor: sel === o.service_id ? C.primary : C.line, borderWidth: sel === o.service_id ? 2 : 1, opacity: o.available ? 1 : 0.55 }}>
                 <View style={S.between}>
                   <View style={{ flex: 1 }}>
-                    <Text style={S.h2}>{lang === 'rw' ? o.name_rw : o.name_en}</Text>
+                    <Text style={S.h2}>{pick(lang, o, 'name')}</Text>
                     <Text style={S.muted}>{o.kind === 'abasare' ? t('ab.trip.yourcar') : `${o.capacity} ${t('opt.seats')}`}{o.pickup_eta_s ? ` · ${t('opt.eta')} ${fmtMin(o.pickup_eta_s)} ${t('common.min')}` : ''}</Text>
                     {!o.available ? <Text style={{ color: C.danger, fontSize: 13 }}>{t('opt.unavailable')}</Text> : null}
                   </View>
@@ -196,12 +197,12 @@ export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: st
             </Pressable>))}
           {opt?.fare ? <Card>
             <Text style={S.h2}>{t('opt.breakdown')}</Text>
-            {opt.fare.lines.map((l: any, i: number) => <View key={i} style={[S.between, { paddingVertical: 3 }]}><Text style={S.body}>{lang === 'rw' ? l.label_rw : l.label_en}</Text><Money n={l.amount} /></View>)}
+            {opt.fare.lines.map((l: any, i: number) => <View key={i} style={[S.between, { paddingVertical: 3 }]}><Text style={S.body}>{pick(lang, l, 'label')}</Text><Money n={l.amount} /></View>)}
             <View style={[S.between, { borderTopWidth: 1, borderTopColor: C.line, marginTop: 6, paddingTop: 6 }]}><Text style={[S.body, { fontWeight: '700' }]}>{t('opt.total')}</Text><Money n={opt.fare.total} style={{ fontWeight: '700', fontSize: 17 }} /></View>
             <Text style={[S.muted, { marginTop: 8 }]}>{params.abasare ? t('ab.fare.note') : t('opt.estimate') + (opt.route_source === 'estimate' ? ' ' + t('opt.route.estimate') : '')}</Text>
           </Card> : null}
           <View style={S.row}><View style={{ flex: 1 }}><Field value={promo} onChangeText={setPromo} placeholder={t('opt.promo')} autoCapitalize="characters" /></View><View style={{ width: 8 }} /><Btn kind="ghost" title={t('opt.apply')} onPress={() => { setApplied(promo.trim()); void load(promo.trim()); }} /></View>
-          {opt?.promo ? (opt.promo.discount ? <Banner kind="ok" text={`${t('opt.promo.ok')}: −${opt.promo.discount} RWF`} /> : <Banner kind="bad" text={`${t('opt.promo.bad')} (${opt.promo.error})`} />) : null}
+          {opt?.promo ? (opt.promo.discount ? <Banner kind="ok" text={`${t('opt.promo.ok')}: −${opt.promo.discount} RWF`} /> : <Banner kind="bad" text={t("opt.promo.bad")} />) : null}
           <Text style={[S.h2, { marginVertical: 8 }]}>{t('opt.pay')}</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             <Chip text={t('opt.cash')} on={!corp && method === 'cash'} onPress={() => { setCorp(null); setMethod('cash'); }} />
@@ -254,6 +255,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
       <Header title={title} onBack={() => nav.reset('home')} right={live ? <SosButton bookingId={b.id} /> : null} />
       <ScrollView contentContainerStyle={{ padding: 14 }} keyboardShouldPersistTaps="handled">
         {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
+        {STEP[st] != null ? <Stepper at={STEP[st]} /> : null}
         {(live || st === 'SEARCHING_DRIVER') ? <MapBox center={b.driver_location ?? b.pickup} markers={mapMarkers} height={220} zoom={14} /> : null}
         <View style={{ height: 12 }} />
 
@@ -266,7 +268,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
         {live && b.driver && b.abasare ? <Card>
           <Text style={S.muted}>{t('ab.trip.verify')}</Text>
           <View style={[S.row, { gap: 12, marginTop: 8 }]}>
-            {b.driver.photo_url ? <Image source={{ uri: API_URL + b.driver.photo_url }} style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.line }} accessibilityLabel="Driver photo" /> : <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.line }} />}
+            {b.driver.photo_url ? <Image source={{ uri: API_URL + b.driver.photo_url }} style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.line }} accessibilityLabel={t('a11y.driverphoto')} /> : <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.line }} />}
             <View style={{ flex: 1 }}><Text style={S.h2}>{b.driver.name}</Text>
               <Text style={S.muted}>{b.driver.rating_count > 0 ? `★ ${Number(b.driver.rating).toFixed(1)}` : t('ab.trip.new')} · {b.driver.abasare?.years_experience ?? '-'} {t('ab.trip.exp')}</Text>
               <Pill text={b.abasare.mode === 'hourly' ? `${t('ab.trip.hourly')} · ${b.abasare.hours} ${t('ab.h')}` : t('ab.trip.home')} tone="warn" /></View></View>
@@ -295,6 +297,8 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
     </View>
   );
 }
+
+const STEP: Record<string, number> = { REQUESTED: 0, SEARCHING_DRIVER: 0, SCHEDULED: 0, DRIVER_ASSIGNED: 1, DRIVER_ARRIVING: 1, DRIVER_ARRIVED: 2, AWAITING_PASSENGER_VERIFICATION: 2, IN_PROGRESS: 3, COMPLETED: 4, PAYMENT_PENDING: 4, PAYMENT_COMPLETED: 4 };
 
 function HandoverReview({ b, reload }: { b: any; reload: () => void }) {
   const { t, client } = useApp(); const { busy, run } = useAsync(); const [issue, setIssue] = useState<string | null>(null); const [note, setNote] = useState('');
@@ -333,7 +337,7 @@ function PayCard({ b, reload }: { b: any; reload: () => void }) {
       {momo ? <>
         {p?.status === 'PENDING' ? <Banner text={t('trip.pay.waiting')} /> : null}
         {p?.status === 'FAILED' ? <Banner kind="bad" text={t('trip.pay.failed')} /> : null}
-        {p?.simulated ? <Banner text="Test mode: this payment is simulated, not real money." /> : null}
+        {p?.simulated ? <Banner text={t('trip.test.sim')} /> : null}
         {p?.status !== 'PENDING' ? <><Field label={t('trip.pay.msisdn')} value={msisdn} onChangeText={setMsisdn} keyboardType="phone-pad" /><Btn title={t('trip.pay.momo')} onPress={start} loading={busy} /><View style={{ height: 8 }} /></> : null}
         {p?.status !== 'PENDING' ? <Btn kind="ghost" title={t('trip.pay.cash')} onPress={toCash} /> : null}
       </> : <>
@@ -345,14 +349,14 @@ function PayCard({ b, reload }: { b: any; reload: () => void }) {
 }
 
 function Done({ b }: { b: any }) {
-  const { t, outbox, nav, client } = useApp(); const [score, setScore] = useState(0); const [comment, setComment] = useState(''); const [sent, setSent] = useState(false);
+  const { t, lang, outbox, nav, client } = useApp(); const [score, setScore] = useState(0); const [comment, setComment] = useState(''); const [sent, setSent] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
   useEffect(() => { client.get(`/bookings/${b.id}/receipt`).then(setReceipt).catch(() => {}); }, [client, b.id]);
   const send = async () => { await outbox.enqueue({ id: 'rate-' + b.id, kind: 'rating', path: `/bookings/${b.id}/ratings`, body: { score, comment: comment || undefined }, key: 'rate-' + b.id + '-passenger', treatConflictAsDone: true }); void outbox.flush(); setSent(true); };
   return (
     <Card>
       <Pill text={t('trip.pay.done')} /><Money n={b.final_fare} style={[S.h1, { marginVertical: 6 }]} />
-      {receipt ? <Text style={S.muted}>{t('trip.receipt')} {receipt.receipt_no} · {receipt.payment?.method}</Text> : null}
+      {receipt ? <Text style={S.muted}>{t('trip.receipt')} {receipt.receipt_no} · {label(lang, 'pm', receipt.payment?.method)}</Text> : null}
       {sent ? <Text style={[S.h2, { textAlign: 'center', marginVertical: 12 }]}>{t('trip.rate.thanks')}</Text> : <>
         <Text style={[S.h2, { textAlign: 'center', marginTop: 12 }]}>{t('trip.rate')}</Text><Stars v={score} set={setScore} />
         <Field value={comment} onChangeText={setComment} placeholder={t('trip.rate.comment')} multiline /><Btn title={t('trip.rate.send')} onPress={send} disabled={!score} /></>}

@@ -19,7 +19,7 @@ export async function meRoutes(app: FastifyInstance) {
     const b = parse(z.object({
       display_name: z.string().min(1).max(80).optional(),
       email: z.string().email().optional(),
-      preferred_language: z.enum(['rw', 'en', 'fr', 'sw']).optional(),
+      preferred_language: z.enum(['rw', 'fr', 'en']).optional(),
       notif_prefs: z.object({ push: z.boolean(), sms: z.boolean(), email: z.boolean(), marketing: z.boolean() }).partial().optional(),
     }).strict(), req.body);
     const cur = await q1<any>('select notif_prefs from users where id=$1', [req.auth!.id]);

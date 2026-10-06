@@ -10,12 +10,12 @@ import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spi
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
 import { showAlert } from '../ui/dialog';
+import { DICTS, label, type TKey } from '../lib/i18n';
 import { SosButton } from './shared';
 import { appendFile, pickPhoto } from '../lib/upload';
 import { Image } from 'react-native';
 import { API_URL } from '../config';
 
-const DOC_LABEL: Record<string, string> = { national_id: 'National ID', driving_licence: 'Driving licence', profile_photo: 'Profile photo', vehicle_registration: 'Vehicle registration', insurance: 'Insurance', inspection: 'Inspection / roadworthiness', transport_permit: 'Transport permit', police_clearance: 'Police clearance certificate' };
 const VTYPES = ['moto', 'car', 'minivan'] as const;
 
 export function DriverHome() {
@@ -51,7 +51,7 @@ function Onboarding({ status, reload }: { status: any; reload: () => void }) {
   const need = (status.requirements ?? []).filter((r: any) => r.mandatory || true);
   return (
     <View style={S.screen}><Header title={t('drv.app.title')} onBack={() => setMode('passenger')} />
-      <Screen>
+      <Screen embedded>
         <Card><Text style={S.muted}>{t('drv.status')}</Text><Pill tone={p.status === 'REJECTED' || p.status === 'SUSPENDED' ? 'bad' : p.status === 'APPROVED' ? 'ok' : 'warn'} text={t(('drv.st.' + p.status) as any)} />{p.status_reason ? <Text style={[S.body, { marginTop: 6 }]}>{p.status_reason}</Text> : null}</Card>
         {status.fleet_invites?.length ? <Card><Text style={S.h2}>Fleet invitation</Text>{status.fleet_invites.map((i: any) => <View key={i.id} style={[S.between, { marginTop: 6 }]}><Text style={S.body}>{i.name}</Text><Btn title={t('common.yes')} onPress={() => run(async () => { await client.post('/drivers/me/fleet/accept', { invite_id: i.id }); reload(); })} /></View>)}</Card> : null}
         {editable && !showRide && !showAb ? <Card><Text style={S.h2}>{t('drv.become')}</Text><Text style={[S.muted, { marginBottom: 10 }]}>{t('ab.apply.sub')}</Text>
@@ -86,7 +86,7 @@ function Onboarding({ status, reload }: { status: any; reload: () => void }) {
 }
 
 function DocRow({ req, docs, reload, editable }: { req: any; docs: any[]; reload: () => void; editable?: boolean }) {
-  const { t, client, say } = useApp(); const { busy, run } = useAsync(); const [open, setOpen] = useState(false); const [expiry, setExpiry] = useState('');
+  const { t, lang, client, say } = useApp(); const { busy, run } = useAsync(); const [open, setOpen] = useState(false); const [expiry, setExpiry] = useState('');
   const last = docs[0];
   const upload = (uri: string, name: string, type: string) => run(async () => {
     const fd = new FormData(); fd.append('doc_type', req.doc_type); if (expiry) fd.append('expiry_date', expiry);
@@ -100,8 +100,8 @@ function DocRow({ req, docs, reload, editable }: { req: any; docs: any[]; reload
   const tone = !last ? 'warn' : last.review_status === 'approved' ? 'ok' : last.review_status === 'pending' ? 'warn' : 'bad';
   return (
     <View style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line }}>
-      <View style={S.between}><View style={{ flex: 1 }}><Text style={[S.body, { fontWeight: '600' }]}>{DOC_LABEL[req.doc_type] ?? req.doc_type}{req.mandatory ? ' *' : ''}</Text>
-        <Pill tone={tone as any} text={last ? last.review_status + (last.expiry_date ? ` · ${String(last.expiry_date).slice(0, 10)}` : '') : '—'} />{last?.review_note ? <Text style={{ color: C.danger, marginTop: 4 }}>{last.review_note}</Text> : null}</View>
+      <View style={S.between}><View style={{ flex: 1 }}><Text style={[S.body, { fontWeight: '600' }]}>{label(lang, 'doc', req.doc_type)}{req.mandatory ? ' *' : ''}</Text>
+        <Pill tone={tone as any} text={last ? label(lang, 'ds', last.review_status) + (last.expiry_date ? ` · ${String(last.expiry_date).slice(0, 10)}` : '') : '—'} />{last?.review_note ? <Text style={{ color: C.danger, marginTop: 4 }}>{last.review_note}</Text> : null}</View>
         {editable ? <Btn kind="ghost" title={last ? t('drv.replace') : t('drv.upload')} onPress={() => setOpen(!open)} /> : null}</View>
       {open ? <View style={{ marginTop: 8 }}>
         {req.requires_expiry ? <Field label={t('drv.expiry')} value={expiry} onChangeText={setExpiry} placeholder="2028-12-31" maxLength={10} /> : null}
@@ -113,7 +113,7 @@ function DocRow({ req, docs, reload, editable }: { req: any; docs: any[]; reload
 
 // ---------------------------------------------------------------- working (online/offline, offers, trip)
 function Working({ status, reload }: { status: any; reload: () => void }) {
-  const { t, client, setMode, nav, online, say } = useApp(); const { busy, run } = useAsync();
+  const { t, lang, client, setMode, nav, online, say } = useApp(); const { busy, run } = useAsync();
   const [isOnline, setIsOnline] = useState<boolean>(!!status.profile.is_online); const [consent, setConsent] = useState(false); const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [tab, setTab] = useState<'work' | 'earn'>('work');
   const absPerm = status.abasare?.permission; const rideOk = !!status.permission?.can_work; const absOk = !!absPerm?.can_work;
@@ -144,6 +144,13 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
   const active = usePoll(() => client.get('/bookings/active?role=driver'), 3000, [isOnline]);
   const offers = usePoll(() => client.get('/drivers/me/offers'), 3000, [isOnline], isOnline && !active.data?.booking);
   const perm = status.permission; const trip = active.data?.booking;
+  const reasonText = (r: string) => { const k = `rs.${r}`; return k in DICTS[lang] ? t(k as TKey) : r.startsWith('account_') ? t('rs.other') : t('rs.other'); };
+  const blockedText = () => {
+    const ps = [(status.vehicle || status.abasare?.status === 'none') ? perm : null, status.abasare?.status !== 'none' ? absPerm : null].filter(Boolean) as any[];
+    const reasons = [...new Set(ps.flatMap((p) => p.reasons ?? []))].map(reasonText);
+    const docs = [...new Set(ps.flatMap((p) => [...(p.expired_documents ?? []), ...(p.missing_documents ?? [])]))].map((d: string) => label(lang, 'doc', d));
+    return `${t('drv.notallowed')}: ${[...reasons, ...docs].join(' · ')}`;
+  };
 
   return (
     <View style={S.screen}>
@@ -158,10 +165,10 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
             {(rideOk && absOk) || absOk ? <View style={{ marginTop: 10 }}><Text style={S.muted}>{t('ab.accepting')}</Text><View style={{ flexDirection: 'row', marginTop: 6 }}>
               {rideOk ? <Chip text={t('ab.accepting.ride')} on={accepting.includes('ride')} onPress={() => setAccepting((a) => (a.includes('ride') ? (a.length > 1 ? a.filter((x) => x !== 'ride') : a) : [...a, 'ride']))} /> : null}
               {absOk ? <Chip text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => setAccepting((a) => (a.includes('abasare') ? (a.length > 1 ? a.filter((x) => x !== 'abasare') : a) : [...a, 'abasare']))} /> : null}</View></View> : null}
-            {!rideOk && !absOk ? <Banner kind="bad" text={`${t('drv.notallowed')}: ${[...(status.vehicle || status.abasare?.status === 'none' ? perm.reasons : []), ...(status.abasare?.status !== 'none' ? absPerm?.reasons ?? [] : [])].join(', ')}${[...perm.expired_documents, ...(absPerm?.expired_documents ?? [])].length ? ' · ' + [...perm.expired_documents, ...(absPerm?.expired_documents ?? [])].join(', ') : ''}${[...perm.missing_documents, ...(absPerm?.missing_documents ?? [])].length ? ' · ' + [...perm.missing_documents, ...(absPerm?.missing_documents ?? [])].join(', ') : ''}`} /> : null}
+            {!rideOk && !absOk ? <Banner kind="bad" text={blockedText()} /> : null}
           </Card>
           {!consent && (rideOk || absOk) ? <Card><Text style={S.h2}>{t('drv.location.title')}</Text><Text style={[S.body, { marginVertical: 8 }]}>{t('drv.location.body')}</Text><Btn title={t('drv.agree')} onPress={async () => { await kv.set('rm_drv_loc_consent', '1'); try { await client.post('/users/me/consents', { kind: 'background_location', version: 'v1', granted: true }); } catch { /* ok */ } setConsent(true); }} /></Card> : null}
-          {status.documents.filter((d: any) => d.expiry_date && new Date(d.expiry_date).getTime() - Date.now() < 30 * 86400000 && d.review_status === 'approved').map((d: any) => <Banner key={d.id} text={`${t('drv.docs.expiring')}: ${DOC_LABEL[d.doc_type] ?? d.doc_type} (${String(d.expiry_date).slice(0, 10)})`} />)}
+          {status.documents.filter((d: any) => d.expiry_date && new Date(d.expiry_date).getTime() - Date.now() < 30 * 86400000 && d.review_status === 'approved').map((d: any) => <Banner key={d.id} text={`${t('drv.docs.expiring')}: ${label(lang, 'doc', d.doc_type)} (${String(d.expiry_date).slice(0, 10)})`} />)}
           {trip ? <ActiveTrip trip={trip} pos={pos} reload={active.reload} /> : isOnline ? <>
             {pos ? <MapBox center={pos} markers={[{ ...pos, label: '', color: '#1A5FB4' }]} height={180} zoom={14} /> : null}
             <Text style={[S.h2, { marginVertical: 10 }]}>{t('drv.offers')}</Text>
@@ -175,13 +182,13 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
 }
 
 function OfferCard({ o, done }: { o: any; done: () => void }) {
-  const { t, client, say } = useApp(); const { busy, run } = useAsync(); const [left, setLeft] = useState(Math.max(0, Math.round((new Date(o.expires_at).getTime() - Date.now()) / 1000))); const [declining, setDeclining] = useState(false);
+  const { t, lang, client, say } = useApp(); const { busy, run } = useAsync(); const [left, setLeft] = useState(Math.max(0, Math.round((new Date(o.expires_at).getTime() - Date.now()) / 1000))); const [declining, setDeclining] = useState(false);
   useEffect(() => { const i = setInterval(() => setLeft(Math.max(0, Math.round((new Date(o.expires_at).getTime() - Date.now()) / 1000))), 1000); return () => clearInterval(i); }, [o.expires_at]);
   const accept = () => run(async () => { try { await client.post(`/bookings/${o.booking_id}/accept`); done(); } catch (e: any) { if (['offer_no_longer_available', 'offer_expired', 'offer_not_found'].includes(e?.code)) { say(e.message); done(); } else throw e; } });
   const reject = (reason: string) => run(async () => { await client.post(`/bookings/${o.booking_id}/reject`, { reason }); done(); });
   return (
     <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
-      <View style={S.between}><Text style={S.muted}>{t('drv.expires')} {left}s</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={o.payment_method === 'cash' ? 'CASH' : 'MoMo'} tone="warn" /></View></View>
+      <View style={S.between}><Text style={S.muted}>{t('drv.expires')} {left}{t('unit.s')}</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={label(lang, 'pm', o.payment_method)} tone="warn" /></View></View>
       {o.hire_mode ? <Text style={[S.body, { fontWeight: '700', marginTop: 6 }]}>{o.hire_mode === 'hourly' ? `${t('ab.offer.hourly')} · ${o.hours_booked} ${t('ab.h')}` : t('ab.offer.home')} · {t(('ab.cls.' + o.cv_class) as any)}, {o.cv_transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')}</Text> : null}
       <Text style={[S.muted, { marginTop: 6 }]}>{t('drv.earn')}</Text><Money n={o.driver_net} style={{ fontSize: 34, fontWeight: '800', color: C.primary }} />
       <Text style={S.body}>{t('drv.pickupin')}: {(o.distance_m / 1000).toFixed(1)} km · {Math.max(1, Math.round(o.eta_s / 60))} {t('common.min')}</Text>
@@ -196,7 +203,7 @@ function OfferCard({ o, done }: { o: any; done: () => void }) {
 }
 
 function ActiveTrip({ trip, pos, reload }: { trip: any; pos: { lat: number; lng: number } | null; reload: () => void }) {
-  const { t, client, say, nav } = useApp(); const { busy, run } = useAsync(); const [pin, setPin] = useState(''); const [cash, setCash] = useState(String(Math.round(trip.final_fare ?? trip.estimated_fare ?? 0)));
+  const { t, lang, client, say, nav } = useApp(); const { busy, run } = useAsync(); const [pin, setPin] = useState(''); const [cash, setCash] = useState(String(Math.round(trip.final_fare ?? trip.estimated_fare ?? 0)));
   const st: string = trip.status; const act = (path: string, body?: unknown) => run(async () => { try { await client.post(`/bookings/${trip.id}/${path}`, body ?? {}); } finally { reload(); } });
   const nav_ = (lat: number, lng: number) => Linking.openURL(`geo:${lat},${lng}?q=${lat},${lng}`).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`));
   useEffect(() => { if (trip.payment?.outstanding != null && trip.payment.method === 'cash') setCash(String(Math.round(trip.payment.outstanding))); }, [trip.payment?.outstanding]); // eslint-disable-line
@@ -213,7 +220,7 @@ function ActiveTrip({ trip, pos, reload }: { trip: any; pos: { lat: number; lng:
   });
   return (
     <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
-      <View style={S.between}><Text style={S.h2}>{trip.ref}</Text><Pill text={st.replace(/_/g, ' ')} tone="warn" /></View>
+      <View style={S.between}><Text style={S.h2}>{trip.ref}</Text><Pill text={label(lang, 'bs', st)} tone="warn" /></View>
       <Text style={S.body}>{t('drv.passenger')}: {trip.passenger?.first_name}</Text>
       {trip.estimated_driver_net != null ? <Text style={S.muted}>{t('drv.earn')}: {trip.estimated_driver_net} RWF</Text> : null}
       {ab ? <View style={{ backgroundColor: C.warnBg, borderRadius: 10, padding: 10, marginVertical: 6 }}>
@@ -275,7 +282,7 @@ function HandoverForm({ trip, phase, reload }: { trip: any; phase: 'pickup' | 'd
 
 // ---------------------------------------------------------------- earnings & payouts
 export function Earnings() {
-  const { t, client } = useApp(); const { busy, run } = useAsync(); const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day'); const [amt, setAmt] = useState('');
+  const { t, lang, client } = useApp(); const { busy, run } = useAsync(); const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day'); const [amt, setAmt] = useState('');
   const e = usePoll(() => client.get(`/drivers/me/earnings?period=${period}`), 20000, [period]); const w = usePoll(() => client.get('/drivers/me/wallet'), 20000); const po = usePoll(() => client.get('/drivers/me/payouts'), 20000);
   const d = e.data; const bal = d?.balance ?? w.data?.balance;
   return (
@@ -291,7 +298,7 @@ export function Earnings() {
         {bal.owed_to_platform > 0 ? <View style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{t('drv.owed')}</Text><Money n={bal.owed_to_platform} style={{ color: C.danger, fontWeight: '700' }} /></View> : null}
         <Field label={t('drv.payout.amount')} value={amt} onChangeText={(x) => setAmt(x.replace(/\D/g, ''))} keyboardType="number-pad" />
         <Btn title={t('drv.payout.request')} loading={busy} disabled={!Number(amt)} onPress={() => run(async () => { await client.post('/drivers/me/payouts', { amount: Number(amt) }); setAmt(''); w.reload(); po.reload(); e.reload(); })} /></Card> : null}
-      {po.data?.payouts?.length ? <Card><Text style={S.h2}>{t('drv.payout.history')}</Text>{po.data.payouts.map((p: any) => <View key={p.id} style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{new Date(p.requested_at).toLocaleDateString('en-GB')}</Text><Money n={p.amount} /><Pill tone={p.status === 'PAID' ? 'ok' : p.status === 'REJECTED' ? 'bad' : 'warn'} text={p.status} /></View>)}</Card> : null}
+      {po.data?.payouts?.length ? <Card><Text style={S.h2}>{t('drv.payout.history')}</Text>{po.data.payouts.map((p: any) => <View key={p.id} style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{new Date(p.requested_at).toLocaleDateString('en-GB')}</Text><Money n={p.amount} /><Pill tone={p.status === 'PAID' ? 'ok' : p.status === 'REJECTED' ? 'bad' : 'warn'} text={label(lang, 'po', p.status)} /></View>)}</Card> : null}
       {w.data?.transactions?.length ? <Card><Text style={S.h2}>{t('drv.activity')}</Text>{w.data.transactions.slice(0, 12).map((x: any) => <View key={x.id} style={[S.between, { paddingVertical: 3 }]}><Text style={[S.muted, { flex: 1 }]} numberOfLines={1}>{x.memo}</Text><Text style={{ color: x.credit ? C.primary : C.danger }}>{x.credit ? '+' + x.credit : '−' + x.debit}</Text></View>)}</Card> : null}
     </View>
   );

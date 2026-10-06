@@ -138,7 +138,7 @@ test('Kinyarwanda is the default language and notification templates render in i
   const { notify } = await import('../src/services/notify.ts');
   await notify(u.id, 'booking_confirmed', { ref: 'RM-TEST' });
   const n = await t.api('GET', '/notifications', { token: u.token });
-  assert.equal(n.json.notifications[0].body, 'Turimo gushaka umushoferi wa RM-TEST.');
+  assert.equal(n.json.notifications[0].body, 'Turimo gushakira umushoferi urugendo RM-TEST.');
   await t.api('PATCH', '/users/me', { token: u.token, body: { preferred_language: 'en' } });
   await notify(u.id, 'booking_confirmed', { ref: 'RM-TEST2' });
   const n2 = await t.api('GET', '/notifications', { token: u.token });

@@ -21,6 +21,36 @@ const SERVICES = [
   ['abasare_hourly', 'Abasare: driver by the hour', 'Abasare: umushoferi ku isaha', ['car', 'suv', 'minivan', 'pickup', 'moto'], 1, false, 4, 'Your own car', 1, true, 10],
 ] as const;
 
+// French names + descriptions (en/rw/fr) for the catalogue. Applied only where empty, so admin edits survive re-seeding.
+const SERVICE_TEXT: Record<string, [name_fr: string, d_en: string, d_rw: string, d_fr: string]> = {
+  moto: ['Moto', 'Quick and affordable motorbike ride for one passenger.', 'Urugendo rwihuse kandi ruhendutse kuri moto ku muntu umwe.', 'Course rapide et économique en moto pour un passager.'],
+  standard: ['Voiture standard', 'Everyday car ride for up to 4 passengers.', 'Urugendo rwa buri munsi mu modoka ku bagenzi bagera kuri 4.', 'Course quotidienne en voiture pour jusqu\'à 4 passagers.'],
+  comfort: ['Voiture confort', 'A more comfortable car for up to 4 passengers.', 'Imodoka yisanzuye kurushaho ku bagenzi bagera kuri 4.', 'Une voiture plus confortable pour jusqu\'à 4 passagers.'],
+  family: ['Famille / groupe', 'A larger vehicle for families and groups of up to 6.', 'Imodoka nini ku miryango no ku matsinda agera ku bantu 6.', 'Un véhicule plus grand pour les familles et les groupes jusqu\'à 6 personnes.'],
+  airport: ['Transfert aéroport', 'Fixed pickup or drop-off at Kigali International Airport.', 'Kujyanwa cyangwa kuvanwa ku kibuga cy\'indege mpuzamahanga cya Kigali.', 'Prise en charge ou dépose à l\'aéroport international de Kigali.'],
+  intercity: ['Course interurbaine', 'Rides between Kigali and other towns.', 'Ingendo hagati ya Kigali n\'indi mijyi.', 'Courses entre Kigali et les autres villes.'],
+  goods: ['Pick-up / petites marchandises', 'A pickup truck for small loads.', 'Imodoka ya pickup yo gutwara ibintu bito.', 'Un pick-up pour les petites charges.'],
+  cargo: ['Camion / cargo', 'A truck for heavy or bulky cargo.', 'Ikamyo yo gutwara imizigo iremereye cyangwa minini.', 'Un camion pour les marchandises lourdes ou volumineuses.'],
+  abasare: ['Abasare : ramenez-moi chez moi', 'A verified driver drives you home in your own car.', 'Umushoferi wagenzuwe agutwara mu modoka yawe akugeza mu rugo.', 'Un chauffeur vérifié vous ramène chez vous avec votre propre voiture.'],
+  abasare_hourly: ['Abasare : chauffeur à l\'heure', 'Hire a verified driver by the hour to drive your own car.', 'Kodesha umushoferi wagenzuwe ku isaha agutwarire imodoka yawe.', 'Louez les services d\'un chauffeur vérifié à l\'heure pour conduire votre voiture.'],
+};
+const PLACE_FR: Record<string, string> = {
+  'Kigali International Airport (Kanombe)': 'Aéroport international de Kigali (Kanombe)',
+  'Nyabugogo Bus Park': 'Gare routière de Nyabugogo',
+  'Kigali Convention Centre': 'Kigali Convention Centre',
+  'Kigali Heights': 'Kigali Heights',
+  'Kimironko Market': 'Marché de Kimironko',
+  'Remera Giporoso': 'Remera Giporoso',
+  'Downtown / Kigali City Tower': 'Centre-ville / Kigali City Tower',
+  'Kacyiru': 'Kacyiru',
+  'Nyamirambo': 'Nyamirambo',
+  'Gisozi Genocide Memorial': 'Mémorial du génocide de Gisozi',
+  'CHUK Hospital': 'Hôpital CHUK',
+  'King Faisal Hospital': 'Hôpital King Faisal',
+  'Amahoro Stadium': 'Stade Amahoro',
+  'Kicukiro Centre': 'Centre de Kicukiro',
+};
+
 // Placeholder tariffs (ASSUMPTION: must be replaced by the approved/regulated fare schedule before launch).
 const RULES: Record<string, Partial<Record<string, number>>> = {
   moto: { base_fare: 400, per_km: 250, per_min: 20, minimum_fare: 800, booking_fee: 0, wait_per_min: 20 },
@@ -88,6 +118,8 @@ export async function seedCore() {
     await q(`insert into zone_services(zone_id,service_id,enabled) values ('kigali',$1,$2) on conflict do nothing`, [s[0], s[9]]);
   }
   await q("update service_categories set kind='abasare' where id like 'abasare%'");
+  for (const [id, t] of Object.entries(SERVICE_TEXT))
+    await q(`update service_categories set name_fr=coalesce(name_fr,$2), description_en=coalesce(description_en,$3), description_rw=coalesce(description_rw,$4), description_fr=coalesce(description_fr,$5) where id=$1`, [id, ...t]);
   for (const [sid, r] of Object.entries(RULES)) {
     const exists = await q1('select 1 from pricing_rules where service_id=$1', [sid]);
     if (exists) continue;
@@ -125,6 +157,7 @@ export async function seedCore() {
     if (!(await q1('select 1 from places where name_en=$1', [p[0]])))
       await q("insert into places(name_en,name_rw,lat,lng,zone_id,designated_pickup) values ($1,$2,$3,$4,'kigali',$5)", [p[0], p[1], p[2], p[3], p[4]]);
   }
+  for (const [en, fr] of Object.entries(PLACE_FR)) await q('update places set name_fr=$2 where name_en=$1 and name_fr is null', [en, fr]);
   for (const [c, n, t] of LEDGER) await q('insert into ledger_accounts values ($1,$2,$3) on conflict do nothing', [c, n, t]);
   for (const [k, e, d] of FLAGS) await q('insert into feature_flags(key,enabled,description) values ($1,$2,$3) on conflict do nothing', [k, e, d]);
   for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {

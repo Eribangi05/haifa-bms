@@ -4,7 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { API_URL } from '../config';
 import { Client, ApiError, createClient, createOutbox, Outbox } from './net';
 import { getDeviceId, kv, loadJson, saveJson, tokenStore } from './storage';
-import { Lang, TKey, translate } from './i18n';
+import { Lang, TKey, isLang, translate } from './i18n';
 
 export type Route = { name: string; params?: any };
 export type Me = { id: string; phone: string; display_name?: string | null; email?: string | null; preferred_language: string; roles: string[]; referral_code?: string; notif_prefs?: any };
@@ -58,7 +58,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback((k: TKey, v?: Record<string, string | number>) => translate(lang, k, v), [lang]);
 
   const refreshMe = useCallback(async () => {
-    try { const u = await client.get<Me>('/users/me'); setMe(u); await saveJson('rm_me', u); if (u.preferred_language === 'en' || u.preferred_language === 'rw') { langRef.current = u.preferred_language; setLangState(u.preferred_language); } }
+    try { const u = await client.get<Me>('/users/me'); setMe(u); await saveJson('rm_me', u); if (isLang(u.preferred_language)) { langRef.current = u.preferred_language; setLangState(u.preferred_language); } }
     catch (e) { if (e instanceof ApiError && e.isNetwork) { const cached = await loadJson<Me | null>('rm_me', null); if (cached) setMe(cached); } else throw e; }
   }, [client]);
 
@@ -75,7 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       deviceRef.current = await getDeviceId();
-      const l = (await kv.get('rm_lang')) as Lang | null; if (l === 'en' || l === 'rw') { langRef.current = l; setLangState(l); }
+      const l = (await kv.get('rm_lang')) as Lang | null; if (isLang(l)) { langRef.current = l; setLangState(l); }
       const m = (await kv.get('rm_mode')) as 'passenger' | 'driver' | null;
       try { setCfg(await client.get<AppConfig>('/config')); } catch { /* offline */ }
       const tk = await tokenStore.get();

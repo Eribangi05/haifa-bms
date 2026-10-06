@@ -126,7 +126,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
          JSON.stringify(cv ? { customer_vehicle_id: cv.id, vehicle_class: cv.vehicle_class, transmission: cv.transmission, hours: inp.abasare?.hours ?? null, hire_mode: inp.abasare?.hours != null ? 'hourly' : 'point_to_point' } : {})]))!.id;
     }
     options.push({
-      service_id: s.id, kind: s.kind, hours: inp.abasare?.hours ?? null, name_en: s.name_en, name_rw: s.name_rw, capacity: s.passenger_capacity, luggage: s.luggage,
+      service_id: s.id, kind: s.kind, hours: inp.abasare?.hours ?? null, name_en: s.name_en, name_rw: s.name_rw, name_fr: s.name_fr ?? s.name_en, capacity: s.passenger_capacity, luggage: s.luggage,
       available, reason, quote_id: quoteId, fare: bd, distance_m: rt.distance_m, duration_s: rt.duration_s, route_source: rt.source,
       pickup_eta_s: near.length ? Math.round((Math.min(...near) * 1.5) / 1000 / 24 * 3600) : null, nearby_drivers: scheduled ? undefined : near.length,
       promo: promo ? (promo.ok ? { code: promo.code, discount: promo.discount } : { error: promo.reason }) : undefined,
@@ -350,7 +350,7 @@ export async function cancelBooking(actorId: string, bookingId: string, reason: 
     return { row, driverId: null };
   });
   if (who === 'driver') await startSearch(bookingId);
-  else await notify(res.row.passenger_id, 'booking_cancelled', { ref: res.row.ref, reason: res.row.cancel_fee ? `Cancellation fee ${res.row.cancel_fee} RWF applies.` : '' });
+  else await notify(res.row.passenger_id, res.row.cancel_fee ? 'booking_cancelled_fee' : 'booking_cancelled', { ref: res.row.ref, fee: res.row.cancel_fee, reason: '' });
   return (await q1<BookingRow>('select * from bookings where id=$1', [bookingId]))!;
 }
 
@@ -422,7 +422,7 @@ export async function noShow(driverId: string, bookingId: string) {
   return tx(async (c) => {
     const b = await ownTrip(c, driverId, bookingId);
     if (!b.arrived_at || !['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) throw conflict('invalid_state', 'Arrive at pickup first');
-    if ((Date.now() - new Date(b.arrived_at).getTime()) / 60000 < wait) throw conflict('wait_longer', `Wait at least ${wait} minutes before reporting a no-show`);
+    if ((Date.now() - new Date(b.arrived_at).getTime()) / 60000 < wait) throw conflict('wait_longer', `Wait at least ${wait} minutes before reporting a no-show`, { minutes: wait });
     return transition(c, bookingId, 'CANCELLED_BY_PASSENGER', { id: driverId, role: 'driver' },
       { reason: 'passenger_no_show', patch: { cancelled_at: new Date(), cancel_by: 'passenger_no_show', cancel_reason: 'passenger_no_show', cancel_fee: fee } });
   });

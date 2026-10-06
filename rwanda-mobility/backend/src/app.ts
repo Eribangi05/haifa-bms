@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { ZodError } from 'zod';
 import { config, isProd } from './config.js';
 import { AppError } from './errors.js';
+import { reqLang, localizeError } from './services/errmsg.js';
 import { pool } from './db.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
@@ -49,14 +50,19 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     if (req.url.startsWith('/api/')) reply.header('cache-control', 'no-store');
   });
 
+  const langOf = (req: { headers: Record<string, any> }) => reqLang(req.headers['accept-language']);
   app.setErrorHandler((err: any, req, reply) => {
-    if (err instanceof AppError) return reply.code(err.status).send({ error: { code: err.code, message: err.message, details: err.details } });
-    if (err instanceof ZodError) return reply.code(400).send({ error: { code: 'validation_error', message: 'Invalid input' } });
-    if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: { code: err.code ?? 'bad_request', message: err.message } });
+    const lang = langOf(req);
+    if (err instanceof AppError) return reply.code(err.status).send({ error: { code: err.code, message: localizeError(err.code, lang, err.message, err.details), details: err.details } });
+    if (err instanceof ZodError) return reply.code(400).send({ error: { code: 'validation_error', message: localizeError('validation_error', lang, 'Invalid input') } });
+    if (err.statusCode && err.statusCode < 500) {
+      const code = err.statusCode === 429 ? 'rate_limited' : (err.code ?? 'bad_request');
+      return reply.code(err.statusCode).send({ error: { code: err.code ?? (err.statusCode === 429 ? 'rate_limited' : 'bad_request'), message: localizeError(code, lang, err.message) } });
+    }
     req.log.error({ err, reqId: req.id }, 'unhandled error');
-    return reply.code(500).send({ error: { code: 'internal_error', message: 'Something went wrong. Reference: ' + req.id } });
+    return reply.code(500).send({ error: { code: 'internal_error', message: localizeError('internal_error', lang, 'Something went wrong.') + ({ en: ' Reference: ', rw: ' Nimero y\'ikibazo: ', fr: ' Référence : ' } as const)[lang] + req.id } });
   });
-  app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: { code: 'not_found', message: 'Not found' } }));
+  app.setNotFoundHandler((req, reply) => reply.code(404).send({ error: { code: 'not_found', message: localizeError('not_found', langOf(req), 'Not found') } }));
 
   app.get('/health', async () => ({ ok: true, time: new Date().toISOString() }));
   app.get('/ready', async (_r, reply) => {

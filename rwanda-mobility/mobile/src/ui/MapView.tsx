@@ -4,6 +4,7 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { C } from './theme';
 import { MAP_HTML } from './mapHtml';
 
+import { useApp } from '../lib/app';
 export type Marker = { lat: number; lng: number; label?: string; color?: string };
 type Props = {
   center: { lat: number; lng: number }; zoom?: number; markers?: Marker[]; pin?: { lat: number; lng: number } | null;
@@ -16,6 +17,7 @@ type Props = {
 
 
 export function MapBox({ center, zoom, markers, pin, onPin, onTap, zones, height = 280, onStatus }: Props) {
+  const { t } = useApp();
   const ref = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
   const [ok, setOk] = useState(true);
@@ -41,7 +43,7 @@ export function MapBox({ center, zoom, markers, pin, onPin, onTap, zones, height
     <View style={{ height: height as number, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: C.line, backgroundColor: '#E7EEE9' }}>
       <WebView ref={ref} source={{ html: MAP_HTML, baseUrl: 'https://localhost' }} onMessage={onMsg} originWhitelist={['*']} javaScriptEnabled domStorageEnabled
         onError={() => { setOk(false); onStatus?.(false); }} onHttpError={() => undefined} style={{ backgroundColor: 'transparent' }} />
-      {!ok ? <View style={{ position: 'absolute', top: 8, left: 8, right: 8, backgroundColor: C.warnBg, padding: 8, borderRadius: 8 }}><Text style={{ color: C.warn, fontSize: 12 }}>Map unavailable. Use landmarks or search.</Text></View> : null}
+      {!ok ? <View style={{ position: 'absolute', top: 8, left: 8, right: 8, backgroundColor: C.warnBg, padding: 8, borderRadius: 8 }}><Text style={{ color: C.warn, fontSize: 12 }}>{t('map.unavailable')}</Text></View> : null}
     </View>
   );
 }

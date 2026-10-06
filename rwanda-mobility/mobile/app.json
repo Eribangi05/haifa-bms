@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Abasare",
-    "slug": "rwanda-mobility",
-    "scheme": "rwandamobility",
-    "version": "0.1.0",
+    "slug": "abasare",
+    "scheme": "abasare",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,11 +14,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "rw.mobility.app"
+      "bundleIdentifier": "rw.abasare.app"
     },
     "android": {
-      "package": "rw.mobility.app",
-      "versionCode": 1,
+      "package": "rw.abasare.app",
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
