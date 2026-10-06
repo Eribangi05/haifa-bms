@@ -2,8 +2,8 @@
 // Keys: {{var}} placeholders. Never put payment credentials or document content in a template.
 export const DEFAULT_TEMPLATES: Record<string, Record<string, { title: string; body: string }>> = {
   otp: {
-    en: { title: 'Verification code', body: 'Your Rwanda Mobility code is {{code}}. It expires in {{minutes}} minutes. Never share it.' },
-    rw: { title: 'Kode yo kwemeza', body: 'Kode yawe ya Rwanda Mobility ni {{code}}. Irarangira mu minota {{minutes}}. Ntuyihe undi muntu.' },
+    en: { title: 'Verification code', body: 'Your Abasare code is {{code}}. It expires in {{minutes}} minutes. Never share it.' },
+    rw: { title: 'Kode yo kwemeza', body: 'Kode yawe ya Abasare ni {{code}}. Irarangira mu minota {{minutes}}. Ntuyihe undi muntu.' },
   },
   booking_confirmed: {
     en: { title: 'Booking received', body: 'We are finding a driver for booking {{ref}}.' },

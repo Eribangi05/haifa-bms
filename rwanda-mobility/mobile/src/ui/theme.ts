@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native';
-// Rwanda-inspired palette (green hills, sunshine, sky) - original identity, configurable here.
+// Abasare brand palette (logo navy, gold, Rwanda green accents) - original identity, configurable here.
 export const C = {
-  primary: '#00704A', primaryDark: '#004D33', gold: '#F2B705', sky: '#1A5FB4',
-  bg: '#F3F6F4', card: '#FFFFFF', ink: '#14281D', muted: '#5B6D63', line: '#DBE4DE',
+  primary: '#0B3A9E', primaryDark: '#082B75', gold: '#F5B700', sky: '#1A5FB4',
+  bg: '#F3F6FB', card: '#FFFFFF', ink: '#0F1B3D', muted: '#5A6685', line: '#DAE1EF',
   danger: '#C0392B', dangerBg: '#FDECEA', warn: '#8A6500', warnBg: '#FFF4CC', okBg: '#E3F4EC',
 };
 export const S = StyleSheet.create({

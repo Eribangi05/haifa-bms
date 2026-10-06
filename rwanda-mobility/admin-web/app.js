@@ -288,7 +288,7 @@ async function render() {
   if (!S.access) return loginView(root);
   const tabs = TABS.filter(([, , need]) => !need.length ? can() : can(...need));
   const view = h('main', { id: 'view' });
-  root.append(h('div', { class: 'shell' }, h('nav', {}, h('div', { class: 'brand' }, h('i'), 'Rwanda Mobility'), tabs.map(([k, l]) => h('button', { class: S.tab === k ? 'on' : '', onclick: () => go(k) }, l)), h('button', { onclick: logout }, 'Sign out')), view));
+  root.append(h('div', { class: 'shell' }, h('nav', {}, h('div', { class: 'brand' }, h('img', { src: 'logo.png', alt: '', style: 'width:28px;height:28px;border-radius:7px;vertical-align:middle;margin-right:8px' }), 'Abasare'), tabs.map(([k, l]) => h('button', { class: S.tab === k ? 'on' : '', onclick: () => go(k) }, l)), h('button', { onclick: logout }, 'Sign out')), view));
   try { await (V[S.tab] || V.dashboard)(view); } catch (e) { view.append(h('div', { class: 'err' }, e.message)); }
 }
 function loginView(root) {

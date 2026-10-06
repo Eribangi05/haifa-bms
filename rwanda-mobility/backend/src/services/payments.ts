@@ -143,7 +143,7 @@ export async function initiateMomo(passengerId: string, bookingId: string, msisd
   if ('reuse' in prep) return prep.reuse;
   const { pay, b } = prep as { pay: any; b: BookingRow };
   try {
-    const r = await providerFor(method).initiate({ reference: pay.reference, amount: pay.amount, msisdn, note: `Rwanda Mobility ${b.ref}` });
+    const r = await providerFor(method).initiate({ reference: pay.reference, amount: pay.amount, msisdn, note: `Abasare ${b.ref}` });
     await q("update payments set status='PENDING', provider_reference=$2, updated_at=now() where id=$1", [pay.id, r.providerRef ?? null]);
   } catch (e: any) {
     await q("update payments set status='FAILED', failure_reason=$2, updated_at=now() where id=$1", [pay.id, String(e.message).slice(0, 200)]);

@@ -1,4 +1,4 @@
-# Rwanda Mobility: mobile app (Expo / React Native, TypeScript)
+# Abasare: mobile app (Expo / React Native, TypeScript)
 
 Android-first passenger + driver app (one binary, two modes). The same screens also build for web via react-native-web (`npm run web:export`), which is what the browser e2e tests drive.
 

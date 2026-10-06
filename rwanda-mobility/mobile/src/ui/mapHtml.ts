@@ -18,7 +18,7 @@ function init(s){
 }
 function apply(s){
   if(!map)return;layer.clearLayers();zl.clearLayers();
-  (s.zones||[]).forEach(function(r){L.polygon(r.map(function(p){return[p[1],p[0]]}),{color:'#00704A',weight:2,fillOpacity:.05,dashArray:'6'}).addTo(zl)});
+  (s.zones||[]).forEach(function(r){L.polygon(r.map(function(p){return[p[1],p[0]]}),{color:'#0B3A9E',weight:2,fillOpacity:.05,dashArray:'6'}).addTo(zl)});
   (s.m||[]).forEach(function(k){L.circleMarker([k.lat,k.lng],{radius:8,color:k.color||'#1A5FB4',fillOpacity:.9}).addTo(layer);if(k.label)L.marker([k.lat,k.lng],{opacity:0}).bindTooltip(k.label,{permanent:true,direction:'top',className:'l'}).addTo(layer)});
   if(pin){map.removeLayer(pin);pin=null}
   if(s.p){pin=L.marker([s.p.lat,s.p.lng],{draggable:true}).addTo(map);pin.on('dragend',function(){var q=pin.getLatLng();post({t:'pin',lat:q.lat,lng:q.lng})})}

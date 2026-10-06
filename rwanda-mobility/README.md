@@ -1,4 +1,4 @@
-# Rwanda Mobility
+# Abasare (Rwanda Mobility Platform)
 
 A ride-hailing and transport platform for Rwanda (Kigali first): passengers book Moto and car rides, verified drivers accept and earn, companies and fleets manage their transport, and operations staff run everything from a secure web console.
 

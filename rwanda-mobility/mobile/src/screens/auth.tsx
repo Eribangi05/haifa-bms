@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { useApp, useAsync } from '../lib/app';
 import { Banner, Btn, Chip, Field, Screen } from '../ui/components';
 import { C, S } from '../ui/theme';
@@ -12,9 +12,7 @@ export function Welcome() {
   return (
     <Screen footer={<Btn title={t('common.continue')} onPress={() => nav.replace('phone')} big />}>
       <View style={{ alignItems: 'center', marginTop: 40, marginBottom: 28 }}>
-        <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-          <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: C.gold }} />
-        </View>
+        <Image source={require('../../assets/logo.png')} accessibilityLabel={APP_NAME} style={{ width: 150, height: 150, borderRadius: 32, marginBottom: 14 }} />
         <Text style={[S.h1, { textAlign: 'center' }]}>{APP_NAME}</Text>
         <Text style={[S.muted, { textAlign: 'center', marginTop: 6, fontSize: 15 }]}>{t('app.tagline')}</Text>
       </View>

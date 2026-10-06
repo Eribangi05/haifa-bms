@@ -12,7 +12,7 @@ import { config } from '../config.js';
 
 export async function catalogRoutes(app: FastifyInstance) {
   app.get('/config', async () => ({
-    app_name: 'Rwanda Mobility', currency: 'RWF', languages: ['rw', 'en'], country_code: '+250',
+    app_name: 'Abasare', currency: 'RWF', languages: ['rw', 'en'], country_code: '+250',
     payment_methods: [
       { id: 'cash', enabled: true },
       { id: 'mtn_momo', enabled: await flag('payments.mtn_momo'), simulated: config.momo.mode === 'simulator' },

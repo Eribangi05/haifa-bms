@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Rwanda Mobility",
+    "name": "Abasare",
     "slug": "rwanda-mobility",
     "scheme": "rwandamobility",
     "version": "0.1.0",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#00704A"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
@@ -20,7 +20,7 @@
       "package": "rw.mobility.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#00704A",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -47,7 +47,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Rwanda Mobility uses your location to set your pickup and match you with nearby drivers."
+          "locationWhenInUsePermission": "Abasare uses your location to set your pickup and match you with nearby drivers."
         }
       ],
       [
