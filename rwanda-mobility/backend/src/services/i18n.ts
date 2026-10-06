@@ -13,6 +13,18 @@ export const DEFAULT_TEMPLATES: Record<string, Record<string, { title: string; b
     en: { title: 'Driver assigned', body: '{{driver}} ({{plate}}) is on the way. Your trip PIN is shown in the app.' },
     rw: { title: 'Umushoferi yabonetse', body: '{{driver}} ({{plate}}) arimo kukugana. PIN y\'urugendo iri muri porogaramu.' },
   },
+  abasare_assigned: {
+    en: { title: 'Abasare assigned', body: '{driver} is coming to drive your car {plate}. Check their identity in the app before handing over the keys.' },
+    rw: { title: 'Abasare yabonetse', body: '{driver} araje gutwara imodoka yawe {plate}. Genzura umwirondoro we muri porogaramu mbere yo kumuha imfunguzo.' },
+  },
+  handover_submitted: {
+    en: { title: 'Car condition recorded', body: 'Your driver recorded the {phase} condition of your car. Please review and confirm in the app.' },
+    rw: { title: 'Imiterere y\'imodoka yanditswe', body: 'Umushoferi yanditse imiterere y\'imodoka yawe ({phase}). Yisuzume ukemeze muri porogaramu.' },
+  },
+  handover_issue: {
+    en: { title: 'Car condition issue reported', body: 'The owner reported an issue with the {phase} condition of booking {ref}. Support will contact you.' },
+    rw: { title: 'Ikibazo ku miterere y\'imodoka', body: 'Nyir\'imodoka yatanze ikibazo ku miterere ({phase}) ya {ref}. Ubufasha buzakuvugisha.' },
+  },
   driver_arrived: {
     en: { title: 'Driver arrived', body: 'Your driver has arrived. Check the plate {{plate}} before boarding.' },
     rw: { title: 'Umushoferi yahageze', body: 'Umushoferi yahageze. Genzura plaque {{plate}} mbere yo kuzamuka.' },

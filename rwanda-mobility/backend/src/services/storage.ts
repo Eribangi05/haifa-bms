@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { config } from '../config.js';
@@ -28,4 +28,9 @@ export async function saveFile(buf: Buffer, folder: 'docs' | 'evidence' | 'photo
 export async function readFileByKey(key: string): Promise<Buffer> {
   if (!/^(docs|evidence|photos)\/[0-9a-f-]{36}\.(jpg|png|pdf)$/.test(key)) throw badRequest('bad_key');   // blocks path traversal
   return readFile(join(root(), key));
+}
+
+export async function deleteFileByKey(key: string): Promise<void> {
+  if (!/^(docs|evidence|photos)\/[0-9a-f-]{36}\.(jpg|png|pdf)$/.test(key)) return;
+  await rm(join(root(), key), { force: true });
 }

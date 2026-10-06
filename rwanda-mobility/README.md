@@ -18,7 +18,7 @@ cd backend && cp .env.example .env && npm install
 createdb rwanda_mobility && npm run migrate
 BOOTSTRAP_ADMIN_PASSWORD='a-long-passphrase' npm run seed     # prints the admin TOTP secret once
 OTP_DEV_ECHO=true npm run dev                                  # API + console on http://localhost:8080/admin/
-npm test                                                       # 88 tests, real PostgreSQL
+npm test                                                       # 106 tests, real PostgreSQL
 ```
 Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 npx expo start --android` - see [`docs/ANDROID_BUILD.md`](docs/ANDROID_BUILD.md).
 
@@ -26,6 +26,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 
 * **Passenger**: phone/OTP sign-up (Kinyarwanda + English), pickup by GPS/pin/landmark/note, fare estimates with a line-by-line breakdown, cash or MTN Mobile Money, live driver tracking, **trip PIN**, trip sharing, SOS, receipts, ratings, history, saved places, referrals.
 * **Driver**: gated onboarding with document upload and review, online toggle separate from permission to work, offers showing **earnings before accepting**, navigation hand-off, PIN start, cash/MoMo collection, earnings and payouts.
+* **Abasare**: hire a verified driver to drive **your own car** (drive-me-home or by the hour), with skill-matched dispatch, itemised pricing, a digital car check-in/check-out record and stronger vetting. See [`docs/ABASARE.md`](docs/ABASARE.md).
 * **Operations**: KPIs, live map, driver verification, manual dispatch and PIN override (audited), pricing and commission with two-person approval, refunds, payouts, reconciliation, support cases, safety incidents, privacy requests, audit log.
 * **Companies and fleets**: spending limits, policies, statements, invoices; revenue-share, invites, strict data isolation.
 * **Money**: integer RWF, balanced immutable double-entry ledger, idempotent provider-verified payments, cash obligations tracked, daily reconciliation.

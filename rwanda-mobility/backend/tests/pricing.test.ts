@@ -114,3 +114,58 @@ test('dispatch ranking: ETA first, idle drivers get a small boost, frequent unex
   assert.ok(rankScore(300, fresh, now) < rankScore(300, flaky, now));
   assert.ok(rankScore(100, busy, now) < rankScore(600, fresh, now));   // a much closer driver still wins
 });
+
+// ---------------- Abasare (driver for the customer's own car) ----------------
+const abasareRule: Rule = { ...rule, id: 'a', service_id: 'abasare', base_fare: 2000, per_km: 300, per_min: 0, minimum_fare: 4000, wait_per_min: 50, free_wait_min: 10, rounding: 100,
+  return_per_km: 100, night_start_hour: 22, night_end_hour: 5, night_fee: 1000, billing: 'distance' };
+const hourlyRule: Rule = { ...rule, id: 'h', service_id: 'abasare_hourly', base_fare: 0, per_km: 0, per_min: 0, minimum_fare: 0, rounding: 100, billing: 'hourly', hourly_rate: 4000, min_hours: 2, max_hours: 12,
+  long_hire_hours: 8, long_hire_rate: 3500, overtime_per_30min: 2500, overtime_grace_min: 10, night_start_hour: 22, night_end_hour: 5, night_fee: 1000 };
+
+import { inNightBand, overtimeBlocks, kigaliHour } from '../src/services/pricing.ts';
+
+test('Abasare point-to-point: base + distance + driver-return allowance, night band disclosed as its own line', () => {
+  const day = computeFare(abasareRule, { distance_m: 10_000, duration_s: 1200, local_hour: 14 });
+  assert.equal(day.total, 2000 + 3000 + 1000);                               // 6,000
+  assert.ok(day.lines.some((l) => l.code === 'return_allowance' && l.amount === 1000));
+  assert.ok(!day.lines.some((l) => l.code === 'night_fee'));
+  const night = computeFare(abasareRule, { distance_m: 10_000, duration_s: 1200, local_hour: 23 });
+  assert.equal(night.total, 7000);                                           // inside the 5,000-7,000 RWF band reported for night trips
+  assert.ok(night.lines.some((l) => l.code === 'night_fee' && l.amount === 1000));
+  assert.equal(computeFare(abasareRule, { distance_m: 10_000, duration_s: 1200, local_hour: 3 }).total, 7000);   // band wraps midnight
+});
+
+test('Abasare minimum fare applies before fees', () => {
+  const short = computeFare(abasareRule, { distance_m: 1000, duration_s: 200, local_hour: 12 });   // 2,000 + 300 = 2,300 -> min 4,000, + 100 return
+  assert.equal(short.total, 4100);
+  assert.ok(short.lines.some((l) => l.code === 'minimum'));
+});
+
+test('night band maths: wraps midnight, end exclusive, Kigali is UTC+2', () => {
+  assert.ok(inNightBand(22, 22, 5) && inNightBand(23, 22, 5) && inNightBand(0, 22, 5) && inNightBand(4, 22, 5));
+  assert.ok(!inNightBand(5, 22, 5) && !inNightBand(21, 22, 5) && !inNightBand(12, 22, 5));
+  assert.ok(!inNightBand(3, null, null));
+  assert.equal(kigaliHour(new Date('2026-03-01T20:30:00Z')), 22); assert.equal(kigaliHour(new Date('2026-03-01T23:30:00Z')), 1);
+});
+
+test('Abasare hourly: packages, long-hire rate, night fee, hour limits', () => {
+  assert.equal(computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 2, local_hour: 10 }).total, 8000);
+  assert.equal(computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 4, local_hour: 10 }).total, 16000);
+  assert.equal(computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 8, local_hour: 10 }).total, 28000);   // long-hire 3,500/h
+  assert.equal(computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 2, local_hour: 22 }).total, 9000);    // + night
+  assert.throws(() => computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 1 }), /hours/i);
+  assert.throws(() => computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 13 }));
+  assert.throws(() => computeFare(hourlyRule, { distance_m: 0, duration_s: 0 }));
+});
+
+test('Abasare hourly overtime: 30-minute blocks after a grace period, added as a disclosed line', () => {
+  assert.equal(overtimeBlocks(hourlyRule, 2, 120), 0);
+  assert.equal(overtimeBlocks(hourlyRule, 2, 130), 0);                       // inside the 10-minute grace
+  assert.equal(overtimeBlocks(hourlyRule, 2, 131), 1);
+  assert.equal(overtimeBlocks(hourlyRule, 2, 160), 1);
+  assert.equal(overtimeBlocks(hourlyRule, 2, 161), 2);
+  const q = computeFare(hourlyRule, { distance_m: 0, duration_s: 0, hours: 2, local_hour: 10 });
+  const f = finalizeFare(hourlyRule, q, { waiting_min: 0, extras: [], overtime_blocks: 2 });
+  assert.equal(f.total, 8000 + 5000);
+  assert.ok(f.lines.some((l) => l.code === 'overtime' && l.amount === 5000));
+  assert.equal(finalizeFare(hourlyRule, q, { waiting_min: 0, extras: [], overtime_blocks: 0 }), q);
+});

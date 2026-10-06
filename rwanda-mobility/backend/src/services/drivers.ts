@@ -61,6 +61,27 @@ export async function driverPermission(driverId: string, db: Db = pool): Promise
   }
   return { can_work: reasons.length === 0, status: dp.status, reasons, missing_documents: missing, expired_documents: expired, vehicle_ok: !!v };
 }
+export type AbasarePermission = { can_work: boolean; status: string; abasare_status: string; reasons: string[]; missing_documents: string[]; expired_documents: string[] };
+
+/** Abasare drivers drive the CUSTOMER's car: no vehicle needed, but identity, licence and police clearance must be valid. */
+export async function abasarePermission(driverId: string, db: Db = pool): Promise<AbasarePermission> {
+  const dp = await q1<any>('select status, abasare_status from driver_profiles where user_id=$1', [driverId], db);
+  if (!dp) throw notFound('driver');
+  const reasons: string[] = [];
+  if (dp.status !== 'APPROVED') reasons.push(`account_${dp.status.toLowerCase()}`);
+  if (dp.abasare_status !== 'approved') reasons.push(`abasare_${dp.abasare_status}`);
+  const missing: string[] = [], expired: string[] = [];
+  const reqs = await q<any>("select doc_type, requires_expiry from document_requirements where vehicle_type='abasare' and mandatory", [], db);
+  for (const r of reqs) {
+    const d = await q1<any>(`select expiry_date from driver_documents where driver_id=$1 and doc_type=$2 and not superseded and review_status='approved' order by created_at desc limit 1`, [driverId, r.doc_type], db);
+    if (!d) missing.push(r.doc_type);
+    else if ((d.expiry_date && new Date(d.expiry_date) < startOfToday()) || (r.requires_expiry && !d.expiry_date)) expired.push(r.doc_type);
+  }
+  if (missing.length) reasons.push('documents_missing_or_unapproved');
+  if (expired.length) reasons.push('documents_expired');
+  return { can_work: reasons.length === 0, status: dp.status, abasare_status: dp.abasare_status, reasons, missing_documents: missing, expired_documents: expired };
+}
+
 const startOfToday = () => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return d; };
 
 /** Auto-flip approved drivers to EXPIRED_INELIGIBLE when mandatory documents lapse; restore when fixed. */
@@ -69,6 +90,8 @@ export async function refreshEligibility(driverId?: string) {
   const sys: Actor = { id: null, role: 'system' };
   let changed = 0;
   for (const id of ids) {
+    const hasVehicle = await q1("select 1 from vehicles where driver_id=$1 and status in ('approved','suspended')", [id]);
+    if (!hasVehicle) continue;                      // Abasare-only drivers have no vehicle: ride documents don't apply to them
     const p = await driverPermission(id);
     await tx(async (c) => {
       const cur = await q1<any>('select status, status_reason from driver_profiles where user_id=$1', [id], c);
@@ -100,7 +123,7 @@ export async function expiryReminders() {
   return sent;
 }
 
-export async function setOnline(driverId: string, online: boolean) {
+export async function setOnline(driverId: string, online: boolean, accepting?: string[]) {
   if (!online) {
     const busy = await q1("select 1 from bookings where driver_id=$1 and status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS')", [driverId]);
     if (busy) throw conflict('active_trip', 'Finish your current trip before going offline');
@@ -108,9 +131,12 @@ export async function setOnline(driverId: string, online: boolean) {
     await q("update dispatch_offers set status='cancelled' where driver_id=$1 and status='pending'", [driverId]);
     return;
   }
-  const p = await driverPermission(driverId);
-  if (!p.can_work) throw new AppError(403, 'not_permitted_to_work', 'You cannot go online yet', p);
-  await q('update driver_profiles set is_online=true, last_seen_at=now() where user_id=$1', [driverId]);
+  const [ride, abasare] = await Promise.all([driverPermission(driverId), abasarePermission(driverId)]);
+  const cur = (await q1<any>('select accepting from driver_profiles where user_id=$1', [driverId]))!.accepting as string[];
+  const want = (accepting ?? cur).filter((x) => x === 'ride' || x === 'abasare');
+  const allowed = want.filter((x) => (x === 'ride' ? ride.can_work : abasare.can_work));
+  if (!allowed.length) throw new AppError(403, 'not_permitted_to_work', 'You cannot go online yet', { ride, abasare });
+  await q('update driver_profiles set is_online=true, last_seen_at=now(), accepting=$2 where user_id=$1', [driverId, allowed]);
 }
 
 export type LocationIn = { lat: number; lng: number; accuracy?: number; speed?: number; recorded_at?: string; booking_id?: string };

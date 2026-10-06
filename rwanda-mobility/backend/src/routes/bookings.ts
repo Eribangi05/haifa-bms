@@ -21,6 +21,7 @@ export async function bookingRoutes(app: FastifyInstance) {
       pickup_name: z.string().max(160).optional(), pickup_note: z.string().max(300).optional(), dest_name: z.string().max(160).optional(),
       corporate_id: z.string().uuid().optional(), cost_centre: z.string().max(60).optional(), po_ref: z.string().max(60).optional(),
       rider_name: z.string().max(80).optional(), rider_phone: z.string().max(20).optional(),
+      customer_vehicle_id: z.string().uuid().optional(), owner_attested: z.boolean().optional(),
     }), req.body);
     const { booking, replay } = await B.createBooking(req.auth!.id, { ...b, idempotency_key: key });
     reply.code(replay ? 200 : 201);
@@ -102,8 +103,9 @@ export async function bookingRoutes(app: FastifyInstance) {
   const drv = { preHandler: requireRole('driver') };
   app.get('/drivers/me/offers', drv, async (req) => {
     const rows = await q<any>(`select o.booking_id, o.expires_at, o.eta_s, o.distance_m, o.driver_net, b.pickup_lat, b.pickup_lng, b.pickup_name, b.pickup_note, b.dest_lat, b.dest_lng, b.dest_name, b.service_id, b.payment_method,
-        b.distance_m trip_distance_m, b.duration_s trip_duration_s, b.estimated_fare, b.ref
-      from dispatch_offers o join bookings b on b.id=o.booking_id where o.driver_id=$1 and o.status='pending' and o.expires_at > now() and b.status='SEARCHING_DRIVER'`, [req.auth!.id]);
+        b.distance_m trip_distance_m, b.duration_s trip_duration_s, b.estimated_fare, b.ref,
+        b.hire_mode, b.hours_booked, cv.vehicle_class cv_class, cv.transmission cv_transmission, cv.make cv_make, cv.model cv_model, cv.color cv_color
+      from dispatch_offers o join bookings b on b.id=o.booking_id left join customer_vehicles cv on cv.id=b.customer_vehicle_id where o.driver_id=$1 and o.status='pending' and o.expires_at > now() and b.status='SEARCHING_DRIVER'`, [req.auth!.id]);
     return { offers: rows };
   });
   app.post('/bookings/:id/accept', drv, async (req) => { const { id } = parse(idp, req.params); return B.bookingView(await D.acceptOffer(req.auth!.id, id), 'driver'); });

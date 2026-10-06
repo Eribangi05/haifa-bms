@@ -23,3 +23,7 @@
 | Emergency numbers | Police 112, Ambulance 912, Traffic police 113 (verify before launch). | `/config` |
 | Documents | Mandatory: national ID, driving licence, profile photo, vehicle registration, insurance (+ inspection for cars); transport permit optional. | `document_requirements` table |
 | Retention | Location trail 30 days; OTP rows 2 days. | `retention.*` |
+| Abasare tariffs | Drive me home 2,000 + 300/km + 100/km return allowance (min 4,000), night band 22:00-05:00 +1,000; hourly 4,000/h (min 2 h, 3,500/h from 8 h), overtime 2,500 per 30 min after 10 min grace. Based on the 5,000-7,000 RWF reported for night trips; **not validated**. | Fare rules (maker-checker) |
+| Abasare commission | 12% introductory. | Commission rules |
+| Abasare driver rules | Licence held >= 2 years, mandatory documents: national ID, driving licence, photo, police clearance (expiry required). | `abasare.min_licence_years`, `document_requirements` (type `abasare`) |
+| Handover | >= 2 photos at check-in and check-out; owner may report an issue up to 30 min after drop-off; photos purged after 90 days unless a case is open. | `abasare.min_photos`, `abasare.issue_window_min`, `retention.handover_days` |

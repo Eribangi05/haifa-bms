@@ -5,7 +5,7 @@ import { getSetting } from './settings.js';
 import { haversineM } from '../util/geo.js';
 import { etaS } from './maps.js';
 import { transition, logEvent, type BookingRow } from './bookingMachine.js';
-import { DOCS_OK_SQL, driverPermission } from './drivers.js';
+import { DOCS_OK_SQL, driverPermission, abasarePermission } from './drivers.js';
 import { notify } from './notify.js';
 import { resolveCommission, calcCommission } from './commission.js';
 
@@ -15,12 +15,33 @@ type Cand = { user_id: string; last_lat: number; last_lng: number; vehicle_id: s
   accepted_count: number; rejected_count: number; offers_count: number; last_trip_at: Date | null; };
 
 export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, heartbeatS: number): Promise<Cand[]> {
+  if (svc.kind === 'abasare') {
+    // The driver drives the CUSTOMER's car: match on skills (vehicle class + transmission), not on a driver vehicle.
+    const cv = await q1<any>('select vehicle_class, transmission from customer_vehicles where id=$1', [b.customer_vehicle_id], c);
+    if (!cv) return [];
+    return q<Cand>(
+      `select dp.user_id, dp.last_lat, dp.last_lng, dp.fleet_id, null::uuid vehicle_id, 'moto'::text vehicle_type, dp.accepted_count, dp.rejected_count, dp.offers_count, dp.last_trip_at
+       from driver_profiles dp
+       join users u on u.id = dp.user_id and u.status = 'active'
+       where dp.status = 'APPROVED' and dp.abasare_status = 'approved' and 'abasare' = any(dp.accepting) and dp.is_online
+         and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1)
+         and (dp.zone_id is null or dp.zone_id = $2)
+         and (dp.abasare_skills->'classes') ? $3 and (dp.abasare_skills->'transmissions') ? $4
+         and ${DOCS_OK_SQL('dp', "'abasare'")}
+         and not exists (select 1 from bookings x where x.driver_id = dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))
+         and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.status = 'pending')
+         and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $5)
+         and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $6)
+         and dp.last_lat is not null
+       for update of dp skip locked`,
+      [heartbeatS, b.zone_id, cv.vehicle_class, cv.transmission, b.id, b.passenger_id], c);
+  }
   return q<Cand>(
     `select dp.user_id, dp.last_lat, dp.last_lng, dp.fleet_id, v.id vehicle_id, v.vehicle_type, dp.accepted_count, dp.rejected_count, dp.offers_count, dp.last_trip_at
      from driver_profiles dp
      join users u on u.id = dp.user_id and u.status = 'active'
      join vehicles v on v.driver_id = dp.user_id and v.status = 'approved'
-     where dp.status = 'APPROVED' and dp.is_online
+     where dp.status = 'APPROVED' and dp.is_online and 'ride' = any(dp.accepting)
        and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1)
        and (dp.zone_id is null or dp.zone_id = $2)
        and v.vehicle_type = any($3) and v.capacity >= $4 and (not $5 or v.comfort)
@@ -109,15 +130,16 @@ export async function acceptOffer(driverId: string, bookingId: string) {
     if (!offer) throw conflict('offer_not_found', 'No pending offer for you');
     if (new Date(offer.expires_at) < new Date()) throw conflict('offer_expired', 'Offer expired');
     const dp = await q1<any>('select * from driver_profiles where user_id=$1 for update', [driverId], c);
-    const perm = await driverPermission(driverId, c);
-    if (!perm.can_work || !dp.is_online) throw new AppError(403, 'not_permitted_to_work', 'Not eligible for this trip', perm);
-    const veh = await q1<any>("select id from vehicles where driver_id=$1 and status='approved'", [driverId], c);
+    const kind = (await q1<any>('select kind from service_categories where id=$1', [b.service_id], c))!.kind as 'ride' | 'abasare';
+    const perm = kind === 'abasare' ? await abasarePermission(driverId, c) : await driverPermission(driverId, c);
+    if (!perm.can_work || !dp.is_online || !(dp.accepting as string[]).includes(kind)) throw new AppError(403, 'not_permitted_to_work', 'Not eligible for this trip', perm);
+    const veh = kind === 'abasare' ? null : await q1<any>("select id from vehicles where driver_id=$1 and status='approved'", [driverId], c);
     try {
       await q("update dispatch_offers set status='accepted', responded_at=now() where id=$1", [offer.id], c);
       await q("update dispatch_offers set status='cancelled' where booking_id=$1 and status='pending' and id<>$2", [bookingId, offer.id], c);
       await q('update driver_profiles set accepted_count = accepted_count + 1 where user_id=$1', [driverId], c);
       const row = await transition(c, bookingId, 'DRIVER_ASSIGNED', { id: driverId, role: 'driver' }, {
-        patch: { driver_id: driverId, vehicle_id: veh.id, assigned_at: new Date() }, meta: { offer_id: offer.id },
+        patch: { driver_id: driverId, vehicle_id: veh?.id ?? null, assigned_at: new Date() }, meta: { offer_id: offer.id },
       });
       return { row, dp, veh };
     } catch (e: any) {
@@ -125,9 +147,18 @@ export async function acceptOffer(driverId: string, bookingId: string) {
       throw e;
     }
   });
-  const d = await q1<any>(`select u.display_name, v.plate from users u join vehicles v on v.id=$2 where u.id=$1`, [driverId, res.row.vehicle_id]);
-  await notify(res.row.passenger_id, 'driver_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate }, { critical: true });
+  await notifyAssigned(res.row, driverId);
   return res.row;
+}
+
+async function notifyAssigned(row: BookingRow, driverId: string) {
+  if (row.customer_vehicle_id) {
+    const d = await q1<any>('select u.display_name, cv.plate from users u, customer_vehicles cv where u.id=$1 and cv.id=$2', [driverId, row.customer_vehicle_id]);
+    await notify(row.passenger_id, 'abasare_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate }, { critical: true });
+  } else {
+    const d = await q1<any>('select u.display_name, v.plate from users u join vehicles v on v.id=$2 where u.id=$1', [driverId, row.vehicle_id]);
+    await notify(row.passenger_id, 'driver_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate }, { critical: true });
+  }
 }
 
 export async function rejectOffer(driverId: string, bookingId: string, reason?: string) {
@@ -173,19 +204,26 @@ export async function manualAssign(staffId: string, bookingId: string, driverId:
     if (b.status !== 'SEARCHING_DRIVER') throw conflict('invalid_state', `Booking is ${b.status}`);
     const dp = await q1<any>('select * from driver_profiles where user_id=$1 for update', [driverId], c);
     if (!dp) throw notFound('driver');
-    const perm = await driverPermission(driverId, c);
+    const kind = (await q1<any>('select kind from service_categories where id=$1', [b.service_id], c))!.kind as 'ride' | 'abasare';
+    const perm = kind === 'abasare' ? await abasarePermission(driverId, c) : await driverPermission(driverId, c);
     if (!perm.can_work || !dp.is_online) throw new AppError(409, 'driver_not_dispatchable', 'Driver is not online or not permitted to work', perm);
-    const veh = (await q1<any>("select v.*, sc.vehicle_types, sc.min_capacity, sc.requires_comfort from vehicles v, service_categories sc where v.driver_id=$1 and v.status='approved' and sc.id=$2", [driverId, b.service_id], c));
-    if (!veh || !veh.vehicle_types.includes(veh.vehicle_type) || veh.capacity < veh.min_capacity || (veh.requires_comfort && !veh.comfort))
-      throw new AppError(409, 'vehicle_not_suitable', 'Driver vehicle does not fit this service');
+    let veh: any = null;
+    if (kind === 'abasare') {
+      const cv = await q1<any>('select vehicle_class, transmission from customer_vehicles where id=$1', [b.customer_vehicle_id], c);
+      const sk = dp.abasare_skills ?? {};
+      if (!cv || !(sk.classes ?? []).includes(cv.vehicle_class) || !(sk.transmissions ?? []).includes(cv.transmission)) throw new AppError(409, 'driver_skills_mismatch', "Driver is not approved for this car's type or transmission");
+    } else {
+      veh = (await q1<any>("select v.*, sc.vehicle_types, sc.min_capacity, sc.requires_comfort from vehicles v, service_categories sc where v.driver_id=$1 and v.status='approved' and sc.id=$2", [driverId, b.service_id], c));
+      if (!veh || !veh.vehicle_types.includes(veh.vehicle_type) || veh.capacity < veh.min_capacity || (veh.requires_comfort && !veh.comfort))
+        throw new AppError(409, 'vehicle_not_suitable', 'Driver vehicle does not fit this service');
+    }
     await q("update dispatch_offers set status='cancelled' where booking_id=$1 and status='pending'", [bookingId], c);
     await q(`insert into dispatch_offers(booking_id, driver_id, round, status, expires_at, responded_at) values ($1,$2,$3,'accepted', now(), now())
              on conflict (booking_id, driver_id) do update set status='accepted', responded_at=now()`, [bookingId, driverId, b.dispatch_round + 1], c);
     try {
-      return await transition(c, bookingId, 'DRIVER_ASSIGNED', { id: staffId, role: 'dispatcher' }, { reason: `manual assignment: ${reason}`, patch: { driver_id: driverId, vehicle_id: veh.id, assigned_at: new Date() } });
+      return await transition(c, bookingId, 'DRIVER_ASSIGNED', { id: staffId, role: 'dispatcher' }, { reason: `manual assignment: ${reason}`, patch: { driver_id: driverId, vehicle_id: veh?.id ?? null, assigned_at: new Date() } });
     } catch (e: any) { if (e.code === '23505') throw conflict('driver_busy', 'Driver already has an active trip'); throw e; }
   });
-  const d = await q1<any>('select u.display_name, v.plate from users u join vehicles v on v.id=$2 where u.id=$1', [driverId, row.vehicle_id]);
-  await notify(row.passenger_id, 'driver_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate }, { critical: true });
+  await notifyAssigned(row, driverId);
   return row;
 }

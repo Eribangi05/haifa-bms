@@ -4,6 +4,7 @@ import { flushSms } from './services/notify.js';
 import { expiryReminders, refreshEligibility } from './services/drivers.js';
 import { q } from './db.js';
 import { getSetting } from './services/settings.js';
+import { deleteFileByKey } from './services/storage.js';
 
 /** In-process scheduler (single instance). For multi-instance deployments run jobs on one worker or use pg-boss; every job is idempotent. */
 export function startJobs(log: (m: string) => void = console.log) {
@@ -26,5 +27,17 @@ export async function retention() {
   const days = await getSetting('retention.location_days');
   await q("delete from driver_locations where received_at < now() - make_interval(days => $1)", [days]);
   await q("delete from otp_challenges where created_at < now() - interval '2 days'");
+  await purgeHandoverPhotos();
   await q("delete from fare_quotes where expires_at < now() - interval '2 days' and used_booking_id is null");
+}
+
+/** Car check-in/out photos can show personal belongings: purge after the retention period unless the booking has an open case. */
+export async function purgeHandoverPhotos() {
+  const days = await getSetting('retention.handover_days');
+  const rows = await q<{ id: string; file_key: string }>(
+    `select p.id, p.file_key from handover_photos p where p.created_at < now() - make_interval(days => $1)
+       and not exists (select 1 from support_cases c where c.booking_id=p.booking_id and c.status in ('open','in_progress','awaiting_user'))
+       and not exists (select 1 from bookings b where b.id=p.booking_id and b.status='DISPUTED')`, [days]);
+  for (const r of rows) { await deleteFileByKey(r.file_key); await q('delete from handover_photos where id=$1', [r.id]); }
+  return rows.length;
 }

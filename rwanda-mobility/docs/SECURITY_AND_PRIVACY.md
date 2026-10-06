@@ -29,6 +29,8 @@
 * **Data-subject requests**: users can file access/correction/deletion/deactivation requests (30-day due date); staff with `privacy.handle` export a user's data or execute deletion, which erases PII, revokes sessions, removes documents, and **keeps anonymised financial records** for accounting. Deletion is refused while trips or balances are open.
 * **Analytics** are aggregate-only; the `analyst` role has no access to bookings or finance detail.
 
+* **Abasare evidence**: handover photos (which may show personal items) are stored privately, shown only to the owner, the assigned driver and staff via 5-minute signed links, and **purged after `retention.handover_days` (90) unless a case is open**. Police clearance is a mandatory expiring document; driver identity (photo, name, experience) is shown to the owner before keys are handed over.
+
 ## What the operator must still do (not in code)
 
 1. Register/notify the Data Protection and Privacy Office as required, appoint a data-protection contact, publish a Kinyarwanda/English privacy notice, and decide hosting location lawfully.

@@ -16,6 +16,7 @@
 | R8 | Emergency response | Agree the 112/912 escalation arrangement and whether any formal integration with Rwanda National Police is available; the app claims none. |
 | R9 | Insurance | Passenger/third-party/accident cover for trips on the platform; who pays on incidents. |
 | R10 | Employment/contractor status | How drivers are classified; fleet-operator agreements (`revenue_share_bps`). |
+| R12 | **Abasare (driver for the customer's own car)** | Whether chauffeur / designated-driver services need their own licence or fall under taxi rules; whether standard motor insurance covers a hired driver and who bears damage costs; official name/validity of the police clearance certificate; duty-of-care and terms when serving intoxicated customers; employment status and treatment of the driver-return allowance. Details in `ABASARE.md` section 6. |
 | R11 | Child/vulnerable users, accessibility | Policy for minors, accessible-transport service (modelled but disabled). |
 
 ## Third-party integrations

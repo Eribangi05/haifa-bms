@@ -42,7 +42,7 @@ export async function adminRoutes(app: FastifyInstance) {
   });
   app.get('/admin/drivers/:id', { preHandler: requirePerm('drivers.view') }, async (req) => {
     const { id } = parse(idp, req.params);
-    const dp = await q1<any>('select dp.user_id, dp.status, dp.status_reason, dp.legal_name, dp.zone_id, dp.fleet_id, dp.is_online, dp.rating_avg, dp.rating_count, dp.accepted_count, dp.rejected_count, dp.cancel_count, dp.completed_count, dp.payout_msisdn, u.phone, u.display_name from driver_profiles dp join users u on u.id=dp.user_id where dp.user_id=$1', [id]);
+    const dp = await q1<any>('select dp.user_id, dp.status, dp.status_reason, dp.abasare_status, dp.abasare_skills, dp.accepting, dp.legal_name, dp.zone_id, dp.fleet_id, dp.is_online, dp.rating_avg, dp.rating_count, dp.accepted_count, dp.rejected_count, dp.cancel_count, dp.completed_count, dp.payout_msisdn, u.phone, u.display_name from driver_profiles dp join users u on u.id=dp.user_id where dp.user_id=$1', [id]);
     if (!dp) throw notFound('driver');
     const docs = await q<any>('select * from driver_documents where driver_id=$1 order by created_at desc', [id]);
     await audit(actorOf(req), 'driver.viewed', 'driver', id);
@@ -80,11 +80,11 @@ export async function adminRoutes(app: FastifyInstance) {
     await tx(async (c) => {
       if (b.decision === 'approve' || b.decision === 'reinstate') {
         const veh = await q1<any>("select id, vehicle_type from vehicles where driver_id=$1 and status in ('pending','approved') order by created_at desc limit 1", [id], c);
-        if (!veh) throw conflict('no_vehicle', 'No vehicle to approve');
-        if (b.decision === 'approve') await q("update vehicles set status='approved' where id=$1", [veh.id], c);
-        const probe = await Dr.driverPermission(id, c);
-        const need = await q<any>(`select r.doc_type from document_requirements r where r.vehicle_type=$1 and r.mandatory and not exists (
-            select 1 from driver_documents d where d.driver_id=$2 and d.doc_type=r.doc_type and not d.superseded and d.review_status='approved' and (d.expiry_date is null or d.expiry_date >= current_date))`, [veh.vehicle_type, id], c);
+        const abs = await q1<any>("select 1 from driver_profiles where user_id=$1 and abasare_status in ('pending','approved')", [id], c);
+        if (!veh && !abs) throw conflict('no_vehicle', 'No vehicle (or Abasare application) to approve');
+        if (veh && b.decision === 'approve') await q("update vehicles set status='approved' where id=$1", [veh.id], c);
+        const need = await q<any>(`select distinct r.doc_type from document_requirements r where r.vehicle_type = any($2) and r.mandatory and not exists (
+            select 1 from driver_documents d where d.driver_id=$1 and d.doc_type=r.doc_type and not d.superseded and d.review_status='approved' and (d.expiry_date is null or d.expiry_date >= current_date))`, [id, [...(veh ? [veh.vehicle_type] : []), ...(abs ? ['abasare'] : [])]], c);
         if (need.length) throw conflict('documents_not_approved', `Approve all mandatory documents first (${need.map((n: any) => n.doc_type).join(', ')})`);
       }
       await Dr.setDriverStatus(c, id, to, actorOf(req), b.reason);
@@ -186,11 +186,19 @@ export async function adminRoutes(app: FastifyInstance) {
       booking_fee: z.number().int().min(0).default(0), wait_per_min: z.number().int().min(0).default(0), free_wait_min: z.number().int().min(0).default(3),
       airport_fee: z.number().int().min(0).default(0), scheduled_fee: z.number().int().min(0).default(0), tax_bps: z.number().int().min(0).max(5000).default(0), rounding: z.number().int().min(1).max(1000).default(50),
       effective_from: z.string().datetime().optional(),
+      // Abasare
+      billing: z.enum(['distance', 'hourly']).default('distance'), return_per_km: z.number().int().min(0).default(0),
+      night_start_hour: z.number().int().min(0).max(23).nullable().default(null), night_end_hour: z.number().int().min(0).max(24).nullable().default(null), night_fee: z.number().int().min(0).default(0),
+      hourly_rate: z.number().int().min(0).default(0), min_hours: z.number().int().min(1).default(2), max_hours: z.number().int().min(1).default(12),
+      long_hire_hours: z.number().int().min(1).nullable().default(null), long_hire_rate: z.number().int().min(0).nullable().default(null),
+      overtime_per_30min: z.number().int().min(0).default(0), overtime_grace_min: z.number().int().min(0).default(10),
     }), req.body);
     const prev = await q1<any>('select coalesce(max(version),0) v from pricing_rules where service_id=$1', [b.service_id]);
-    const r = await q1<any>(`insert into pricing_rules(service_id,zone_id,model,base_fare,per_km,per_min,minimum_fare,booking_fee,wait_per_min,free_wait_min,airport_fee,scheduled_fee,tax_bps,rounding,version,effective_from,status,created_by)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,coalesce($16, now()),'pending_approval',$17) returning *`,
-      [b.service_id, b.zone_id, b.model, b.base_fare, b.per_km, b.per_min, b.minimum_fare, b.booking_fee, b.wait_per_min, b.free_wait_min, b.airport_fee, b.scheduled_fee, b.tax_bps, b.rounding, prev.v + 1, b.effective_from ?? null, req.auth!.id]);
+    const r = await q1<any>(`insert into pricing_rules(service_id,zone_id,model,base_fare,per_km,per_min,minimum_fare,booking_fee,wait_per_min,free_wait_min,airport_fee,scheduled_fee,tax_bps,rounding,version,effective_from,status,created_by,
+        billing,return_per_km,night_start_hour,night_end_hour,night_fee,hourly_rate,min_hours,max_hours,long_hire_hours,long_hire_rate,overtime_per_30min,overtime_grace_min)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,coalesce($16, now()),'pending_approval',$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) returning *`,
+      [b.service_id, b.zone_id, b.model, b.base_fare, b.per_km, b.per_min, b.minimum_fare, b.booking_fee, b.wait_per_min, b.free_wait_min, b.airport_fee, b.scheduled_fee, b.tax_bps, b.rounding, prev.v + 1, b.effective_from ?? null, req.auth!.id,
+       b.billing, b.return_per_km, b.night_start_hour, b.night_end_hour, b.night_fee, b.hourly_rate, b.min_hours, b.max_hours, b.long_hire_hours, b.long_hire_rate, b.overtime_per_30min, b.overtime_grace_min]);
     await audit(actorOf(req), 'pricing.proposed', 'pricing_rule', r.id, undefined, r);
     return r;
   });

@@ -12,7 +12,7 @@ npm install
 npm run migrate                   # applies migrations/*.sql
 BOOTSTRAP_ADMIN_PASSWORD='a-long-passphrase' npm run seed   # zones, services, tariffs, roles, flags + first super admin (TOTP secret printed once)
 npm run dev                       # http://localhost:8080  (admin console at /admin/)
-npm test                          # 88 tests against a real PostgreSQL test database
+npm test                          # 106 tests against a real PostgreSQL test database
 npm run typecheck
 npm run docs                      # regenerates docs/API.md and docs/PERMISSION_MATRIX.md
 ```
@@ -36,6 +36,7 @@ EXPO_PUBLIC_API_URL=http://localhost:8080 npm run web:export && (cd /tmp/rm-web 
 OTP_DEV_ECHO=true npm --prefix ../backend run dev &      # backend must be running
 node e2e/app-e2e.mjs /tmp/shots            # passenger journey, incl. offline recovery
 node e2e/driver-e2e.mjs /tmp/shots some.jpg  # driver journey, incl. document upload
+node e2e/abasare-e2e.mjs /tmp/shots some.jpg # Abasare: application, car, booking, check-in/out, PIN, cash
 ```
 
 ## 3. Production deployment checklist

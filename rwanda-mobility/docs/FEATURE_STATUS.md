@@ -2,7 +2,7 @@
 
 Labels (assigned by evidence, not intent):
 
-* **TESTED** - implemented and exercised by automated tests that pass: `backend` 88 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities); `mobile` 10 tests of the network layer; and two browser end-to-end scripts (32 steps) that drive the real React Native screens against a live backend.
+* **TESTED** - implemented and exercised by automated tests that pass: `backend` 107 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities); `mobile` 10 tests of the network layer; and three browser end-to-end scripts (passenger, driver, Abasare; ~50 steps) that drive the real React Native screens against a live backend.
 * **IMPLEMENTED** - code exists and type-checks (and the Android bundle compiles) but has **no automated or on-device test**.
 * **SIMULATED** - works against a local stand-in, not the real external system.
 * **PENDING INTEGRATION** - needs third-party credentials/approval or a build-out not done here.
@@ -20,6 +20,24 @@ Labels (assigned by evidence, not intent):
 > **Bugs found by the UI end-to-end run that unit/API tests had missed** (now fixed and covered by regression tests): `GET /drivers/me/earnings` returned HTTP 500 (reserved SQL alias); an empty JSON body on action endpoints (`/accept`, `/arrived`...) was rejected by the server; a deletion request locked users out of their own session. Treat first device testing the same way: expect findings.
 
 ## Matrix
+
+### Abasare (hire a driver for your own car): see `ABASARE.md`
+
+| Feature | Status |
+|---|---|
+| Driver application (licence 2+ years, skills, return mode), police-clearance requirement, verifier approval/suspension, no vehicle needed | TESTED |
+| Skill-matched dispatch (car class + manual/automatic), "accepting" toggles (rides / Abasare) | TESTED |
+| Owner's cars, ownership/insurance attestation, quote bound to the car | TESTED |
+| Pricing: drive-me-home (return allowance, night band, minimum), hourly packages, long-hire rate, overtime blocks | TESTED |
+| Car check-in/check-out: photos, odometer, fuel, notes; start/complete guards; owner confirm or dispute; urgent sensitive case; 30-minute window | TESTED |
+| Photo privacy: signed links, retention purge (90 days, kept while a case is open) | TESTED |
+| Corporate booking of Abasare under company policy; scheduled Abasare; document-expiry removal from dispatch | TESTED |
+| Moto "ride home" for the driver | TESTED (API: driver books Moto from the drop-off) / IMPLEMENTED (one-tap button) |
+| Console: applications queue, approval, handover evidence in booking detail, pricing fields | IMPLEMENTED (API TESTED; not exercised in a browser) |
+| Mobile screens (owner and driver) | TESTED in browser e2e (web build); **not run on a device** |
+| Pay-before-trip, auto-dispatched return Moto, insurance integration, damage-claim workflow | NOT BUILT (roadmap) |
+| Tariffs, night window, commission | PLACEHOLDERS, confirm with the client |
+| Insurance/licensing/liability rules | PENDING legal input (see `ABASARE.md` section 6) |
 
 | Area | Feature | Status |
 |---|---|---|
@@ -79,7 +97,7 @@ Labels (assigned by evidence, not intent):
 | Admin | KPI dashboard, drivers, bookings, support, safety, pricing, finance, privacy, settings, audit, staff | TESTED (APIs) + exercised in a browser smoke test |
 | | Live map | IMPLEMENTED (needs map tiles) |
 | Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android) | IMPLEMENTED (type-checked, APK built; **not run on a device**) |
-| | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e, 32 steps) |
+| | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e) |
 | | Network layer: retry/backoff, idempotency keys, single-flight refresh, persistent outbox | TESTED |
 | | iOS | NOT BUILT/UNTESTED (code is shared; no iOS build produced) |
 | | Background location | NOT BUILT (foreground only; disclosed) |

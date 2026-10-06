@@ -4,14 +4,14 @@ import { q, q1, tx } from '../db.js';
 import { config } from '../config.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { haversineM, pointInPolygon, type LatLng } from '../util/geo.js';
-import { computeFare, finalizeFare, activeRule, ruleById, type Breakdown } from './pricing.js';
+import { computeFare, finalizeFare, activeRule, ruleById, kigaliHour, overtimeBlocks, type Breakdown } from './pricing.js';
 import { route } from './maps.js';
 import { checkPromo } from './promos.js';
 import { getSetting, flag } from './settings.js';
 import { transition, logEvent, ACTIVE_TRIP, type BookingRow, type Status } from './bookingMachine.js';
 import { startSearch } from './dispatch.js';
 import { notify } from './notify.js';
-import { sha256, randomToken } from '../util/crypto.js';
+import { sha256, randomToken, signFileToken } from '../util/crypto.js';
 import { createDuePayment } from './payments.js';
 import { DOCS_OK_SQL } from './drivers.js';
 
@@ -32,7 +32,7 @@ async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, radiusM
     `select dp.last_lat, dp.last_lng, v.vehicle_type from driver_profiles dp
      join users u on u.id=dp.user_id and u.status='active'
      join vehicles v on v.driver_id=dp.user_id and v.status='approved'
-     where dp.status='APPROVED' and dp.is_online and dp.last_seen_at > now() - make_interval(secs => $1)
+     where dp.status='APPROVED' and dp.is_online and 'ride' = any(dp.accepting) and dp.last_seen_at > now() - make_interval(secs => $1)
        and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
        and v.vehicle_type = any($3) and v.capacity >= $4 and (not $5 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
@@ -41,15 +41,31 @@ async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, radiusM
   return near.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup));
 }
 
+async function nearbyAbasare(cv: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number): Promise<number[]> {
+  const rows = await q<any>(
+    `select dp.last_lat, dp.last_lng from driver_profiles dp join users u on u.id=dp.user_id and u.status='active'
+     where dp.status='APPROVED' and dp.abasare_status='approved' and 'abasare' = any(dp.accepting) and dp.is_online
+       and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
+       and (dp.abasare_skills->'classes') ? $3 and (dp.abasare_skills->'transmissions') ? $4 and ${DOCS_OK_SQL('dp', "'abasare'")}
+       and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
+    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission]);
+  return rows.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup)).filter((d) => d <= radiusM);
+}
+async function abasareSupply(cv: any): Promise<number> {
+  const r = await q1<{ n: number }>(`select count(*)::int n from driver_profiles dp where dp.status='APPROVED' and dp.abasare_status='approved'
+    and (dp.abasare_skills->'classes') ? $1 and (dp.abasare_skills->'transmissions') ? $2 and ${DOCS_OK_SQL('dp', "'abasare'")}`, [cv.vehicle_class, cv.transmission]);
+  return r!.n;
+}
+
 async function schedulableSupply(svc: any): Promise<number> {
   const r = await q1<{ n: number }>(
     `select count(*)::int n from driver_profiles dp join vehicles v on v.driver_id=dp.user_id and v.status='approved'
-     where dp.status='APPROVED' and v.vehicle_type = any($1) and v.capacity >= $2 and (not $3 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}`,
+     where dp.status='APPROVED' and 'ride' = any(dp.accepting) and v.vehicle_type = any($1) and v.capacity >= $2 and (not $3 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}`,
     [svc.vehicle_types, svc.min_capacity, svc.requires_comfort]);
   return r!.n;
 }
 
-export type EstimateIn = { pickup: LatLng; dest: LatLng; service_id?: string; promo_code?: string; scheduled_for?: string };
+export type EstimateIn = { pickup: LatLng; dest?: LatLng; service_id?: string; promo_code?: string; scheduled_for?: string; abasare?: { customer_vehicle_id: string; hours?: number } };
 
 /** Validates coverage, prices every enabled service, stores an immutable quote per option. */
 export async function estimate(passengerId: string, inp: EstimateIn) {
@@ -62,41 +78,55 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
     if (Number.isNaN(scheduled.getTime()) || scheduled.getTime() < Date.now() + 20 * 60e3 || scheduled.getTime() > Date.now() + days * 86400e3)
       throw badRequest('invalid_schedule', `Schedule between 20 minutes and ${days} days ahead`);
   }
+  // Abasare (driver for the customer's own car) and ride services are quoted separately.
+  let cv: any = null; let forcedId: string | null = inp.service_id ?? null;
+  if (inp.abasare) {
+    if (!(await flag('abasare.enabled'))) throw badRequest('abasare_disabled', 'Abasare is not enabled');
+    cv = await q1<any>('select * from customer_vehicles where id=$1 and owner_id=$2 and active', [inp.abasare.customer_vehicle_id, passengerId]);
+    if (!cv) throw notFound('vehicle');
+    forcedId = inp.abasare.hours != null ? 'abasare_hourly' : 'abasare';
+    if (inp.abasare.hours == null && !inp.dest) throw badRequest('destination_required', 'Choose where to be driven');
+  } else if (!inp.dest) throw badRequest('destination_required', 'Choose a destination');
+  const dest: LatLng = inp.dest ?? inp.pickup;
   const svcs = await q<any>(
     `select s.* from service_categories s join zone_services zs on zs.service_id=s.id and zs.zone_id=$1 and zs.enabled
-     where s.enabled and ($2::text is null or s.id=$2) order by s.sort`, [pz.id, inp.service_id ?? null]);
-  if (inp.service_id && !svcs.length) throw badRequest('service_unavailable', 'This service is not available here');
-  const dz = await zoneFor(inp.dest);
+     where s.enabled and s.kind = $3 and ($2::text is null or s.id=$2) order by s.sort`, [pz.id, forcedId, inp.abasare ? 'abasare' : 'ride']);
+  if ((inp.service_id || inp.abasare) && !svcs.length) throw badRequest('service_unavailable', 'This service is not available here');
+  const dz = await zoneFor(dest);
   const [hb, ttl, radius] = [await getSetting('dispatch.heartbeat_max_age_s'), await getSetting('booking.quote_ttl_s'), await getSetting('dispatch.max_radius_km')];
   const options: any[] = [];
   for (const s of svcs) {
     const maxKm = s.restrictions?.max_distance_km;
     if (!dz && !s.restrictions?.allow_outside_dest) { options.push({ service_id: s.id, available: false, reason: 'destination_outside_coverage' }); continue; }
-    const vt = s.vehicle_types[0];
-    const rt = await route(inp.pickup, inp.dest, vt);
+    const vt = s.kind === 'abasare' ? 'moto' : s.vehicle_types[0];
+    const rt = s.id === 'abasare_hourly' ? { distance_m: 0, duration_s: 0, source: 'estimate' as const } : await route(inp.pickup, dest, vt);
     if (maxKm && rt.distance_m > maxKm * 1000) { options.push({ service_id: s.id, available: false, reason: 'too_far_for_service' }); continue; }
     const rule = await activeRule(s.id, pz.id, scheduled ?? new Date());
     const promo = inp.promo_code ? await (async () => {
-      const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled });
+      const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()) });
       return checkPromo(inp.promo_code!, passengerId, s.id, pz.id, pre.subtotal);
     })() : null;
     const bd: Breakdown = computeFare(rule, {
-      distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled,
+      distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()),
       promo: promo?.ok ? { code: promo.code, discount: promo.discount } : undefined,
     });
     let available: boolean, near: number[] = [], reason: string | undefined;
-    if (scheduled) { available = (await schedulableSupply(s)) > 0; if (!available) reason = 'no_vehicles_for_service'; }
+    if (s.kind === 'abasare') {
+      if (scheduled) { available = (await abasareSupply(cv)) > 0; if (!available) reason = 'no_abasare_for_this_car'; }
+      else { near = await nearbyAbasare(cv, pz.id, inp.pickup, radius * 1000, hb); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
+    } else if (scheduled) { available = (await schedulableSupply(s)) > 0; if (!available) reason = 'no_vehicles_for_service'; }
     else { near = await nearbyAvailable(s, pz.id, inp.pickup, radius * 1000, hb); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
     let quoteId: string | null = null;
     if (available) {
       quoteId = (await q1<{ id: string }>(
-        `insert into fare_quotes(passenger_id, service_id, zone_id, pickup_lat, pickup_lng, dest_lat, dest_lng, distance_m, duration_s, route_source, rule_id, rule_version, promo_code, breakdown, total, scheduled_for, expires_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, now() + make_interval(secs => $17)) returning id`,
-        [passengerId, s.id, pz.id, inp.pickup.lat, inp.pickup.lng, inp.dest.lat, inp.dest.lng, rt.distance_m, rt.duration_s, rt.source, rule.id, rule.version,
-         promo?.ok ? promo.code : null, JSON.stringify(bd), bd.total, scheduled, ttl]))!.id;
+        `insert into fare_quotes(passenger_id, service_id, zone_id, pickup_lat, pickup_lng, dest_lat, dest_lng, distance_m, duration_s, route_source, rule_id, rule_version, promo_code, breakdown, total, scheduled_for, expires_at, meta)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, now() + make_interval(secs => $17), $18) returning id`,
+        [passengerId, s.id, pz.id, inp.pickup.lat, inp.pickup.lng, dest.lat, dest.lng, rt.distance_m, rt.duration_s, rt.source, rule.id, rule.version,
+         promo?.ok ? promo.code : null, JSON.stringify(bd), bd.total, scheduled, ttl,
+         JSON.stringify(cv ? { customer_vehicle_id: cv.id, vehicle_class: cv.vehicle_class, transmission: cv.transmission, hours: inp.abasare?.hours ?? null, hire_mode: inp.abasare?.hours != null ? 'hourly' : 'point_to_point' } : {})]))!.id;
     }
     options.push({
-      service_id: s.id, name_en: s.name_en, name_rw: s.name_rw, capacity: s.passenger_capacity, luggage: s.luggage,
+      service_id: s.id, kind: s.kind, hours: inp.abasare?.hours ?? null, name_en: s.name_en, name_rw: s.name_rw, capacity: s.passenger_capacity, luggage: s.luggage,
       available, reason, quote_id: quoteId, fare: bd, distance_m: rt.distance_m, duration_s: rt.duration_s, route_source: rt.source,
       pickup_eta_s: near.length ? Math.round((Math.min(...near) * 1.5) / 1000 / 24 * 3600) : null, nearby_drivers: scheduled ? undefined : near.length,
       promo: promo ? (promo.ok ? { code: promo.code, discount: promo.discount } : { error: promo.reason }) : undefined,
@@ -110,6 +140,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
 export type CreateIn = {
   quote_id: string; payment_method: string; pickup_name?: string; pickup_note?: string; dest_name?: string; idempotency_key: string;
   corporate_id?: string; cost_centre?: string; po_ref?: string; rider_name?: string; rider_phone?: string;
+  customer_vehicle_id?: string; owner_attested?: boolean;
 };
 
 async function enforceCorporate(c: PoolClient, userId: string, corporateId: string, serviceId: string, total: number, when: Date) {
@@ -160,6 +191,15 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
         const pc = await checkPromo(quote.promo_code, passengerId, quote.service_id, quote.zone_id, quote.breakdown.subtotal - quote.breakdown.passthrough, c);
         if (!pc.ok || pc.discount !== quote.breakdown.discount) throw conflict('promo_invalid', 'Promotion is no longer valid; please re-check the price.');
       }
+      const meta = quote.meta ?? {};
+      if (svc.kind === 'abasare') {
+        if (!(await flag('abasare.enabled'))) throw badRequest('abasare_disabled', 'Abasare is not enabled');
+        if (!meta.customer_vehicle_id || (inp.customer_vehicle_id && inp.customer_vehicle_id !== meta.customer_vehicle_id)) throw badRequest('vehicle_mismatch', 'This price was quoted for a different car');
+        if (!inp.owner_attested) throw badRequest('attestation_required', 'Confirm that you own or may use this car and that its insurance allows another driver');
+        const cvx = await q1<any>('select * from customer_vehicles where id=$1 and owner_id=$2 and active', [meta.customer_vehicle_id, passengerId], c);
+        if (!cvx) throw notFound('vehicle');
+        if (!cvx.insurance_confirmed || (cvx.insurance_expiry && new Date(cvx.insurance_expiry) < new Date())) throw badRequest('insurance_confirmation_required', 'Confirm valid insurance for this car in My cars');
+      } else if (meta.customer_vehicle_id) throw badRequest('invalid_quote');
       const when = quote.scheduled_for ? new Date(quote.scheduled_for) : new Date();
       if (inp.corporate_id) await enforceCorporate(c, passengerId, inp.corporate_id, quote.service_id, quote.total, when);
       const scheduled = !!quote.scheduled_for;
@@ -172,6 +212,7 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
          quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, quote.total, quote.distance_m, quote.duration_s, inp.payment_method,
          inp.corporate_id ? 'corporate' : 'passenger', inp.corporate_id ?? null, inp.cost_centre ?? null, inp.po_ref ?? null, inp.rider_name ?? null, inp.rider_phone ?? null,
          quote.scheduled_for, inp.idempotency_key, JSON.stringify(quote.breakdown)], c))[0];
+      if (svc.kind === 'abasare') await q('update bookings set hire_mode=$2, hours_booked=$3, customer_vehicle_id=$4, owner_attested_at=now() where id=$1', [b.id, meta.hire_mode, meta.hours, meta.customer_vehicle_id], c);
       await q('update fare_quotes set used_booking_id=$2 where id=$1', [quote.id, b.id], c);
       await logEvent(c, b.id, 'booking_created', { id: passengerId, role: 'passenger' }, { quote_id: quote.id, total: quote.total, rule_version: quote.rule_version });
       if (quote.promo_code) {
@@ -236,16 +277,19 @@ export async function bookingView(b: BookingRow, as: Perspective) {
   if (as === 'fleet' || as === 'driver') { /* money below */ }
   if (b.driver_id && ACTIVE_TRIP.concat(['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'] as Status[]).includes(b.status)) {
     const d = await q1<any>(
-      `select u.display_name, dp.rating_avg, dp.rating_count, dp.last_lat, dp.last_lng, dp.last_location_at, u.photo_key,
+      `select u.display_name, dp.rating_avg, dp.rating_count, dp.last_lat, dp.last_lng, dp.last_location_at, u.photo_key, dp.abasare_skills, dp.completed_count,
               v.make, v.model, v.color, v.plate, v.vehicle_type
        from driver_profiles dp join users u on u.id=dp.user_id left join vehicles v on v.id=$2 where dp.user_id=$1`, [b.driver_id, b.vehicle_id]);
     if (as === 'passenger' || as === 'staff' || as === 'corporate') {
-      out.driver = { name: d.display_name, rating: Number(d.rating_avg), rating_count: d.rating_count, has_photo: !!d.photo_key };
-      out.vehicle = { make: d.make, model: d.model, color: d.color, plate: d.plate, type: d.vehicle_type };
+      out.driver = { name: d.display_name, rating: Number(d.rating_avg), rating_count: d.rating_count, has_photo: !!d.photo_key, trips: d.completed_count,
+        photo_url: d.photo_key ? `/api/v1/files/${d.photo_key}?token=${signFileToken(d.photo_key, 300)}` : null };   // identity check before handing over keys / boarding
+      if (b.customer_vehicle_id) out.driver.abasare = { years_experience: d.abasare_skills?.years_experience ?? null, return_mode: d.abasare_skills?.return_mode ?? null, licence_since: d.abasare_skills?.licence_since ?? null };
+      else out.vehicle = { make: d.make, model: d.model, color: d.color, plate: d.plate, type: d.vehicle_type };
       if (ACTIVE_TRIP.includes(b.status) && d.last_lat != null)
         out.driver_location = { lat: d.last_lat, lng: d.last_lng, at: d.last_location_at };
     }
   }
+  if (b.customer_vehicle_id) out.abasare = await abasareView(b, as);
   if (as === 'passenger' && ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) out.trip_pin = tripPin(b.id);
   if (as === 'driver') {
     const p = await q1<any>('select display_name from users where id=$1', [b.passenger_id]);
@@ -260,6 +304,19 @@ export async function bookingView(b: BookingRow, as: Perspective) {
   }
   if (as === 'driver') delete out.fare_breakdown;
   return out;
+}
+
+async function abasareView(b: BookingRow, as: Perspective) {
+  const cv = await q1<any>('select plate, make, model, color, year, vehicle_class, transmission from customer_vehicles where id=$1', [b.customer_vehicle_id]);
+  const hs = await q<any>('select * from abasare_handovers where booking_id=$1 order by created_at', [b.id]);
+  const photos = await q<any>('select phase, file_key from handover_photos where booking_id=$1 order by created_at', [b.id]);
+  const link = (k: string) => `/api/v1/files/${k}?token=${signFileToken(k, 300)}`;
+  return {
+    mode: b.hire_mode, hours: b.hours_booked, overtime_blocks: b.overtime_blocks, vehicle: cv,
+    handovers: hs.map((h) => ({ phase: h.phase, odometer_km: h.odometer_km, fuel_percent: h.fuel_percent, notes: h.notes, damage_noted: h.damage_noted, owner_response: h.owner_response, owner_note: h.owner_note, at: h.created_at,
+      photos: photos.filter((p) => p.phase === h.phase).map((p) => (as === 'corporate' ? null : link(p.file_key))).filter(Boolean) })),
+    photos_pending: { pickup: photos.filter((p) => p.phase === 'pickup').length, dropoff: photos.filter((p) => p.phase === 'dropoff').length },
+  };
 }
 
 // ---------- cancellation ----------
@@ -331,6 +388,11 @@ export async function startTrip(driverId: string, bookingId: string, pin: string
     const b = await ownTrip(c, driverId, bookingId);
     if (!['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) throw conflict('invalid_state', `Booking is ${b.status}`);
     if (b.pin_attempts >= 5) throw new AppError(423, 'pin_locked', 'Too many wrong PIN attempts. Contact support.');
+    if (b.hire_mode) {
+      const h = await q1<any>("select owner_response from abasare_handovers where booking_id=$1 and phase='pickup'", [b.id], c);
+      if (!h) throw conflict('handover_required', "Record the car's condition (photos, odometer, fuel) before starting");
+      if (h.owner_response === 'issue') throw conflict('handover_disputed', 'The owner reported an issue with the recorded condition. Support will help resolve it.');
+    }
     if (pin !== tripPin(b.id)) {
       await q('update bookings set pin_attempts = pin_attempts + 1 where id=$1', [b.id], c);
       await logEvent(c, b.id, 'pin_failed', { id: driverId, role: 'driver' });
@@ -372,10 +434,13 @@ export async function completeTrip(driverId: string, bookingId: string) {
     if (b.status !== 'IN_PROGRESS') throw conflict('invalid_state', `Booking is ${b.status}`);
     if (b.final_fare != null) throw conflict('already_finalised', 'Fare already finalised');
     const rule = await ruleById((await q1<any>('select rule_id from fare_quotes where id=$1', [b.quote_id], c))!.rule_id, c);
-    const waiting = b.arrived_at && b.started_at ? Math.ceil((new Date(b.started_at).getTime() - new Date(b.arrived_at).getTime()) / 60000) : 0;
-    const bd = finalizeFare(rule, b.fare_breakdown, { waiting_min: waiting, extras: b.extra_charges ?? [] });
+    if (b.hire_mode && !(await q1("select 1 from abasare_handovers where booking_id=$1 and phase='dropoff'", [b.id], c))) throw conflict('handover_required', "Record the car's condition at drop-off before completing");
+    const hourly = b.hire_mode === 'hourly';
+    const waiting = !hourly && b.arrived_at && b.started_at ? Math.ceil((new Date(b.started_at).getTime() - new Date(b.arrived_at).getTime()) / 60000) : 0;
+    const blocks = hourly ? overtimeBlocks(rule, b.hours_booked ?? 0, Math.ceil((Date.now() - new Date(b.started_at).getTime()) / 60000)) : 0;
+    const bd = finalizeFare(rule, b.fare_breakdown, { waiting_min: waiting, extras: b.extra_charges ?? [], overtime_blocks: blocks });
     const done = await transition(c, bookingId, 'COMPLETED', { id: driverId, role: 'driver' },
-      { patch: { completed_at: new Date(), final_fare: bd.total, fare_breakdown: JSON.stringify(bd), waiting_min: waiting } });
+      { patch: { completed_at: new Date(), final_fare: bd.total, fare_breakdown: JSON.stringify(bd), waiting_min: waiting, overtime_blocks: blocks } });
     await q('update driver_profiles set completed_count = completed_count + 1, last_trip_at = now() where user_id=$1', [driverId], c);
     await createDuePayment(c, done);
     return (await q1<BookingRow>('select * from bookings where id=$1', [bookingId], c))!;

@@ -65,7 +65,7 @@ const kpi = (l, v, warn) => h('div', { class: 'card kpi' + (warn ? ' warn' : '')
 // ---------------- views ----------------
 const TABS = [
   ['dashboard', 'Overview', ['analytics.view']], ['live', 'Live map', ['dispatcher']], ['bookings', 'Bookings', ['dispatcher', 'support_agent', 'support_lead']],
-  ['drivers', 'Drivers', ['driver_verifier', 'dispatcher', 'support_agent', 'support_lead', 'finance_officer']], ['users', 'Passengers', ['support_agent', 'support_lead']],
+  ['drivers', 'Drivers', ['driver_verifier', 'dispatcher', 'support_agent', 'support_lead', 'finance_officer']], ['abasare', 'Abasare', ['driver_verifier']], ['users', 'Passengers', ['support_agent', 'support_lead']],
   ['support', 'Support', ['support_agent', 'support_lead']], ['safety', 'Safety', ['support_lead', 'dispatcher']],
   ['pricing', 'Pricing', ['business_manager', 'finance_approver']], ['promos', 'Promotions', ['business_manager']],
   ['finance', 'Finance', ['finance_officer', 'finance_approver']], ['business', 'Business & fleets', ['business_manager']],
@@ -116,6 +116,12 @@ async function bookingDetail(id) {
     h('div', {}, `From: ${b.pickup.name || b.pickup.lat + ',' + b.pickup.lng}  →  ${b.destination.name || b.destination.lat + ',' + b.destination.lng}`),
     b.driver ? h('div', {}, `Driver: ${b.driver.name} · ${b.vehicle?.plate || ''}`) : null,
     b.payment ? h('div', {}, `Payment: ${b.payment.status} · ref ${b.payment.reference}`) : null,
+    b.abasare ? h('div', { class: 'card' }, h('b', {}, `Abasare · ${b.abasare.mode === 'hourly' ? b.abasare.hours + ' h hire' : 'drive me home'}`),
+      h('div', {}, `Customer car: ${b.abasare.vehicle.plate} · ${[b.abasare.vehicle.color, b.abasare.vehicle.make, b.abasare.vehicle.model].filter(Boolean).join(' ')} · ${b.abasare.vehicle.vehicle_class}, ${b.abasare.vehicle.transmission}`),
+      b.abasare.overtime_blocks ? h('div', {}, `Overtime blocks: ${b.abasare.overtime_blocks}`) : null,
+      b.abasare.handovers.length ? b.abasare.handovers.map((x) => h('div', { style: 'margin-top:8px' }, h('b', {}, `${x.phase} check`), ` · odometer ${x.odometer_km} km · fuel ${x.fuel_percent}% · owner: `, pill(x.owner_response || 'not yet', x.owner_response === 'issue' ? 'bad' : ''),
+        x.notes ? h('div', {}, 'Driver notes: ' + x.notes) : null, x.owner_note ? h('div', { class: 'err' }, 'Owner note: ' + x.owner_note) : null,
+        h('div', { class: 'row' }, x.photos.map((u, i) => h('a', { href: u, target: '_blank', rel: 'noopener' }, 'photo ' + (i + 1)))))) : h('div', { class: 'muted' }, 'No car check recorded yet.')) : null,
     h('div', { class: 'row' },
       can('dispatcher') && h('button', { class: 'b sec', onclick: async () => { const a = await ask('Assign a driver', { reason: true, fields: [{ name: 'driver_id', label: 'Driver user id' }] }); if (a) act(() => api('POST', `/admin/bookings/${id}/assign`, { driver_id: a.driver_id, reason: a.reason }), refresh); } }, 'Assign / reassign'),
       can('dispatcher') && h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/bookings/${id}/restart-search`), refresh) }, 'Restart search'),
@@ -141,6 +147,11 @@ async function driverDetail(id) {
   d.append(h('h2', {}, `${x.profile.display_name || x.profile.legal_name || 'Driver'} · `, pill(x.profile.status, statusCls(x.profile.status))),
     h('div', {}, `${x.profile.phone} · rating ${x.profile.rating_avg} (${x.profile.rating_count}) · completed ${x.profile.completed_count} · cancelled ${x.profile.cancel_count}`),
     h('div', { class: x.permission.can_work ? 'ok' : 'err' }, x.permission.can_work ? 'Permitted to work' : 'Not dispatchable: ' + x.permission.reasons.join(', ') + (x.permission.missing_documents.length ? ' · missing/unapproved: ' + x.permission.missing_documents.join(', ') : '') + (x.permission.expired_documents.length ? ' · expired: ' + x.permission.expired_documents.join(', ') : '')),
+    x.profile.abasare_status && x.profile.abasare_status !== 'none' ? h('div', { class: 'card' }, h('h2', {}, 'Abasare application ', pill(x.profile.abasare_status, statusCls(x.profile.abasare_status))),
+      h('div', {}, `Licence since ${x.profile.abasare_skills.licence_since} · ${x.profile.abasare_skills.years_experience} yrs experience · returns by ${x.profile.abasare_skills.return_mode}`),
+      h('div', {}, `Can drive: ${(x.profile.abasare_skills.classes || []).join(', ')} · ${(x.profile.abasare_skills.transmissions || []).join(', ')}`),
+      can('driver_verifier') ? h('div', { class: 'row' },
+        ...[['approve', 'Approve Abasare', false, 'b'], ['reject', 'Reject', true, 'b red'], ['suspend', 'Suspend', true, 'b red'], ['reinstate', 'Reinstate', false, 'b sec']].map(([dec, label, need, cls]) => h('button', { class: cls, onclick: async () => { const a = await ask(label + '?', { reason: need, danger: need }); if (a) act(() => api('POST', `/admin/drivers/${id}/abasare-decision`, { decision: dec, reason: a.reason }), refresh); } }, label))) : null) : null,
     h('h2', {}, 'Vehicle'), table([{ h: 'Plate', k: 'plate' }, { h: 'Type', k: 'vehicle_type' }, { h: 'Make', f: (v) => `${v.make} ${v.model} ${v.color}` }, { h: 'Seats', k: 'capacity' }, { h: 'Status', k: 'status' }], x.vehicles),
     h('h2', {}, 'Documents (links expire in 5 minutes)'),
     table([{ h: 'Type', k: 'doc_type' }, { h: 'Status', f: (r) => pill(r.review_status, statusCls(r.review_status)) }, { h: 'Expiry', k: 'expiry_date' }, { h: 'Note', k: 'review_note' }, { h: 'File', f: (r) => h('a', { href: r.url, target: '_blank', rel: 'noopener' }, 'view') },
@@ -156,6 +167,15 @@ async function driverDetail(id) {
     h('div', { class: 'row' }, h('button', { class: 'b sec', onclick: close }, 'Close')));
   document.body.append(d); d.showModal();
 }
+V.abasare = async (el, state = {}) => {
+  const st = state.status || 'pending';
+  const d = await api('GET', '/admin/abasare/applications?status=' + st);
+  const sel = h('select', { onchange: () => { $('#view').replaceChildren(); V.abasare($('#view'), { status: sel.value }); } }, ['pending', 'approved', 'rejected', 'suspended'].map((s) => h('option', { value: s, selected: s === st }, s)));
+  el.append(h('h1', {}, 'Abasare (drivers for customers\' own cars)'), h('div', { class: 'banner' }, 'Approve only after the driving licence (held 2+ years), national ID, photo and a valid police clearance are verified. Open a driver to review documents.'),
+    h('div', { class: 'row' }, 'Status:', sel),
+    table([{ h: 'Name', k: 'display_name' }, { h: 'Phone', k: 'phone' }, { h: 'Account', k: 'account_status' }, { h: 'Licence since', f: (r) => r.abasare_skills.licence_since }, { h: 'Experience', f: (r) => r.abasare_skills.years_experience + ' yrs' },
+      { h: 'Cars', f: (r) => (r.abasare_skills.classes || []).join(', ') + ' / ' + (r.abasare_skills.transmissions || []).join(', ') }, { h: 'Applied', f: (r) => when(r.abasare_applied_at) }], d.applications, (r) => driverDetail(r.user_id)));
+};
 V.users = async (el) => {
   const inp = h('input', { placeholder: 'Name, phone or email (min 2 chars)', style: 'min-width:280px' }); const out = h('div');
   const go = async () => { out.replaceChildren(table([{ h: 'Name', k: 'display_name' }, { h: 'Phone', k: 'phone' }, { h: 'Email', k: 'email' }, { h: 'Status', f: (u) => pill(u.status, statusCls(u.status)) }, { h: 'Roles', f: (u) => u.roles.join(', ') }], (await api('GET', '/admin/users?q=' + encodeURIComponent(inp.value))).users, userDetail)); };
@@ -193,10 +213,11 @@ V.safety = async (el) => {
 V.pricing = async (el) => {
   const d = await api('GET', '/admin/pricing');
   const f = ['service_id', 'base_fare', 'per_km', 'per_min', 'minimum_fare', 'booking_fee', 'wait_per_min', 'airport_fee', 'tax_bps', 'rounding'];
+  const af = ['billing', 'return_per_km', 'night_start_hour', 'night_end_hour', 'night_fee', 'hourly_rate', 'min_hours', 'max_hours', 'long_hire_hours', 'long_hire_rate', 'overtime_per_30min', 'overtime_grace_min'];
   el.append(h('h1', {}, 'Pricing & commission'), h('div', { class: 'banner' }, 'Changes are proposed, then approved by a different person. An accepted fare quote is never altered.'),
-    h('h2', {}, 'Fare rules'), table([{ h: 'Service', k: 'service_id' }, { h: 'v', k: 'version' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, ...f.slice(1).map((k) => ({ h: k.replace(/_/g, ' '), k })), { h: 'Effective', f: (r) => when(r.effective_from) },
+    h('h2', {}, 'Fare rules'), table([{ h: 'Service', k: 'service_id' }, { h: 'v', k: 'version' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, ...f.slice(1).map((k) => ({ h: k.replace(/_/g, ' '), k })), { h: 'Abasare', f: (r) => r.service_id.startsWith('abasare') ? [r.billing === 'hourly' ? `${r.hourly_rate}/h (min ${r.min_hours}h, long ${r.long_hire_hours || '-'}h @ ${r.long_hire_rate || '-'}, overtime ${r.overtime_per_30min}/30min)` : `return ${r.return_per_km}/km`, r.night_fee ? ` · night ${r.night_start_hour}-${r.night_end_hour}h +${r.night_fee}` : ''].join('') : '' }, { h: 'Effective', f: (r) => when(r.effective_from) },
       { h: '', f: (r) => r.status === 'pending_approval' && can('finance_approver') ? h('span', { class: 'row' }, h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/pricing/${r.id}/approve`), () => go('pricing')) }, 'Approve'), h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/pricing/${r.id}/reject`), () => go('pricing')) }, 'Reject')) : '' }], d.rules),
-    can('business_manager') && h('button', { class: 'b', onclick: async () => { const a = await ask('Propose new fare rule', { fields: f.map((k) => ({ name: k, label: k, type: k === 'service_id' ? 'text' : 'number' })) }); if (a) { delete a.reason; act(() => api('POST', '/admin/pricing', a), () => go('pricing')); } } }, 'Propose fare change'),
+    can('business_manager') && h('button', { class: 'b', onclick: async () => { const a = await ask('Propose new fare rule', { fields: [...f, ...af].map((k) => ({ name: k, label: k + (af.includes(k) ? ' (Abasare)' : ''), type: ['service_id', 'billing'].includes(k) ? 'text' : 'number' })) }); if (a) { delete a.reason; if (!a.billing) delete a.billing; for (const k of af) if (k !== 'billing' && (a[k] === 0 || Number.isNaN(a[k]))) delete a[k]; act(() => api('POST', '/admin/pricing', a), () => go('pricing')); } } }, 'Propose fare change'),
     h('h2', {}, 'Commission rules'), table([{ h: 'Scope', f: (c) => c.driver_id ? 'driver ' + c.driver_id.slice(0, 6) : c.fleet_id ? 'fleet' : c.service_id || 'platform default' }, { h: 'Kind', k: 'kind' }, { h: 'Rate', f: (c) => c.kind === 'percent' ? c.percent_bps / 100 + '%' : money(c.fixed_amount) }, { h: 'Exempt until', f: (c) => c.exempt_until ? when(c.exempt_until) : '-' }, { h: 'Status', f: (c) => pill(c.status, statusCls(c.status)) }, { h: 'Note', k: 'note' },
       { h: '', f: (c) => c.status === 'pending_approval' && can('finance_approver') ? h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/commissions/${c.id}/approve`), () => go('pricing')) }, 'Approve') : '' }], d.commissions));
 };

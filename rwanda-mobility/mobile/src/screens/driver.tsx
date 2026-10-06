@@ -11,8 +11,11 @@ import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
 import { showAlert } from '../ui/dialog';
 import { SosButton } from './shared';
+import { appendFile, pickPhoto } from '../lib/upload';
+import { Image } from 'react-native';
+import { API_URL } from '../config';
 
-const DOC_LABEL: Record<string, string> = { national_id: 'National ID', driving_licence: 'Driving licence', profile_photo: 'Profile photo', vehicle_registration: 'Vehicle registration', insurance: 'Insurance', inspection: 'Inspection / roadworthiness', transport_permit: 'Transport permit' };
+const DOC_LABEL: Record<string, string> = { national_id: 'National ID', driving_licence: 'Driving licence', profile_photo: 'Profile photo', vehicle_registration: 'Vehicle registration', insurance: 'Insurance', inspection: 'Inspection / roadworthiness', transport_permit: 'Transport permit', police_clearance: 'Police clearance certificate' };
 const VTYPES = ['moto', 'car', 'minivan'] as const;
 
 export function DriverHome() {
@@ -28,7 +31,10 @@ export function DriverHome() {
 // ---------------------------------------------------------------- onboarding
 function Onboarding({ status, reload }: { status: any; reload: () => void }) {
   const { t, client, setMode, say } = useApp(); const { busy, run } = useAsync();
-  const p = status.profile, v = status.vehicle;
+  const p = status.profile, v = status.vehicle; const ab = status.abasare ?? { status: 'none', skills: {} };
+  const [showRide, setShowRide] = useState(!!v); const [showAb, setShowAb] = useState(ab.status !== 'none');
+  const [af, setAf] = useState({ licence_since: ab.skills?.licence_since ?? '', years: String(ab.skills?.years_experience ?? ''), transmissions: (ab.skills?.transmissions ?? ['manual']) as string[], classes: (ab.skills?.classes ?? ['car']) as string[], return_mode: (ab.skills?.return_mode ?? 'moto') as string });
+  const toggleIn = (key: 'transmissions' | 'classes', x: string) => setAf((a) => ({ ...a, [key]: a[key].includes(x) ? a[key].filter((y) => y !== x) : [...a[key], x] }));
   const [f, setF] = useState({ legal_name: p.legal_name ?? '', national_id: '', vehicle_type: (v?.vehicle_type ?? 'moto') as string, make: v?.make ?? '', model: v?.model ?? '', color: v?.color ?? '', plate: v?.plate ?? '', capacity: String(v?.capacity ?? 1), comfort: false, payout: p.payout_msisdn ?? '' });
   const editable = ['APPLICATION_STARTED', 'INFO_REQUIRED', 'REJECTED'].includes(p.status);
   const set = (k: string, val: any) => setF((x) => ({ ...x, [k]: val }));
@@ -36,14 +42,33 @@ function Onboarding({ status, reload }: { status: any; reload: () => void }) {
     await client.post('/drivers/applications', { legal_name: f.legal_name, national_id: f.national_id || '00000000', payout_msisdn: f.payout || undefined, vehicle: { vehicle_type: f.vehicle_type, make: f.make, model: f.model, color: f.color, plate: f.plate, capacity: Number(f.capacity) || 1, comfort: f.comfort } });
     say(t('common.save')); reload();
   });
-  const submit = () => run(async () => { await saveApp(); await client.post('/drivers/applications/submit'); reload(); });
+  const saveAb = () => run(async () => {
+    await client.post('/abasare/apply', { legal_name: f.legal_name, national_id: f.national_id || '00000000', payout_msisdn: f.payout || undefined, licence_since: af.licence_since, years_experience: Number(af.years) || 0, transmissions: af.transmissions, classes: af.classes, return_mode: af.return_mode });
+    say(t('common.save')); reload();
+  });
+  const submit = () => run(async () => { await client.post('/drivers/applications/submit'); reload(); });
+  const hasPath = !!v || ab.status !== 'none';
   const need = (status.requirements ?? []).filter((r: any) => r.mandatory || true);
   return (
     <View style={S.screen}><Header title={t('drv.app.title')} onBack={() => setMode('passenger')} />
       <Screen>
         <Card><Text style={S.muted}>{t('drv.status')}</Text><Pill tone={p.status === 'REJECTED' || p.status === 'SUSPENDED' ? 'bad' : p.status === 'APPROVED' ? 'ok' : 'warn'} text={t(('drv.st.' + p.status) as any)} />{p.status_reason ? <Text style={[S.body, { marginTop: 6 }]}>{p.status_reason}</Text> : null}</Card>
         {status.fleet_invites?.length ? <Card><Text style={S.h2}>Fleet invitation</Text>{status.fleet_invites.map((i: any) => <View key={i.id} style={[S.between, { marginTop: 6 }]}><Text style={S.body}>{i.name}</Text><Btn title={t('common.yes')} onPress={() => run(async () => { await client.post('/drivers/me/fleet/accept', { invite_id: i.id }); reload(); })} /></View>)}</Card> : null}
-        {editable ? <Card>
+        {editable && !showRide && !showAb ? <Card><Text style={S.h2}>{t('drv.become')}</Text><Text style={[S.muted, { marginBottom: 10 }]}>{t('ab.apply.sub')}</Text>
+          <Btn title={t('ab.apply.path.abasare')} onPress={() => setShowAb(true)} big /><View style={{ height: 10 }} /><Btn kind="ghost" title={t('ab.apply.path.ride')} onPress={() => setShowRide(true)} /></Card> : null}
+        {editable && (showRide || showAb) ? <View style={S.row}><Chip text={t('ab.apply.path.ride')} on={showRide} onPress={() => setShowRide(!showRide || !showAb ? true : false)} /><Chip text={t('ab.apply.path.abasare')} on={showAb} onPress={() => setShowAb(!showAb || !showRide ? true : false)} /></View> : null}
+        {editable && showAb ? <Card style={{ borderColor: C.gold, borderWidth: 2 }}>
+          <Text style={S.h2}>{t('ab.apply.title')}</Text><Text style={[S.muted, { marginBottom: 8 }]}>{t('ab.apply.need')}</Text>
+          {ab.status !== 'none' ? <View style={{ marginBottom: 8 }}><Text style={S.muted}>{t('ab.apply.status')}</Text><Pill tone={ab.status === 'approved' ? 'ok' : ab.status === 'pending' ? 'warn' : 'bad'} text={t(('ab.st.' + ab.status) as any)} />{ab.reason ? <Text style={S.muted}>{ab.reason}</Text> : null}</View> : null}
+          {!showRide ? <><Field label={t('drv.legalname')} value={f.legal_name} onChangeText={(x) => set('legal_name', x)} /><Field label={t('drv.nid')} value={f.national_id} onChangeText={(x) => set('national_id', x)} keyboardType="number-pad" maxLength={20} /><Field label={t('drv.payout')} value={f.payout} onChangeText={(x) => set('payout', x)} keyboardType="phone-pad" /></> : null}
+          <Field label={t('ab.apply.licence')} value={af.licence_since} onChangeText={(x) => setAf({ ...af, licence_since: x })} placeholder="2018-03-15" maxLength={10} />
+          <Field label={t('ab.apply.exp')} value={af.years} onChangeText={(x) => setAf({ ...af, years: x.replace(/\D/g, '') })} keyboardType="number-pad" maxLength={2} />
+          <Text style={S.muted}>{t('ab.apply.trans')}</Text><View style={{ flexDirection: 'row', marginVertical: 6 }}>{(['manual', 'automatic'] as const).map((x) => <Chip key={x} text={x === 'manual' ? t('ab.car.manual') : t('ab.car.auto')} on={af.transmissions.includes(x)} onPress={() => toggleIn('transmissions', x)} />)}</View>
+          <Text style={S.muted}>{t('ab.apply.classes')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 6 }}>{(['car', 'suv', 'minivan', 'pickup', 'moto'] as const).map((x) => <Chip key={x} text={t(('ab.cls.' + x) as any)} on={af.classes.includes(x)} onPress={() => toggleIn('classes', x)} />)}</View>
+          <Text style={S.muted}>{t('ab.apply.return')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 6 }}>{(['moto', 'taxi', 'own', 'walk'] as const).map((x) => <Chip key={x} text={t(('ab.apply.ret.' + x) as any)} on={af.return_mode === x} onPress={() => setAf({ ...af, return_mode: x })} />)}</View>
+          <Btn kind="ghost" title={t('ab.apply.save')} onPress={saveAb} loading={busy} disabled={ab.status === 'pending' || ab.status === 'approved' || !f.legal_name || f.national_id.length < 8 && !showRide || !/^\d{4}-\d{2}-\d{2}$/.test(af.licence_since) || !af.transmissions.length || !af.classes.length} />
+        </Card> : null}
+        {editable && showRide ? <Card>
           <Field label={t('drv.legalname')} value={f.legal_name} onChangeText={(x) => set('legal_name', x)} /><Field label={t('drv.nid')} value={f.national_id} onChangeText={(x) => set('national_id', x)} keyboardType="number-pad" maxLength={20} placeholder="1 1999 8 0012345 6 78" />
           <Text style={S.muted}>{t('drv.vtype')}</Text><View style={{ flexDirection: 'row', marginVertical: 6 }}>{VTYPES.map((x) => <Chip key={x} text={x} on={f.vehicle_type === x} onPress={() => { set('vehicle_type', x); set('capacity', x === 'moto' ? '1' : x === 'car' ? '4' : '7'); }} />)}</View>
           <Field label={t('drv.make')} value={f.make} onChangeText={(x) => set('make', x)} /><Field label={t('drv.model')} value={f.model} onChangeText={(x) => set('model', x)} /><Field label={t('drv.color')} value={f.color} onChangeText={(x) => set('color', x)} />
@@ -52,10 +77,10 @@ function Onboarding({ status, reload }: { status: any; reload: () => void }) {
           <Field label={t('drv.payout')} value={f.payout} onChangeText={(x) => set('payout', x)} keyboardType="phone-pad" />
           <Btn kind="ghost" title={t('common.save')} onPress={saveApp} loading={busy} disabled={!f.legal_name || !f.make || !f.plate || f.national_id.length < 8} />
         </Card> : null}
-        {v ? <Card><Text style={S.h2}>{t('drv.docs')}</Text>
+        {hasPath ? <Card><Text style={S.h2}>{t('drv.docs')}</Text>
           {need.map((r: any) => <DocRow key={r.doc_type} req={r} docs={status.documents.filter((d: any) => d.doc_type === r.doc_type)} editable reload={reload} />)}
         </Card> : <Banner text={t('drv.savefirst')} />}
-        {editable && v ? <Btn big title={t('drv.submit')} onPress={submit} loading={busy} /> : null}
+        {editable && hasPath ? <Btn big title={t('drv.submit')} onPress={submit} loading={busy} /> : null}
       </Screen></View>
   );
 }
@@ -91,6 +116,8 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
   const { t, client, setMode, nav, online, say } = useApp(); const { busy, run } = useAsync();
   const [isOnline, setIsOnline] = useState<boolean>(!!status.profile.is_online); const [consent, setConsent] = useState(false); const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [tab, setTab] = useState<'work' | 'earn'>('work');
+  const absPerm = status.abasare?.permission; const rideOk = !!status.permission?.can_work; const absOk = !!absPerm?.can_work;
+  const [accepting, setAccepting] = useState<string[]>(() => (status.profile.accepting ?? ['ride']).filter((x: string) => (x === 'ride' ? rideOk : absOk)));
   const sub = useRef<Location.LocationSubscription | null>(null);
   useEffect(() => { setIsOnline(!!status.profile.is_online); }, [status.profile.is_online]);
   useEffect(() => { kv.get('rm_drv_loc_consent').then((v) => setConsent(v === '1')); }, []);
@@ -111,7 +138,7 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
 
   const toggle = (on: boolean) => run(async () => {
     if (on && !consent) return;
-    try { await client.patch('/drivers/me/availability', { online: on }); setIsOnline(on); reload(); }
+    try { await client.patch('/drivers/me/availability', on ? { online: true, accepting: accepting.length ? accepting : [rideOk ? 'ride' : 'abasare'] } : { online: false }); setIsOnline(on); reload(); }
     catch (e: any) { if (e?.code === 'not_permitted_to_work') { say(t('drv.notallowed')); reload(); } else throw e; }
   });
   const active = usePoll(() => client.get('/bookings/active?role=driver'), 3000, [isOnline]);
@@ -127,10 +154,13 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
         {tab === 'earn' ? <Earnings /> : <>
           <Card>
             <View style={S.between}><View><Text style={S.h2}>{isOnline ? t('drv.online') : t('drv.offline')}</Text><Text style={S.muted}>★ {Number(status.profile.rating_avg).toFixed(1)} · {status.profile.completed_count} {t('drv.trips')}</Text></View>
-              <Btn kind={isOnline ? 'danger' : 'primary'} title={isOnline ? t('drv.gooffline') : t('drv.goonline')} onPress={() => (isOnline ? toggle(false) : consent ? toggle(true) : setConsent(false))} loading={busy} disabled={!perm.can_work && !isOnline} /></View>
-            {!perm.can_work ? <Banner kind="bad" text={`${t('drv.notallowed')}: ${perm.reasons.join(', ')}${perm.expired_documents.length ? ' · ' + perm.expired_documents.join(', ') : ''}${perm.missing_documents.length ? ' · ' + perm.missing_documents.join(', ') : ''}`} /> : null}
+              <Btn kind={isOnline ? 'danger' : 'primary'} title={isOnline ? t('drv.gooffline') : t('drv.goonline')} onPress={() => (isOnline ? toggle(false) : consent ? toggle(true) : setConsent(false))} loading={busy} disabled={!rideOk && !absOk && !isOnline} /></View>
+            {(rideOk && absOk) || absOk ? <View style={{ marginTop: 10 }}><Text style={S.muted}>{t('ab.accepting')}</Text><View style={{ flexDirection: 'row', marginTop: 6 }}>
+              {rideOk ? <Chip text={t('ab.accepting.ride')} on={accepting.includes('ride')} onPress={() => setAccepting((a) => (a.includes('ride') ? (a.length > 1 ? a.filter((x) => x !== 'ride') : a) : [...a, 'ride']))} /> : null}
+              {absOk ? <Chip text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => setAccepting((a) => (a.includes('abasare') ? (a.length > 1 ? a.filter((x) => x !== 'abasare') : a) : [...a, 'abasare']))} /> : null}</View></View> : null}
+            {!rideOk && !absOk ? <Banner kind="bad" text={`${t('drv.notallowed')}: ${[...(status.vehicle || status.abasare?.status === 'none' ? perm.reasons : []), ...(status.abasare?.status !== 'none' ? absPerm?.reasons ?? [] : [])].join(', ')}${[...perm.expired_documents, ...(absPerm?.expired_documents ?? [])].length ? ' · ' + [...perm.expired_documents, ...(absPerm?.expired_documents ?? [])].join(', ') : ''}${[...perm.missing_documents, ...(absPerm?.missing_documents ?? [])].length ? ' · ' + [...perm.missing_documents, ...(absPerm?.missing_documents ?? [])].join(', ') : ''}`} /> : null}
           </Card>
-          {!consent && perm.can_work ? <Card><Text style={S.h2}>{t('drv.location.title')}</Text><Text style={[S.body, { marginVertical: 8 }]}>{t('drv.location.body')}</Text><Btn title={t('drv.agree')} onPress={async () => { await kv.set('rm_drv_loc_consent', '1'); try { await client.post('/users/me/consents', { kind: 'background_location', version: 'v1', granted: true }); } catch { /* ok */ } setConsent(true); }} /></Card> : null}
+          {!consent && (rideOk || absOk) ? <Card><Text style={S.h2}>{t('drv.location.title')}</Text><Text style={[S.body, { marginVertical: 8 }]}>{t('drv.location.body')}</Text><Btn title={t('drv.agree')} onPress={async () => { await kv.set('rm_drv_loc_consent', '1'); try { await client.post('/users/me/consents', { kind: 'background_location', version: 'v1', granted: true }); } catch { /* ok */ } setConsent(true); }} /></Card> : null}
           {status.documents.filter((d: any) => d.expiry_date && new Date(d.expiry_date).getTime() - Date.now() < 30 * 86400000 && d.review_status === 'approved').map((d: any) => <Banner key={d.id} text={`${t('drv.docs.expiring')}: ${DOC_LABEL[d.doc_type] ?? d.doc_type} (${String(d.expiry_date).slice(0, 10)})`} />)}
           {trip ? <ActiveTrip trip={trip} pos={pos} reload={active.reload} /> : isOnline ? <>
             {pos ? <MapBox center={pos} markers={[{ ...pos, label: '', color: '#1A5FB4' }]} height={180} zoom={14} /> : null}
@@ -151,11 +181,12 @@ function OfferCard({ o, done }: { o: any; done: () => void }) {
   const reject = (reason: string) => run(async () => { await client.post(`/bookings/${o.booking_id}/reject`, { reason }); done(); });
   return (
     <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
-      <View style={S.between}><Text style={S.muted}>{t('drv.expires')} {left}s</Text><Pill text={o.payment_method === 'cash' ? 'CASH' : 'MoMo'} tone="warn" /></View>
+      <View style={S.between}><Text style={S.muted}>{t('drv.expires')} {left}s</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={o.payment_method === 'cash' ? 'CASH' : 'MoMo'} tone="warn" /></View></View>
+      {o.hire_mode ? <Text style={[S.body, { fontWeight: '700', marginTop: 6 }]}>{o.hire_mode === 'hourly' ? `${t('ab.offer.hourly')} · ${o.hours_booked} ${t('ab.h')}` : t('ab.offer.home')} · {t(('ab.cls.' + o.cv_class) as any)}, {o.cv_transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')}</Text> : null}
       <Text style={[S.muted, { marginTop: 6 }]}>{t('drv.earn')}</Text><Money n={o.driver_net} style={{ fontSize: 34, fontWeight: '800', color: C.primary }} />
       <Text style={S.body}>{t('drv.pickupin')}: {(o.distance_m / 1000).toFixed(1)} km · {Math.max(1, Math.round(o.eta_s / 60))} {t('common.min')}</Text>
-      <Text style={S.body}>{t('drv.trip')}: {(o.trip_distance_m / 1000).toFixed(1)} km · {Math.max(1, Math.round(o.trip_duration_s / 60))} {t('common.min')}</Text>
-      <Text style={[S.muted, { marginTop: 4 }]}>{o.pickup_name ?? ''}{o.pickup_note ? ` · ${o.pickup_note}` : ''} → {o.dest_name ?? ''}</Text>
+      {o.hire_mode === 'hourly' ? null : <Text style={S.body}>{t('drv.trip')}: {(o.trip_distance_m / 1000).toFixed(1)} km · {Math.max(1, Math.round(o.trip_duration_s / 60))} {t('common.min')}</Text>}
+      <Text style={[S.muted, { marginTop: 4 }]}>{o.pickup_name ?? ''}{o.pickup_note ? ` · ${o.pickup_note}` : ''}{o.hire_mode === 'hourly' ? '' : ` → ${o.dest_name ?? ''}`}</Text>
       <View style={{ height: 10 }} />
       {declining ? <View style={{ gap: 6 }}><Text style={S.muted}>{t('drv.decline.reason')}</Text>
         {([['too_far', 'drv.reason.far'], ['safety_concern', 'drv.reason.safety'], ['connectivity', 'drv.reason.conn'], ['other', 'drv.reason.other']] as const).map(([k, l]) => <Btn key={k} kind="ghost" title={t(l)} onPress={() => reject(k)} />)}</View>
@@ -165,17 +196,33 @@ function OfferCard({ o, done }: { o: any; done: () => void }) {
 }
 
 function ActiveTrip({ trip, pos, reload }: { trip: any; pos: { lat: number; lng: number } | null; reload: () => void }) {
-  const { t, client, say } = useApp(); const { busy, run } = useAsync(); const [pin, setPin] = useState(''); const [cash, setCash] = useState(String(Math.round(trip.final_fare ?? trip.estimated_fare ?? 0)));
+  const { t, client, say, nav } = useApp(); const { busy, run } = useAsync(); const [pin, setPin] = useState(''); const [cash, setCash] = useState(String(Math.round(trip.final_fare ?? trip.estimated_fare ?? 0)));
   const st: string = trip.status; const act = (path: string, body?: unknown) => run(async () => { try { await client.post(`/bookings/${trip.id}/${path}`, body ?? {}); } finally { reload(); } });
   const nav_ = (lat: number, lng: number) => Linking.openURL(`geo:${lat},${lng}?q=${lat},${lng}`).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`));
   useEffect(() => { if (trip.payment?.outstanding != null && trip.payment.method === 'cash') setCash(String(Math.round(trip.payment.outstanding))); }, [trip.payment?.outstanding]); // eslint-disable-line
   const pinErr = (e: any) => { if (e?.code === 'pin_invalid') say(`${e.message} (${e.details?.attempts_left ?? ''})`); };
+  const ab = trip.abasare; const hs: any[] = ab?.handovers ?? []; const pickupH = hs.find((h) => h.phase === 'pickup'); const dropH = hs.find((h) => h.phase === 'dropoff');
+  const hourly = ab?.mode === 'hourly';
+  const [now, setNow] = useState(Date.now()); useEffect(() => { if (!hourly || st !== 'IN_PROGRESS') return; const i = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(i); }, [hourly, st]);
+  const elapsedMin = trip.started_at ? Math.max(0, Math.round((now - new Date(trip.started_at).getTime()) / 60000)) : 0;
+  const rideHome = () => run(async () => {
+    const home = (await client.get('/users/me/places')).places.find((p: any) => p.label === 'home');
+    if (!home) { say(t('ab.job.ridehome.need')); return; }
+    const from = hourly ? trip.pickup : trip.destination;
+    nav.push('options', { pickup: { lat: from.lat, lng: from.lng, name: from.name ?? '' }, dest: { lat: home.lat, lng: home.lng, name: home.name } });
+  });
   return (
     <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
       <View style={S.between}><Text style={S.h2}>{trip.ref}</Text><Pill text={st.replace(/_/g, ' ')} tone="warn" /></View>
       <Text style={S.body}>{t('drv.passenger')}: {trip.passenger?.first_name}</Text>
       {trip.estimated_driver_net != null ? <Text style={S.muted}>{t('drv.earn')}: {trip.estimated_driver_net} RWF</Text> : null}
-      <Text style={[S.muted, { marginVertical: 4 }]}>{trip.pickup.name} → {trip.destination.name}{trip.pickup.note ? `\n${trip.pickup.note}` : ''}</Text>
+      {ab ? <View style={{ backgroundColor: C.warnBg, borderRadius: 10, padding: 10, marginVertical: 6 }}>
+        <Text style={S.muted}>{t('ab.job.car')} · {hourly ? `${t('ab.trip.hourly')} ${ab.hours} ${t('ab.h')}` : t('ab.trip.home')}</Text>
+        <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: 3 }}>{ab.vehicle.plate}</Text>
+        <Text style={S.body}>{[ab.vehicle.color, ab.vehicle.make, ab.vehicle.model].filter(Boolean).join(' ')} · {t(('ab.cls.' + ab.vehicle.vehicle_class) as any)}, {ab.vehicle.transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')}</Text>
+        {hourly && st === 'IN_PROGRESS' ? <Text style={S.muted}>{t('ab.job.timer')}: {Math.floor(elapsedMin / 60)}h {elapsedMin % 60}m / {ab.hours}h</Text> : null}
+      </View> : null}
+      <Text style={[S.muted, { marginVertical: 4 }]}>{trip.pickup.name}{hourly ? '' : ` → ${trip.destination.name}`}{trip.pickup.note ? `\n${trip.pickup.note}` : ''}</Text>
       <MapBox center={pos ?? trip.pickup} markers={[{ ...trip.pickup, color: '#00704A', label: 'P' }, { ...trip.destination, color: '#C0392B', label: 'D' }, ...(pos ? [{ ...pos, color: '#1A5FB4', label: '' }] : [])]} height={170} zoom={14} />
       <View style={{ height: 10, }} />
       {['DRIVER_ASSIGNED', 'DRIVER_ARRIVING'].includes(st) ? <View style={{ gap: 8 }}>
@@ -183,17 +230,46 @@ function ActiveTrip({ trip, pos, reload }: { trip: any; pos: { lat: number; lng:
         {st === 'DRIVER_ASSIGNED' ? <Btn title={t('drv.enroute')} onPress={() => act('en-route')} loading={busy} big /> : null}
         <Btn title={t('drv.arrived')} onPress={() => act('arrived')} loading={busy} big />
         <Btn kind="ghost" title={t('drv.cancel')} onPress={() => showAlert(t('drv.cancel'), '', [{ text: t('common.no') }, { text: t('drv.reason.safety'), onPress: () => run(async () => { await client.post(`/bookings/${trip.id}/cancel`, { reason: 'safety_concern', as: 'driver' }); reload(); }) }, { text: t('drv.reason.other'), onPress: () => run(async () => { await client.post(`/bookings/${trip.id}/cancel`, { reason: 'other', as: 'driver' }); reload(); }) }])} /></View> : null}
-      {['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(st) ? <View style={{ gap: 8 }}>
+      {['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(st) && ab && !pickupH ? <HandoverForm trip={trip} phase="pickup" reload={reload} /> : null}
+      {['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(st) && (!ab || pickupH) ? <View style={{ gap: 8 }}>
+        {ab && pickupH?.owner_response === 'issue' ? <Banner kind="bad" text={t('ab.job.disputed')} /> : ab && !pickupH.owner_response ? <Banner text={t('ab.job.waitowner')} /> : null}
         <Field label={t('drv.enterpin')} value={pin} onChangeText={(x) => setPin(x.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" maxLength={4} style={{ fontSize: 30, textAlign: 'center', letterSpacing: 10 }} />
         <Btn title={t('drv.start')} onPress={() => run(async () => { try { await client.post(`/bookings/${trip.id}/start`, { pin }); setPin(''); } catch (e) { pinErr(e); } finally { reload(); } })} loading={busy} disabled={pin.length !== 4} big />
         <Btn kind="ghost" title={t('drv.noshow')} onPress={() => act('no-show')} /></View> : null}
-      {st === 'IN_PROGRESS' ? <View style={{ gap: 8 }}><Btn kind="ghost" title={t('drv.navigate.dest')} onPress={() => nav_(trip.destination.lat, trip.destination.lng)} /><Btn title={t('drv.complete')} onPress={() => act('complete')} loading={busy} big /></View> : null}
+      {st === 'IN_PROGRESS' && ab && !dropH ? <HandoverForm trip={trip} phase="dropoff" reload={reload} /> : null}
+      {st === 'IN_PROGRESS' && (!ab || dropH) ? <View style={{ gap: 8 }}>{hourly ? null : <Btn kind="ghost" title={t('drv.navigate.dest')} onPress={() => nav_(trip.destination.lat, trip.destination.lng)} />}<Btn title={t('drv.complete')} onPress={() => act('complete')} loading={busy} big /></View> : null}
+      {['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(st) && ab ? <Btn kind="gold" title={t('ab.job.ridehome')} onPress={rideHome} loading={busy} /> : null}
       {['COMPLETED', 'PAYMENT_PENDING'].includes(st) ? <View style={{ gap: 8 }}>
         <Money n={trip.final_fare} style={{ fontSize: 30, fontWeight: '800', color: C.primary }} />
         {trip.payment_method === 'cash' ? <><Field label={t('drv.collected.q')} value={cash} onChangeText={(x) => setCash(x.replace(/\D/g, ''))} keyboardType="number-pad" />
           <Btn title={t('drv.collect')} onPress={() => run(async () => { const r = await client.post(`/bookings/${trip.id}/cash-collected`, { amount: Number(cash) }, { retry: true }); if (r.status === 'PARTIAL') say(`${t('drv.collected.partial')}: ${r.outstanding} RWF`); reload(); })} loading={busy} disabled={!Number(cash)} big /></>
           : <Banner text={t('drv.wait.pay')} />}</View> : null}
     </Card>
+  );
+}
+
+/** Check-in / check-out of the CUSTOMER's car: photos, odometer, fuel, notes. Protects the owner and the driver. */
+function HandoverForm({ trip, phase, reload }: { trip: any; phase: 'pickup' | 'dropoff'; reload: () => void }) {
+  const { t, client, cfg } = useApp(); const { busy, run } = useAsync();
+  const need = cfg?.abasare?.min_photos ?? 2; const have: number = trip.abasare.photos_pending?.[phase] ?? 0;
+  const [odo, setOdo] = useState(''); const [fuel, setFuel] = useState(50); const [notes, setNotes] = useState(''); const [damage, setDamage] = useState(false);
+  const add = (src: 'camera' | 'gallery') => run(async () => {
+    const f = await pickPhoto(src); if (!f) return;
+    const fd = new FormData(); await appendFile(fd, 'file', f);
+    await client.post(`/bookings/${trip.id}/handover/photos?phase=${phase}`, undefined, { form: fd, timeoutMs: 40000 }); reload();
+  });
+  const save = () => run(async () => { await client.post(`/bookings/${trip.id}/handover`, { phase, odometer_km: Number(odo), fuel_percent: fuel, notes: notes || undefined, damage_noted: damage }); reload(); });
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={S.h2}>{phase === 'pickup' ? t('ab.job.checkin') : t('ab.job.checkout')}</Text>
+      <Text style={S.muted}>{t('ab.job.photos')}: {have} / {need} {t('ab.job.photos.min')}</Text>
+      <View style={[S.row, { gap: 8 }]}><View style={{ flex: 1 }}><Btn title={t('ab.job.take')} onPress={() => add('camera')} loading={busy} /></View><View style={{ flex: 1 }}><Btn kind="ghost" title={t('ab.job.pick')} onPress={() => add('gallery')} /></View></View>
+      <Field label={t('ab.job.odo')} value={odo} onChangeText={(x) => setOdo(x.replace(/\D/g, ''))} keyboardType="number-pad" maxLength={7} />
+      <Text style={S.muted}>{t('ab.job.fuel')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{[0, 25, 50, 75, 100].map((x) => <Chip key={x} text={`${x}%`} on={fuel === x} onPress={() => setFuel(x)} />)}</View>
+      <Field label={t('ab.job.notes')} value={notes} onChangeText={setNotes} multiline maxLength={480} />
+      <Chip text={(damage ? '☑ ' : '☐ ') + 'Damage noted'} on={damage} onPress={() => setDamage(!damage)} />
+      <Btn big title={t('ab.job.submit')} onPress={save} loading={busy} disabled={have < need || odo === ''} />
+    </View>
   );
 }
 

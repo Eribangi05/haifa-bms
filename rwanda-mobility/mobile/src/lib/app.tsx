@@ -8,7 +8,8 @@ import { Lang, TKey, translate } from './i18n';
 
 export type Route = { name: string; params?: any };
 export type Me = { id: string; phone: string; display_name?: string | null; email?: string | null; preferred_language: string; roles: string[]; referral_code?: string; notif_prefs?: any };
-export type AppConfig = { payment_methods: { id: string; enabled: boolean; simulated?: boolean }[]; emergency_numbers: { police: string; ambulance: string }; features: Record<string, boolean> };
+export type AppConfig = { payment_methods: { id: string; enabled: boolean; simulated?: boolean }[]; emergency_numbers: { police: string; ambulance: string }; features: Record<string, boolean>;
+  abasare?: { enabled: boolean; packages: number[]; min_hours: number; max_hours: number; min_photos: number } };
 
 type Ctx = {
   ready: boolean; lang: Lang; setLang: (l: Lang) => void; t: (k: TKey, v?: Record<string, string | number>) => string;

@@ -7,6 +7,7 @@ import { Welcome, Phone, Otp } from './src/screens/auth';
 import { Home, Options, Track } from './src/screens/passenger';
 import { History, Profile, Support } from './src/screens/shared';
 import { DriverHome } from './src/screens/driver';
+import { Cars } from './src/screens/cars';
 import { Spinner } from './src/ui/components';
 import { C } from './src/ui/theme';
 
@@ -25,6 +26,7 @@ function Router() {
     case 'history': screen = <History />; break;
     case 'profile': screen = <Profile />; break;
     case 'support': screen = <Support params={route.params} />; break;
+    case 'cars': screen = <Cars />; break;
     case 'driverHome': screen = <DriverHome />; break;
     default: screen = <Home />;
   }

@@ -16,6 +16,9 @@
 | POST | `/notifications/read` |
 | GET | `/users/me` |
 | PATCH | `/users/me` |
+| GET | `/users/me/cars` |
+| POST | `/users/me/cars` |
+| DELETE | `/users/me/cars/:id` |
 | POST | `/users/me/consents` |
 | GET | `/users/me/emergency-contacts` |
 | POST | `/users/me/emergency-contacts` |
@@ -55,6 +58,9 @@
 | POST | `/bookings/:id/complete` |
 | POST | `/bookings/:id/en-route` |
 | GET | `/bookings/:id/events` |
+| POST | `/bookings/:id/handover` |
+| POST | `/bookings/:id/handover/:phase/respond` |
+| POST | `/bookings/:id/handover/photos` |
 | GET | `/bookings/:id/messages` |
 | POST | `/bookings/:id/messages` |
 | POST | `/bookings/:id/no-show` |
@@ -168,6 +174,7 @@
 
 | Method | Path |
 |---|---|
+| GET | `/admin/abasare/applications` |
 | GET | `/admin/analytics` |
 | GET | `/admin/audit` |
 | GET | `/admin/bookings` |
@@ -186,6 +193,7 @@
 | POST | `/admin/documents/:id/review` |
 | GET | `/admin/drivers` |
 | GET | `/admin/drivers/:id` |
+| POST | `/admin/drivers/:id/abasare-decision` |
 | POST | `/admin/drivers/:id/decision` |
 | POST | `/admin/drivers/:id/start-review` |
 | PUT | `/admin/flags/:key` |

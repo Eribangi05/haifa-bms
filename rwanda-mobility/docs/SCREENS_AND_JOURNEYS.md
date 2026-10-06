@@ -22,9 +22,17 @@
 | D03 | Trip offers with **earnings before accepting**, pickup distance/ETA, countdown, accept / decline with reason | `OfferCard` | |
 | D04 | Active trip: navigate, en-route, arrived, **PIN entry**, start, complete, cash confirm, no-show, cancel, SOS | `ActiveTrip` | Large buttons; "use only when stopped" |
 | D05 | Earnings day/week/month, wallet, owed commission, payout request/history | `Earnings` | |
+| A01 | Abasare mode on Home: car picker, Drive me home / By the hour (2-12 h), night note | `passenger.tsx` `Home` | Switch **Ride / Abasare** |
+| A02 | My cars: add/remove, class, manual/automatic, insurance confirmation | `cars.tsx` | Also from Profile |
+| A03 | Abasare price breakdown with return allowance/night/overtime rules + ownership & insurance attestation | `Options` | Confirm is blocked until attested |
+| A04 | Live trip: driver photo, years driving, rating, **your plate**, check-in/check-out review with photos (Looks right / Report an issue) | `Track`, `HandoverReview` | |
+| A05 | Abasare driver application: path choice (own vehicle / Abasare / both), skills, licence date, return mode, documents incl. police clearance | `driver.tsx` `Onboarding` | |
+| A06 | Driver: accept-jobs toggles (Rides/Abasare), Abasare offer card, customer's-car details, **check-in/check-out form** (photos, odometer, fuel, notes), hourly timer, Moto ride home | `driver.tsx` | |
 | B01 | Company booking | `Options` (company payment chip) + Profile | Cost centre, PO reference, limits enforced server-side |
 
 ## Admin console (`/admin/`)
+
+(New: **Abasare** tab for applications; handover evidence on booking details.)
 
 Overview KPIs - Live map - Bookings (search, timeline, assign, restart, PIN override, cancel, dispute, refund request) - Drivers (queue, documents with signed links, approve/reject/suspend/reinstate) - Passengers - Support (cases, internal notes, SLA) - Safety (SOS/incidents) - Pricing (fare rules, commissions with approval) - Promotions - Finance (ledger position, transactions, refunds, payouts, reconciliation, exports) - Business & fleets (verify, invoice, revenue share) - Privacy requests - Settings (integration status, flags, runtime settings, templates) - Audit log - Staff & roles.
 

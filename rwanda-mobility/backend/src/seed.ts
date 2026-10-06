@@ -17,6 +17,8 @@ const SERVICES = [
   ['intercity', 'Intercity ride', 'Urugendo hagati y\'imijyi', ['car', 'minivan'], 1, false, 4, '3 bags', 3, false, 6],
   ['goods', 'Pickup / light goods', 'Gutwara ibintu bito', ['pickup'], 1, false, 2, 'Cargo bed', 3, false, 7],
   ['cargo', 'Truck / cargo', 'Ikamyo', ['truck'], 1, false, 2, 'Cargo', 3, false, 8],
+  ['abasare', 'Abasare: drive me home', 'Abasare: nshyire mu rugo', ['car', 'suv', 'minivan', 'pickup', 'moto'], 1, false, 4, 'Your own car', 1, true, 9],
+  ['abasare_hourly', 'Abasare: driver by the hour', 'Abasare: umushoferi ku isaha', ['car', 'suv', 'minivan', 'pickup', 'moto'], 1, false, 4, 'Your own car', 1, true, 10],
 ] as const;
 
 // Placeholder tariffs (ASSUMPTION: must be replaced by the approved/regulated fare schedule before launch).
@@ -74,6 +76,7 @@ const FLAGS: [string, boolean, string][] = [
   ['payouts.automated', false, 'Automated MoMo disbursements (PENDING INTEGRATION)'],
   ['auth.social', false, 'Google/Apple sign-in (PENDING INTEGRATION)'],
   ['notifications.whatsapp', false, 'WhatsApp Business (needs approval)'],
+  ['abasare.enabled', true, 'Abasare: hire a verified driver for your own car'],
 ];
 
 export async function seedCore() {
@@ -84,6 +87,7 @@ export async function seedCore() {
              values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) on conflict do nothing`, [...s]);
     await q(`insert into zone_services(zone_id,service_id,enabled) values ('kigali',$1,$2) on conflict do nothing`, [s[0], s[9]]);
   }
+  await q("update service_categories set kind='abasare' where id like 'abasare%'");
   for (const [sid, r] of Object.entries(RULES)) {
     const exists = await q1('select 1 from pricing_rules where service_id=$1', [sid]);
     if (exists) continue;
@@ -91,6 +95,17 @@ export async function seedCore() {
              values ($1,'kigali',$2,$3,$4,$5,$6,$7,$8,'active')`,
       [sid, r.base_fare, r.per_km, r.per_min, r.minimum_fare, r.booking_fee ?? 0, r.wait_per_min ?? 0, r.airport_fee ?? 0]);
   }
+  // Abasare tariffs (PLACEHOLDERS, competitive with the 5,000-7,000 RWF per night trip reported in the press; confirm with the client).
+  // Point-to-point: 2,000 + 300/km + 100/km driver-return allowance, min 4,000, +1,000 night band (22:00-05:00 Kigali time).
+  if (!(await q1("select 1 from pricing_rules where service_id='abasare'")))
+    await q(`insert into pricing_rules(service_id,zone_id,base_fare,per_km,per_min,minimum_fare,booking_fee,wait_per_min,free_wait_min,return_per_km,night_start_hour,night_end_hour,night_fee,rounding,status)
+             values ('abasare','kigali',2000,300,0,4000,0,50,10,100,22,5,1000,100,'active')`);
+  // Hourly: 4,000/h (min 2 h), 3,500/h from 8 h, overtime 2,500 per 30 min after a 10-min grace; night band +1,000.
+  if (!(await q1("select 1 from pricing_rules where service_id='abasare_hourly'")))
+    await q(`insert into pricing_rules(service_id,zone_id,billing,base_fare,per_km,per_min,minimum_fare,booking_fee,hourly_rate,min_hours,max_hours,long_hire_hours,long_hire_rate,overtime_per_30min,overtime_grace_min,night_start_hour,night_end_hour,night_fee,rounding,status)
+             values ('abasare_hourly','kigali','hourly',0,0,0,0,0,4000,2,12,8,3500,2500,10,22,5,1000,100,'active')`);
+  if (!(await q1("select 1 from commission_rules where service_id='abasare'")))
+    await q(`insert into commission_rules(service_id,kind,percent_bps,status,note) values ('abasare','percent',1200,'active','Abasare introductory 12%'),('abasare_hourly','percent',1200,'active','Abasare introductory 12%')`);
   if (!(await q1("select 1 from commission_rules where service_id is null and fleet_id is null and driver_id is null"))) {
     // Default 15% (ASSUMPTION; configurable and approval-gated). Moto 12%.
     await q(`insert into commission_rules(kind,percent_bps,status,note) values ('percent',1500,'active','platform default')`);
@@ -103,6 +118,9 @@ export async function seedCore() {
     if (vt !== 'moto') docs.push([vt, 'inspection', true, true]);
   }
   for (const d of docs) await q('insert into document_requirements(vehicle_type,doc_type,mandatory,requires_expiry) values ($1,$2,$3,$4) on conflict do nothing', d);
+  // Abasare documents (the driver drives the customer's car, so no vehicle documents; police clearance is mandatory)
+  for (const d of [['national_id', true, true], ['driving_licence', true, true], ['profile_photo', true, false], ['police_clearance', true, true]] as const)
+    await q("insert into document_requirements(vehicle_type,doc_type,mandatory,requires_expiry) values ('abasare',$1,$2,$3) on conflict do nothing", [d[0], d[1], d[2]]);
   for (const p of PLACES) {
     if (!(await q1('select 1 from places where name_en=$1', [p[0]])))
       await q("insert into places(name_en,name_rw,lat,lng,zone_id,designated_pickup) values ($1,$2,$3,$4,'kigali',$5)", [p[0], p[1], p[2], p[3], p[4]]);

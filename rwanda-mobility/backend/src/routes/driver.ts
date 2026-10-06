@@ -12,7 +12,7 @@ import { driverBalance } from '../services/ledger.js';
 import { requestPayout } from '../services/finance.js';
 import { audit } from '../services/audit.js';
 
-const KNOWN_DOCS = ['national_id', 'driving_licence', 'profile_photo', 'vehicle_registration', 'insurance', 'transport_permit', 'inspection', 'ownership_authorisation'];
+const KNOWN_DOCS = ['national_id', 'driving_licence', 'profile_photo', 'vehicle_registration', 'insurance', 'transport_permit', 'inspection', 'ownership_authorisation', 'police_clearance'];
 
 export async function driverRoutes(app: FastifyInstance) {
   const drv = { preHandler: requireRole('driver') };
@@ -64,7 +64,9 @@ export async function driverRoutes(app: FastifyInstance) {
     const body = parse(z.object({ doc_type: z.enum(KNOWN_DOCS as [string, ...string[]]), expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }), f);
     if (!buf) throw badRequest('file_required');
     const veh = await q1<any>("select vehicle_type from vehicles where driver_id=$1 order by created_at desc limit 1", [req.auth!.id]);
-    const reqRow = veh ? await q1<any>('select requires_expiry from document_requirements where vehicle_type=$1 and doc_type=$2', [veh.vehicle_type, body.doc_type]) : null;
+    const dpx = await q1<any>('select abasare_status from driver_profiles where user_id=$1', [req.auth!.id]);
+    const types = [...(veh ? [veh.vehicle_type] : []), ...(dpx?.abasare_status !== 'none' ? ['abasare'] : [])];
+    const reqRow = types.length ? await q1<any>('select bool_or(requires_expiry) requires_expiry from document_requirements where vehicle_type = any($1) and doc_type=$2', [types, body.doc_type]) : null;
     if (reqRow?.requires_expiry && !body.expiry_date) throw badRequest('expiry_required', 'This document needs an expiry date');
     if (body.expiry_date && new Date(body.expiry_date) < new Date(new Date().toISOString().slice(0, 10))) throw badRequest('already_expired', 'This document has already expired');
     const saved = await saveFile(buf, body.doc_type === 'profile_photo' ? 'photos' : 'docs');
@@ -76,22 +78,26 @@ export async function driverRoutes(app: FastifyInstance) {
 
   app.get('/drivers/me/status', drv, async (req) => {
     const id = req.auth!.id;
-    const dp = await q1<any>('select status, status_reason, is_online, zone_id, rating_avg, rating_count, completed_count, cancel_count, accepted_count, payout_msisdn, legal_name, fleet_id from driver_profiles where user_id=$1', [id]);
+    const dp = await q1<any>('select status, status_reason, accepting, is_online, zone_id, rating_avg, rating_count, completed_count, cancel_count, accepted_count, payout_msisdn, legal_name, fleet_id from driver_profiles where user_id=$1', [id]);
     const veh = await q1<any>('select id, vehicle_type, make, model, color, plate, capacity, status from vehicles where driver_id=$1 order by (status=\'approved\') desc, created_at desc limit 1', [id]);
     const docs = await q('select id, doc_type, review_status, review_note, expiry_date, created_at from driver_documents where driver_id=$1 and not superseded order by created_at desc', [id]);
-    const reqs = veh ? await q('select doc_type, mandatory, requires_expiry from document_requirements where vehicle_type=$1', [veh.vehicle_type]) : [];
+    const absx = await q1<any>('select abasare_status, abasare_skills, abasare_reason from driver_profiles where user_id=$1', [id]);
+    const types = [...(veh ? [veh.vehicle_type] : []), ...(absx.abasare_status !== 'none' ? ['abasare'] : [])];
+    const reqs = types.length ? await q('select doc_type, bool_or(mandatory) mandatory, bool_or(requires_expiry) requires_expiry from document_requirements where vehicle_type = any($1) group by doc_type order by doc_type', [types]) : [];
     const invites = await q("select fi.id, f.name from fleet_invites fi join fleets f on f.id=fi.fleet_id join users u on u.phone=fi.phone where u.id=$1 and fi.status='pending'", [id]);
-    return { profile: dp, vehicle: veh, documents: docs, requirements: reqs, permission: await Dr.driverPermission(id), fleet_invites: invites };
+    return { profile: dp, vehicle: veh, documents: docs, requirements: reqs, permission: await Dr.driverPermission(id), abasare: { status: absx.abasare_status, skills: absx.abasare_skills, reason: absx.abasare_reason, permission: await Dr.abasarePermission(id) }, fleet_invites: invites };
   });
 
   app.post('/drivers/applications/submit', drv, async (req) => {
     const id = req.auth!.id;
     await tx(async (c) => {
       const veh = await q1<any>("select vehicle_type from vehicles where driver_id=$1 and status in ('pending','approved') limit 1", [id], c);
-      const dp = await q1<any>('select legal_name, national_id_enc from driver_profiles where user_id=$1', [id], c);
-      if (!veh || !dp?.legal_name || !dp.national_id_enc) throw badRequest('application_incomplete', 'Complete your profile and vehicle details first');
-      const missing = await q<any>(`select r.doc_type from document_requirements r where r.vehicle_type=$1 and r.mandatory and not exists (
-        select 1 from driver_documents d where d.driver_id=$2 and d.doc_type=r.doc_type and not d.superseded and d.review_status in ('pending','approved'))`, [veh.vehicle_type, id], c);
+      const dp = await q1<any>('select legal_name, national_id_enc, abasare_status from driver_profiles where user_id=$1', [id], c);
+      const abs = dp?.abasare_status === 'pending';
+      if ((!veh && !abs) || !dp?.legal_name || !dp.national_id_enc) throw badRequest('application_incomplete', 'Complete your profile and your vehicle or Abasare details first');
+      const types = [...(veh ? [veh.vehicle_type] : []), ...(abs ? ['abasare'] : [])];
+      const missing = await q<any>(`select distinct r.doc_type from document_requirements r where r.vehicle_type = any($1) and r.mandatory and not exists (
+        select 1 from driver_documents d where d.driver_id=$2 and d.doc_type=r.doc_type and not d.superseded and d.review_status in ('pending','approved'))`, [types, id], c);
       if (missing.length) throw badRequest('documents_missing', 'Upload all required documents', missing.map((m: any) => m.doc_type));
       await q("update driver_profiles set submitted_at=now() where user_id=$1", [id], c);
       await Dr.setDriverStatus(c, id, 'DOCUMENTS_SUBMITTED', { id, role: 'driver' });
@@ -112,9 +118,10 @@ export async function driverRoutes(app: FastifyInstance) {
   });
 
   app.patch('/drivers/me/availability', drv, async (req) => {
-    const b = parse(z.object({ online: z.boolean() }), req.body);
-    await Dr.setOnline(req.auth!.id, b.online);
-    return { online: b.online, permission: await Dr.driverPermission(req.auth!.id) };
+    const b = parse(z.object({ online: z.boolean(), accepting: z.array(z.enum(['ride', 'abasare'])).min(1).optional() }), req.body);
+    await Dr.setOnline(req.auth!.id, b.online, b.accepting);
+    const acc = (await q1<any>('select accepting from driver_profiles where user_id=$1', [req.auth!.id]))!.accepting;
+    return { online: b.online, accepting: acc, permission: await Dr.driverPermission(req.auth!.id), abasare: await Dr.abasarePermission(req.auth!.id) };
   });
   app.post('/drivers/me/location', drv, async (req) => {
     const b = parse(z.object({ lat, lng, accuracy: z.number().min(0).optional(), speed: z.number().min(0).optional(), recorded_at: z.string().datetime().optional() }), req.body);

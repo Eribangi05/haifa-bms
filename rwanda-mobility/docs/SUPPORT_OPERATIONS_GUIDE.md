@@ -30,6 +30,14 @@
 | Driver complaint (harassment etc.) | Case is auto-marked *sensitive* (support_lead only). Suspend the driver pending investigation (reason required), add a safety block for the passenger if appropriate. |
 | Account deletion request | Privacy tab -> Execute (30-day SLA). It fails while trips/balances are open - settle first. |
 
+## Abasare operations
+
+* **Applications** (Admin -> Abasare): check licence issue date (>= 2 years), national ID, photo and **police clearance** (valid, not expired), then *Approve Abasare*. Approval also approves the driver account if they have no vehicle. Documents expiring remove the driver from dispatch automatically (hourly job + on every dispatch).
+* **"Car condition issue" cases** are urgent and sensitive (support lead only). Open the booking: the **check-in and check-out photos, odometer, fuel and notes** are on the booking detail (links expire in 5 minutes). Compare phases, call both parties, record the outcome. Photos are kept while the case is open and purged after 90 days otherwise: **close cases promptly and export evidence if you need it longer**.
+* **Pickup dispute blocks the trip start.** Resolve it with the owner (re-confirm) or cancel the booking; a dispatcher PIN override does not bypass the check-in requirement.
+* **Hourly overtime** is billed in 30-minute blocks after a 10-minute grace and shown on the receipt; refunds go through the normal two-person refund process.
+* **No insurance promises**: do not tell customers damage will be paid; follow the legal position agreed with counsel/insurer.
+
 ## Case priorities & SLAs (defaults)
 
 Safety **urgent**, 2 h (SOS cases 15 min); payment/refund/fare dispute **high**, 8-24 h; others normal, 24-72 h. Overdue cases are highlighted red.

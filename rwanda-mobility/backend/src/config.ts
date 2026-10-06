@@ -68,4 +68,8 @@ export const SETTING_DEFAULTS = {
   'otp.max_per_hour_ip': 20,
   'safety.escalation_contacts': [] as string[],
   'tracking.max_speed_kmh': 160,
+  'abasare.min_photos': 2,                 // handover photos required at pickup and at drop-off
+  'abasare.min_licence_years': 2,
+  'retention.handover_days': 90,           // car check-in/out photos are deleted after this unless a dispute is open
+  'abasare.issue_window_min': 30,          // owner can report a vehicle-condition issue this long after drop-off
 };

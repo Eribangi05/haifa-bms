@@ -12,6 +12,9 @@ Passengers; independent drivers; fleet operators; corporate customers; operation
 ## MVP scope (built)
 Phone/OTP sign-up; driver onboarding with documents and review; Moto + Standard car; map/landmark pickup, fare estimate with breakdown; dispatch with offers, accept/reject, reassignment; state machine; trip PIN; live driver position (polling); cash + MTN MoMo (simulator/sandbox-ready); commission, earnings, ledger, payouts, refunds, reconciliation; ratings; cancellation rules; support cases + FAQ; SOS and trip sharing; admin console; corporate accounts and fleets (foundation); promotions/referrals; scheduled rides; audit log; reports.
 
+## Abasare (client request): drivers for the customer's own car
+Included in the MVP as a second service line: verified **Abasare** drive the customer's own car (drive-me-home or hourly), with skill-matched dispatch, itemised pricing (return allowance, night band), a **car check-in/check-out record**, stronger vetting (police clearance), company billing, and a one-tap Moto ride home for the driver. Design, research and open questions: `ABASARE.md`.
+
 ## Built but behind flags / off by default
 Airtel Money (skeleton), negotiated fares, surge pricing, wallet (not built), automated payouts, Google/Apple sign-in, WhatsApp. Services Comfort/Family/Airport/Intercity/Goods/Cargo exist in the catalogue, **disabled** until priced and approved.
 

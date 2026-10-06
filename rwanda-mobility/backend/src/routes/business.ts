@@ -81,7 +81,7 @@ export async function businessRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params); await corpMember(req.auth!.id, id);
     const key = (req.headers['idempotency-key'] as string) ?? '';
     if (key.length < 8) throw badRequest('idempotency_key_required');
-    const b = parse(z.object({ quote_id: z.string().uuid(), pickup_name: z.string().max(160).optional(), pickup_note: z.string().max(300).optional(), dest_name: z.string().max(160).optional(), cost_centre: z.string().max(60).optional(), po_ref: z.string().max(60).optional(), rider_name: z.string().max(80).optional(), rider_phone: z.string().max(20).optional() }), req.body);
+    const b = parse(z.object({ quote_id: z.string().uuid(), pickup_name: z.string().max(160).optional(), pickup_note: z.string().max(300).optional(), dest_name: z.string().max(160).optional(), cost_centre: z.string().max(60).optional(), po_ref: z.string().max(60).optional(), rider_name: z.string().max(80).optional(), rider_phone: z.string().max(20).optional(), customer_vehicle_id: z.string().uuid().optional(), owner_attested: z.boolean().optional() }), req.body);
     const { booking, replay } = await B.createBooking(req.auth!.id, { ...b, payment_method: 'corporate', corporate_id: id, idempotency_key: key });
     reply.code(replay ? 200 : 201);
     return B.bookingView(booking, 'corporate');

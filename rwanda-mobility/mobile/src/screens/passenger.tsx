@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Modal, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Image, Linking, Modal, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useApp, useAsync, usePoll } from '../lib/app';
 import { ApiError, uuid } from '../lib/net';
@@ -8,7 +8,7 @@ import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spi
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
 import { showAlert } from '../ui/dialog';
-import { KIGALI, POLL_MS } from '../config';
+import { API_URL, KIGALI, POLL_MS } from '../config';
 import { SosButton } from './shared';
 
 type Pt = { lat: number; lng: number; name?: string };
@@ -18,12 +18,20 @@ const distM = (a: Pt, b: Pt) => { const x = Math.sin(rad(b.lat - a.lat) / 2) ** 
 const fmtMin = (s: number) => Math.max(1, Math.round(s / 60));
 
 export function Home() {
-  const { t, lang, client, nav, me, online, mode, setMode, say } = useApp();
+  const { t, lang, client, nav, me, online, mode, setMode, say, cfg } = useApp();
   const [pickup, setPickup] = useState<Pt | null>(null); const [dest, setDest] = useState<Pt | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null); const [note, setNote] = useState('');
   const [q, setQ] = useState(''); const [results, setResults] = useState<Place[]>([]); const [popular, setPopular] = useState<Place[]>([]);
   const [recents, setRecents] = useState<Pt[]>([]); const [saved, setSaved] = useState<any[]>([]); const [zones, setZones] = useState<[number, number][][]>([]);
   const [mapOk, setMapOk] = useState(true); const [consent, setConsent] = useState<boolean | null>(null); const [when, setWhen] = useState<string | null>(null);
+  // Abasare: a verified driver drives the customer's own car
+  const [svc, setSvcState] = useState<'ride' | 'abasare'>('ride'); const [cars, setCars] = useState<any[]>([]); const [carId, setCarId] = useState<string | null>(null);
+  const [hire, setHire] = useState<'p2p' | 'hourly'>('p2p'); const [hours, setHours] = useState(2);
+  const setSvc = (v: 'ride' | 'abasare') => { setSvcState(v); void kv.set('rm_svc', v); };
+  useEffect(() => { kv.get('rm_svc').then((v) => v === 'abasare' && setSvcState('abasare')); kv.get('rm_car').then((v) => v && setCarId(v)); }, []);
+  useEffect(() => { if (svc !== 'abasare') return; client.get('/users/me/cars').then((r) => { setCars(r.cars); setCarId((cur) => (r.cars.some((c: any) => c.id === cur) ? cur : r.cars[0]?.id ?? null)); }).catch(() => {}); }, [svc, client]);
+  useEffect(() => { if (carId) void kv.set('rm_car', carId); }, [carId]);
+  const abasareOn = !!cfg?.abasare?.enabled;
 
   useEffect(() => { loadJson<Pt[]>('rm_recents', []).then(setRecents); kv.get('rm_loc_consent').then((v) => setConsent(v === '1')); }, []);
   useEffect(() => {
@@ -58,7 +66,12 @@ export function Home() {
     const r = [{ lat: p.lat, lng: p.lng, name }, ...recents.filter((x) => x.name !== name)].slice(0, 6); setRecents(r); void saveJson('rm_recents', r);
   };
   const markers = [...(dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' }] : [])];
-  const go = (schedule?: string | null) => { if (!pickup || !dest) return; nav.push('options', { pickup, dest, note, scheduled_for: schedule ?? undefined }); };
+  const go = (schedule?: string | null) => {
+    if (!pickup) return;
+    if (svc === 'abasare') { if (!carId || (hire === 'p2p' && !dest)) return; nav.push('options', { pickup, dest: hire === 'p2p' ? dest : undefined, note, scheduled_for: schedule ?? undefined, abasare: { customer_vehicle_id: carId, hours: hire === 'hourly' ? hours : undefined } }); return; }
+    if (!dest) return; nav.push('options', { pickup, dest, note, scheduled_for: schedule ?? undefined });
+  };
+  const needsDest = svc === 'ride' || hire === 'p2p';
   const activeB = active.data?.booking;
 
   if (consent === false) return (
@@ -69,7 +82,7 @@ export function Home() {
 
   return (
     <View style={S.screen}>
-      <Header title={t('home.where')} right={
+      <Header title={svc === 'abasare' ? t('ab.tab.abasare') : t('home.where')} right={
         <View style={S.row}>
           {me?.roles.includes('driver') ? <Chip text={t('drv.mode')} onPress={() => setMode('driver')} /> : null}
           <Pressable onPress={() => nav.push('support')} style={{ padding: 8 }}><Text style={{ color: C.primary, fontWeight: '700' }}>{t('home.help')}</Text></Pressable>
@@ -78,6 +91,16 @@ export function Home() {
       <ScrollView contentContainerStyle={{ padding: 14 }} keyboardShouldPersistTaps="handled">
         {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
         {activeB ? <Card style={{ borderColor: C.primary }}><View style={S.between}><View><Text style={S.h2}>{t('home.active')}</Text><Text style={S.muted}>{activeB.ref} · {activeB.status.replace(/_/g, ' ')}</Text></View><Btn title={t('home.resume')} onPress={() => nav.push('track', { id: activeB.id })} /></View></Card> : null}
+        {abasareOn ? <View style={[S.row, { marginBottom: 8 }]}><Chip text={t('ab.tab.ride')} on={svc === 'ride'} onPress={() => setSvc('ride')} /><Chip text={t('ab.tab.abasare')} on={svc === 'abasare'} onPress={() => setSvc('abasare')} /></View> : null}
+        {svc === 'abasare' ? <Card style={{ borderColor: C.gold, borderWidth: 2 }}>
+          <Text style={S.h2}>{t('ab.home.title')}</Text><Text style={[S.muted, { marginBottom: 8 }]}>{t('ab.home.sub')}</Text>
+          <Text style={S.muted}>{t('ab.mycar')}</Text>
+          {cars.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 6 }}>{cars.map((c) => <Chip key={c.id} text={`${c.plate} · ${c.make ?? ''} ${c.model ?? ''}`.trim()} on={carId === c.id} onPress={() => setCarId(c.id)} />)}</View> : <Banner text={t('ab.nocar')} />}
+          <Btn kind="ghost" title={t('ab.addcar')} onPress={() => nav.push('cars')} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}><Chip text={t('ab.mode.home')} on={hire === 'p2p'} onPress={() => setHire('p2p')} /><Chip text={t('ab.mode.hourly')} on={hire === 'hourly'} onPress={() => setHire('hourly')} /></View>
+          {hire === 'hourly' ? <><Text style={S.muted}>{t('ab.hours')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>{(cfg?.abasare?.packages ?? [2, 4, 8, 12]).map((h: number) => <Chip key={h} text={`${h} ${t('ab.h')}`} on={hours === h} onPress={() => setHours(h)} />)}</View></> : null}
+          <Text style={[S.muted, { marginTop: 4 }]}>{t('ab.night')}</Text>
+        </Card> : null}
         {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={zones} onPin={(lat, lng) => setPickup({ lat, lng, name: nearest({ lat, lng }) ?? t('home.mylocation') })} onTap={(lat, lng) => void pickDest({ lat, lng })} onStatus={setMapOk} height={260} />
           : <Banner text={t('home.map.off')} />}
         <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
@@ -85,18 +108,18 @@ export function Home() {
           <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><Pressable onPress={locate}><Text style={{ color: C.primary, fontWeight: '700' }}>{t('home.mylocation')}</Text></Pressable></View>
           <Text style={[S.body, { fontWeight: '600', marginBottom: 8 }]}>{pickup ? pickup.name ?? `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}` : t('home.nolocation')}</Text>
           <Field value={note} onChangeText={setNote} placeholder={t('home.pickupnote')} maxLength={280} />
-          <Text style={S.muted}>{t('home.dest')}</Text>
-          {dest ? <View style={S.between}><Text style={[S.body, { fontWeight: '700', flex: 1 }]}>{dest.name}</Text><Pressable onPress={() => setDest(null)}><Text style={{ color: C.danger }}>✕</Text></Pressable></View>
+          {needsDest ? <Text style={S.muted}>{t('home.dest')}</Text> : null}
+          {!needsDest ? null : dest ? <View style={S.between}><Text style={[S.body, { fontWeight: '700', flex: 1 }]}>{dest.name}</Text><Pressable onPress={() => setDest(null)}><Text style={{ color: C.danger }}>✕</Text></Pressable></View>
             : <Field value={q} onChangeText={setQ} placeholder={t('home.search')} />}
-          {results.map((r) => <Pressable key={(r.id ?? '') + r.name + r.lat} onPress={() => void pickDest(r)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}><Text style={S.body}>{r.name}</Text></Pressable>)}
+          {needsDest ? results.map((r) => <Pressable key={(r.id ?? '') + r.name + r.lat} onPress={() => void pickDest(r)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}><Text style={S.body}>{r.name}</Text></Pressable>) : null}
         </Card>
-        {!dest ? <>
+        {needsDest && !dest ? <>
           {saved.length ? <><Text style={[S.h2, { marginBottom: 6 }]}>{t('home.saved')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{saved.map((p) => <Chip key={p.id} text={`${t(('prof.places.' + p.label) as any)} · ${p.name}`} onPress={() => void pickDest(p)} />)}</View></> : null}
           {recents.length ? <><Text style={[S.h2, { marginBottom: 6 }]}>{t('home.recent')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{recents.map((p, i) => <Chip key={i} text={p.name ?? ''} onPress={() => void pickDest(p)} />)}</View></> : null}
           <Text style={[S.h2, { marginBottom: 6 }]}>{t('home.popular')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{popular.map((p) => <Chip key={p.id ?? p.name} text={p.name} onPress={() => void pickDest(p)} />)}</View>
         </> : null}
         <View style={{ height: 12 }} />
-        <Btn big title={t('home.seeprices')} onPress={() => go(when)} disabled={!pickup || !dest} />
+        <Btn big title={t('home.seeprices')} onPress={() => go(when)} disabled={!pickup || (svc === 'ride' ? !dest : (!carId || (hire === 'p2p' && !dest)))} />
         <View style={{ height: 10 }} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           <Chip text={t('home.now')} on={!when} onPress={() => setWhen(null)} />
@@ -109,16 +132,17 @@ export function Home() {
 }
 
 // ------------------------------------------------------------------ options & confirm
-export function Options({ params }: { params: { pickup: Pt; dest: Pt; note?: string; scheduled_for?: string } }) {
+export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: string; scheduled_for?: string; abasare?: { customer_vehicle_id: string; hours?: number } } }) {
   const { t, lang, client, nav, outbox, cfg, online, say } = useApp();
   const [data, setData] = useState<any>(null); const [err, setErr] = useState<ApiError | null>(null); const [sel, setSel] = useState<string | null>(null);
   const [method, setMethod] = useState('cash'); const [promo, setPromo] = useState(''); const [applied, setApplied] = useState(''); const [biz, setBiz] = useState<any[]>([]); const [corp, setCorp] = useState<string | null>(null);
   const [cc, setCc] = useState(''); const [po, setPo] = useState(''); const { busy, run } = useAsync(); const keyRef = useRef<string | null>(null);
+  const [att, setAtt] = useState(false);
 
   const load = useCallback(async (code?: string) => {
     setErr(null); setData(null);
     try {
-      const r = await client.post('/fares/estimate', { pickup: params.pickup, dest: params.dest, promo_code: code || undefined, scheduled_for: params.scheduled_for }, { retry: true });
+      const r = await client.post('/fares/estimate', { pickup: params.pickup, dest: params.dest, abasare: params.abasare, promo_code: code || undefined, scheduled_for: params.scheduled_for }, { retry: true });
       setData(r); const first = r.options.find((o: any) => o.available); setSel((s) => (s && r.options.find((o: any) => o.service_id === s && o.available) ? s : first?.service_id ?? null));
       keyRef.current = null;
     } catch (e) { setErr(e as ApiError); }
@@ -130,7 +154,8 @@ export function Options({ params }: { params: { pickup: Pt; dest: Pt; note?: str
   const confirm = () => run(async () => {
     if (!opt?.quote_id) return;
     keyRef.current = keyRef.current ?? uuid();                         // same key on every retry of this tap: never a duplicate booking
-    const body = { quote_id: opt.quote_id, payment_method: corp ? 'corporate' : method, pickup_name: params.pickup.name, pickup_note: params.note || undefined, dest_name: params.dest.name,
+    const body = { quote_id: opt.quote_id, payment_method: corp ? 'corporate' : method, pickup_name: params.pickup.name, pickup_note: params.note || undefined, dest_name: params.dest?.name ?? params.pickup.name,
+      ...(params.abasare ? { customer_vehicle_id: params.abasare.customer_vehicle_id, owner_attested: att } : {}),
       ...(corp ? { corporate_id: corp, cost_centre: cc || undefined, po_ref: po || undefined } : {}) };
     try {
       const r = await client.post('/bookings', body, { idempotencyKey: keyRef.current });
@@ -147,10 +172,10 @@ export function Options({ params }: { params: { pickup: Pt; dest: Pt; note?: str
 
   return (
     <View style={S.screen}>
-      <Header title={t('opt.title')} onBack={() => nav.pop()} />
+      <Header title={params.abasare ? t('ab.options.title') : t('opt.title')} onBack={() => nav.pop()} />
       <ScrollView contentContainerStyle={{ padding: 14 }} keyboardShouldPersistTaps="handled">
         {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
-        <Text style={S.muted}>{params.pickup.name} → {params.dest.name}</Text>
+        <Text style={S.muted}>{params.pickup.name}{params.dest ? ` → ${params.dest.name}` : params.abasare?.hours ? ` · ${params.abasare.hours} ${t('ab.h')}` : ''}</Text>
         {params.scheduled_for ? <Pill tone="warn" text={`${t('trip.scheduled')} · ${new Date(params.scheduled_for).toLocaleString('en-GB', { timeZone: 'Africa/Kigali' })}`} /> : null}
         {err ? <><Banner kind="bad" text={err.code === 'pickup_outside_coverage' ? err.message : err.isNetwork ? t('net.offline') : err.message} /><Btn title={t('common.retry')} onPress={() => load(applied)} /></> : null}
         {!data && !err ? <Spinner /> : null}
@@ -162,7 +187,7 @@ export function Options({ params }: { params: { pickup: Pt; dest: Pt; note?: str
                 <View style={S.between}>
                   <View style={{ flex: 1 }}>
                     <Text style={S.h2}>{lang === 'rw' ? o.name_rw : o.name_en}</Text>
-                    <Text style={S.muted}>{o.capacity} {t('opt.seats')}{o.pickup_eta_s ? ` · ${t('opt.eta')} ${fmtMin(o.pickup_eta_s)} ${t('common.min')}` : ''}</Text>
+                    <Text style={S.muted}>{o.kind === 'abasare' ? t('ab.trip.yourcar') : `${o.capacity} ${t('opt.seats')}`}{o.pickup_eta_s ? ` · ${t('opt.eta')} ${fmtMin(o.pickup_eta_s)} ${t('common.min')}` : ''}</Text>
                     {!o.available ? <Text style={{ color: C.danger, fontSize: 13 }}>{t('opt.unavailable')}</Text> : null}
                   </View>
                   {o.fare ? <View style={{ alignItems: 'flex-end' }}><Money n={o.fare.total} style={[S.h2, { color: C.primary }]} />{o.fare.discount ? <Text style={{ color: C.primary, fontSize: 12 }}>−{o.fare.discount}</Text> : null}</View> : null}
@@ -173,7 +198,7 @@ export function Options({ params }: { params: { pickup: Pt; dest: Pt; note?: str
             <Text style={S.h2}>{t('opt.breakdown')}</Text>
             {opt.fare.lines.map((l: any, i: number) => <View key={i} style={[S.between, { paddingVertical: 3 }]}><Text style={S.body}>{lang === 'rw' ? l.label_rw : l.label_en}</Text><Money n={l.amount} /></View>)}
             <View style={[S.between, { borderTopWidth: 1, borderTopColor: C.line, marginTop: 6, paddingTop: 6 }]}><Text style={[S.body, { fontWeight: '700' }]}>{t('opt.total')}</Text><Money n={opt.fare.total} style={{ fontWeight: '700', fontSize: 17 }} /></View>
-            <Text style={[S.muted, { marginTop: 8 }]}>{t('opt.estimate')}{opt.route_source === 'estimate' ? ' ' + t('opt.route.estimate') : ''}</Text>
+            <Text style={[S.muted, { marginTop: 8 }]}>{params.abasare ? t('ab.fare.note') : t('opt.estimate') + (opt.route_source === 'estimate' ? ' ' + t('opt.route.estimate') : '')}</Text>
           </Card> : null}
           <View style={S.row}><View style={{ flex: 1 }}><Field value={promo} onChangeText={setPromo} placeholder={t('opt.promo')} autoCapitalize="characters" /></View><View style={{ width: 8 }} /><Btn kind="ghost" title={t('opt.apply')} onPress={() => { setApplied(promo.trim()); void load(promo.trim()); }} /></View>
           {opt?.promo ? (opt.promo.discount ? <Banner kind="ok" text={`${t('opt.promo.ok')}: −${opt.promo.discount} RWF`} /> : <Banner kind="bad" text={`${t('opt.promo.bad')} (${opt.promo.error})`} />) : null}
@@ -185,7 +210,8 @@ export function Options({ params }: { params: { pickup: Pt; dest: Pt; note?: str
           </View>
           {corp ? <><Field label={t('biz.cc')} value={cc} onChangeText={setCc} /><Field label={t('biz.po')} value={po} onChangeText={setPo} /></> : null}
           <View style={{ height: 8 }} />
-          <Btn big title={t('opt.confirm')} onPress={confirm} loading={busy} disabled={!opt?.available} />
+          {params.abasare ? <Pressable onPress={() => setAtt(!att)} accessibilityRole="checkbox" style={{ marginBottom: 10 }}><Card style={{ borderColor: att ? C.primary : C.line }}><Text style={S.body}>{att ? '☑ ' : '☐ '}{t('ab.attest')}</Text></Card></Pressable> : null}
+          <Btn big title={params.abasare && !att ? t('ab.attest.need') : t('opt.confirm')} onPress={confirm} loading={busy} disabled={!opt?.available || (!!params.abasare && !att)} />
           {!data.options.some((o: any) => o.available) ? <><View style={{ height: 8 }} /><Btn kind="ghost" title={t('trip.alt.later')} onPress={() => nav.pop()} /></> : null}
         </> : null}
       </ScrollView>
@@ -237,12 +263,24 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
 
         {st === 'NO_DRIVER_FOUND' ? <Card><Text style={S.body}>{t('opt.alt')}</Text><View style={{ height: 8 }} /><Btn title={t('trip.alt.other')} onPress={() => nav.reset('home')} /><View style={{ height: 8 }} /><Btn kind="ghost" title={t('trip.alt.later')} onPress={() => nav.reset('home')} /></Card> : null}
 
-        {live && b.driver ? <Card>
+        {live && b.driver && b.abasare ? <Card>
+          <Text style={S.muted}>{t('ab.trip.verify')}</Text>
+          <View style={[S.row, { gap: 12, marginTop: 8 }]}>
+            {b.driver.photo_url ? <Image source={{ uri: API_URL + b.driver.photo_url }} style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.line }} accessibilityLabel="Driver photo" /> : <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.line }} />}
+            <View style={{ flex: 1 }}><Text style={S.h2}>{b.driver.name}</Text>
+              <Text style={S.muted}>{b.driver.rating_count > 0 ? `★ ${Number(b.driver.rating).toFixed(1)}` : t('ab.trip.new')} · {b.driver.abasare?.years_experience ?? '-'} {t('ab.trip.exp')}</Text>
+              <Pill text={b.abasare.mode === 'hourly' ? `${t('ab.trip.hourly')} · ${b.abasare.hours} ${t('ab.h')}` : t('ab.trip.home')} tone="warn" /></View></View>
+          <Text style={[S.muted, { marginTop: 10 }]}>{t('ab.trip.yourcar')}</Text>
+          <View style={{ backgroundColor: C.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14, alignSelf: 'flex-start', marginTop: 4 }}><Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: 3 }}>{b.abasare.vehicle.plate}</Text></View>
+          {b.driver.abasare?.return_mode ? <Text style={[S.muted, { marginTop: 6 }]}>{t('ab.trip.returns')}</Text> : null}
+        </Card> : null}
+        {live && b.driver && !b.abasare ? <Card>
           <Text style={S.muted}>{t('trip.verify')}</Text>
           <Text style={[S.h2, { marginTop: 4 }]}>{b.driver.name} · {b.driver.rating_count > 0 ? `★ ${Number(b.driver.rating).toFixed(1)}` : t('trip.newdriver')}</Text>
           <Text style={S.body}>{b.vehicle?.color} {b.vehicle?.make} {b.vehicle?.model}</Text>
           <View style={{ backgroundColor: C.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14, alignSelf: 'flex-start', marginTop: 8 }}><Text style={{ fontSize: 24, fontWeight: '800', letterSpacing: 3 }}>{b.vehicle?.plate}</Text></View>
         </Card> : null}
+        {b.abasare && (live || ['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(st)) ? <HandoverReview b={b} reload={poll.reload} /> : null}
         {b.trip_pin ? <Card style={{ backgroundColor: C.okBg, borderColor: C.primary }}><Text style={S.muted}>{t('trip.pin')}</Text><Text style={{ fontSize: 44, fontWeight: '800', letterSpacing: 10, color: C.primaryDark }}>{b.trip_pin}</Text><Text style={S.muted}>{t('trip.pin.hint')}</Text></Card> : null}
         {live ? <View style={{ gap: 8 }}>
           <Btn kind="ghost" title={t('trip.chat')} onPress={() => setChat(true)} /><Btn kind="ghost" title={t('trip.share')} onPress={share} loading={busy} />
@@ -254,6 +292,28 @@ export function Track({ params }: { params: { id?: string; pending?: boolean } }
         {st.startsWith('CANCELLED') ? <Card><Text style={S.body}>{b.cancel_fee ? `${t('trip.cancel.fee')} (${b.cancel_fee} RWF)` : t('trip.cancelled')}</Text><View style={{ height: 8 }} /><Btn title={t('trip.rebook')} onPress={() => nav.reset('home')} /></Card> : null}
       </ScrollView>
       <ChatModal id={b.id} visible={chat} onClose={() => setChat(false)} />
+    </View>
+  );
+}
+
+function HandoverReview({ b, reload }: { b: any; reload: () => void }) {
+  const { t, client } = useApp(); const { busy, run } = useAsync(); const [issue, setIssue] = useState<string | null>(null); const [note, setNote] = useState('');
+  const hs: any[] = b.abasare.handovers;
+  const respond = (phase: string, response: 'ok' | 'issue') => run(async () => { await client.post(`/bookings/${b.id}/handover/${phase}/respond`, { response, note: response === 'issue' ? note : undefined }); setIssue(null); setNote(''); reload(); });
+  return (
+    <View>
+      {b.status === 'DRIVER_ARRIVED' && !hs.some((h) => h.phase === 'pickup') ? <Banner text={t('ab.check.waiting')} /> : null}
+      {hs.map((h) => (
+        <Card key={h.phase} style={{ borderColor: h.owner_response ? C.line : C.gold, borderWidth: h.owner_response ? 1 : 2 }}>
+          <Text style={S.h2}>{h.phase === 'pickup' ? t('ab.check.pickup') : t('ab.check.dropoff')}</Text>
+          {!h.owner_response ? <Text style={S.muted}>{t('ab.check.review')}</Text> : null}
+          <Text style={S.body}>{t('ab.check.odo')}: {Number(h.odometer_km).toLocaleString('en-US')} km · {t('ab.check.fuel')}: {h.fuel_percent}%</Text>
+          {h.notes ? <Text style={S.muted}>{t('ab.check.notes')}: {h.notes}</Text> : null}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 }}>{h.photos.map((u: string, i: number) => <Image key={i} source={{ uri: API_URL + u }} style={{ width: 84, height: 64, borderRadius: 8, backgroundColor: C.line }} accessibilityLabel={`Photo ${i + 1}`} />)}</View>
+          {h.owner_response === 'ok' ? <Pill text={t('ab.check.confirmed')} /> : h.owner_response === 'issue' ? <Banner kind="bad" text={t('ab.check.disputed')} /> : issue === h.phase ? <>
+            <Field value={note} onChangeText={setNote} placeholder={t('ab.check.issue.ph')} multiline /><Btn kind="danger" title={t('ab.check.issue')} onPress={() => respond(h.phase, 'issue')} loading={busy} disabled={note.trim().length < 5} /></>
+            : <View style={{ gap: 8 }}><Btn title={t('ab.check.ok')} onPress={() => respond(h.phase, 'ok')} loading={busy} /><Btn kind="ghost" title={t('ab.check.issue')} onPress={() => setIssue(h.phase)} /></View>}
+        </Card>))}
     </View>
   );
 }
