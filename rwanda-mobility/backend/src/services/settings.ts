@@ -11,7 +11,8 @@ export async function allSettings(): Promise<Record<string, unknown>> {
   return { ...SETTING_DEFAULTS, ...Object.fromEntries(rows.map((r) => [r.key, r.value])) };
 }
 export async function setSetting(key: string, value: unknown, actor: string | null) {
-  if (!(key in SETTING_DEFAULTS)) throw new Error(`unknown setting ${key}`);
+  // Known keys, or legacy keys that already have a stored row (shown under "Advanced"), may be edited; brand-new arbitrary keys may not.
+  if (!(key in SETTING_DEFAULTS) && !(await q1('select 1 from system_settings where key=$1', [key]))) throw new Error(`unknown setting ${key}`);
   await q(
     `insert into system_settings(key,value,updated_by,updated_at) values ($1,$2,$3,now())
      on conflict (key) do update set value=excluded.value, updated_by=excluded.updated_by, updated_at=now()`,
@@ -22,3 +23,4 @@ export async function flag(key: string): Promise<boolean> {
   const r = await q1<{ enabled: boolean }>('select enabled from feature_flags where key=$1', [key]);
   return r?.enabled ?? false;
 }
+export async function resetSetting(key: string) { await q('delete from system_settings where key=$1', [key]); }

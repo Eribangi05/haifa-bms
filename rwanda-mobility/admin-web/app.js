@@ -1,7 +1,7 @@
 'use strict';
 // Rwanda Mobility operations console. No framework, no build step. All dynamic text is inserted with textContent (XSS-safe).
 const API = '/api/v1';
-const S = { access: sessionStorage.getItem('rm_a'), refresh: sessionStorage.getItem('rm_r'), roles: JSON.parse(sessionStorage.getItem('rm_roles') || '[]'), tab: 'dashboard' };
+const S = { access: sessionStorage.getItem('rm_a'), refresh: sessionStorage.getItem('rm_r'), roles: JSON.parse(sessionStorage.getItem('rm_roles') || '[]'), tab: 'dashboard', dirty: new Set() };
 const $ = (s, r = document) => r.querySelector(s);
 function h(tag, attrs, ...kids) {
   const e = document.createElement(tag);
@@ -36,29 +36,38 @@ function logout() { if (S.access) fetch(API + '/auth/logout', { method: 'POST', 
 const can = (...roles) => S.roles.includes('super_admin') || roles.some((r) => S.roles.includes(r));
 
 // ---- confirm dialog with optional reason (destructive actions need typed intent) ----
-function ask(title, { reason = false, confirmText = 'Confirm', danger = false, fields = [] } = {}) {
+function ask(title, { reason = false, confirmText = 'Confirm', danger = false, fields = [], message = null } = {}) {
   return new Promise((res) => {
     const d = h('dialog', {});
     const inputs = {};
     const rs = reason ? h('textarea', { rows: 3, placeholder: 'Reason (required, kept in the audit log)', style: 'width:100%' }) : null;
-    const f = fields.map((x) => { inputs[x.name] = h(x.type === 'select' ? 'select' : 'input', { placeholder: x.label, type: x.type === 'number' ? 'number' : 'text', style: 'width:100%;margin:4px 0' }, x.options?.map((o) => h('option', { value: o }, o))); return h('label', {}, x.label, inputs[x.name]); });
+    const f = fields.map((x) => { inputs[x.name] = h(x.type === 'select' ? 'select' : 'input', { placeholder: x.label, type: x.type === 'number' ? 'number' : x.type === 'date' ? 'date' : 'text', value: x.value ?? null, style: 'width:100%;margin:4px 0' }, x.options?.map((o) => h('option', { value: o, selected: o === x.value }, o))); return h('label', {}, x.label, inputs[x.name]); });
     const err = h('div', { class: 'err' });
-    d.append(h('h2', {}, title), ...f, rs, err, h('div', { class: 'row' },
-      h('button', { class: 'b ' + (danger ? 'red' : ''), onclick: () => {
-        if (reason && (!rs.value || rs.value.trim().length < 5)) { err.textContent = 'Please give a reason (min 5 characters).'; return; }
-        const out = { reason: rs?.value.trim() }; for (const x of fields) out[x.name] = x.type === 'number' ? Number(inputs[x.name].value) : inputs[x.name].value;
-        d.close(); d.remove(); res(out);
-      } }, confirmText),
-      h('button', { class: 'b sec', onclick: () => { d.close(); d.remove(); res(null); } }, 'Cancel')));
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; if (d.open) d.close(); d.remove(); res(v); };
+    const submit = () => {
+      if (reason && (!rs.value || rs.value.trim().length < 5)) { err.textContent = 'Please give a reason (min 5 characters).'; return; }
+      const out = { reason: rs?.value.trim() }; for (const x of fields) out[x.name] = x.type === 'number' ? Number(inputs[x.name].value) : inputs[x.name].value;
+      finish(out);
+    };
+    d.append(...[h('h2', {}, title), message && (typeof message === 'string' ? h('p', { class: 'effect' }, message) : message), ...f, rs, err, h('div', { class: 'row' },
+      h('button', { class: 'b ' + (danger ? 'red' : ''), onclick: submit }, confirmText),
+      h('button', { class: 'b sec', onclick: () => finish(null) }, 'Cancel'))].filter(Boolean));
+    d.addEventListener('cancel', () => finish(null));            // Esc
+    d.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); submit(); } });
     document.body.append(d); d.showModal();
+    (Object.values(inputs)[0] || rs)?.focus();
   });
 }
 async function act(fn, after) { try { await fn(); toast('Done'); if (after) after(); } catch (e) { toast(e.message, true); } }
-function toast(msg, bad) { const t = h('div', { class: bad ? 'err' : 'ok', style: 'position:fixed;right:16px;bottom:16px;background:var(--card);border:1px solid var(--line);padding:10px 14px;border-radius:10px;z-index:99;max-width:360px' }, msg); document.body.append(t); setTimeout(() => t.remove(), 4000); }
+function toast(msg, bad) {
+  let box = $('#toasts'); if (!box) { box = h('div', { id: 'toasts', role: 'status', 'aria-live': 'polite' }); document.body.append(box); }
+  const t = h('div', { class: 'toast ' + (bad ? 'err' : 'ok') }, msg); box.append(t); setTimeout(() => t.remove(), 4000);
+}
 
-function table(cols, rows, onRow) {
+function table(cols, rows, onRow, empty = 'Nothing here yet.') {
   return h('div', { class: 'tbl' }, h('table', {}, h('thead', {}, h('tr', {}, cols.map((c) => h('th', {}, c.h)))),
-    h('tbody', {}, rows.length ? rows.map((r) => h('tr', { class: onRow ? 'click' : '', onclick: onRow ? () => onRow(r) : null }, cols.map((c) => h('td', {}, c.f ? c.f(r) : r[c.k] ?? '-')))) : h('tr', {}, h('td', { colspan: cols.length }, 'Nothing here yet.')))));
+    h('tbody', {}, rows.length ? rows.map((r) => h('tr', { class: onRow ? 'click' : '', onclick: onRow ? () => onRow(r) : null }, cols.map((c) => h('td', {}, c.f ? c.f(r) : r[c.k] ?? '-')))) : h('tr', {}, h('td', { colspan: cols.length, class: 'empty' }, empty)))));
 }
 const kpi = (l, v, warn) => h('div', { class: 'card kpi' + (warn ? ' warn' : '') }, h('div', { class: 'v' }, v ?? '-'), h('div', { class: 'l' }, l));
 
@@ -67,7 +76,7 @@ const TABS = [
   ['dashboard', 'Overview', ['analytics.view']], ['live', 'Live map', ['dispatcher']], ['bookings', 'Bookings', ['dispatcher', 'support_agent', 'support_lead']],
   ['drivers', 'Drivers', ['driver_verifier', 'dispatcher', 'support_agent', 'support_lead', 'finance_officer']], ['abasare', 'Abasare', ['driver_verifier']], ['users', 'Passengers', ['support_agent', 'support_lead']],
   ['support', 'Support', ['support_agent', 'support_lead']], ['safety', 'Safety', ['support_lead', 'dispatcher']],
-  ['pricing', 'Pricing', ['business_manager', 'finance_approver']], ['promos', 'Promotions', ['business_manager']], ['codes', 'Request codes', ['business_manager', 'support_lead', 'analyst']],
+  ['pricing', 'Pricing', ['business_manager', 'finance_approver']], ['services', 'Services', ['business_manager']], ['promos', 'Promotions', ['business_manager']], ['codes', 'Request codes', ['business_manager', 'support_lead', 'analyst']],
   ['finance', 'Finance', ['finance_officer', 'finance_approver']], ['business', 'Business & fleets', ['business_manager']],
   ['privacy', 'Privacy', ['support_lead']], ['settings', 'Settings', []], ['audit', 'Audit log', []], ['staff', 'Staff', []],
 ];
@@ -211,17 +220,6 @@ V.safety = async (el) => {
       { h: '', f: (i) => i.status !== 'resolved' ? h('span', { class: 'row' }, i.status === 'open' && h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/safety/incidents/${i.id}/update`, { status: 'acknowledged' }), () => go('safety')) }, 'Acknowledge'),
         h('button', { class: 'b', onclick: async () => { const a = await ask('Resolve incident', { reason: true }); if (a) act(() => api('POST', `/admin/safety/incidents/${i.id}/update`, { status: 'resolved', resolution: a.reason }), () => go('safety')); } }, 'Resolve')) : '' }], d.incidents));
 };
-V.pricing = async (el) => {
-  const d = await api('GET', '/admin/pricing');
-  const f = ['service_id', 'base_fare', 'per_km', 'per_min', 'minimum_fare', 'booking_fee', 'wait_per_min', 'airport_fee', 'tax_bps', 'rounding'];
-  const af = ['billing', 'return_per_km', 'night_start_hour', 'night_end_hour', 'night_fee', 'hourly_rate', 'min_hours', 'max_hours', 'long_hire_hours', 'long_hire_rate', 'overtime_per_30min', 'overtime_grace_min'];
-  el.append(h('h1', {}, 'Pricing & commission'), h('div', { class: 'banner' }, 'Changes are proposed, then approved by a different person. An accepted fare quote is never altered.'),
-    h('h2', {}, 'Fare rules'), table([{ h: 'Service', k: 'service_id' }, { h: 'v', k: 'version' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, ...f.slice(1).map((k) => ({ h: k.replace(/_/g, ' '), k })), { h: 'Abasare', f: (r) => r.service_id.startsWith('abasare') ? [r.billing === 'hourly' ? `${r.hourly_rate}/h (min ${r.min_hours}h, long ${r.long_hire_hours || '-'}h @ ${r.long_hire_rate || '-'}, overtime ${r.overtime_per_30min}/30min)` : `return ${r.return_per_km}/km`, r.night_fee ? ` · night ${r.night_start_hour}-${r.night_end_hour}h +${r.night_fee}` : ''].join('') : '' }, { h: 'Effective', f: (r) => when(r.effective_from) },
-      { h: '', f: (r) => r.status === 'pending_approval' && can('finance_approver') ? h('span', { class: 'row' }, h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/pricing/${r.id}/approve`), () => go('pricing')) }, 'Approve'), h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/pricing/${r.id}/reject`), () => go('pricing')) }, 'Reject')) : '' }], d.rules),
-    can('business_manager') && h('button', { class: 'b', onclick: async () => { const a = await ask('Propose new fare rule', { fields: [...f, ...af].map((k) => ({ name: k, label: k + (af.includes(k) ? ' (Abasare)' : ''), type: ['service_id', 'billing'].includes(k) ? 'text' : 'number' })) }); if (a) { delete a.reason; if (!a.billing) delete a.billing; for (const k of af) if (k !== 'billing' && (a[k] === 0 || Number.isNaN(a[k]))) delete a[k]; act(() => api('POST', '/admin/pricing', a), () => go('pricing')); } } }, 'Propose fare change'),
-    h('h2', {}, 'Commission rules'), table([{ h: 'Scope', f: (c) => c.driver_id ? 'driver ' + c.driver_id.slice(0, 6) : c.fleet_id ? 'fleet' : c.service_id || 'platform default' }, { h: 'Kind', k: 'kind' }, { h: 'Rate', f: (c) => c.kind === 'percent' ? c.percent_bps / 100 + '%' : money(c.fixed_amount) }, { h: 'Exempt until', f: (c) => c.exempt_until ? when(c.exempt_until) : '-' }, { h: 'Status', f: (c) => pill(c.status, statusCls(c.status)) }, { h: 'Note', k: 'note' },
-      { h: '', f: (c) => c.status === 'pending_approval' && can('finance_approver') ? h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/commissions/${c.id}/approve`), () => go('pricing')) }, 'Approve') : '' }], d.commissions));
-};
 // ---- Request codes: printable QR codes for venues ----
 async function fetchBlob(path) {
   const r = await fetch(API + path, { headers: { authorization: 'Bearer ' + S.access } });
@@ -270,11 +268,6 @@ V.codes = async (el) => {
         manage && h('button', { class: 'b sec', onclick: () => act(() => api('PATCH', '/admin/request-codes/' + c.id, { active: !c.active }), () => go('codes')) }, c.active ? 'Deactivate' : 'Activate')) }], d.codes),
     manage && form);
 };
-V.promos = async (el) => {
-  const d = await api('GET', '/admin/promotions');
-  el.append(h('h1', {}, 'Promotions'), table([{ h: 'Code', k: 'code' }, { h: 'Type', f: (p) => p.kind === 'percent' ? p.value + '%' : money(p.value) }, { h: 'Max', f: (p) => money(p.max_discount) }, { h: 'Spent / budget', f: (p) => `${p.spent} / ${p.budget ?? '∞'}` }, { h: 'First ride', f: (p) => (p.first_ride_only ? 'yes' : '') }, { h: 'Active', f: (p) => h('button', { class: 'b sec', onclick: () => act(() => api('PATCH', '/admin/promotions/' + p.id, { active: !p.active }), () => go('promos')) }, p.active ? 'Active · pause' : 'Paused · resume') }], d.promotions),
-    h('button', { class: 'b', onclick: async () => { const a = await ask('New promotion (platform funded)', { fields: [{ name: 'code', label: 'Code' }, { name: 'kind', label: 'kind', type: 'select', options: ['percent', 'fixed'] }, { name: 'value', label: 'Value (% or RWF)', type: 'number' }, { name: 'max_discount', label: 'Max discount RWF', type: 'number' }, { name: 'budget', label: 'Total budget RWF', type: 'number' }, { name: 'usage_limit', label: 'Usage limit', type: 'number' }] }); if (a) { delete a.reason; for (const k of ['max_discount', 'budget', 'usage_limit']) if (!a[k]) delete a[k]; act(() => api('POST', '/admin/promotions', a), () => go('promos')); } } }, 'New promotion'));
-};
 V.finance = async (el, state = {}) => {
   const [pos, pays, refunds, payouts, rec] = await Promise.all([api('GET', '/admin/finance/position'), api('GET', '/admin/finance/payments?limit=50' + (state.q ? '&q=' + encodeURIComponent(state.q) : '')), api('GET', '/admin/finance/refunds'), api('GET', '/admin/finance/payouts'), api('GET', '/admin/finance/reconciliation')]);
   const inp = h('input', { placeholder: 'Payment/provider reference or booking ref', value: state.q || '', style: 'min-width:320px' });
@@ -308,14 +301,6 @@ V.business = async (el) => {
 V.privacy = async (el) => {
   const d = await api('GET', '/admin/privacy-requests');
   el.append(h('h1', {}, 'Privacy requests'), table([{ h: 'Kind', k: 'kind' }, { h: 'User', k: 'display_name' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, { h: 'Due', f: (r) => when(r.due_at) }, { h: '', f: (r) => ['open', 'in_progress'].includes(r.status) ? h('button', { class: 'b', onclick: async () => { const a = await ask(r.kind === 'deletion' ? 'Execute deletion? Personal data is erased; financial records are kept in anonymised form.' : 'Execute ' + r.kind, { danger: r.kind === 'deletion', confirmText: 'Execute' }); if (a) act(async () => { const o = await api('POST', `/admin/privacy-requests/${r.id}/execute`); if (r.kind === 'access') { const a = h('a', { href: URL.createObjectURL(new Blob([JSON.stringify(o, null, 2)], { type: 'application/json' })), download: 'user-data.json' }); document.body.append(a); a.click(); a.remove(); } }, () => go('privacy')); } }, 'Execute') : '' }], d.requests));
-};
-V.settings = async (el) => {
-  const [d, ints] = await Promise.all([api('GET', '/admin/settings'), api('GET', '/admin/integration-status')]);
-  el.append(h('h1', {}, 'Settings'), h('h2', {}, 'Integration status'), table([{ h: 'Integration', k: 'name' }, { h: 'Status', k: 'status' }], ints.integrations),
-    h('h2', {}, 'Feature flags'), table([{ h: 'Flag', k: 'key' }, { h: 'Description', k: 'description' }, { h: 'Enabled', f: (f) => h('button', { class: 'b ' + (f.enabled ? '' : 'sec'), onclick: async () => { const a = await ask((f.enabled ? 'Disable ' : 'Enable ') + f.key + '?', { reason: true }); if (a) act(() => api('PUT', '/admin/flags/' + f.key, { enabled: !f.enabled }), () => go('settings')); } }, f.enabled ? 'ON' : 'off') }], d.flags),
-    h('h2', {}, 'Operational settings'), table([{ h: 'Key', k: 'k' }, { h: 'Value', f: (r) => h('code', {}, JSON.stringify(r.v)) }, { h: '', f: (r) => h('button', { class: 'b sec', onclick: async () => { const a = await ask('Edit ' + r.k, { fields: [{ name: 'value', label: 'New value (JSON)' }] }); if (a) act(() => api('PUT', '/admin/settings/' + r.k, { value: JSON.parse(a.value) }), () => go('settings')); } }, 'Edit') }], Object.entries(d.settings).map(([k, v]) => ({ k, v }))),
-    h('h2', {}, 'Notification templates (overrides)'), table([{ h: 'Key', k: 'key' }, { h: 'Lang', k: 'lang' }, { h: 'Title', k: 'title' }, { h: 'Body', k: 'body' }], d.templates),
-    h('button', { class: 'b', onclick: async () => { const a = await ask('Override template', { fields: [{ name: 'key', label: 'template key e.g. booking_confirmed' }, { name: 'lang', label: 'lang', type: 'select', options: ['rw', 'en', 'fr', 'sw'] }, { name: 'title', label: 'Title' }, { name: 'body', label: 'Body with {{placeholders}}' }] }); if (a) { delete a.reason; act(() => api('PUT', `/admin/templates/${a.key}/${a.lang}`, { title: a.title, body: a.body }), () => go('settings')); } } }, 'Edit template'));
 };
 V.audit = async (el, state = {}) => {
   const d = await api('GET', '/admin/audit?limit=200' + (state.action ? '&action=' + encodeURIComponent(state.action) : ''));
@@ -364,9 +349,16 @@ async function activationView(root, token) {
 }
 
 // ---------------- shell ----------------
-function go(tab) { S.tab = tab; render(); }
+// Unsaved-changes guard: forms register themselves with setDirty(id, true/false); leaving the tab or page asks first.
+const setDirty = (id, on) => { if (on) S.dirty.add(id); else S.dirty.delete(id); };
+const isDirty = () => S.dirty.size > 0;
+window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+function go(tab) {
+  if (isDirty() && !window.confirm('You have unsaved changes on this page. Leave without saving?')) return;
+  S.dirty.clear(); S.tab = tab; render();
+}
 async function render() {
-  const root = $('#app'); root.replaceChildren();
+  const root = $('#app'); root.replaceChildren(); S.dirty.clear();
   const m = /^#activate=(.+)$/.exec(location.hash); if (m && !S.access) return activationView(root, m[1]);
   if (!S.access) return loginView(root);
   const tabs = TABS.filter(([, , need]) => !need.length ? can() : can(...need));

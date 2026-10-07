@@ -108,6 +108,16 @@ A driver's **eligible payout** = `DRIVER_PAYABLE - CASH_WITH_DRIVERS` (floored a
 3. Strategy settings: `dispatch.group_size` (1 = sequential, N = small group), expanding radius per round, offer timeout, max rounds. After max rounds -> `NO_DRIVER_FOUND` with alternatives.
 4. A background job (every 3 s) expires offers and advances searches; manual assign/reassign is available to dispatchers.
 
+## Pricing flexibility and settings (migration 007)
+
+- **One rule schema.** `ruleSchema` in `routes/admin.ts` validates both `POST /admin/pricing` (propose) and `POST /admin/pricing/preview`, so the console's live calculator cannot disagree with a real proposal. The preview builds a `Rule` from the proposed values and calls `computeFare` (nothing is stored); it also computes the currently active rule on the same trip for the side-by-side.
+- **Time windows.** `pricing_rules.time_multipliers` (jsonb) holds `{label, days[0=Sun], start_hour, end_hour, percent}` windows. `computeFare` sums the windows matching the Kigali start hour/day (`local_hour`, `local_dow`), clamps to `[-50%, surge_cap_bps - 100%]`, and adds one `time_multiplier` line (rw/fr/en); none configured = no change. The minimum fare still applies afterwards.
+- **Maker-checker gate.** `checkerGate()` is shared by price and commission approval. With `pricing.self_approval=false` (default) the proposer gets 403; with it true they may approve, and the audit entry carries `self_approved: true`. Only `super_admin` can change the setting (PUT or reset). The approver still needs `pricing.approve`.
+- **Settings metadata.** `services/settingsMeta.ts` maps every `SETTING_DEFAULTS` key to label, description, unit, range, type and group; `GET /admin/settings` returns `items[]` (value, default, is_default, last change from `audit_logs`), `PUT` validates against the metadata, `DELETE /admin/settings/:key` resets to default (`setting.reset` audit). Keys that exist only in `system_settings` (legacy) are shown and editable under **Advanced**, with no range check; brand-new keys are still rejected.
+- **Promotion audiences.** `promotions.segment` (`all|first_ride|corporate|referred|phones`) and `segment_phones`; enforced in `checkPromo` at quote and again at booking commit.
+- **Services.** `PATCH /admin/services/:id` also renames (en/rw/fr); `PUT /admin/services/:id/zones/:zone` toggles `zone_services` (needs an active price for the zone).
+- The console screens for these live in `admin-web/business.js`.
+
 ## Request codes
 
 A request code is a short code (6-8 chars, alphabet without 0/O/1/I) tied to a venue location, printed as a QR that encodes `${PUBLIC_BASE_URL}/r/<CODE>`. Table `request_codes` (migration 006); `bookings.request_code_id` attributes bookings.

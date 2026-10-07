@@ -55,6 +55,9 @@ Labels (assigned by evidence, not intent):
 | | Availability only with real eligible drivers; coverage polygon check | TESTED |
 | Pricing | Fare engine, rounding, minimum, waiting, promo, tax, pass-through, surge cap (off) | TESTED |
 | | Maker-checker fare and commission changes; immutable accepted quotes | TESTED |
+| | Console price editor: labelled fields with units, validation, current-vs-proposed diff, live fare preview (`POST /admin/pricing/preview`, same `computeFare`), copy values to another service/zone, scheduled start date | TESTED (API) + browser e2e (`scripts/admin-pricing-e2e.ts`) |
+| | `pricing.self_approval` switch (default off, super admin only): proposer may approve own fare/commission change, flagged `self_approved` in audit, red banner in the console | TESTED |
+| | Peak / off-peak windows per pricing rule (day-of-week + hour range, -50%..+100%, capped by the rule surge cap), own itemised rw/fr/en receipt line | TESTED (engine + estimates) |
 | | Negotiated fares | NOT BUILT (flag reserved) |
 | Booking | State machine, transitions, events, idempotency, one-active-trip constraints | TESTED |
 | | Scheduled rides (release by sweeper) | TESTED |
@@ -105,8 +108,11 @@ Labels (assigned by evidence, not intent):
 | Corporate | Accounts, members, policies, limits, isolation, statements, invoices | TESTED |
 | Fleet | Fleet, invites, revenue share, isolation, vehicle availability, earnings | TESTED |
 | Growth | Promotions (budget, limits, first-ride), referral rewards, self-referral block | TESTED |
+| | Promotion audiences: everyone, first ride, corporate members, referred sign-ups, phone list; start/end dates and budget editable | TESTED |
 | | Loyalty points, subscriptions | NOT BUILT |
 | Admin | KPI dashboard, drivers, bookings, support, safety, pricing, finance, privacy, settings, audit, staff | TESTED (APIs) + exercised in a browser smoke test |
+| | Settings page: grouped, labelled, units/ranges, default + reset-to-default, last change from audit, legacy keys under Advanced | TESTED (API) + browser e2e |
+| | Services screen: enable per zone, rename (rw/fr/en), seats | TESTED (API); screen rendered in browser e2e |
 | | Live map | IMPLEMENTED (needs map tiles) |
 | Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android) | IMPLEMENTED (type-checked, APK built; **not run on a device**) |
 | | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e) |

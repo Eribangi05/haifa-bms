@@ -82,5 +82,6 @@ export const SETTING_DEFAULTS = {
   'abasare.min_photos': 2,                 // handover photos required at pickup and at drop-off
   'abasare.min_licence_years': 2,
   'retention.handover_days': 90,           // car check-in/out photos are deleted after this unless a dispute is open
+  'pricing.self_approval': false,           // true = the proposer of a price/commission change may approve it themselves (audited, super_admin only switch)
   'abasare.issue_window_min': 30,          // owner can report a vehicle-condition issue this long after drop-off
 };

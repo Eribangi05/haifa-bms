@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { requirePerm, requireRole, actorOf } from '../guards.js';
+import { requirePerm, requireRole, actorOf, authenticate } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { audit } from '../services/audit.js';
@@ -10,15 +10,55 @@ import * as D from '../services/dispatch.js';
 import * as B from '../services/bookings.js';
 import { transition } from '../services/bookingMachine.js';
 import { dashboard, analytics } from '../services/reports.js';
-import { allSettings, setSetting } from '../services/settings.js';
+import { allSettings, setSetting, resetSetting, getSetting } from '../services/settings.js';
+import { SETTING_DEFAULTS } from '../config.js';
+import { SETTING_META, SETTING_GROUPS, metaFor, validateSetting } from '../services/settingsMeta.js';
+import { computeFare, activeRule, type Rule } from '../services/pricing.js';
 import { signFileToken } from '../util/crypto.js';
 import { notify } from '../services/notify.js';
 import { exportUserData, executeDeletion } from '../services/privacy.js';
 import { createStaff } from '../seed.js';
 import { totpUri } from '../util/crypto.js';
-import { ROLE_PERMISSIONS, STAFF_ROLES } from '../rbac.js';
+import { ROLE_PERMISSIONS, STAFF_ROLES, can, isStaff } from '../rbac.js';
 import { config } from '../config.js';
 import { refOf } from '../util/ids.js';
+
+const timeWindow = z.object({ label: z.string().trim().min(1).max(40), days: z.array(z.number().int().min(0).max(6)).max(7).default([]), start_hour: z.number().int().min(0).max(23), end_hour: z.number().int().min(1).max(24), percent: z.number().int().min(-50).max(100) })
+  .refine((w) => w.start_hour !== w.end_hour, { message: 'Start and end hour must differ' });
+/** Fare-rule fields shared by "propose" and "preview" so the live calculator can never validate differently from the real proposal. */
+const ruleSchema = z.object({
+      service_id: z.string(), zone_id: z.string().nullable().default('kigali'), model: z.enum(['fixed', 'platform']).default('platform'),
+      base_fare: z.number().int().min(0).max(10_000_000), per_km: z.number().int().min(0).max(10_000_000), per_min: z.number().int().min(0).max(10_000_000), minimum_fare: z.number().int().min(0).max(10_000_000),
+      booking_fee: z.number().int().min(0).max(10_000_000).default(0), wait_per_min: z.number().int().min(0).max(10_000_000).default(0), free_wait_min: z.number().int().min(0).max(10_000_000).default(3),
+      airport_fee: z.number().int().min(0).max(10_000_000).default(0), scheduled_fee: z.number().int().min(0).max(10_000_000).default(0), tax_bps: z.number().int().min(0).max(10_000_000).max(5000).default(0), rounding: z.number().int().min(1).max(1000).default(50),
+      effective_from: z.string().datetime().optional(),
+      // Abasare
+      billing: z.enum(['distance', 'hourly']).default('distance'), return_per_km: z.number().int().min(0).max(10_000_000).default(0),
+      night_start_hour: z.number().int().min(0).max(10_000_000).max(23).nullable().default(null), night_end_hour: z.number().int().min(0).max(10_000_000).max(24).nullable().default(null), night_fee: z.number().int().min(0).max(10_000_000).default(0),
+      hourly_rate: z.number().int().min(0).max(10_000_000).default(0), min_hours: z.number().int().min(1).default(2), max_hours: z.number().int().min(1).default(12),
+      long_hire_hours: z.number().int().min(1).nullable().default(null), long_hire_rate: z.number().int().min(0).max(10_000_000).nullable().default(null),
+      overtime_per_30min: z.number().int().min(0).max(10_000_000).default(0), overtime_grace_min: z.number().int().min(0).max(10_000_000).default(10),
+  time_multipliers: z.array(timeWindow).max(6).default([]),
+}).superRefine((r, ctx) => {
+  const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message });
+  if ((r.night_start_hour == null) !== (r.night_end_hour == null)) bad('night_end_hour', 'Set both the night start and end hour, or neither');
+  if (r.min_hours > r.max_hours) bad('min_hours', 'Minimum hours cannot exceed maximum hours');
+  if ((r.long_hire_hours == null) !== (r.long_hire_rate == null)) bad('long_hire_rate', 'Set both the long-hire hours and rate, or neither');
+});
+const tripSchema = z.object({
+  distance_km: z.number().min(0).max(500).default(0), duration_min: z.number().min(0).max(1440).default(0),
+  local_hour: z.number().int().min(0).max(23).optional(), local_dow: z.number().int().min(0).max(6).optional(),
+  hours: z.number().int().min(1).max(24).optional(), airport: z.boolean().default(false), scheduled: z.boolean().default(false),
+});
+type RuleInput = z.infer<typeof ruleSchema>;
+const previewRule = (b: RuleInput): Rule => ({ id: 'preview', version: 0, long_distance_km: null, long_distance_per_km: null, surge_enabled: false, surge_cap_bps: 15000, ...b } as Rule);
+
+/** Maker-checker gate. The proposer may only approve their own change when the super-admin-controlled setting allows it; returns whether that happened. */
+async function checkerGate(proposer: string | null, actor: string, what: string): Promise<boolean> {
+  if (proposer !== actor) return false;
+  if (!(await getSetting('pricing.self_approval'))) throw forbidden(`Maker-checker: you cannot approve your own ${what}`);
+  return true;
+}
 
 const idp = z.object({ id: z.string().uuid() });
 
@@ -175,42 +215,51 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // ---------- pricing & commission (maker-checker) ----------
-  app.get('/admin/pricing', { preHandler: requirePerm('pricing.manage') }, async () => ({
-    rules: await q('select * from pricing_rules order by service_id, version desc'),
-    commissions: await q('select * from commission_rules order by created_at desc'),
+  // Approvers (pricing.approve) must be able to see what they are approving, so reading is open to either permission.
+  const viewPricing = async (req: any, reply: any) => {
+    await authenticate(req, reply);
+    if (!isStaff(req.auth!.roles) || !(can(req.auth!.roles, 'pricing.manage') || can(req.auth!.roles, 'pricing.approve'))) throw forbidden('missing permission pricing.manage or pricing.approve');
+  };
+  app.get('/admin/pricing', { preHandler: viewPricing }, async () => ({
+    services: await q('select id, name_en, kind, enabled from service_categories order by sort'),
+    zones: await q('select id, name, active from service_zones order by name'),
+    rules: await q('select r.*, u.display_name created_by_name from pricing_rules r left join users u on u.id=r.created_by order by r.service_id, r.version desc'),
+    commissions: await q('select c.*, u.display_name created_by_name from commission_rules c left join users u on u.id=c.created_by order by c.created_at desc'),
+    self_approval: await getSetting('pricing.self_approval'),
   }));
   app.post('/admin/pricing', { preHandler: requirePerm('pricing.manage') }, async (req) => {
-    const b = parse(z.object({
-      service_id: z.string(), zone_id: z.string().nullable().default('kigali'), model: z.enum(['fixed', 'platform']).default('platform'),
-      base_fare: z.number().int().min(0), per_km: z.number().int().min(0), per_min: z.number().int().min(0), minimum_fare: z.number().int().min(0),
-      booking_fee: z.number().int().min(0).default(0), wait_per_min: z.number().int().min(0).default(0), free_wait_min: z.number().int().min(0).default(3),
-      airport_fee: z.number().int().min(0).default(0), scheduled_fee: z.number().int().min(0).default(0), tax_bps: z.number().int().min(0).max(5000).default(0), rounding: z.number().int().min(1).max(1000).default(50),
-      effective_from: z.string().datetime().optional(),
-      // Abasare
-      billing: z.enum(['distance', 'hourly']).default('distance'), return_per_km: z.number().int().min(0).default(0),
-      night_start_hour: z.number().int().min(0).max(23).nullable().default(null), night_end_hour: z.number().int().min(0).max(24).nullable().default(null), night_fee: z.number().int().min(0).default(0),
-      hourly_rate: z.number().int().min(0).default(0), min_hours: z.number().int().min(1).default(2), max_hours: z.number().int().min(1).default(12),
-      long_hire_hours: z.number().int().min(1).nullable().default(null), long_hire_rate: z.number().int().min(0).nullable().default(null),
-      overtime_per_30min: z.number().int().min(0).default(0), overtime_grace_min: z.number().int().min(0).default(10),
-    }), req.body);
+    const b = parse(ruleSchema, req.body);
     const prev = await q1<any>('select coalesce(max(version),0) v from pricing_rules where service_id=$1', [b.service_id]);
     const r = await q1<any>(`insert into pricing_rules(service_id,zone_id,model,base_fare,per_km,per_min,minimum_fare,booking_fee,wait_per_min,free_wait_min,airport_fee,scheduled_fee,tax_bps,rounding,version,effective_from,status,created_by,
-        billing,return_per_km,night_start_hour,night_end_hour,night_fee,hourly_rate,min_hours,max_hours,long_hire_hours,long_hire_rate,overtime_per_30min,overtime_grace_min)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,coalesce($16, now()),'pending_approval',$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) returning *`,
+        billing,return_per_km,night_start_hour,night_end_hour,night_fee,hourly_rate,min_hours,max_hours,long_hire_hours,long_hire_rate,overtime_per_30min,overtime_grace_min,time_multipliers)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,coalesce($16, now()),'pending_approval',$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30) returning *`,
       [b.service_id, b.zone_id, b.model, b.base_fare, b.per_km, b.per_min, b.minimum_fare, b.booking_fee, b.wait_per_min, b.free_wait_min, b.airport_fee, b.scheduled_fee, b.tax_bps, b.rounding, prev.v + 1, b.effective_from ?? null, req.auth!.id,
-       b.billing, b.return_per_km, b.night_start_hour, b.night_end_hour, b.night_fee, b.hourly_rate, b.min_hours, b.max_hours, b.long_hire_hours, b.long_hire_rate, b.overtime_per_30min, b.overtime_grace_min]);
+       b.billing, b.return_per_km, b.night_start_hour, b.night_end_hour, b.night_fee, b.hourly_rate, b.min_hours, b.max_hours, b.long_hire_hours, b.long_hire_rate, b.overtime_per_30min, b.overtime_grace_min, JSON.stringify(b.time_multipliers)]);
     await audit(actorOf(req), 'pricing.proposed', 'pricing_rule', r.id, undefined, r);
     return r;
+  });
+  // Live calculator: same schema and the same computeFare as real quotes; nothing is stored.
+  app.post('/admin/pricing/preview', { preHandler: requirePerm('pricing.manage') }, async (req) => {
+    const b = parse(z.object({ rule: ruleSchema, trip: tripSchema.default({}) }), req.body);
+    const input = { distance_m: Math.round(b.trip.distance_km * 1000), duration_s: Math.round(b.trip.duration_min * 60), airport: b.trip.airport, scheduled: b.trip.scheduled, hours: b.trip.hours, local_hour: b.trip.local_hour, local_dow: b.trip.local_dow };
+    const proposed = computeFare(previewRule(b.rule), input);
+    let current = null, current_rule_id = null, current_error: string | undefined;
+    try {
+      const cur = await activeRule(b.rule.service_id, b.rule.zone_id ?? 'kigali');
+      current_rule_id = cur.id;
+      current = computeFare(cur, input);
+    } catch (e: any) { current_error = e.message; }
+    return { proposed, current, current_rule_id, current_error };
   });
   app.post('/admin/pricing/:id/approve', { preHandler: requirePerm('pricing.approve') }, async (req) => {
     const { id } = parse(idp, req.params);
     return tx(async (c) => {
       const r = await q1<any>('select * from pricing_rules where id=$1 for update', [id], c);
       if (!r || r.status !== 'pending_approval') throw conflict('invalid_state', 'Not awaiting approval');
-      if (r.created_by === req.auth!.id) throw forbidden('Maker-checker: you cannot approve your own price change');
+      const selfApproved = await checkerGate(r.created_by, req.auth!.id, 'price change');
       await q("update pricing_rules set status='retired', effective_to=$3 where service_id=$1 and status='active' and (zone_id is not distinct from $2) and id<>$4", [r.service_id, r.zone_id, r.effective_from, id], c);
       await q("update pricing_rules set status='active', approved_by=$2 where id=$1", [id, req.auth!.id], c);
-      await audit(actorOf(req), 'pricing.approved', 'pricing_rule', id, r, { status: 'active' }, c);
+      await audit(actorOf(req), 'pricing.approved', 'pricing_rule', id, r, { status: 'active', self_approved: selfApproved }, c);
       return { ok: true };
     });
   });
@@ -234,10 +283,10 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params);
     const r = await q1<any>("select * from commission_rules where id=$1", [id]);
     if (!r || r.status !== 'pending_approval') throw conflict('invalid_state', 'Not awaiting approval');
-    if (r.created_by === req.auth!.id) throw forbidden('Maker-checker: you cannot approve your own commission change');
+    const selfApproved = await checkerGate(r.created_by, req.auth!.id, 'commission change');
     await q("update commission_rules set status='retired', effective_to=now() where status='active' and service_id is not distinct from $1 and fleet_id is not distinct from $2 and driver_id is not distinct from $3 and id<>$4", [r.service_id, r.fleet_id, r.driver_id, id]);
     await q("update commission_rules set status='active', approved_by=$2 where id=$1", [id, req.auth!.id]);
-    await audit(actorOf(req), 'commission.approved', 'commission_rule', id, r, { status: 'active' });
+    await audit(actorOf(req), 'commission.approved', 'commission_rule', id, r, { status: 'active', self_approved: selfApproved });
     return { ok: true };
   });
 
@@ -245,11 +294,22 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/admin/services', { preHandler: requirePerm('pricing.manage') }, async () => ({ services: await q('select * from service_categories order by sort'), zone_services: await q('select * from zone_services') }));
   app.patch('/admin/services/:id', { preHandler: requirePerm('pricing.manage') }, async (req) => {
     const { id } = parse(z.object({ id: z.string() }), req.params);
-    const b = parse(z.object({ enabled: z.boolean().optional(), passenger_capacity: z.number().int().min(1).optional(), luggage: z.string().max(60).optional(), restrictions: z.record(z.any()).optional() }), req.body);
+    const b = parse(z.object({ enabled: z.boolean().optional(), name_en: z.string().trim().min(2).max(60).optional(), name_rw: z.string().trim().min(2).max(60).optional(), name_fr: z.string().trim().min(2).max(60).optional(), passenger_capacity: z.number().int().min(1).max(60).optional(), luggage: z.string().max(60).optional(), restrictions: z.record(z.any()).optional() }), req.body);
     const before = await q1<any>('select * from service_categories where id=$1', [id]); if (!before) throw notFound('service');
     if (b.enabled) { const rule = await q1("select 1 from pricing_rules where service_id=$1 and status='active'", [id]); if (!rule) throw conflict('no_pricing_rule', 'Create and approve a price before enabling this service'); }
-    await q('update service_categories set enabled=coalesce($2,enabled), passenger_capacity=coalesce($3,passenger_capacity), luggage=coalesce($4,luggage), restrictions=coalesce($5,restrictions) where id=$1', [id, b.enabled ?? null, b.passenger_capacity ?? null, b.luggage ?? null, b.restrictions ? JSON.stringify(b.restrictions) : null]);
+    await q('update service_categories set enabled=coalesce($2,enabled), passenger_capacity=coalesce($3,passenger_capacity), luggage=coalesce($4,luggage), restrictions=coalesce($5,restrictions), name_en=coalesce($6,name_en), name_rw=coalesce($7,name_rw), name_fr=coalesce($8,name_fr) where id=$1', [id, b.enabled ?? null, b.passenger_capacity ?? null, b.luggage ?? null, b.restrictions ? JSON.stringify(b.restrictions) : null, b.name_en ?? null, b.name_rw ?? null, b.name_fr ?? null]);
     await audit(actorOf(req), 'service.updated', 'service', id, before, b);
+    return { ok: true };
+  });
+  // Enable or disable one service in one zone (the service must also be enabled globally to be bookable).
+  app.put('/admin/services/:id/zones/:zone', { preHandler: requirePerm('pricing.manage') }, async (req) => {
+    const { id, zone } = parse(z.object({ id: z.string(), zone: z.string() }), req.params);
+    const b = parse(z.object({ enabled: z.boolean() }), req.body);
+    if (!(await q1('select 1 from service_categories where id=$1', [id])) || !(await q1('select 1 from service_zones where id=$1', [zone]))) throw notFound('service or zone');
+    if (b.enabled && !(await q1("select 1 from pricing_rules where service_id=$1 and status='active' and (zone_id=$2 or zone_id is null)", [id, zone]))) throw conflict('no_pricing_rule', 'Create and approve a price for this zone before enabling the service there');
+    const before = await q1<any>('select enabled from zone_services where service_id=$1 and zone_id=$2', [id, zone]);
+    await q('insert into zone_services(zone_id,service_id,enabled) values ($1,$2,$3) on conflict (zone_id,service_id) do update set enabled=excluded.enabled', [zone, id, b.enabled]);
+    await audit(actorOf(req), 'service.zone_changed', 'service', id, { zone, enabled: before?.enabled ?? false }, { zone, enabled: b.enabled });
     return { ok: true };
   });
   app.get('/admin/zones', { preHandler: requirePerm('pricing.manage') }, async () => ({ zones: await q('select * from service_zones') }));
@@ -264,17 +324,27 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/admin/promotions', { preHandler: requirePerm('promotions.manage') }, async () => ({ promotions: await q('select * from promotions order by created_at desc limit 100') }));
   app.post('/admin/promotions', { preHandler: requirePerm('promotions.manage') }, async (req) => {
     const b = parse(z.object({ code: z.string().min(3).max(20).regex(/^[A-Za-z0-9_-]+$/), kind: z.enum(['percent', 'fixed']), value: z.number().int().positive(), max_discount: z.number().int().positive().optional(), min_fare: z.number().int().min(0).default(0),
-      valid_to: z.string().datetime().optional(), usage_limit: z.number().int().positive().optional(), per_user_limit: z.number().int().positive().default(1), budget: z.number().int().positive().optional(), service_ids: z.array(z.string()).optional(), zone_ids: z.array(z.string()).optional(), first_ride_only: z.boolean().default(false) }), req.body);
+      valid_from: z.string().datetime().optional(), valid_to: z.string().datetime().optional(), usage_limit: z.number().int().positive().optional(), per_user_limit: z.number().int().positive().default(1), budget: z.number().int().positive().optional(), service_ids: z.array(z.string()).optional(), zone_ids: z.array(z.string()).optional(), first_ride_only: z.boolean().default(false),
+      segment: z.enum(['all', 'first_ride', 'corporate', 'referred', 'phones']).default('all'), segment_phones: z.array(z.string().regex(/^\+250[0-9]{9}$/)).max(500).optional() }), req.body);
     if (b.kind === 'percent' && b.value > 100) throw badRequest('invalid_percent');
+    if (b.segment === 'phones' && !b.segment_phones?.length) throw badRequest('segment_phones_required', 'Add at least one phone number for this audience');
+    if (b.valid_from && b.valid_to && b.valid_to <= b.valid_from) throw badRequest('invalid_dates', 'The end date must be after the start date');
     try {
-      const r = await q1<any>(`insert into promotions(code,kind,value,max_discount,min_fare,valid_to,usage_limit,per_user_limit,budget,service_ids,zone_ids,first_ride_only) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning *`,
-        [b.code.toUpperCase(), b.kind, b.value, b.max_discount ?? null, b.min_fare, b.valid_to ?? null, b.usage_limit ?? null, b.per_user_limit, b.budget ?? null, b.service_ids ?? null, b.zone_ids ?? null, b.first_ride_only]);
+      const r = await q1<any>(`insert into promotions(code,kind,value,max_discount,min_fare,valid_from,valid_to,usage_limit,per_user_limit,budget,service_ids,zone_ids,first_ride_only,segment,segment_phones) values ($1,$2,$3,$4,$5,coalesce($6,now()),$7,$8,$9,$10,$11,$12,$13,$14,$15) returning *`,
+        [b.code.toUpperCase(), b.kind, b.value, b.max_discount ?? null, b.min_fare, b.valid_from ?? null, b.valid_to ?? null, b.usage_limit ?? null, b.per_user_limit, b.budget ?? null, b.service_ids ?? null, b.zone_ids ?? null, b.first_ride_only || b.segment === 'first_ride', b.segment, b.segment === 'phones' ? b.segment_phones : null]);
       await audit(actorOf(req), 'promotion.created', 'promotion', r.id, undefined, r); return r;
     } catch (e: any) { if (e.code === '23505') throw conflict('code_exists', 'Code already exists'); throw e; }
   });
   app.patch('/admin/promotions/:id', { preHandler: requirePerm('promotions.manage') }, async (req) => {
-    const { id } = parse(idp, req.params); const b = parse(z.object({ active: z.boolean() }), req.body);
-    await q('update promotions set active=$2 where id=$1', [id, b.active]); await audit(actorOf(req), 'promotion.toggled', 'promotion', id, undefined, b); return { ok: true };
+    const { id } = parse(idp, req.params);
+    const b = parse(z.object({ active: z.boolean().optional(), budget: z.number().int().positive().nullable().optional(), valid_from: z.string().datetime().optional(), valid_to: z.string().datetime().nullable().optional(), usage_limit: z.number().int().positive().nullable().optional() }), req.body);
+    if (!Object.keys(b).length) throw badRequest('validation_error', 'Nothing to change');
+    const before = await q1<any>('select * from promotions where id=$1', [id]); if (!before) throw notFound('promotion');
+    if (b.budget != null && b.budget < before.spent) throw badRequest('invalid_budget', `The budget cannot be below what has already been spent (${before.spent} RWF)`);
+    const m = { ...before, ...b };
+    if (m.valid_to && new Date(m.valid_to) <= new Date(m.valid_from)) throw badRequest('invalid_dates', 'The end date must be after the start date');
+    await q('update promotions set active=$2, budget=$3, valid_from=$4, valid_to=$5, usage_limit=$6 where id=$1', [id, m.active, m.budget, m.valid_from, m.valid_to, m.usage_limit]);
+    await audit(actorOf(req), 'promotion.updated', 'promotion', id, { active: before.active, budget: before.budget, valid_from: before.valid_from, valid_to: before.valid_to, usage_limit: before.usage_limit }, b); return { ok: true };
   });
 
   // ---------- support & safety consoles ----------
@@ -362,13 +432,39 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // ---------- settings, flags, templates, audit, staff ----------
-  app.get('/admin/settings', { preHandler: requirePerm('settings.manage') }, async () => ({ settings: await allSettings(), flags: await q('select * from feature_flags order by key'), templates: await q('select * from notification_templates order by key, lang') }));
+  app.get('/admin/settings', { preHandler: requirePerm('settings.manage') }, async () => {
+    const [settings, rows, last] = await Promise.all([
+      allSettings(),
+      q<any>('select s.key, s.updated_at, u.display_name updated_by_name from system_settings s left join users u on u.id=s.updated_by'),
+      q<any>(`select distinct on (a.entity_id) a.entity_id key, a.action, a.before, a.after, a.created_at, u.display_name actor_name
+              from audit_logs a left join users u on u.id=a.actor_id where a.entity_type='setting' order by a.entity_id, a.id desc`),
+    ]);
+    const stored = new Map(rows.map((r: any) => [r.key, r])), lastBy = new Map(last.map((r: any) => [r.key, r]));
+    const items = Object.entries(settings).map(([key, value]) => {
+      const m = metaFor(key), known = key in SETTING_DEFAULTS, l = lastBy.get(key), st = stored.get(key);
+      return { key, ...m, group: m.group, value, default: known ? (SETTING_DEFAULTS as any)[key] : null, has_default: known, is_default: known && !st,
+        last_change: l ? { by: l.actor_name ?? 'system', at: l.created_at, action: l.action, before: l.before, after: l.after } : st ? { by: st.updated_by_name ?? 'system', at: st.updated_at, action: 'setting.changed' } : null };
+    });
+    return { settings, groups: SETTING_GROUPS, items, flags: await q('select * from feature_flags order by key'), templates: await q('select * from notification_templates order by key, lang') };
+  });
   app.put('/admin/settings/:key', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const { key } = parse(z.object({ key: z.string() }), req.params);
     const b = parse(z.object({ value: z.any() }), req.body);
+    if (b.value === undefined) throw badRequest('invalid_setting', 'A value is required');
+    if (SETTING_META[key as keyof typeof SETTING_META]?.superAdminOnly && !req.auth!.roles.includes('super_admin')) throw forbidden('Only a super admin can change this setting');
+    const err = validateSetting(key, b.value); if (err) throw badRequest('invalid_setting', err, { key });
     const before = (await allSettings())[key];
     try { await setSetting(key, b.value, req.auth!.id); } catch { throw badRequest('unknown_setting'); }
     await audit(actorOf(req), 'setting.changed', 'setting', key, before, b.value); return { ok: true };
+  });
+  app.delete('/admin/settings/:key', { preHandler: requirePerm('settings.manage') }, async (req) => {
+    const { key } = parse(z.object({ key: z.string() }), req.params);
+    if (SETTING_META[key as keyof typeof SETTING_META]?.superAdminOnly && !req.auth!.roles.includes('super_admin')) throw forbidden('Only a super admin can change this setting');
+    const before = (await allSettings())[key];
+    if (!(await q1('select 1 from system_settings where key=$1', [key]))) { if (key in SETTING_DEFAULTS) return { ok: true, value: (SETTING_DEFAULTS as any)[key] }; throw badRequest('unknown_setting'); }
+    await resetSetting(key);
+    const after = (SETTING_DEFAULTS as any)[key] ?? null;
+    await audit(actorOf(req), 'setting.reset', 'setting', key, before, after); return { ok: true, value: after };
   });
   app.put('/admin/flags/:key', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const { key } = parse(z.object({ key: z.string() }), req.params);

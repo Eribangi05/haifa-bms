@@ -10,8 +10,11 @@ export type Rule = {
   tax_bps: number; rounding: number; surge_enabled: boolean; surge_cap_bps: number; version: number;
   // Abasare (driver for the customer's own car)
   billing?: 'distance' | 'hourly'; return_per_km?: number; night_start_hour?: number | null; night_end_hour?: number | null; night_fee?: number;
+  time_multipliers?: TimeWindow[];
   hourly_rate?: number; min_hours?: number; max_hours?: number; long_hire_hours?: number | null; long_hire_rate?: number | null; overtime_per_30min?: number; overtime_grace_min?: number;
 };
+/** Peak / off-peak window. days: 0=Sunday..6=Saturday, empty = every day. percent: +20 = 20% dearer, -10 = 10% cheaper. */
+export type TimeWindow = { label: string; days: number[]; start_hour: number; end_hour: number; percent: number };
 export type Line = { code: string; label_en: string; label_rw: string; label_fr: string; amount: number; passthrough?: boolean };
 export type Breakdown = {
   lines: Line[]; subtotal: number; discount: number; tax: number; total: number;
@@ -23,7 +26,8 @@ export type FareInput = {
   extras?: { code: string; label: string; amount: number; passthrough?: boolean }[];
   surge_bps?: number;                 // only honoured if rule.surge_enabled; capped
   hours?: number;                     // hourly billing: booked hours
-  local_hour?: number;                // hour of day (Africa/Kigali) the service starts, for the night band
+  local_hour?: number;                // hour of day (Africa/Kigali) the service starts, for the night band and time windows
+  local_dow?: number;                 // day of week (0=Sunday) in Africa/Kigali, for time windows
   promo?: { code: string; discount: number };
 };
 
@@ -38,8 +42,26 @@ const extraLine = (e: { code: string; label: string; amount: number; passthrough
 
 /** Hour of day in Africa/Kigali (UTC+2, no DST). */
 export const kigaliHour = (d: Date) => (d.getUTCHours() + 2) % 24;
+export const kigaliDow = (d: Date) => new Date(d.getTime() + 2 * 3600_000).getUTCDay();
 export const inNightBand = (hour: number, start?: number | null, end?: number | null) =>
   start != null && end != null && (start < end ? hour >= start && hour < end : hour >= start || hour < end);
+
+/**
+ * Combined peak/off-peak adjustment for a start time, in whole percent. Matching windows add up; the total is held between -50% and the rule's
+ * surge cap (surge_cap_bps, default +50%), so a misconfigured window can never exceed the maximum allowed uplift.
+ */
+export function timeAdjustPercent(rule: Rule, hour?: number, dow?: number): number {
+  if (hour == null || !rule.time_multipliers?.length) return 0;
+  let pct = 0;
+  for (const w of rule.time_multipliers) {
+    if (w.days?.length && (dow == null || !w.days.includes(dow))) continue;
+    if (inNightBand(hour, w.start_hour, w.end_hour)) pct += w.percent;
+  }
+  return Math.max(-50, Math.min(pct, Math.floor((rule.surge_cap_bps - 10000) / 100)));
+}
+const timeLine = (amount: number) => amount > 0
+  ? L('time_multiplier', 'Peak-time adjustment', 'Igiciro cy\'igihe abagenzi ari benshi', 'Majoration heures de pointe', amount)
+  : L('time_multiplier', 'Off-peak discount', 'Igabanywa mu gihe abagenzi ari bake', 'Remise heures creuses', amount);
 
 /** Pure, deterministic fare computation. Integer RWF only. */
 export function computeFare(rule: Rule, inp: FareInput): Breakdown {
@@ -61,6 +83,8 @@ export function computeFare(rule: Rule, inp: FareInput): Breakdown {
     const s = bps(core, m - 10000);
     core += s; lines.push(L('surge', 'High-demand adjustment', 'Igiciro cyazamutse (abagenzi ni benshi)', 'Majoration forte demande', s));
   }
+  const tp = timeAdjustPercent(rule, inp.local_hour, inp.local_dow);
+  if (tp !== 0) { const a = bps(core, tp * 100); if (a !== 0) { core += a; lines.push(timeLine(a)); } }
   if (core < rule.minimum_fare) {
     lines.push(L('minimum', 'Minimum fare adjustment', 'Ihuzwa n\'igiciro gito cyemewe', 'Ajustement au tarif minimum', rule.minimum_fare - core));
     core = rule.minimum_fare;
@@ -98,12 +122,14 @@ function computeHourly(rule: Rule, inp: FareInput): Breakdown {
   const long = rule.long_hire_hours != null && rule.long_hire_rate != null && hours >= rule.long_hire_hours;
   const rate = long ? (rule.long_hire_rate as number) : (rule.hourly_rate ?? 0);
   const lines: Line[] = [L('hourly', `Driver ${hours} h x ${rate}${long ? ' (long-hire rate)' : ''}`, `Umushoferi ${hours} h x ${rate}${long ? ' (igiciro cy\'igihe kirekire)' : ''}`, `Chauffeur ${hours} h x ${rate}${long ? ' (tarif longue durée)' : ''}`, hours * rate)];
+  const tAdj = (() => { const tp = timeAdjustPercent(rule, inp.local_hour, inp.local_dow); return tp ? bps(hours * rate, tp * 100) : 0; })();
+  if (tAdj !== 0) lines.push(timeLine(tAdj));
   let fees = 0;
   const add = (code: string, en: string, rw: string, fr: string, amt: number) => { if (amt > 0) { fees += amt; lines.push(L(code, en, rw, fr, amt)); } };
   add('booking_fee', 'Booking fee', 'Amafaranga yo gutumiza', 'Frais de réservation', rule.booking_fee);
   if (inp.scheduled) add('scheduled_fee', 'Scheduled booking', 'Urugendo rwateguwe', 'Réservation à l\'avance', rule.scheduled_fee);
   if (inp.local_hour != null && inNightBand(inp.local_hour, rule.night_start_hour, rule.night_end_hour)) add('night_fee', 'Night service', 'Serivisi y\'ijoro', 'Service de nuit', rule.night_fee ?? 0);
-  const pre = hours * rate + fees;
+  const pre = hours * rate + tAdj + fees;
   const rounded = roundTo(pre, rule.rounding);
   if (rounded !== pre) lines.push(L('rounding', 'Rounding', 'Gusubiza ku mubare uzuye', 'Arrondi', rounded - pre));
   const discount = Math.min(inp.promo?.discount ?? 0, rounded);

@@ -16,7 +16,11 @@ export async function checkPromo(code: string, userId: string, serviceId: string
     'select count(*)::int n, count(*) filter (where user_id=$2)::int mine from promotion_redemptions where promotion_id=$1', [p.id, userId], db);
   if (p.usage_limit != null && used!.n >= p.usage_limit) return { ok: false, reason: 'promo_exhausted' };
   if (used!.mine >= p.per_user_limit) return { ok: false, reason: 'promo_already_used' };
-  if (p.first_ride_only) {
+  // Segment targeting: who may use this code (all | first_ride | corporate members | referred sign-ups | explicit phone list).
+  if (p.segment === 'corporate' && !(await q1("select 1 from corporate_members m join corporate_accounts c on c.id=m.corporate_id where m.user_id=$1 and m.active and c.status='active'", [userId], db))) return { ok: false, reason: 'promo_not_eligible' };
+  if (p.segment === 'referred' && !(await q1('select 1 from referrals where referee_id=$1', [userId], db))) return { ok: false, reason: 'promo_not_eligible' };
+  if (p.segment === 'phones' && !(await q1('select 1 from users where id=$1 and phone = any($2::text[])', [userId, p.segment_phones ?? []], db))) return { ok: false, reason: 'promo_not_eligible' };
+  if (p.first_ride_only || p.segment === 'first_ride') {
     const prior = await q1("select 1 from bookings where passenger_id=$1 and status in ('COMPLETED','PAYMENT_PENDING','PAYMENT_COMPLETED')", [userId], db);
     if (prior) return { ok: false, reason: 'promo_first_ride_only' };
   }

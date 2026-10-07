@@ -5,7 +5,7 @@ import { config } from '../config.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { haversineM, pointInPolygon, type LatLng } from '../util/geo.js';
 import { quotableDebt, withDebt, withoutDebt, applyDebts, recordDebt } from './debts.js';
-import { computeFare, finalizeFare, activeRule, ruleById, kigaliHour, overtimeBlocks, type Breakdown } from './pricing.js';
+import { computeFare, finalizeFare, activeRule, ruleById, kigaliHour, kigaliDow, overtimeBlocks, type Breakdown } from './pricing.js';
 import { route } from './maps.js';
 import { checkPromo } from './promos.js';
 import { getSetting, flag } from './settings.js';
@@ -106,11 +106,11 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
     if (maxKm && rt.distance_m > maxKm * 1000) { options.push({ service_id: s.id, available: false, reason: 'too_far_for_service' }); continue; }
     const rule = await activeRule(s.id, pz.id, scheduled ?? new Date());
     const promo = inp.promo_code ? await (async () => {
-      const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()) });
+      const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()), local_dow: kigaliDow(scheduled ?? new Date()) });
       return checkPromo(inp.promo_code!, passengerId, s.id, pz.id, pre.subtotal);
     })() : null;
     const bd: Breakdown = withDebt(computeFare(rule, {
-      distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()),
+      distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()), local_dow: kigaliDow(scheduled ?? new Date()),
       promo: promo?.ok ? { code: promo.code, discount: promo.discount } : undefined,
     }), owed);
     let available: boolean, near: number[] = [], reason: string | undefined;

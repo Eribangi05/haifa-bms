@@ -224,6 +224,7 @@
 | POST | `/admin/pricing` |
 | POST | `/admin/pricing/:id/approve` |
 | POST | `/admin/pricing/:id/reject` |
+| POST | `/admin/pricing/preview` |
 | GET | `/admin/privacy-requests` |
 | POST | `/admin/privacy-requests/:id/execute` |
 | GET | `/admin/promotions` |
@@ -234,7 +235,9 @@
 | POST | `/admin/safety/incidents/:id/update` |
 | GET | `/admin/services` |
 | PATCH | `/admin/services/:id` |
+| PUT | `/admin/services/:id/zones/:zone` |
 | GET | `/admin/settings` |
+| DELETE | `/admin/settings/:key` |
 | PUT | `/admin/settings/:key` |
 | GET | `/admin/staff` |
 | POST | `/admin/staff/:id/sessions/revoke` |

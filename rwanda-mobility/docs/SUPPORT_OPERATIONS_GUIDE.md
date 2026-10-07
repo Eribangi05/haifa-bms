@@ -44,7 +44,20 @@ Safety **urgent**, 2 h (SOS cases 15 min); payment/refund/fare dispute **high**,
 
 ## Settings you will touch
 
-Admin -> Settings: offer timeout, max rounds, group size (1 = sequential offers), cancellation grace/fee, no-show wait/fee, payout minimum/fee/large threshold, safety escalation contacts (SMS recipients for SOS), feature flags, notification templates (Kinyarwanda/English). Every change is audited.
+Admin -> Settings (grouped by topic, each with its unit, allowed range, default and a Reset button): offer timeout, max rounds, group size (1 = sequential offers), cancellation grace/fee, no-show wait/fee, payout minimum/fee/large threshold, safety escalation contacts (SMS recipients for SOS), feature flags, notification templates (Kinyarwanda/English). Every change is audited.
+
+## How to change prices
+
+1. **Admin -> Pricing**. Under *Current prices* find the service and zone (for example Moto, Kigali) and press **Edit**. To price a new service or zone, press *Add or change a price*, pick the service and zone, and optionally *Copy values from* an existing price.
+2. Change the fields you need. Each has a unit and a hint; a red message appears if a value is out of range. Amounts are whole RWF; tax is a percentage.
+3. Optional: add **peak / off-peak windows** (for example +20% Monday to Friday 07:00-09:00, or -10% on Sundays). They show as their own line on the receipt, and can never push the fare above the rule's maximum surge (+50% by default) or below -50%.
+4. Watch the **Live fare preview** on the right: enter a distance, time, day and hour (and hours for Abasare hourly hire) to see the fare line by line, the current price next to the proposed one, and the difference. Below it, *Current vs proposed* lists exactly what you changed.
+5. Press **Review and propose**. The confirmation states the effect, for example "This changes the Moto fare in Kigali: Base fare 620 RWF -> 700 RWF. It applies to new bookings once approved; accepted quotes are unaffected." Optionally set a *start date* first to schedule the change; the old price stays live until then.
+6. A **different person** with approval rights (finance approver or super admin) opens *Pricing -> Waiting for approval*, reads the list of changes and presses **Approve** (or Reject). Customers see the new price in new estimates immediately; trips already quoted keep their price.
+7. **Very small team?** A super admin can switch on *Settings -> Pricing & approvals -> Allow self-approval*. The proposer can then approve their own change. A red banner shows on Pricing and Settings while it is on, and every self-approved change is marked `self_approved` in the audit log. Turn it off again as soon as a second approver exists.
+8. If a change was a mistake, propose the old values again (use *Audit log -> pricing* to find them). Never edit the database directly.
+
+Other business settings follow the same pattern: **Settings** (grouped by topic, with default values and *Reset to default*; the page shows who changed each value last), **Promotions** (audience, start/end dates and budget), and **Services** (switch a service on or off per zone, rename it, set seats).
 
 ## Escalation
 

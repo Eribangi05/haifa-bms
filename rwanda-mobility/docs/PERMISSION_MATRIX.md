@@ -30,8 +30,8 @@
 
 | Action | Maker | Checker |
 |---|---|---|
-| Fare change | `pricing.manage` | `pricing.approve` (not the maker) |
-| Commission change / exemption | `pricing.manage` | `pricing.approve` (not the maker) |
+| Fare change | `pricing.manage` | `pricing.approve` (not the maker, unless the super-admin-only setting `pricing.self_approval` is on; then allowed and audited as `self_approved`) |
+| Commission change / exemption | `pricing.manage` | `pricing.approve` (same self-approval rule as fare changes) |
 | Refund | `finance.refund.request` | `finance.refund.approve` (not the requester) |
 | Large payout (>= configurable threshold) | `finance.payout.review` | `finance.payout.approve` (not the reviewer), release by someone other than the approver |
 | Enable regulated flags (surge, negotiated fares, wallet) | any `settings.manage` holder cannot | `super_admin` only |
