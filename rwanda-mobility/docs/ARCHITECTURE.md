@@ -108,6 +108,14 @@ A driver's **eligible payout** = `DRIVER_PAYABLE - CASH_WITH_DRIVERS` (floored a
 3. Strategy settings: `dispatch.group_size` (1 = sequential, N = small group), expanding radius per round, offer timeout, max rounds. After max rounds -> `NO_DRIVER_FOUND` with alternatives.
 4. A background job (every 3 s) expires offers and advances searches; manual assign/reassign is available to dispatchers.
 
+## Request codes
+
+A request code is a short code (6-8 chars, alphabet without 0/O/1/I) tied to a venue location, printed as a QR that encodes `${PUBLIC_BASE_URL}/r/<CODE>`. Table `request_codes` (migration 006); `bookings.request_code_id` attributes bookings.
+
+- Public: `GET /api/v1/request-codes/:code` returns venue, coordinates, pickup note, default service and `zone_ok` (service-zone check); inactive, expired or unknown codes give 404 `code_invalid`. `GET /r/:code` is the localized landing page (language: `?lang=`, then `Accept-Language`, else rw) with intent/`abasare://` deep links to the app; invalid codes get a localized 404 page. Scans are counted at most once per IP per code per 10 minutes (in memory), by either endpoint.
+- Booking: `POST /bookings` accepts optional `request_code`; unknown/inactive/expired gives 400 `code_invalid`. Pricing is unchanged. Staff booking views and `/admin/bookings` expose the code.
+- Admin (`codes.view`: analyst, support_lead, business_manager; `codes.manage`: support_lead, business_manager, super_admin): list with scans/bookings/completed, create (coordinates must be inside Rwanda), patch, soft delete, `qr.svg`, `qr.png` (1024 px). All audited. Venue label and notes are staff free text and are shown as typed; the printed A5 poster in admin-web is intentionally trilingual.
+
 ## Languages
 
 The app is trilingual: Kinyarwanda (`rw`, default), French (`fr`) and English (`en`). **The UI must never mix languages**, so everything user-facing the server sends is localised per request; an `rw`/`fr` user must never see English text.

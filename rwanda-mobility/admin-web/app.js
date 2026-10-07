@@ -67,7 +67,7 @@ const TABS = [
   ['dashboard', 'Overview', ['analytics.view']], ['live', 'Live map', ['dispatcher']], ['bookings', 'Bookings', ['dispatcher', 'support_agent', 'support_lead']],
   ['drivers', 'Drivers', ['driver_verifier', 'dispatcher', 'support_agent', 'support_lead', 'finance_officer']], ['abasare', 'Abasare', ['driver_verifier']], ['users', 'Passengers', ['support_agent', 'support_lead']],
   ['support', 'Support', ['support_agent', 'support_lead']], ['safety', 'Safety', ['support_lead', 'dispatcher']],
-  ['pricing', 'Pricing', ['business_manager', 'finance_approver']], ['promos', 'Promotions', ['business_manager']],
+  ['pricing', 'Pricing', ['business_manager', 'finance_approver']], ['promos', 'Promotions', ['business_manager']], ['codes', 'Request codes', ['business_manager', 'support_lead', 'analyst']],
   ['finance', 'Finance', ['finance_officer', 'finance_approver']], ['business', 'Business & fleets', ['business_manager']],
   ['privacy', 'Privacy', ['support_lead']], ['settings', 'Settings', []], ['audit', 'Audit log', []], ['staff', 'Staff', []],
 ];
@@ -104,7 +104,7 @@ V.bookings = async (el, state = {}) => {
   const sel = h('select', {}, ['', 'SEARCHING_DRIVER', 'DRIVER_ASSIGNED', 'IN_PROGRESS', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'DISPUTED', 'NO_DRIVER_FOUND', 'CANCELLED_BY_PASSENGER'].map((s) => h('option', { value: s, selected: s === st }, s || 'any status')));
   const go = () => { $('#view').replaceChildren(); V.bookings($('#view'), { q: inp.value, status: sel.value }); };
   el.append(h('h1', {}, 'Bookings'), h('div', { class: 'row' }, inp, sel, h('button', { class: 'b', onclick: go }, 'Search')),
-    table([{ h: 'Ref', k: 'ref' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, { h: 'Service', k: 'service_id' }, { h: 'Passenger', f: (r) => r.passenger || r.passenger_phone }, { h: 'Driver', f: (r) => r.driver || '-' }, { h: 'Fare', f: (r) => money(r.final_fare ?? r.estimated_fare) }, { h: 'Pay', k: 'payment_method' }, { h: 'Created', f: (r) => when(r.created_at) }], data.bookings, (r) => bookingDetail(r.id)));
+    table([{ h: 'Ref', k: 'ref' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, { h: 'Service', k: 'service_id' }, { h: 'Passenger', f: (r) => r.passenger || r.passenger_phone }, { h: 'Driver', f: (r) => r.driver || '-' }, { h: 'Fare', f: (r) => money(r.final_fare ?? r.estimated_fare) }, { h: 'Pay', k: 'payment_method' }, { h: 'Code', f: (r) => r.request_code_label || r.request_code || '' }, { h: 'Created', f: (r) => when(r.created_at) }], data.bookings, (r) => bookingDetail(r.id)));
 };
 async function bookingDetail(id) {
   const [b, ev] = await Promise.all([api('GET', '/bookings/' + id), api('GET', `/bookings/${id}/events`)]);
@@ -114,6 +114,7 @@ async function bookingDetail(id) {
   d.append(h('h2', {}, `${b.ref} · `, pill(b.status, statusCls(b.status))),
     h('div', {}, `Fare ${money(b.final_fare ?? b.estimated_fare)} ${b.fare_is_final ? '(final)' : '(estimate)'} · ${b.payment_method} · ${(b.distance_m / 1000).toFixed(1)} km`),
     h('div', {}, `From: ${b.pickup.name || b.pickup.lat + ',' + b.pickup.lng}  →  ${b.destination.name || b.destination.lat + ',' + b.destination.lng}`),
+    b.request_code ? h('div', {}, `Request code: ${b.request_code.code} · ${b.request_code.label}`) : null,
     b.driver ? h('div', {}, `Driver: ${b.driver.name} · ${b.vehicle?.plate || ''}`) : null,
     b.payment ? h('div', {}, `Payment: ${b.payment.status} · ref ${b.payment.reference}`) : null,
     b.abasare ? h('div', { class: 'card' }, h('b', {}, `Abasare · ${b.abasare.mode === 'hourly' ? b.abasare.hours + ' h hire' : 'drive me home'}`),
@@ -220,6 +221,54 @@ V.pricing = async (el) => {
     can('business_manager') && h('button', { class: 'b', onclick: async () => { const a = await ask('Propose new fare rule', { fields: [...f, ...af].map((k) => ({ name: k, label: k + (af.includes(k) ? ' (Abasare)' : ''), type: ['service_id', 'billing'].includes(k) ? 'text' : 'number' })) }); if (a) { delete a.reason; if (!a.billing) delete a.billing; for (const k of af) if (k !== 'billing' && (a[k] === 0 || Number.isNaN(a[k]))) delete a[k]; act(() => api('POST', '/admin/pricing', a), () => go('pricing')); } } }, 'Propose fare change'),
     h('h2', {}, 'Commission rules'), table([{ h: 'Scope', f: (c) => c.driver_id ? 'driver ' + c.driver_id.slice(0, 6) : c.fleet_id ? 'fleet' : c.service_id || 'platform default' }, { h: 'Kind', k: 'kind' }, { h: 'Rate', f: (c) => c.kind === 'percent' ? c.percent_bps / 100 + '%' : money(c.fixed_amount) }, { h: 'Exempt until', f: (c) => c.exempt_until ? when(c.exempt_until) : '-' }, { h: 'Status', f: (c) => pill(c.status, statusCls(c.status)) }, { h: 'Note', k: 'note' },
       { h: '', f: (c) => c.status === 'pending_approval' && can('finance_approver') ? h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/commissions/${c.id}/approve`), () => go('pricing')) }, 'Approve') : '' }], d.commissions));
+};
+// ---- Request codes: printable QR codes for venues ----
+async function fetchBlob(path) {
+  const r = await fetch(API + path, { headers: { authorization: 'Bearer ' + S.access } });
+  if (!r.ok) throw new Error('Download failed (' + r.status + ')');
+  return r.blob();
+}
+const blobToDataUrl = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
+async function downloadQr(c) {
+  const url = URL.createObjectURL(await fetchBlob(`/admin/request-codes/${c.id}/qr.png`));
+  const a = h('a', { href: url, download: `abasare-${c.code}.png` }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+// The printed poster is for the public at the venue, so it deliberately shows all three languages together.
+async function printPoster(c) {
+  const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups to print the poster', true); return; }
+  const qr = await blobToDataUrl(await fetchBlob(`/admin/request-codes/${c.id}/qr.png`));
+  const logo = await fetch('logo.png').then((r) => r.blob()).then(blobToDataUrl).catch(() => '');
+  const d = w.document; d.title = 'Abasare ' + c.code;
+  const st = d.createElement('style');
+  st.textContent = '@page{size:A5;margin:0}*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;color:#14281d;text-align:center}.p{width:148mm;height:210mm;padding:10mm;border-top:8mm solid #00A1DE;border-bottom:8mm solid #20603D;display:flex;flex-direction:column;align-items:center;justify-content:space-between}.logo{height:22mm}h1{font-size:26pt;margin:0}.qr{width:100mm;height:100mm}.l{font-size:15pt;font-weight:700;margin:1mm 0}.s{font-size:10pt;color:#456}.bar{height:3mm;width:60mm;background:#FAD201;border-radius:2mm}';
+  d.head.append(st);
+  const el = (tag, cls, txt) => { const e = d.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const box = el('div', 'p'); const top = el('div'); if (logo) { const i = el('img', 'logo'); i.src = logo; top.append(i); }
+  top.append(el('h1', '', c.label)); if (c.partner_name) top.append(el('div', 's', c.partner_name));
+  const q = el('img', 'qr'); q.src = qr;
+  const txt = el('div'); txt.append(el('div', 'l', 'Sikana usabe umushoferi'), el('div', 'l', 'Scannez pour demander un chauffeur'), el('div', 'l', 'Scan to request a driver'), el('div', 'bar'), el('div', 's', c.code));
+  box.append(top, q, txt); d.body.append(box);
+  setTimeout(() => { w.focus(); w.print(); }, 400);
+}
+V.codes = async (el) => {
+  const d = await api('GET', '/admin/request-codes'), manage = can('business_manager', 'support_lead');
+  const f = { label: h('input', { placeholder: 'Venue name (e.g. Hotel Serena)', maxlength: 120 }), partner: h('input', { placeholder: 'Partner name (optional)', maxlength: 120 }),
+    lat: h('input', { placeholder: 'Latitude', type: 'number', step: 'any' }), lng: h('input', { placeholder: 'Longitude', type: 'number', step: 'any' }),
+    note: h('input', { placeholder: 'Pickup note (e.g. Main entrance, ask the receptionist)', maxlength: 300 }), svc: h('select', {}, h('option', { value: 'ride' }, 'Default: ride'), h('option', { value: 'abasare' }, 'Default: Abasare (driver for your car)')) };
+  const form = h('div', { class: 'card' }, h('h2', {}, 'New request code'), f.label, f.partner, h('div', { class: 'row' }, f.lat, f.lng,
+    h('button', { class: 'b sec', onclick: () => { if (!navigator.geolocation) { toast('Location is not available in this browser', true); return; } navigator.geolocation.getCurrentPosition((p) => { f.lat.value = p.coords.latitude.toFixed(6); f.lng.value = p.coords.longitude.toFixed(6); }, () => toast('Could not get your location', true)); } }, 'Use my current location')),
+    f.note, f.svc,
+    h('button', { class: 'b', onclick: () => { const body = { label: f.label.value.trim(), lat: Number(f.lat.value), lng: Number(f.lng.value), default_service: f.svc.value };
+      if (f.partner.value.trim()) body.partner_name = f.partner.value.trim(); if (f.note.value.trim()) body.pickup_note = f.note.value.trim();
+      if (!body.label || !f.lat.value || !f.lng.value) { toast('Venue name, latitude and longitude are required', true); return; }
+      act(() => api('POST', '/admin/request-codes', body), () => go('codes')); } }, 'Create code'));
+  el.append(h('h1', {}, 'Request codes'), h('div', { class: 'banner' }, 'Print a QR code for a hotel, bar, mall or taxi rank. Customers scan it and request a ride or an Abasare with almost no steps. Scans are counted once per phone network every 10 minutes.'),
+    table([{ h: 'Code', f: (c) => h('code', {}, c.code) }, { h: 'Venue', f: (c) => c.label + (c.partner_name ? ' (' + c.partner_name + ')' : '') }, { h: 'Default', k: 'default_service' },
+      { h: 'Scans', k: 'scans' }, { h: 'Bookings', k: 'bookings' }, { h: 'Completed', k: 'completed' }, { h: 'Expires', f: (c) => (c.expires_at ? when(c.expires_at) : '-') },
+      { h: 'Status', f: (c) => (c.active && !c.expired ? pill('active') : pill(c.expired ? 'expired' : 'inactive', 'bad')) },
+      { h: '', f: (c) => h('span', { class: 'row' }, h('button', { class: 'b sec', onclick: () => act(() => downloadQr(c)) }, 'Download QR'), h('button', { class: 'b sec', onclick: () => act(() => printPoster(c)) }, 'Print poster'),
+        manage && h('button', { class: 'b sec', onclick: () => act(() => api('PATCH', '/admin/request-codes/' + c.id, { active: !c.active }), () => go('codes')) }, c.active ? 'Deactivate' : 'Activate')) }], d.codes),
+    manage && form);
 };
 V.promos = async (el) => {
   const d = await api('GET', '/admin/promotions');

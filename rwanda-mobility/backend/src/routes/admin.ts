@@ -125,8 +125,8 @@ export async function adminRoutes(app: FastifyInstance) {
   // ---------- bookings ----------
   app.get('/admin/bookings', { preHandler: requirePerm('bookings.view_all') }, async (req) => {
     const b = parse(z.object({ status: z.string().optional(), q: z.string().max(60).optional(), limit: z.coerce.number().int().min(1).max(200).default(50) }), req.query);
-    return { bookings: await q(`select b.id, b.ref, b.status, b.service_id, b.estimated_fare, b.final_fare, b.payment_method, b.created_at, pu.display_name passenger, pu.phone passenger_phone, du.display_name driver
-      from bookings b join users pu on pu.id=b.passenger_id left join users du on du.id=b.driver_id
+    return { bookings: await q(`select b.id, b.ref, b.status, b.service_id, b.estimated_fare, b.final_fare, b.payment_method, b.created_at, pu.display_name passenger, pu.phone passenger_phone, du.display_name driver, rc.code request_code, rc.label request_code_label
+      from bookings b join users pu on pu.id=b.passenger_id left join users du on du.id=b.driver_id left join request_codes rc on rc.id=b.request_code_id
       where ($1::text is null or b.status=$1) and ($2::text is null or b.ref ilike $3 or pu.phone like $3 or pu.display_name ilike $3 or b.id::text = $2 or exists (select 1 from payments p where p.booking_id=b.id and p.reference=$2))
       order by b.created_at desc limit $4`, [b.status ?? null, b.q ?? null, `%${b.q ?? ''}%`, b.limit]) };
   });

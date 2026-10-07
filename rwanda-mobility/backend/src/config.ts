@@ -16,6 +16,7 @@ export const config = {
   pinSecret: secret('PIN_SECRET', 'dev-pin-secret-not-for-production'),
   fileSigningSecret: secret('FILE_SIGNING_SECRET', 'dev-file-secret-not-for-production'),
   publicBaseUrl: env.PUBLIC_BASE_URL ?? 'http://localhost:8080',
+  appDownloadUrl: env.APP_DOWNLOAD_URL ?? '',
   // OTP echo is for local dev and an explicitly marked STAGING deployment only (APP_ENV=staging); never in production.
   otpDevEcho: (!isProd || env.APP_ENV === 'staging') && env.OTP_DEV_ECHO === 'true',
   smsProvider: env.SMS_PROVIDER ?? 'console',

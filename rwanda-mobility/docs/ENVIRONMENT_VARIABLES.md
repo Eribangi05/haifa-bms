@@ -12,6 +12,7 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `PIN_SECRET` | prod | dev value | Derives trip PINs (never stored). |
 | `FILE_SIGNING_SECRET` | prod | dev value | Signs 5-minute document links. |
 | `PUBLIC_BASE_URL` | yes | `http://localhost:8080` | Used to build public trip-share links. |
+| `APP_DOWNLOAD_URL` | no | (empty) | Optional store/download link shown on the request-code landing page (`/r/<CODE>`). If unset the page tells people to ask the venue or install Abasare. Also set `PUBLIC_BASE_URL` to the public host: QR codes encode `${PUBLIC_BASE_URL}/r/<CODE>`. |
 | `SMS_PROVIDER` | prod | `console` | `console` only logs (**SIMULATED**); `http` posts `{to,text}` to `SMS_HTTP_URL` with `Bearer SMS_HTTP_TOKEN` (adapt to your aggregator's format in `providers/sms.ts`). |
 | `ADMIN_MFA_RESET_EMAIL`, `ADMIN_MFA_RESET_TOKEN` | no | | Recovery for a lost authenticator: set both (token = any text of 8+ characters), redeploy, read `STAFF MFA RESET` in the logs for the new secret. It runs once per distinct token value; remove both afterwards. |
 | `APP_ENV` | no | | Set `staging` on a test deployment to allow `OTP_DEV_ECHO=true` there (the code is returned in the API response and shown in the app). Never set on production. |

@@ -36,7 +36,7 @@ export async function boot(dbName = 'rwanda_mobility_test') {
 
   const api = async (method: string, url: string, o: { token?: string; body?: any; headers?: Record<string, string>; payload?: any } = {}) => {
     const r = await app.inject({
-      method: method as any, url: /^\/(share\/|health|ready)/.test(url) ? url : `/api/v1${url}`,
+      method: method as any, url: /^\/(share\/|r\/|health|ready)/.test(url) ? url : `/api/v1${url}`,
       headers: { ...(o.token ? { authorization: `Bearer ${o.token}` } : {}), ...(o.headers ?? {}) },
       payload: o.payload ?? o.body,
     });

@@ -97,6 +97,10 @@ Labels (assigned by evidence, not intent):
 | | ClamAV scanning (`CLAMAV_HOST`, INSTREAM client) | TESTED against a fake clamd socket; **no real ClamAV daemon was run** |
 | Abuse | Per-route rate limits (OTP, client errors, uploads, bookings, payments, estimates) | TESTED |
 | Public share page | Trip-share web page localised rw/fr/en (`?lang=` or `Accept-Language`) | TESTED |
+| Request codes | Venue QR codes: public resolve `GET /request-codes/:code`, landing page `/r/:code` (rw/fr/en, XSS-safe), booking attribution (`request_code`), scan counting | TESTED |
+| | Admin: create/list/edit/deactivate, QR download (SVG/PNG 1024 px), `codes.view`/`codes.manage`, audited | TESTED (API) |
+| | Admin-web tab: create form with browser geolocation, QR download, A5 trilingual print poster | IMPLEMENTED (not browser-tested) |
+| | Mobile: scan / open `abasare://r/<CODE>` deep link and prefill pickup | PENDING (being built separately) |
 | Performance | Small load test (`scripts/loadtest.ts`) on a single dev machine | MEASURED once, see `PERFORMANCE_NOTES.md`; not a capacity test |
 | Corporate | Accounts, members, policies, limits, isolation, statements, invoices | TESTED |
 | Fleet | Fleet, invites, revenue share, isolation, vehicle availability, earnings | TESTED |

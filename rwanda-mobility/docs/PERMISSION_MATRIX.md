@@ -9,12 +9,12 @@
 | `super_admin` | `*` |
 | `dispatcher` | `bookings.view_all`, `bookings.dispatch`, `drivers.view`, `analytics.view`, `safety.respond` |
 | `support_agent` | `bookings.view_all`, `support.handle`, `drivers.view`, `users.view` |
-| `support_lead` | `bookings.view_all`, `support.handle`, `support.sensitive`, `safety.respond`, `drivers.view`, `users.view`, `users.restrict`, `privacy.handle`, `finance.refund.request`, `finance.waive_fee`, `diagnostics.view` |
+| `support_lead` | `bookings.view_all`, `support.handle`, `support.sensitive`, `safety.respond`, `drivers.view`, `users.view`, `users.restrict`, `privacy.handle`, `finance.refund.request`, `finance.waive_fee`, `diagnostics.view`, `codes.view`, `codes.manage` |
 | `driver_verifier` | `drivers.review`, `drivers.view`, `drivers.docs` |
 | `finance_officer` | `finance.view`, `finance.refund.request`, `finance.payout.review`, `finance.reconcile`, `finance.waive_fee`, `analytics.view`, `drivers.view` |
 | `finance_approver` | `finance.view`, `finance.refund.approve`, `finance.payout.approve`, `finance.payout.review`, `pricing.approve`, `analytics.view` |
-| `business_manager` | `analytics.view`, `pricing.manage`, `promotions.manage`, `corporate.manage`, `fleet.manage`, `drivers.view`, `bookings.view_all` |
-| `analyst` | `analytics.view`, `diagnostics.view` |
+| `business_manager` | `analytics.view`, `pricing.manage`, `promotions.manage`, `corporate.manage`, `fleet.manage`, `drivers.view`, `bookings.view_all`, `codes.view`, `codes.manage` |
+| `analyst` | `analytics.view`, `diagnostics.view`, `codes.view` |
 
 ## End-user roles (mobile app)
 

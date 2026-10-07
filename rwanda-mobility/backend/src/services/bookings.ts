@@ -14,6 +14,7 @@ import { startSearch } from './dispatch.js';
 import { notify } from './notify.js';
 import { sha256, randomToken, signFileToken } from '../util/crypto.js';
 import { createDuePayment } from './payments.js';
+import { requireUsable as requireUsableCodeRaw } from './requestCodes.js';
 import { DOCS_OK_SQL } from './drivers.js';
 
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -142,7 +143,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
 export type CreateIn = {
   quote_id: string; payment_method: string; pickup_name?: string; pickup_note?: string; dest_name?: string; idempotency_key: string;
   corporate_id?: string; cost_centre?: string; po_ref?: string; rider_name?: string; rider_phone?: string;
-  customer_vehicle_id?: string; owner_attested?: boolean;
+  customer_vehicle_id?: string; owner_attested?: boolean; request_code?: string;
 };
 
 async function enforceCorporate(c: PoolClient, userId: string, corporateId: string, serviceId: string, total: number, when: Date) {
@@ -168,6 +169,11 @@ async function enforceCorporate(c: PoolClient, userId: string, corporateId: stri
   return { member: m, corp };
 }
 
+/** Booking attribution: an unknown/inactive/expired code is a client error (400), not a 404. */
+async function requireUsableCode(raw: string) {
+  try { return await requireUsableCodeRaw(raw); } catch (e: any) { if (e.code === 'code_invalid') throw badRequest('code_invalid', 'This request code is not valid'); throw e; }
+}
+
 export async function createBooking(passengerId: string, inp: CreateIn) {
   const methods = ['cash', 'mtn_momo', 'airtel_money', 'corporate'];
   if (!methods.includes(inp.payment_method)) throw badRequest('payment_method_unavailable');
@@ -178,6 +184,7 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
 
   const existing = await q1<BookingRow>('select * from bookings where passenger_id=$1 and idempotency_key=$2', [passengerId, inp.idempotency_key]);
   if (existing) return { booking: existing, replay: true };
+  const reqCode = inp.request_code ? await requireUsableCode(inp.request_code) : null;
 
   let created: BookingRow;
   try {
@@ -217,6 +224,7 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
          quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, fareTotal, quote.distance_m, quote.duration_s, inp.payment_method,
          inp.corporate_id ? 'corporate' : 'passenger', inp.corporate_id ?? null, inp.cost_centre ?? null, inp.po_ref ?? null, inp.rider_name ?? null, inp.rider_phone ?? null,
          quote.scheduled_for, inp.idempotency_key, JSON.stringify(bdoc)], c))[0];
+      if (reqCode) await q('update bookings set request_code_id=$2 where id=$1', [b.id, reqCode.id], c);
       if (!inp.corporate_id) await applyDebts(c, passengerId, b.id, quote.breakdown.debt ?? 0);
       if (svc.kind === 'abasare') await q('update bookings set hire_mode=$2, hours_booked=$3, customer_vehicle_id=$4, owner_attested_at=now() where id=$1', [b.id, meta.hire_mode, meta.hours, meta.customer_vehicle_id], c);
       await q('update fare_quotes set used_booking_id=$2 where id=$1', [quote.id, b.id], c);
@@ -295,6 +303,7 @@ export async function bookingView(b: BookingRow, as: Perspective) {
         out.driver_location = { lat: d.last_lat, lng: d.last_lng, at: d.last_location_at };
     }
   }
+  if (as === 'staff' && (b as any).request_code_id) out.request_code = await q1('select id, code, label from request_codes where id=$1', [(b as any).request_code_id]);
   if (b.customer_vehicle_id) out.abasare = await abasareView(b, as);
   if (as === 'passenger' && ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) out.trip_pin = tripPin(b.id);
   if (as === 'driver') {

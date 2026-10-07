@@ -152,6 +152,19 @@
 | PATCH | `/fleets/:id/vehicles/:vid` |
 | GET | `/fleets/mine` |
 
+## Request codes
+
+| Method | Path |
+|---|---|
+| GET | `/admin/request-codes` |
+| POST | `/admin/request-codes` |
+| DELETE | `/admin/request-codes/:id` |
+| PATCH | `/admin/request-codes/:id` |
+| GET | `/admin/request-codes/:id/qr.png` |
+| GET | `/admin/request-codes/:id/qr.svg` |
+| GET | `/request-codes/:code` |
+| GET | `/r/:code` |
+
 ## Admin: finance
 
 | Method | Path |

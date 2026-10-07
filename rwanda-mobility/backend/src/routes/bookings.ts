@@ -21,7 +21,7 @@ export async function bookingRoutes(app: FastifyInstance) {
       pickup_name: z.string().max(160).optional(), pickup_note: z.string().max(300).optional(), dest_name: z.string().max(160).optional(),
       corporate_id: z.string().uuid().optional(), cost_centre: z.string().max(60).optional(), po_ref: z.string().max(60).optional(),
       rider_name: z.string().max(80).optional(), rider_phone: z.string().max(20).optional(),
-      customer_vehicle_id: z.string().uuid().optional(), owner_attested: z.boolean().optional(),
+      customer_vehicle_id: z.string().uuid().optional(), owner_attested: z.boolean().optional(), request_code: z.string().trim().max(12).optional(),
     }), req.body);
     const { booking, replay } = await B.createBooking(req.auth!.id, { ...b, idempotency_key: key });
     reply.code(replay ? 200 : 201);

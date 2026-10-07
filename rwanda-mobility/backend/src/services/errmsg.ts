@@ -59,6 +59,9 @@ const T: Record<string, Pair> = {
   suspicious_registration: ['Hafunguwe konti nyinshi kuri iki gikoresho. Hamagara ubufasha.', 'Trop de comptes ont été créés depuis cet appareil. Contactez l\'assistance.'],
   not_a_driver: ['Iyi konti ntabwo ari iy\'umushoferi.', 'Ce compte n\'est pas un compte chauffeur.'],
 
+  // --- request codes
+  code_invalid: ['Iyi kode ntiyemewe cyangwa yararangiye.', 'Ce code n\'est pas valide ou a expiré.'],
+
   // --- booking / quote
   active_booking_exists: ['Usanzwe ufite urugendo rurimo gukorwa.', 'Vous avez déjà une course en cours.'],
   active_trip: ['Banza urangize urugendo urimo mbere yo guhagarika akazi.', 'Terminez d\'abord votre course en cours avant de vous mettre hors ligne.'],
