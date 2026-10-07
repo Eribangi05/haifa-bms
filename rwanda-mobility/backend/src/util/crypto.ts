@@ -54,8 +54,13 @@ export function verifyFileToken(fileKey: string, token: string): boolean {
 
 // ---- TOTP (RFC 6238, SHA-1, 6 digits, 30s) ----
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+/** 160-bit secret, standard unpadded base32 (32 characters): accepted by Google/Microsoft Authenticator and others. */
 export function newTotpSecret(): string {
-  return Array.from(randomBytes(20), (b) => B32[b % 32]).join('');
+  const bytes = randomBytes(20);
+  let bits = '', out = '';
+  for (const b of bytes) bits += b.toString(2).padStart(8, '0');
+  for (let i = 0; i < bits.length; i += 5) out += B32[parseInt(bits.slice(i, i + 5), 2)];
+  return out;
 }
 function b32decode(s: string): Buffer {
   let bits = '';

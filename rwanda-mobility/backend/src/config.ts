@@ -41,6 +41,9 @@ export const config = {
   osrmUrl: env.OSRM_URL ?? 'https://router.project-osrm.org',
   nominatimUrl: env.NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org',
   storageDir: env.STORAGE_DIR ?? './storage',
+  // Recovery: set both, redeploy, read the new secret in the logs once. Runs again only when the token value changes.
+  adminMfaResetEmail: env.ADMIN_MFA_RESET_EMAIL ?? '',
+  adminMfaResetToken: env.ADMIN_MFA_RESET_TOKEN ?? '',
   bootstrapAdminEmail: env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@rwandamobility.local',
   bootstrapAdminPassword: env.BOOTSTRAP_ADMIN_PASSWORD ?? '',
 };

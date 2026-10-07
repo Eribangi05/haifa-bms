@@ -3,6 +3,7 @@ import { ROLE_PERMISSIONS } from './rbac.js';
 import { migrate } from './migrate.js';
 import { config } from './config.js';
 import { hashPassword, encrypt, newTotpSecret, totpUri } from './util/crypto.js';
+import { audit } from './services/audit.js';
 
 // Kigali operating zone: coarse bounding polygon (ASSUMPTION: replace with surveyed boundary).
 const KIGALI_RING: [number, number][] = [[29.97, -2.06], [30.22, -2.06], [30.22, -1.84], [29.97, -1.84], [29.97, -2.06]];
@@ -189,6 +190,23 @@ export async function bootstrapAdminIfMissing(log: (m: string) => void = console
   if (exists) return false;
   const a = await createStaff(config.bootstrapAdminEmail, config.bootstrapAdminPassword, 'super_admin', 'Super Admin');
   log(`FIRST SUPER ADMIN CREATED: ${config.bootstrapAdminEmail}\nTOTP secret (add to your authenticator app NOW, shown once): ${a.totpSecret}\n${totpUri(a.totpSecret, config.bootstrapAdminEmail)}`);
+  return true;
+}
+
+/** Recovery path for a lost/invalid authenticator: generates a new TOTP secret for one staff account, once per distinct token. */
+export async function resetStaffMfaIfRequested(log: (m: string) => void = console.log): Promise<boolean> {
+  const email = config.adminMfaResetEmail.trim().toLowerCase(), token = config.adminMfaResetToken;
+  if (!email || token.length < 8) return false;
+  const done = await q1<{ value: string }>("select value from system_settings where key='admin.mfa_reset_token'");
+  if (done && done.value === token) return false;                      // already applied for this token
+  const u = await q1<{ id: string }>(
+    "select u.id from users u join user_roles r on r.user_id=u.id where lower(u.email)=$1 and r.role not in ('passenger','driver') limit 1", [email]);
+  if (!u) { log(`MFA reset requested for ${email} but no such staff account exists`); return false; }
+  const secret = newTotpSecret();
+  await q('update users set mfa_secret_enc=$2, mfa_enabled=true where id=$1', [u.id, encrypt(secret)]);
+  await q("insert into system_settings(key,value) values ('admin.mfa_reset_token',$1::jsonb) on conflict (key) do update set value=excluded.value, updated_at=now()", [JSON.stringify(token)]);
+  await audit({ id: null, role: 'system' }, 'staff.mfa_reset', 'user', u.id, undefined, { via: 'ADMIN_MFA_RESET_TOKEN' });
+  log(`STAFF MFA RESET for ${email}\nNew TOTP secret (add to your authenticator app NOW, shown once): ${secret}\n${totpUri(secret, email)}`);
   return true;
 }
 

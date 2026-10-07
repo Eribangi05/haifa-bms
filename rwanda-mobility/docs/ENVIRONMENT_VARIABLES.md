@@ -13,6 +13,7 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `FILE_SIGNING_SECRET` | prod | dev value | Signs 5-minute document links. |
 | `PUBLIC_BASE_URL` | yes | `http://localhost:8080` | Used to build public trip-share links. |
 | `SMS_PROVIDER` | prod | `console` | `console` only logs (**SIMULATED**); `http` posts `{to,text}` to `SMS_HTTP_URL` with `Bearer SMS_HTTP_TOKEN` (adapt to your aggregator's format in `providers/sms.ts`). |
+| `ADMIN_MFA_RESET_EMAIL`, `ADMIN_MFA_RESET_TOKEN` | no | | Recovery for a lost authenticator: set both (token = any text of 8+ characters), redeploy, read `STAFF MFA RESET` in the logs for the new secret. It runs once per distinct token value; remove both afterwards. |
 | `APP_ENV` | no | | Set `staging` on a test deployment to allow `OTP_DEV_ECHO=true` there (the code is returned in the API response and shown in the app). Never set on production. |
 | `SMS_HTTP_URL`, `SMS_HTTP_TOKEN` | if `http` | | SMS gateway endpoint and token. |
 | `OTP_DEV_ECHO` | never in prod | `false` | `true` returns the OTP in the API response for testing. Ignored when `NODE_ENV=production`. |

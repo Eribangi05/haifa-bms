@@ -1,13 +1,14 @@
 import { buildApp } from './app.js';
 import { config } from './config.js';
 import { migrate } from './migrate.js';
-import { seedCore, bootstrapAdminIfMissing } from './seed.js';
+import { seedCore, bootstrapAdminIfMissing, resetStaffMfaIfRequested } from './seed.js';
 import { startJobs } from './jobs.js';
 
 const app = await buildApp();
 await migrate();
 await seedCore();            // idempotent: zones, services, pricing, flags, roles
-await bootstrapAdminIfMissing((m) => app.log.warn(m));   // first deploy only; see BOOTSTRAP_ADMIN_* env vars
+await bootstrapAdminIfMissing((m) => app.log.warn(m));
+await resetStaffMfaIfRequested((m) => app.log.warn(m));   // first deploy only; see BOOTSTRAP_ADMIN_* env vars
 const stop = startJobs((m) => app.log.warn(m));
 await app.listen({ port: config.port, host: '0.0.0.0' });
 if (config.momo.mode === 'simulator') app.log.warn('MOMO_MODE=simulator: mobile-money payments are SIMULATED, not real.');
