@@ -3,7 +3,9 @@
 **Build:** Abasare 0.4.0 (Android 7 or newer, works on 32-bit and 64-bit phones). **Server:** staging only, so **no real money moves and no real SMS is sent**.
 
 ## Install (2 minutes)
-1. Copy `Abasare-0.4.0-test.apk` to the phone (WhatsApp, Bluetooth, USB cable or Google Drive link).
+**Which file?** Most phones from the last ~6 years: `Abasare-0.4.0-arm64-v8a.apk`. Older or very cheap phones (32-bit): `Abasare-0.4.0-armeabi-v7a.apk`. If one says "app not installed" or crashes on start, try the other.
+
+1. Copy the right `.apk` to the phone (WhatsApp, Bluetooth, USB cable or Google Drive link).
 2. Tap the file. If Android says "install blocked", tap **Settings** and allow **Install unknown apps** for the app you opened the file from (Files, WhatsApp or Chrome), then go back and tap **Install**.
 3. If Play Protect warns that the app is not verified, tap **More details → Install anyway**. This is normal for test builds that are not on the Play Store.
 4. Open **Abasare**. The first request after a quiet period can take up to a minute while the server wakes up.
