@@ -181,6 +181,17 @@ export async function createStaff(email: string, password: string, role: string,
   return { id: u!.id, totpSecret: secret };
 }
 
+/** Create the first super admin on server start when BOOTSTRAP_ADMIN_PASSWORD is set and none exists yet.
+ *  Never touches an existing admin (so a restart cannot reset a password or MFA secret). Prints the TOTP secret once. */
+export async function bootstrapAdminIfMissing(log: (m: string) => void = console.log): Promise<boolean> {
+  if (config.bootstrapAdminPassword.length < 12) return false;
+  const exists = await q1("select 1 from user_roles where role='super_admin' limit 1");
+  if (exists) return false;
+  const a = await createStaff(config.bootstrapAdminEmail, config.bootstrapAdminPassword, 'super_admin', 'Super Admin');
+  log(`FIRST SUPER ADMIN CREATED: ${config.bootstrapAdminEmail}\nTOTP secret (add to your authenticator app NOW, shown once): ${a.totpSecret}\n${totpUri(a.totpSecret, config.bootstrapAdminEmail)}`);
+  return true;
+}
+
 if (process.argv[1]?.endsWith('seed.ts')) {
   (async () => {
     await seedCore();
