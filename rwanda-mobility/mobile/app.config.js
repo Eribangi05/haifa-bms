@@ -44,11 +44,14 @@ module.exports = () => ({
         'WRITE_EXTERNAL_STORAGE',
       ],
       predictiveBackGestureEnabled: false,
+      // QR request codes: abasare://r/<CODE> (the landing page https://<host>/r/<CODE> opens this via an Android intent).
+      intentFilters: [{ action: 'VIEW', category: ['BROWSABLE', 'DEFAULT'], data: [{ scheme: 'abasare', host: 'r', pathPrefix: '/' }] }],
     },
     plugins: [
       'expo-secure-store',
       ['expo-location', { locationWhenInUsePermission: 'Abasare uses your location to set your pickup and match you with nearby drivers.', isAndroidForegroundServiceEnabled: true, isAndroidBackgroundLocationEnabled: false }],
       ['expo-image-picker', { cameraPermission: 'Used to photograph your driver documents.', photosPermission: 'Used to attach your driver documents.' }],
+      ['expo-camera', { cameraPermission: 'Abasare uses the camera only to scan QR codes for your pickup point.', recordAudioAndroid: false }],
       ['expo-notifications', { color: '#0077B0' }],
       ['expo-build-properties', { android: { usesCleartextTraffic: allowCleartext } }],
     ],

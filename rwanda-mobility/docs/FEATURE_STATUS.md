@@ -100,7 +100,7 @@ Labels (assigned by evidence, not intent):
 | Request codes | Venue QR codes: public resolve `GET /request-codes/:code`, landing page `/r/:code` (rw/fr/en, XSS-safe), booking attribution (`request_code`), scan counting | TESTED |
 | | Admin: create/list/edit/deactivate, QR download (SVG/PNG 1024 px), `codes.view`/`codes.manage`, audited | TESTED (API) |
 | | Admin-web tab: create form with browser geolocation, QR download, A5 trilingual print poster | IMPLEMENTED (not browser-tested) |
-| | Mobile: scan / open `abasare://r/<CODE>` deep link and prefill pickup | PENDING (being built separately) |
+| | Mobile: `scan` screen (in-app QR camera, typed code or full URL), `abasare://r/<CODE>` deep link (pending code kept across sign-in), venue confirmation card, Home prefilled (pickup = venue, default service), `request_code` sent with the booking | IMPLEMENTED; parser + pending-code unit-tested; flow (deep-link-equivalent `?code=` on web, sign-in, prefill, booking stored with `request_code_id`, typed bad code in rw/fr/en) browser-e2e TESTED (`e2e/scan-e2e.mjs`). **Camera scanning and the Android deep link/intent filter have not been run on a device** |
 | Performance | Small load test (`scripts/loadtest.ts`) on a single dev machine | MEASURED once, see `PERFORMANCE_NOTES.md`; not a capacity test |
 | Corporate | Accounts, members, policies, limits, isolation, statements, invoices | TESTED |
 | Fleet | Fleet, invites, revenue share, isolation, vehicle availability, earnings | TESTED |

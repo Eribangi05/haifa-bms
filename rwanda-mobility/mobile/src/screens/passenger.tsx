@@ -18,7 +18,7 @@ const rad = (d: number) => (d * Math.PI) / 180;
 const distM = (a: Pt, b: Pt) => { const x = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2; return 2 * 6371000 * Math.asin(Math.sqrt(x)); };
 const fmtMin = (s: number) => Math.max(1, Math.round(s / 60));
 
-export function Home() {
+export function Home({ params }: { params?: { venue?: Pt & { note?: string; code?: string }; svc?: 'ride' | 'abasare' } }) {
   const { t, lang, client, nav, me, online, mode, setMode, say, cfg } = useApp();
   const [pickup, setPickup] = useState<Pt | null>(null); const [dest, setDest] = useState<Pt | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null); const [note, setNote] = useState('');
@@ -29,7 +29,15 @@ export function Home() {
   const [svc, setSvcState] = useState<'ride' | 'abasare'>('ride'); const [cars, setCars] = useState<any[]>([]); const [carId, setCarId] = useState<string | null>(null);
   const [hire, setHire] = useState<'p2p' | 'hourly'>('p2p'); const [hours, setHours] = useState(2);
   const setSvc = (v: 'ride' | 'abasare') => { setSvcState(v); void kv.set('rm_svc', v); };
-  useEffect(() => { kv.get('rm_svc').then((v) => v === 'abasare' && setSvcState('abasare')); kv.get('rm_car').then((v) => v && setCarId(v)); }, []);
+  // Arrived from a scanned request code: pickup = the venue, service = its default (or the link's choice), destination empty.
+  const [reqCode, setReqCode] = useState<string | null>(params?.venue?.code ?? null);
+  const fromCode = useRef(!!params?.venue);
+  useEffect(() => {
+    const v = params?.venue; if (!v) return;
+    setPickup({ lat: v.lat, lng: v.lng, name: v.name }); setNote(v.note ?? ''); setDest(null); setAccuracy(null);
+    if (params?.svc) setSvc(params.svc);
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!params?.svc) kv.get('rm_svc').then((v) => v === 'abasare' && setSvcState('abasare')); kv.get('rm_car').then((v) => v && setCarId(v)); }, []);
   useEffect(() => { if (svc !== 'abasare') return; client.get('/users/me/cars').then((r) => { setCars(r.cars); setCarId((cur) => (r.cars.some((c: any) => c.id === cur) ? cur : r.cars[0]?.id ?? null)); }).catch(() => {}); }, [svc, client]);
   useEffect(() => { if (carId) void kv.set('rm_car', carId); }, [carId]);
   const abasareOn = !!cfg?.abasare?.enabled;
@@ -49,7 +57,7 @@ export function Home() {
       setAccuracy(pos.coords.accuracy ?? null); setPickup({ lat: pos.coords.latitude, lng: pos.coords.longitude, name: t('home.mylocation') });
     } catch { say(t('home.nolocation')); }
   }, [say, t]);
-  useEffect(() => { if (consent) void locate(); }, [consent, locate]);
+  useEffect(() => { if (consent && !fromCode.current) void locate(); }, [consent, locate]);
 
   // search (debounced); falls back to the local landmark list when offline
   useEffect(() => {
@@ -69,8 +77,8 @@ export function Home() {
   const markers = [...(dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' }] : [])];
   const go = (schedule?: string | null) => {
     if (!pickup) return;
-    if (svc === 'abasare') { if (!carId || (hire === 'p2p' && !dest)) return; nav.push('options', { pickup, dest: hire === 'p2p' ? dest : undefined, note, scheduled_for: schedule ?? undefined, abasare: { customer_vehicle_id: carId, hours: hire === 'hourly' ? hours : undefined } }); return; }
-    if (!dest) return; nav.push('options', { pickup, dest, note, scheduled_for: schedule ?? undefined });
+    if (svc === 'abasare') { if (!carId || (hire === 'p2p' && !dest)) return; nav.push('options', { pickup, request_code: reqCode ?? undefined, dest: hire === 'p2p' ? dest : undefined, note, scheduled_for: schedule ?? undefined, abasare: { customer_vehicle_id: carId, hours: hire === 'hourly' ? hours : undefined } }); return; }
+    if (!dest) return; nav.push('options', { pickup, request_code: reqCode ?? undefined, dest, note, scheduled_for: schedule ?? undefined });
   };
   const needsDest = svc === 'ride' || hire === 'p2p';
   const activeB = active.data?.booking;
@@ -92,7 +100,10 @@ export function Home() {
       <ScrollView contentContainerStyle={{ padding: 14 }} keyboardShouldPersistTaps="handled">
         {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
         {activeB ? <Card style={{ borderColor: C.primary }}><View style={S.between}><View><Text style={S.h2}>{t('home.active')}</Text><Text style={S.muted}>{activeB.ref} · {activeB.status.replace(/_/g, ' ')}</Text></View><Btn title={t('home.resume')} onPress={() => nav.push('track', { id: activeB.id })} /></View></Card> : null}
-        {abasareOn ? <View style={[S.row, { marginBottom: 8 }]}><Chip text={t('ab.tab.ride')} on={svc === 'ride'} onPress={() => setSvc('ride')} /><Chip text={t('ab.tab.abasare')} on={svc === 'abasare'} onPress={() => setSvc('abasare')} /></View> : null}
+        <View style={[S.row, { marginBottom: 8, flexWrap: 'wrap' }]}>
+          {abasareOn ? <><Chip text={t('ab.tab.ride')} on={svc === 'ride'} onPress={() => setSvc('ride')} /><Chip text={t('ab.tab.abasare')} on={svc === 'abasare'} onPress={() => setSvc('abasare')} /></> : null}
+          <Chip text={`▦ ${t('scan.title')}`} on onPress={() => nav.push('scan')} />
+        </View>
         {svc === 'abasare' ? <HowItWorks /> : null}
         {svc === 'abasare' ? <Card style={{ borderColor: C.gold, borderWidth: 2 }}>
           <Text style={S.h2}>{t('ab.home.title')}</Text><Text style={[S.muted, { marginBottom: 8 }]}>{t('ab.home.sub')}</Text>
@@ -103,11 +114,11 @@ export function Home() {
           {hire === 'hourly' ? <><Text style={S.muted}>{t('ab.hours')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>{(cfg?.abasare?.packages ?? [2, 4, 8, 12]).map((h: number) => <Chip key={h} text={`${h} ${t('ab.h')}`} on={hours === h} onPress={() => setHours(h)} />)}</View></> : null}
           <Text style={[S.muted, { marginTop: 4 }]}>{t('ab.night')}</Text>
         </Card> : null}
-        {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={zones} onPin={(lat, lng) => setPickup({ lat, lng, name: nearest({ lat, lng }) ?? t('home.mylocation') })} onTap={(lat, lng) => void pickDest({ lat, lng })} onStatus={setMapOk} height={260} />
+        {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={zones} onPin={(lat, lng) => { fromCode.current = false; setReqCode(null); setPickup({ lat, lng, name: nearest({ lat, lng }) ?? t('home.mylocation') }); }} onTap={(lat, lng) => void pickDest({ lat, lng })} onStatus={setMapOk} height={260} />
           : <Banner text={t('home.map.off')} />}
         <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
         <Card>
-          <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><LinkBtn title={t('home.mylocation')} onPress={locate} /></View>
+          <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><LinkBtn title={t('home.mylocation')} onPress={() => { fromCode.current = false; setReqCode(null); void locate(); }} /></View>
           <Text style={[S.body, { fontWeight: '600', marginBottom: 8 }]}>{pickup ? pickup.name ?? `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}` : t('home.nolocation')}</Text>
           <Field value={note} onChangeText={setNote} placeholder={t('home.pickupnote')} maxLength={280} />
           {needsDest ? <Text style={S.muted}>{t('home.dest')}</Text> : null}
@@ -152,7 +163,7 @@ function HowItWorks() {
 }
 
 // ------------------------------------------------------------------ options & confirm
-export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: string; scheduled_for?: string; abasare?: { customer_vehicle_id: string; hours?: number } } }) {
+export function Options({ params }: { params: { pickup: Pt; request_code?: string; dest?: Pt; note?: string; scheduled_for?: string; abasare?: { customer_vehicle_id: string; hours?: number } } }) {
   const { t, lang, client, nav, outbox, cfg, online, say } = useApp();
   const [data, setData] = useState<any>(null); const [err, setErr] = useState<ApiError | null>(null); const [sel, setSel] = useState<string | null>(null);
   const [method, setMethod] = useState('cash'); const [promo, setPromo] = useState(''); const [applied, setApplied] = useState(''); const [biz, setBiz] = useState<any[]>([]); const [corp, setCorp] = useState<string | null>(null);
@@ -174,7 +185,7 @@ export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: st
   const confirm = () => run(async () => {
     if (!opt?.quote_id) return;
     keyRef.current = keyRef.current ?? uuid();                         // same key on every retry of this tap: never a duplicate booking
-    const body = { quote_id: opt.quote_id, payment_method: corp ? 'corporate' : method, pickup_name: params.pickup.name, pickup_note: params.note || undefined, dest_name: params.dest?.name ?? params.pickup.name,
+    const body = { quote_id: opt.quote_id, payment_method: corp ? 'corporate' : method, pickup_name: params.pickup.name, pickup_note: params.note || undefined, request_code: params.request_code, dest_name: params.dest?.name ?? params.pickup.name,
       ...(params.abasare ? { customer_vehicle_id: params.abasare.customer_vehicle_id, owner_attested: att } : {}),
       ...(corp ? { corporate_id: corp, cost_centre: cc || undefined, po_ref: po || undefined } : {}) };
     try {

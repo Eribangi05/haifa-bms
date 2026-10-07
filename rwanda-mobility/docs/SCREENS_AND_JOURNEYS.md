@@ -28,6 +28,7 @@
 | A04 | Live trip: driver photo, years driving, rating, **your plate**, check-in/check-out review with photos (Looks right / Report an issue) | `Track`, `HandoverReview` | |
 | A05 | Abasare driver application: path choice (own vehicle / Abasare / both), skills, licence date, return mode, documents incl. police clearance | `driver.tsx` `Onboarding` | |
 | A06 | Driver: accept-jobs toggles (Rides/Abasare), Abasare offer card, customer's-car details, **check-in/check-out form** (photos, odometer, fuel, notes), hourly timer, Moto ride home | `driver.tsx` | |
+| Q01 | Scan a venue code: native QR camera (framing guide, torch, permission rationale + open-settings fallback), **type the code or paste the URL** (only option on web), venue confirmation card (name, pickup note, "Pickup point set", out-of-zone warning), then Home with pickup = venue and the code's default service | `scan.tsx` `Scan`, `ui/QrCamera.tsx` | Entry: "Scan a code" chip on Home (Ride and Abasare); deep link `abasare://r/<CODE>?svc=` (signed out: remembered through phone/OTP/consent); web: `/?code=<CODE>`. Booking carries `request_code` |
 | B01 | Company booking | `Options` (company payment chip) + Profile | Cost centre, PO reference, limits enforced server-side |
 
 ## Admin console (`/admin/`)
@@ -46,3 +47,4 @@ Overview KPIs - Live map - Bookings (search, timeline, assign, restart, PIN over
 6. **Payout**: driver requests -> finance reviews -> approver approves (large ones: different person) -> paid manually -> ledger cleared.
 7. **Emergency**: SOS -> incident + urgent case + SMS to duty phones -> responder acknowledges -> calls user/112 -> resolves with facts.
 8. **Offline**: booking submit with no network -> stored in outbox with an idempotency key, UI says "not confirmed" -> reconnect -> sent once.
+9. **Venue QR**: scan (or open the link) -> [sign in first if needed; the code is remembered] -> venue card -> Home with the venue as pickup -> destination -> options -> booking stores `request_code_id`. Invalid/expired code shows the server-localised message; offline shows a retry.

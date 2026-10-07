@@ -55,9 +55,12 @@ Add the EAS project id (`eas init`, then `EAS_PROJECT_ID=<id>` in the build env,
 * **Prominent disclosure**: shown in the driver Home card before first use (strings `drv.location.*`, `drv.bg.*`, all three languages) with an explicit "I agree" button; the privacy policy must repeat it.
 * **Data safety form**: location (approximate and precise) collected, not sold, used for app functionality; also device push token (device IDs) and crash diagnostics.
 
+## Deep link for QR request codes
+`app.config.js` declares an Android intent filter for `abasare://r/<CODE>` (VIEW, BROWSABLE, DEFAULT). The backend landing page `https://<host>/r/<CODE>` opens it with an `intent://` link for package `rw.abasare.app`. Test on a device: `adb shell am start -a android.intent.action.VIEW -d "abasare://r/<CODE>?svc=ride" rw.abasare.app`. Not yet run on a device.
+
 ## Permissions requested
 
-`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_LOCATION` (driver tracking service), `POST_NOTIFICATIONS`, `CAMERA` (driver documents), `INTERNET`, `ACCESS_NETWORK_STATE`. `ACCESS_BACKGROUND_LOCATION` and storage permissions are explicitly blocked in `app.config.js`.
+`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_LOCATION` (driver tracking service), `POST_NOTIFICATIONS`, `CAMERA` (driver documents and scanning venue QR codes; the `expo-camera` plugin is configured with `recordAudioAndroid: false`, `RECORD_AUDIO` stays blocked), `INTERNET`, `ACCESS_NETWORK_STATE`. `ACCESS_BACKGROUND_LOCATION` and storage permissions are explicitly blocked in `app.config.js`.
 
 ## Device test plan (not yet executed)
 

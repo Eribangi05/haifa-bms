@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/lib/app';
 import { Welcome, Phone, Otp } from './src/screens/auth';
+import { Scan } from './src/screens/scan';
 import { Home, Options, Track } from './src/screens/passenger';
 import { History, Profile, Support } from './src/screens/shared';
 import { DriverHome } from './src/screens/driver';
@@ -14,6 +15,10 @@ import { installErrorReporting } from './src/lib/report';
 import { initNotifications, listenForTaps, registerPush, routeFor } from './src/lib/push';
 import './src/lib/bgLocation';   // registers the driver location task at startup (native Android only; inert elsewhere)
 import { C } from './src/ui/theme';
+import { Platform } from 'react-native';
+import * as Linking from 'expo-linking';
+import { parseCode, savePending, takePending, type ParsedCode } from './src/lib/codes';
+import { kv } from './src/lib/storage';
 
 // Respect the user's font-size setting but cap it so layouts do not break (accessibility vs. layout).
 (Text as any).defaultProps = { ...((Text as any).defaultProps ?? {}), maxFontSizeMultiplier: 1.4 };
@@ -31,8 +36,30 @@ function Bridges() {
     if (!ready || !uid) return;
     return listenForTaps((data) => { const go = routeFor(data, !!live.current.me?.roles.includes('driver')); if (go) live.current.nav.push(go.name, go.params); });
   }, [ready, uid]);
+  // Request-code deep links (abasare://r/CODE, or ?code=CODE on web). Signed out: remember the code and continue after sign-in.
+  const deliver = React.useCallback((p: ParsedCode | null) => {
+    if (!p) return;
+    if (live.current.me) live.current.nav.push('scan', { code: p.code, svc: p.svc }); else void savePending(kv, p);
+  }, []);
+  React.useEffect(() => {
+    if (!ready) return;
+    let sub: { remove: () => void } | undefined;
+    if (Platform.OS === 'web') {
+      try { const q = new URLSearchParams(window.location.search); const c = parseCode(q.get('code')); if (c) { const sv = q.get('svc'); deliver(sv === 'ride' || sv === 'abasare' ? { ...c, svc: sv } : c); window.history.replaceState(null, '', window.location.pathname); } } catch { /* no window */ }
+    } else {
+      Linking.getInitialURL().then((u) => { if (u && u !== handledInitial) { handledInitial = u; deliver(parseCode(u)); } }).catch(() => {});
+      sub = Linking.addEventListener('url', (e) => deliver(parseCode(e.url)));
+    }
+    return () => sub?.remove();
+  }, [ready, deliver]);
+  React.useEffect(() => {
+    if (!ready || !uid) return;
+    void takePending(kv).then((p) => { if (p) live.current.nav.push('scan', { code: p.code, svc: p.svc }); });
+  }, [ready, uid]);
   return null;
 }
+
+let handledInitial: string | null = null;
 
 function Router() {
   const { ready, nav, toast } = useApp();
@@ -43,7 +70,8 @@ function Router() {
     case 'welcome': screen = <Welcome />; break;
     case 'phone': screen = <Phone />; break;
     case 'otp': screen = <Otp params={route.params} />; break;
-    case 'home': screen = <Home />; break;
+    case 'home': screen = <Home key={route.params?.venue?.code ?? 'home'} params={route.params} />; break;
+    case 'scan': screen = <Scan params={route.params} />; break;
     case 'options': screen = <Options params={route.params} />; break;
     case 'track': screen = <Track key={route.params?.id ?? 'pending'} params={route.params ?? {}} />; break;
     case 'history': screen = <History />; break;
