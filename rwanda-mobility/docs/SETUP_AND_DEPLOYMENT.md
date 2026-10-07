@@ -49,7 +49,7 @@ node e2e/abasare-e2e.mjs /tmp/shots some.jpg # Abasare: application, car, bookin
 6. **Health**: `GET /health` (liveness), `GET /ready` (DB reachable). Alert on 5xx rate, `payments` stuck `PENDING` > 15 min, reconciliation exceptions, failed SMS (`notifications.status='failed'`), OTP request spikes.
 7. **Backups & DR**: PITR on the database; separate encrypted backup of `DATA_ENC_KEY`; restore drill each quarter; RPO <= 5 min, RTO <= 1 h are realistic targets for this architecture.
 8. **Payments**: complete MTN onboarding, put sandbox credentials in staging first, test `requesttopay` + callback end to end, then production credentials. Do not announce live payments until a settlement report has reconciled cleanly (Admin -> Finance -> Reconciliation).
-9. **Mobile**: set `EXPO_PUBLIC_API_URL` to the HTTPS API, build a signed AAB with your own keystore, publish to Play Console. Set `usesCleartextTraffic` to `false` in `app.json` for release.
+9. **Mobile**: set `EXPO_PUBLIC_API_URL` to the HTTPS API, build a signed AAB with your own keystore, publish to Play Console. Cleartext HTTP is off by default (`app.config.js`; only `EXPO_PUBLIC_ALLOW_CLEARTEXT=1` dev builds enable it).
 10. **Go-live gates** (do not skip): legal sign-offs, insurance, driver verification SOP trained, emergency playbook rehearsed, support rota staffed, pilot with a few dozen verified drivers.
 
 ## 4. Backups, retention, jobs

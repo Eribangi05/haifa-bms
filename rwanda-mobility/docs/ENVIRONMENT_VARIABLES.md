@@ -28,7 +28,16 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `STORAGE_DIR` | no | `./storage` | Private directory for documents/evidence (mode 0600). Replace with an S3-compatible private bucket in production. |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | first run | | `npm run seed` creates the first `super_admin` when the password is >= 12 chars and prints its TOTP secret **once**. Remove the variables afterwards. |
 | `RATE_LIMIT_MAX` | no | `300` | Per-IP requests per minute (global). |
-| `AUTH_RATE_MAX` | no | `20` / `10` | Per-IP per-minute cap on OTP and staff-login routes. |
+| `AUTH_RATE_MAX` | no | `10` (OTP request) / `20` (OTP verify) / `10` (staff login) | Per-IP per-minute cap on OTP and staff-login routes. |
+| `CLIENT_ERR_RATE_MAX` | no | `10` | Per-IP per-minute cap on `POST /client-errors`. |
+| `BOOKING_RATE_MAX` | no | `20` | Per-user (token subject, else IP) per-minute cap on `POST /bookings`. |
+| `PAYMENT_RATE_MAX` | no | `10` | Per-user per-minute cap on `POST /payments` (mobile-money initiate). |
+| `UPLOAD_RATE_MAX` | no | `20` | Per-user per-minute cap on file uploads (documents, evidence, Abasare handover photos). |
+| `ESTIMATE_RATE_MAX` | no | `60` | Per-user per-minute cap on `POST /fares/estimate`. |
+| `PUSH_PROVIDER` | no | `none` | `none` = log-only / **SIMULATED** (nothing is sent); `expo` = deliver through the Expo Push API (`https://exp.host/--/api/v2/push/send`, 100 messages per request, receipts polled every minute; `DeviceNotRegistered` revokes the token). |
+| `EXPO_ACCESS_TOKEN` | if your Expo project enforces push security | | Bearer token for the Expo Push API. Keep secret. |
+| `EXPO_PUSH_URL` | no | `https://exp.host/--/api/v2` | Override only for testing. |
+| `CLAMAV_HOST`, `CLAMAV_PORT` | no | unset / `3310` | When set, every upload is also streamed to this clamd (`INSTREAM`) after the built-in structural checks. **Fail closed**: if clamd is unreachable the upload is rejected with `scan_unavailable` (HTTP 503). Unset = built-in checks only. |
 | `QUIET` | no | | `1` silences logs (tests). |
 
 ## Mobile app (public: embedded in the build, **never put secrets here**)
@@ -36,8 +45,8 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | Variable | Purpose |
 |---|---|
 | `EXPO_PUBLIC_API_URL` | HTTPS origin of the API (emulator default `http://10.0.2.2:8080`). |
-| `EXPO_PUBLIC_APP_NAME` | Display name (also edit `app.json` for the launcher name and icons). |
+| `EXPO_PUBLIC_APP_NAME` | Display name (also edit `app.config.js` for the launcher name and icons). |
 
 ## Admin-editable runtime settings (stored in `system_settings`, edit in Admin -> Settings)
 
-`dispatch.offer_timeout_s`, `dispatch.max_rounds`, `dispatch.group_size`, `dispatch.strategy`, `dispatch.heartbeat_max_age_s`, `dispatch.base_radius_km`, `dispatch.radius_step_km`, `dispatch.max_radius_km`, `booking.cancel_grace_s`, `booking.cancel_fee`, `booking.noshow_wait_min`, `booking.noshow_fee`, `booking.quote_ttl_s`, `booking.max_scheduled_days`, `payout.min_amount`, `payout.fee`, `payout.large_threshold`, `refund.large_threshold`, `driver.expiry_reminder_days`, `retention.location_days`, `otp.*`, `safety.escalation_contacts`, `tracking.max_speed_kmh`.
+`dispatch.offer_timeout_s`, `dispatch.max_rounds`, `dispatch.group_size`, `dispatch.strategy`, `dispatch.heartbeat_max_age_s`, `dispatch.base_radius_km`, `dispatch.radius_step_km`, `dispatch.max_radius_km`, `booking.cancel_grace_s`, `booking.cancel_fee`, `booking.noshow_wait_min`, `booking.noshow_fee`, `booking.quote_ttl_s`, `booking.max_scheduled_days`, `payout.min_amount`, `payout.fee`, `payout.large_threshold`, `refund.large_threshold`, `driver.expiry_reminder_days`, `retention.location_days`, `retention.client_error_days` (client error reports, default 30), `otp.*`, `safety.escalation_contacts`, `tracking.max_speed_kmh`.

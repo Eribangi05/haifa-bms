@@ -4,6 +4,7 @@ import { q, q1, tx } from '../db.js';
 import { config } from '../config.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { haversineM, pointInPolygon, type LatLng } from '../util/geo.js';
+import { quotableDebt, withDebt, withoutDebt, applyDebts, recordDebt } from './debts.js';
 import { computeFare, finalizeFare, activeRule, ruleById, kigaliHour, overtimeBlocks, type Breakdown } from './pricing.js';
 import { route } from './maps.js';
 import { checkPromo } from './promos.js';
@@ -95,6 +96,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
   const dz = await zoneFor(dest);
   const [hb, ttl, radius] = [await getSetting('dispatch.heartbeat_max_age_s'), await getSetting('booking.quote_ttl_s'), await getSetting('dispatch.max_radius_km')];
   const options: any[] = [];
+  const owed = await quotableDebt(passengerId);      // previous cancellation / no-show fee, shown as its own line
   for (const s of svcs) {
     const maxKm = s.restrictions?.max_distance_km;
     if (!dz && !s.restrictions?.allow_outside_dest) { options.push({ service_id: s.id, available: false, reason: 'destination_outside_coverage' }); continue; }
@@ -106,10 +108,10 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
       const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()) });
       return checkPromo(inp.promo_code!, passengerId, s.id, pz.id, pre.subtotal);
     })() : null;
-    const bd: Breakdown = computeFare(rule, {
+    const bd: Breakdown = withDebt(computeFare(rule, {
       distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()),
       promo: promo?.ok ? { code: promo.code, discount: promo.discount } : undefined,
-    });
+    }), owed);
     let available: boolean, near: number[] = [], reason: string | undefined;
     if (s.kind === 'abasare') {
       if (scheduled) { available = (await abasareSupply(cv)) > 0; if (!available) reason = 'no_abasare_for_this_car'; }
@@ -201,7 +203,10 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
         if (!cvx.insurance_confirmed || (cvx.insurance_expiry && new Date(cvx.insurance_expiry) < new Date())) throw badRequest('insurance_confirmation_required', 'Confirm valid insurance for this car in My cars');
       } else if (meta.customer_vehicle_id) throw badRequest('invalid_quote');
       const when = quote.scheduled_for ? new Date(quote.scheduled_for) : new Date();
-      if (inp.corporate_id) await enforceCorporate(c, passengerId, inp.corporate_id, quote.service_id, quote.total, when);
+      // A personal cancellation fee is never billed to a company: strip it from corporate bookings (it stays on the passenger's balance).
+      const bdoc: Breakdown = inp.corporate_id ? withoutDebt(quote.breakdown) : quote.breakdown;
+      const fareTotal = bdoc.total;
+      if (inp.corporate_id) await enforceCorporate(c, passengerId, inp.corporate_id, quote.service_id, fareTotal, when);
       const scheduled = !!quote.scheduled_for;
       const ref = newRef();
       const b = (await q<BookingRow>(
@@ -209,9 +214,10 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
            quote_id, estimated_fare, distance_m, duration_s, payment_method, payer_type, corporate_id, cost_centre, po_ref, rider_name, rider_phone, scheduled_for, idempotency_key, requested_at, fare_breakdown)
          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,now(),$26) returning *`,
         [ref, passengerId, quote.service_id, quote.zone_id, scheduled ? 'SCHEDULED' : 'REQUESTED', quote.pickup_lat, quote.pickup_lng, inp.pickup_name ?? null, inp.pickup_note ?? null,
-         quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, quote.total, quote.distance_m, quote.duration_s, inp.payment_method,
+         quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, fareTotal, quote.distance_m, quote.duration_s, inp.payment_method,
          inp.corporate_id ? 'corporate' : 'passenger', inp.corporate_id ?? null, inp.cost_centre ?? null, inp.po_ref ?? null, inp.rider_name ?? null, inp.rider_phone ?? null,
-         quote.scheduled_for, inp.idempotency_key, JSON.stringify(quote.breakdown)], c))[0];
+         quote.scheduled_for, inp.idempotency_key, JSON.stringify(bdoc)], c))[0];
+      if (!inp.corporate_id) await applyDebts(c, passengerId, b.id, quote.breakdown.debt ?? 0);
       if (svc.kind === 'abasare') await q('update bookings set hire_mode=$2, hours_booked=$3, customer_vehicle_id=$4, owner_attested_at=now() where id=$1', [b.id, meta.hire_mode, meta.hours, meta.customer_vehicle_id], c);
       await q('update fare_quotes set used_booking_id=$2 where id=$1', [quote.id, b.id], c);
       await logEvent(c, b.id, 'booking_created', { id: passengerId, role: 'passenger' }, { quote_id: quote.id, total: quote.total, rule_version: quote.rule_version });
@@ -337,6 +343,7 @@ export async function cancelBooking(actorId: string, bookingId: string, reason: 
       }
       const row = await transition(c, bookingId, 'CANCELLED_BY_PASSENGER', { id: actorId, role: 'passenger' },
         { reason, patch: { cancelled_at: new Date(), cancel_by: 'passenger', cancel_reason: reason, cancel_fee: cancelFee } });
+      if (cancelFee > 0) await recordDebt(c, b.passenger_id, bookingId, cancelFee, 'cancellation_fee');
       if (b.driver_id) await q("update dispatch_offers set status='cancelled' where booking_id=$1 and status='pending'", [bookingId], c);
       await q("update dispatch_offers set status='cancelled' where booking_id=$1 and status='pending'", [bookingId], c);
       return { row, driverId: b.driver_id };
@@ -423,8 +430,10 @@ export async function noShow(driverId: string, bookingId: string) {
     const b = await ownTrip(c, driverId, bookingId);
     if (!b.arrived_at || !['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) throw conflict('invalid_state', 'Arrive at pickup first');
     if ((Date.now() - new Date(b.arrived_at).getTime()) / 60000 < wait) throw conflict('wait_longer', `Wait at least ${wait} minutes before reporting a no-show`, { minutes: wait });
-    return transition(c, bookingId, 'CANCELLED_BY_PASSENGER', { id: driverId, role: 'driver' },
+    const row = await transition(c, bookingId, 'CANCELLED_BY_PASSENGER', { id: driverId, role: 'driver' },
       { reason: 'passenger_no_show', patch: { cancelled_at: new Date(), cancel_by: 'passenger_no_show', cancel_reason: 'passenger_no_show', cancel_fee: fee } });
+    if (fee > 0) await recordDebt(c, b.passenger_id, bookingId, fee, 'no_show_fee');
+    return row;
   });
 }
 

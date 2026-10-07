@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { anyAuth, requireRole, actorOf } from '../guards.js';
+import { anyAuth, requireRole, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import * as B from '../services/bookings.js';
 import * as P from '../services/payments.js';
@@ -13,7 +13,7 @@ const idp = z.object({ id: z.string().uuid() });
 
 export async function bookingRoutes(app: FastifyInstance) {
   // ---- passenger ----
-  app.post('/bookings', { preHandler: requireRole('passenger', 'corporate_booker', 'corporate_admin') }, async (req, reply) => {
+  app.post('/bookings', { config: routeLimit('BOOKING_RATE_MAX', 20), preHandler: requireRole('passenger', 'corporate_booker', 'corporate_admin') }, async (req, reply) => {
     const key = (req.headers['idempotency-key'] as string) ?? '';
     if (key.length < 8 || key.length > 100) throw badRequest('idempotency_key_required', 'Send an Idempotency-Key header (8-100 chars)');
     const b = parse(z.object({

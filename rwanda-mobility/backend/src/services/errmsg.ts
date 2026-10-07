@@ -97,6 +97,8 @@ const T: Record<string, Pair> = {
   not_resolved: ['Ushobora gutanga igitekerezo ikibazo kimaze gukemurwa.', 'Vous pourrez donner votre avis une fois la demande résolue.'],
   chat_closed: ['Ikiganiro cyarafunzwe kuko urugendo rwarangiye.', 'La discussion est fermée car la course est terminée.'],
   already_done: ['Ibi byamaze gukorwa.', 'C\'est déjà fait.'],
+  fee_changed: ['Amafaranga y\'inyongera yo guhagarika yarahindutse. Ongera ukibaze igiciro.', 'Vos frais d\'annulation en attente ont changé. Veuillez redemander le tarif.'],
+  debt_in_use: ['Aya mafaranga ari ku rugendo rukirimo gukorwa. Ntushobora kuyakuraho ubu.', 'Ces frais sont rattachés à une course en cours et ne peuvent pas être annulés pour le moment.'],
   already_finalised: ['Igiciro cy\'urugendo cyamaze kwemezwa.', 'Le tarif de la course est déjà finalisé.'],
 
   // --- payments
@@ -139,6 +141,8 @@ const T: Record<string, Pair> = {
   file_required: ['Hitamo idosiye yo kohereza.', 'Sélectionnez un fichier à envoyer.'],
   file_too_large: ['Idosiye ni nini cyane. Ntishobora kurenza 5 MB.', 'Le fichier est trop volumineux. Taille maximale : 5 Mo.'],
   unsupported_file: ['Ubu bwoko bw\'idosiye ntibwemewe. Koresha ifoto (JPG, PNG) cyangwa PDF.', 'Ce type de fichier n\'est pas accepté. Utilisez une photo (JPG, PNG) ou un PDF.'],
+  file_unsafe: ['Iyi dosiye ntishobora kwemerwa kuko ishobora guteza ibibazo by\'umutekano. Koresha ifoto cyangwa PDF isanzwe.', 'Ce fichier ne peut pas être accepté car il peut présenter un risque de sécurité. Utilisez une photo ou un PDF standard.'],
+  scan_unavailable: ['Ntitwashoboye gusuzuma iyi dosiye ubu. Ongera ugerageze nyuma y\'akanya.', 'Impossible de vérifier ce fichier pour le moment. Réessayez dans un instant.'],
   too_many_photos: ['Amafoto ni menshi cyane.', 'Trop de photos.'],
   not_editable: ['Ubusabe bwawe ntibushobora guhindurwa ubu.', 'Votre candidature ne peut plus être modifiée.'],
   already_applied: ['Wamaze gutanga ubusabe bwa Abasare.', 'Vous avez déjà déposé une candidature Abasare.'],

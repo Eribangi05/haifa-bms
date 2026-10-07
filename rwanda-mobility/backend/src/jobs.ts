@@ -1,6 +1,7 @@
 import { dispatchSweep } from './services/dispatch.js';
 import { sweepPendingPayments } from './services/payments.js';
 import { flushSms } from './services/notify.js';
+import { flushPush, checkPushReceipts } from './services/push.js';
 import { expiryReminders, refreshEligibility } from './services/drivers.js';
 import { q } from './db.js';
 import { getSetting } from './services/settings.js';
@@ -13,6 +14,8 @@ export function startJobs(log: (m: string) => void = console.log) {
     setInterval(guard('dispatch', dispatchSweep), 3_000),
     setInterval(guard('payments', sweepPendingPayments), 30_000),
     setInterval(guard('sms', () => flushSms()), 5_000),
+    setInterval(guard('push', () => flushPush()), 3_000),
+    setInterval(guard('push-receipts', () => checkPushReceipts()), 60_000),
     setInterval(guard('eligibility', async () => { await expiryReminders(); await refreshEligibility(); }), 60 * 60_000),
     setInterval(guard('retention', retention), 6 * 60 * 60_000),
     // stale drivers: no heartbeat for 2 minutes => offline (never trust last-known location)
@@ -28,6 +31,8 @@ export async function retention() {
   await q("delete from driver_locations where received_at < now() - make_interval(days => $1)", [days]);
   await q("delete from otp_challenges where created_at < now() - interval '2 days'");
   await purgeHandoverPhotos();
+  await purgeClientErrors();
+  await q("delete from push_tokens where revoked_at < now() - interval '30 days'");
   await q("delete from fare_quotes where expires_at < now() - interval '2 days' and used_booking_id is null");
 }
 
@@ -40,4 +45,11 @@ export async function purgeHandoverPhotos() {
        and not exists (select 1 from bookings b where b.id=p.booking_id and b.status='DISPUTED')`, [days]);
   for (const r of rows) { await deleteFileByKey(r.file_key); await q('delete from handover_photos where id=$1', [r.id]); }
   return rows.length;
+}
+
+/** Client error reports are diagnostics only: keep them for a short period. */
+export async function purgeClientErrors() {
+  const days = await getSetting('retention.client_error_days');
+  const r = await q('delete from client_errors where created_at < now() - make_interval(days => $1) returning id', [days]);
+  return r.length;
 }

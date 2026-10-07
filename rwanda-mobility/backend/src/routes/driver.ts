@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
-import { requireRole, anyAuth, actorOf } from '../guards.js';
+import { requireRole, anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, notFound, forbidden } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
@@ -54,11 +54,11 @@ export async function driverRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  app.post('/drivers/documents', drv, async (req) => {
+  app.post('/drivers/documents', { ...drv, config: routeLimit('UPLOAD_RATE_MAX', 20) }, async (req) => {
     const parts = req.parts({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
-    const f: Record<string, string> = {}; let buf: Buffer | null = null;
+    const f: Record<string, string> = {}; let buf: Buffer | null = null; let declared: string | undefined;
     for await (const p of parts) {
-      if (p.type === 'file') { buf = await p.toBuffer(); if ((p as any).file.truncated) throw badRequest('file_too_large', 'Maximum file size is 5 MB'); }
+      if (p.type === 'file') { declared = p.mimetype; buf = await p.toBuffer(); if ((p as any).file.truncated) throw badRequest('file_too_large', 'Maximum file size is 5 MB'); }
       else f[p.fieldname] = String(p.value);
     }
     const body = parse(z.object({ doc_type: z.enum(KNOWN_DOCS as [string, ...string[]]), expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }), f);
@@ -69,7 +69,7 @@ export async function driverRoutes(app: FastifyInstance) {
     const reqRow = types.length ? await q1<any>('select bool_or(requires_expiry) requires_expiry from document_requirements where vehicle_type = any($1) and doc_type=$2', [types, body.doc_type]) : null;
     if (reqRow?.requires_expiry && !body.expiry_date) throw badRequest('expiry_required', 'This document needs an expiry date');
     if (body.expiry_date && new Date(body.expiry_date) < new Date(new Date().toISOString().slice(0, 10))) throw badRequest('already_expired', 'This document has already expired');
-    const saved = await saveFile(buf, body.doc_type === 'profile_photo' ? 'photos' : 'docs');
+    const saved = await saveFile(buf, body.doc_type === 'profile_photo' ? 'photos' : 'docs', declared);
     const d = await q1<any>(`insert into driver_documents(driver_id, doc_type, file_key, mime, size, expiry_date) values ($1,$2,$3,$4,$5,$6) returning id, doc_type, review_status, expiry_date`,
       [req.auth!.id, body.doc_type, saved.key, saved.mime, saved.size, body.expiry_date ?? null]);
     if (body.doc_type === 'profile_photo') await q('update users set photo_key=$2 where id=$1', [req.auth!.id, saved.key]);

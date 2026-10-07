@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { anyAuth } from '../guards.js';
+import { anyAuth, routeLimit } from '../guards.js';
 import { q1 } from '../db.js';
 import { config, isProd } from '../config.js';
 import { initiateMomo, verifyPayment, handleCallback } from '../services/payments.js';
@@ -17,7 +17,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     simulated: p.method === 'mtn_momo' && config.momo.mode === 'simulator',
   });
 
-  app.post('/payments', { preHandler: anyAuth }, async (req) => {
+  app.post('/payments', { config: routeLimit('PAYMENT_RATE_MAX', 10), preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({ booking_id: z.string().uuid(), method: z.enum(['mtn_momo', 'airtel_money']).default('mtn_momo'), msisdn: z.string() }), req.body);
     return view(await initiateMomo(req.auth!.id, b.booking_id, b.msisdn, b.method));
   });

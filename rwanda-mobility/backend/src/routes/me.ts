@@ -6,9 +6,22 @@ import { anyAuth, actorOf } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { notFound, conflict } from '../errors.js';
 import { audit } from '../services/audit.js';
+import { myDebts } from '../services/debts.js';
+import { registerToken, revokeUserTokens } from '../services/push.js';
 
 export async function meRoutes(app: FastifyInstance) {
   const pre = { preHandler: anyAuth };
+
+  // push token registry (idempotent upsert; the same token moving to another account is re-assigned)
+  app.post('/users/me/push-token', pre, async (req) => {
+    const b = parse(z.object({ token: z.string().min(10).max(300), platform: z.enum(['android', 'ios', 'web']) }), req.body);
+    await registerToken(req.auth!.id, b.token, b.platform, (req.headers['x-device-id'] as string) || null);
+    return { ok: true };
+  });
+  app.delete('/users/me/push-token', pre, async (req) => {
+    const b = parse(z.object({ token: z.string().min(10).max(300).optional() }), req.body);
+    return { ok: true, revoked: await revokeUserTokens(req.auth!.id, b.token, (req.headers['x-device-id'] as string) || undefined) };
+  });
 
   app.get('/users/me', pre, async (req) => {
     const u = await q1<any>('select id, phone, email, display_name, preferred_language, notif_prefs, referral_code, status, (photo_key is not null) as has_photo, created_at from users where id=$1', [req.auth!.id]);
@@ -29,6 +42,12 @@ export async function meRoutes(app: FastifyInstance) {
         [req.auth!.id, b.display_name ?? null, b.email ?? null, b.preferred_language ?? null, JSON.stringify({ ...cur.notif_prefs, ...(b.notif_prefs ?? {}) })]);
     } catch (e: any) { if (e.code === '23505') throw conflict('email_in_use', 'Email already registered'); throw e; }
     return { ok: true };
+  });
+
+  // outstanding cancellation / no-show fees (added to the next fare as `previous_cancellation_fee`)
+  app.get('/users/me/debts', pre, async (req) => {
+    const debts = await myDebts(req.auth!.id);
+    return { debts, total: debts.reduce((a: number, d: any) => a + d.amount, 0) };
   });
 
   // saved places

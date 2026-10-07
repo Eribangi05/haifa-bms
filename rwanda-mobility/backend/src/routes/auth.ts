@@ -17,7 +17,7 @@ export async function authRoutes(app: FastifyInstance) {
   const dev = (req: any) => ({ id: (req.headers['x-device-id'] as string) || undefined, name: (req.headers['x-device-name'] as string) || undefined, ip: req.ip });
   const phone = z.string().transform((s, ctx) => normalizePhone(s) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a valid Rwandan mobile number (+250 7XX XXX XXX)' }), z.NEVER));
 
-  app.post('/auth/otp/request', { config: { rateLimit: { max: Number(process.env.AUTH_RATE_MAX ?? 20), timeWindow: '1 minute' } } }, async (req) => {
+  app.post('/auth/otp/request', { config: { rateLimit: { max: Number(process.env.AUTH_RATE_MAX ?? 10), timeWindow: '1 minute' } } }, async (req) => {
     const b = parse(z.object({ phone, language: z.enum(['rw', 'fr', 'en']).optional() }), req.body);
     return auth.requestOtp(b.phone, dev(req), b.language ?? headerLang(req));
   });

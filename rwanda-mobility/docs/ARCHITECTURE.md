@@ -92,8 +92,14 @@ Dr  PROMO_EXPENSE                                                 platform-funde
     Cr DRIVER_PAYABLE (fleet owner)    fleet revenue share
     Cr COMMISSION_REVENUE              platform commission
     Cr TAX_PAYABLE                     tax collected
+    Cr PASSENGER_RECEIVABLE (passenger)  an earlier cancellation fee collected with this fare (only when present)
 ```
+**Cancellation fees**: when a passenger cancels with a fee (or a driver reports a no-show), `passenger_debts` gets one row per cancelled booking (unique `booking_id`) and the ledger posts `Dr PASSENGER_RECEIVABLE / Cr CANCELLATION_FEE_REVENUE`. The next quote carries the open balance as a separate, untaxed, non-commissionable line `previous_cancellation_fee` (`breakdown.debt`); creating a booking locks the debt rows and must match the quoted amount exactly (otherwise `fee_changed`: re-quote), so one fee is carried by one booking only. A booking that ends cancelled hands the fee back; payment settlement marks it `settled` in the same transaction as the credit above. Staff waiver posts `Dr CANCELLATION_FEE_WAIVED / Cr PASSENGER_RECEIVABLE`. Corporate bookings never carry a personal fee.
 A driver's **eligible payout** = `DRIVER_PAYABLE - CASH_WITH_DRIVERS` (floored at 0): cash the driver already holds is netted against what the platform owes them; a cash-only driver owes the commission (`owed_to_platform`) and remits it (`CASH_WITH_DRIVERS` ↓, `PLATFORM_BANK` ↑). Payout request moves money `DRIVER_PAYABLE → PAYOUT_CLEARING`; payment of the payout moves it to `PLATFORM_BANK`. Refunds and adjustments are new entries. **Customer prepaid wallets are deliberately not built** (separate legal review).
+
+## Notifications, push and diagnostics
+
+`notify()` always writes an in-app row, queues SMS for the SMS event set and queues a **push** row for time-critical kinds (`PUSH_EVENTS`: driver offers, driver assigned/arrived, Abasare assigned and handover, payment, SOS acknowledgement) using the user's language template. Workers (`src/jobs.ts`): `flushPush` every 3 s (5 attempts, then `failed`; no token -> `skipped`) and `checkPushReceipts` every minute. The adapter (`src/services/push.ts`) is `simulatedPush` unless `PUSH_PROVIDER=expo`. Tokens live in `push_tokens` (unique token; a token re-registered by another account moves to it). `POST /client-errors` stores scrubbed crash reports in `client_errors` (purged by the retention job).
 
 ## Dispatch
 
@@ -109,6 +115,7 @@ The app is trilingual: Kinyarwanda (`rw`, default), French (`fr`) and English (`
 - Request language: the client sends `Accept-Language: rw|fr|en`; `reqLang()` in `src/services/errmsg.ts` reads the first tag (default `en`). A user's stored choice is `users.preferred_language`.
 - Errors: `code` and `details` are stable; only `message` is localised (`localizeError()`, called from the error/404/500 handlers in `src/app.ts`). Codes with a `{min}`-style placeholder get the values from `details`. A code with no table entry returns a generic message in the user's language, never English. `tests/i18n.test.ts` fails if a user-facing code lacks an entry.
 - Notifications/SMS: `DEFAULT_TEMPLATES` in `src/services/i18n.ts` (every template in every language; enumerated params such as `status`, `doc`, `phase` are translated by `VALUE_LABELS`). Admin overrides in `notification_templates` are per (key, lang).
+- Public share page (`src/routes/share.ts`): language from `?lang=`, else `Accept-Language`, else `rw`; all labels including every booking status come from `SHARE_STRINGS` (tested for completeness in three languages).
 - Catalogue data: `name_rw/name_fr/name_en` (+ descriptions) on `service_categories`, `name_*` on `places`; fare lines carry `label_en/label_rw/label_fr`; FAQ entries `q_*/a_*`.
 
 Adding a language (say `xx`): add it to `SUPPORTED_LANGS`, the `Lang` unions, the zod enums (`routes/auth.ts`, `routes/catalog.ts`, `routes/me.ts`) and `/config` `languages`; add an `xx` entry to every template, `VALUE_LABELS`, the error table, `Line` labels in `services/pricing.ts` and the FAQ; add `name_xx`/`description_xx` columns in a migration (with backfill) and seed data; extend `tests/i18n.test.ts`. The mobile app keeps its own locale files in `mobile/src/lib/locales`.

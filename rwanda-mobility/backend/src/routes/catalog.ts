@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
-import { anyAuth, requireRole } from '../guards.js';
+import { anyAuth, requireRole, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { estimate, zoneFor } from '../services/bookings.js';
 import { searchPlaces } from '../services/maps.js';
@@ -42,7 +42,7 @@ export async function catalogRoutes(app: FastifyInstance) {
     const z_ = await zoneFor(b); return { covered: !!z_, zone: z_?.id ?? null };
   });
 
-  app.post('/fares/estimate', { preHandler: anyAuth }, async (req) => {
+  app.post('/fares/estimate', { config: routeLimit('ESTIMATE_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({
       pickup: z.object({ lat, lng }), dest: z.object({ lat, lng }).optional(), service_id: z.string().optional(),
       abasare: z.object({ customer_vehicle_id: z.string().uuid(), hours: z.number().int().min(1).max(24).optional() }).optional(),

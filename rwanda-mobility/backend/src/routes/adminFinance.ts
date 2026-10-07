@@ -7,6 +7,7 @@ import * as F from '../services/finance.js';
 import { driverBalance } from '../services/ledger.js';
 import { audit } from '../services/audit.js';
 import { badRequest, forbidden } from '../errors.js';
+import { waiveDebt, listDebts } from '../services/debts.js';
 
 const idp = z.object({ id: z.string().uuid() });
 const csv = (rows: any[]) => {
@@ -25,6 +26,16 @@ export async function adminFinanceRoutes(app: FastifyInstance) {
       from payments p join bookings bk on bk.id=p.booking_id
       where ($1::text is null or p.reference=$1 or p.provider_reference=$1 or bk.ref ilike $2) and ($3::text is null or p.status=$3) and ($4::text is null or p.method=$4) order by p.created_at desc limit $5`,
       [b.q ?? null, `%${b.q ?? ''}%`, b.status ?? null, b.method ?? null, b.limit]) };
+  });
+  // ---- passenger cancellation / no-show fees (debts) ----
+  app.get('/admin/finance/passenger-debts', { preHandler: view }, async (req) => {
+    const b = parse(z.object({ user_id: z.string().uuid().optional(), status: z.enum(['open', 'settled', 'waived']).optional(), limit: z.coerce.number().int().min(1).max(200).default(50) }), req.query);
+    return { debts: await listDebts(b) };
+  });
+  app.post('/admin/finance/passenger-debts/:id/waive', { preHandler: requirePerm('finance.waive_fee') }, async (req) => {
+    const { id } = parse(idp, req.params);
+    const b = parse(z.object({ reason: z.string().min(5).max(300) }), req.body);
+    return { debt: await waiveDebt(actorOf(req), id, b.reason) };
   });
   app.get('/admin/finance/position', { preHandler: view }, async () => F.financialPosition());
   app.get('/admin/finance/drivers', { preHandler: view }, async () => {

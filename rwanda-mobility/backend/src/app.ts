@@ -24,6 +24,7 @@ import { businessRoutes } from './routes/business.js';
 import { adminRoutes } from './routes/admin.js';
 import { adminFinanceRoutes } from './routes/adminFinance.js';
 import { abasareRoutes } from './routes/abasare.js';
+import { diagnosticsRoutes } from './routes/diagnostics.js';
 
 export async function buildApp(opts: { onRoute?: (r: { method: string | string[]; url: string; config?: any }) => void } = {}) {
   const app = Fastify({
@@ -73,7 +74,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await api.register(authRoutes); await api.register(meRoutes); await api.register(catalogRoutes);
     await api.register(bookingRoutes); await api.register(driverRoutes); await api.register(paymentRoutes);
     await api.register(supportRoutes); await api.register(businessRoutes);
-    await api.register(abasareRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes);
+    await api.register(abasareRoutes); await api.register(diagnosticsRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes);
   }, { prefix: '/api/v1' });
   // public trip-share page lives outside /api
   await app.register(shareRoutes);

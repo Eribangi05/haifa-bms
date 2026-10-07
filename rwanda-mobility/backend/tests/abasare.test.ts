@@ -1,14 +1,14 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { boot, KCC, KIMIRONKO, type Ctx } from './helpers.ts';
+import { boot, makeJpeg, KCC, KIMIRONKO, type Ctx } from './helpers.ts';
 
 let t: Ctx; let verifier: Awaited<ReturnType<Ctx['staff']>>;
 before(async () => { t = await boot('rwanda_mobility_test'); verifier = await t.staff('driver_verifier'); });
 after(async () => { await t.close(); });
 beforeEach(async () => { await t.reset(); });
 
-const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 1)]);
+const JPEG = makeJpeg();
 const photo = () => { const b = '----ab' + Math.random().toString(16).slice(2); return { payload: Buffer.concat([Buffer.from(`--${b}\r\nContent-Disposition: form-data; name="file"; filename="p.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`), JPEG, Buffer.from(`\r\n--${b}--\r\n`)]), headers: { 'content-type': `multipart/form-data; boundary=${b}` } }; };
 
 async function car(owner: { token: string }, extra: any = {}) {

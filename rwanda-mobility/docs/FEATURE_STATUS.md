@@ -2,7 +2,7 @@
 
 Labels (assigned by evidence, not intent):
 
-* **TESTED** - implemented and exercised by automated tests that pass: `backend` 107 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities); `mobile` 10 tests of the network layer; and three browser end-to-end scripts (passenger, driver, Abasare; ~50 steps) that drive the real React Native screens against a live backend.
+* **TESTED** - implemented and exercised by automated tests that pass: `backend` 135 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities); `mobile` 10 tests of the network layer; and three browser end-to-end scripts (passenger, driver, Abasare; ~50 steps) that drive the real React Native screens against a live backend.
 * **IMPLEMENTED** - code exists and type-checks (and the Android bundle compiles) but has **no automated or on-device test**.
 * **SIMULATED** - works against a local stand-in, not the real external system.
 * **PENDING INTEGRATION** - needs third-party credentials/approval or a build-out not done here.
@@ -59,7 +59,7 @@ Labels (assigned by evidence, not intent):
 | Booking | State machine, transitions, events, idempotency, one-active-trip constraints | TESTED |
 | | Scheduled rides (release by sweeper) | TESTED |
 | | Cancellation rules (grace, fee recorded, driver/platform fault) | TESTED |
-| | **Cancellation fee collection** | NOT BUILT (fee recorded only) |
+| | **Cancellation / no-show fee collection**: fee becomes a ledger-backed passenger debt (`passenger_debts`), shown as `previous_cancellation_fee` (rw/fr/en) on the next quote, collected with the next cash or MoMo payment and settled idempotently; staff waiver (reason, audited, permission `finance.waive_fee`); never billed to a company | TESTED (cash and MoMo-simulator paths, concurrency, ledger balance). Caveat: a full refund of the paying trip does not re-open the fee |
 | | Trip PIN, lockout, logged override | TESTED |
 | | Arrival geofence (500 m, fresh GPS) | TESTED |
 | | Live driver position via polling | TESTED (API) / IMPLEMENTED (app) |
@@ -88,8 +88,16 @@ Labels (assigned by evidence, not intent):
 | Safety | SOS (records, never over-claims), share links, safety blocks, incidents | TESTED |
 | | Masked calling | PENDING INTEGRATION |
 | Support | Cases, SLA, priorities, sensitive scoping, internal notes, search by ref/payment/phone, CSAT | TESTED |
-| Notifications | In-app + SMS queue with retries, rw/en templates, admin overrides | TESTED (queueing) / SIMULATED (delivery) |
-| | Push (FCM), WhatsApp | PENDING INTEGRATION |
+| Notifications | In-app + SMS queue with retries, rw/fr/en templates (three languages, never mixed), admin overrides | TESTED (queueing) / SIMULATED (delivery) |
+| | Push backend: token registry (`/users/me/push-token`), time-critical kinds queue a localised push, retries, Expo adapter with batching and receipt handling (revokes `DeviceNotRegistered` tokens) | TESTED against a fake adapter and a stubbed `fetch`; default `PUSH_PROVIDER=none` is SIMULATED (log only) |
+| | Push delivery to real devices (`PUSH_PROVIDER=expo`) | PENDING INTEGRATION (no Expo/FCM/APNs account used; the mobile app now registers tokens, see the Mobile rows) |
+| | WhatsApp | PENDING INTEGRATION |
+| Diagnostics | Client error reporting (`POST /client-errors`, scrubbed, rate limited, 30-day retention, admin list `GET /admin/client-errors`) | TESTED (no third-party service; there is no alerting or aggregation) |
+| Uploads | Strict magic-byte and structure validation (JPEG/PNG/PDF), polyglot and script-marker rejection, dimension sanity, pluggable `scanFile` hook | TESTED |
+| | ClamAV scanning (`CLAMAV_HOST`, INSTREAM client) | TESTED against a fake clamd socket; **no real ClamAV daemon was run** |
+| Abuse | Per-route rate limits (OTP, client errors, uploads, bookings, payments, estimates) | TESTED |
+| Public share page | Trip-share web page localised rw/fr/en (`?lang=` or `Accept-Language`) | TESTED |
+| Performance | Small load test (`scripts/loadtest.ts`) on a single dev machine | MEASURED once, see `PERFORMANCE_NOTES.md`; not a capacity test |
 | Corporate | Accounts, members, policies, limits, isolation, statements, invoices | TESTED |
 | Fleet | Fleet, invites, revenue share, isolation, vehicle availability, earnings | TESTED |
 | Growth | Promotions (budget, limits, first-ride), referral rewards, self-referral block | TESTED |
@@ -100,6 +108,10 @@ Labels (assigned by evidence, not intent):
 | | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e) |
 | | Network layer: retry/backoff, idempotency keys, single-flight refresh, persistent outbox | TESTED |
 | | iOS | NOT BUILT/UNTESTED (code is shared; no iOS build produced) |
-| | Background location | NOT BUILT (foreground only; disclosed) |
+| | Driver background location (Android foreground service via expo-task-manager, with prominent disclosure; no ACCESS_BACKGROUND_LOCATION) | IMPLEMENTED (type-checked, Android bundle compiles; inert on web; **not run on a device**) |
+| | Push registration (expo-notifications: rationale, channels, token register/unregister, tap routing) | IMPLEMENTED (**not run on a device**; needs EAS project id + FCM config to deliver) |
+| | Crash/error reporting (global handlers, error boundary, `POST /client-errors`) | IMPLEMENTED (boundary and web handlers exercised only by build; **not run on a device**) |
+| | Abasare first-time explainer; reduce-motion, 44 px targets, localized a11y labels; 320/360 px and zoomed layout pass | TESTED in browser e2e (web build) |
+| | Cleartext HTTP off by default (`app.config.js`, flag for dev builds) | IMPLEMENTED |
 | Ops | Health/ready endpoints, jobs, retention, structured logs | IMPLEMENTED |
 | | Backups, monitoring, alerting | operator task (documented) |

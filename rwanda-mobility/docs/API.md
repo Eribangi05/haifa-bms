@@ -20,6 +20,7 @@
 | POST | `/users/me/cars` |
 | DELETE | `/users/me/cars/:id` |
 | POST | `/users/me/consents` |
+| GET | `/users/me/debts` |
 | GET | `/users/me/emergency-contacts` |
 | POST | `/users/me/emergency-contacts` |
 | DELETE | `/users/me/emergency-contacts/:id` |
@@ -27,6 +28,8 @@
 | POST | `/users/me/places` |
 | DELETE | `/users/me/places/:id` |
 | POST | `/users/me/privacy-requests` |
+| DELETE | `/users/me/push-token` |
+| POST | `/users/me/push-token` |
 | GET | `/users/me/referral` |
 | GET | `/users/me/sessions` |
 | DELETE | `/users/me/sessions/:id` |
@@ -108,6 +111,7 @@
 
 | Method | Path |
 |---|---|
+| POST | `/client-errors` |
 | POST | `/safety/incidents` |
 | POST | `/safety/sos` |
 | GET | `/support/cases` |
@@ -156,6 +160,8 @@
 | POST | `/admin/finance/cash-remittance` |
 | GET | `/admin/finance/drivers` |
 | GET | `/admin/finance/export/:kind` |
+| GET | `/admin/finance/passenger-debts` |
+| POST | `/admin/finance/passenger-debts/:id/waive` |
 | GET | `/admin/finance/payments` |
 | GET | `/admin/finance/payouts` |
 | POST | `/admin/finance/payouts/:id/approve` |
@@ -187,6 +193,7 @@
 | GET | `/admin/businesses` |
 | POST | `/admin/businesses/:id/decision` |
 | POST | `/admin/businesses/:id/invoice` |
+| GET | `/admin/client-errors` |
 | POST | `/admin/commissions` |
 | POST | `/admin/commissions/:id/approve` |
 | GET | `/admin/dashboard` |

@@ -91,6 +91,9 @@ const LEDGER: [string, string, string][] = [
   ['PROMO_EXPENSE', 'Platform-funded discounts', 'expense'],
   ['REFUNDS', 'Refunds', 'expense'],
   ['ADJUSTMENTS', 'Manual adjustments', 'expense'],
+  ['PASSENGER_RECEIVABLE', 'Passenger cancellation fees receivable', 'asset'],
+  ['CANCELLATION_FEE_REVENUE', 'Cancellation and no-show fee revenue', 'revenue'],
+  ['CANCELLATION_FEE_WAIVED', 'Cancellation fees waived by staff', 'expense'],
 ];
 
 const FLAGS: [string, boolean, string][] = [

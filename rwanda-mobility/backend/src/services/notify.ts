@@ -6,7 +6,7 @@ type Opts = { critical?: boolean; db?: Db };
 
 /**
  * Queue an in-app notification (always) and an SMS (only if the user allows SMS, or the event is critical).
- * Push is stored as a notification row; delivery needs FCM credentials (PENDING INTEGRATION).
+ * Time-critical kinds (PUSH_EVENTS) also queue a push, delivered by flushPush (Expo adapter when PUSH_PROVIDER=expo, simulated otherwise).
  */
 export async function notify(userId: string, key: string, params: Record<string, unknown> = {}, opts: Opts = {}) {
   const db = opts.db ?? pool;
@@ -28,7 +28,14 @@ export async function notify(userId: string, key: string, params: Record<string,
              values ($1,'sms',$2,$3,$4,$5,$6,$7,'queued')`,
       [userId, key, JSON.stringify(redact(params)), title, body, lang, !!opts.critical], db);
   }
+  if (PUSH_EVENTS.has(key) && (u.notif_prefs?.push !== false || opts.critical)) {
+    await q(`insert into notifications(user_id, channel, template_key, params, title, body, lang, critical, status)
+             values ($1,'push',$2,$3,$4,$5,$6,$7,'queued')`,
+      [userId, key, JSON.stringify(redact(params)), title, body, lang, !!opts.critical], db);
+  }
 }
+/** Time-critical events worth a push: driver offers, driver assigned/arrived, Abasare handover, payment, SOS. */
+export const PUSH_EVENTS = new Set(['offer', 'driver_assigned', 'abasare_assigned', 'driver_arrived', 'handover_submitted', 'handover_issue', 'payment_success', 'payment_failed', 'sos_ack']);
 const SMS_EVENTS = new Set(['driver_assigned', 'driver_arrived', 'payment_failed', 'no_driver', 'sos_ack', 'doc_expiry']);
 const redact = (p: Record<string, unknown>) => { const c = { ...p }; delete c.code; return c; };
 

@@ -33,11 +33,31 @@ npx eas-cli@latest login
 npx eas-cli@latest build --platform android --profile production   # AAB, managed signing keys
 npx eas-cli@latest submit --platform android
 ```
-Before releasing: set `EXPO_PUBLIC_API_URL` to your HTTPS API (in `eas.json`), set `usesCleartextTraffic` to `false` in `app.json`, replace the placeholder icon/splash in `assets/`, bump `versionCode`, complete Play's Data safety form (location, camera/photos, phone number, financial info), publish the privacy policy URL.
+Before releasing: set `EXPO_PUBLIC_API_URL` to your HTTPS API (in `eas.json`), make sure the build has **no** cleartext traffic (see below), replace the placeholder icon/splash in `assets/`, bump `versionCode`, complete Play's Data safety form (location, camera/photos, phone number, financial info), publish the privacy policy URL.
+
+## Cleartext HTTP (local dev only)
+
+The config lives in `app.config.js` (it replaces `app.json`; `npx expo prebuild` and EAS read it). `usesCleartextTraffic` is **false** unless `EXPO_PUBLIC_ALLOW_CLEARTEXT=1` is set at prebuild/build time. Use it only for emulator/e2e builds against `http://10.0.2.2:8080`:
+
+```bash
+EXPO_PUBLIC_ALLOW_CLEARTEXT=1 EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 npx expo prebuild --platform android --clean
+```
+`eas.json` sets it to `1` for the `development` profile only; `preview` and `production` set it to `0` and must use an https `EXPO_PUBLIC_API_URL`. A local `gradlew assembleRelease` for a device that talks to a plain-http backend therefore needs the flag; a Play build must not have it.
+
+## Push notifications (needs one-time setup)
+
+Add the EAS project id (`eas init`, then `EAS_PROJECT_ID=<id>` in the build env, read by `app.config.js` into `extra.eas.projectId`) and an FCM `google-services.json` (`android.googleServicesFile`) uploaded to EAS credentials. Without a project id the app skips push registration silently (console warning). Channels: `default` (high) and `offers` (high, drivers).
+
+## Play Console declarations: background location and foreground service
+
+* **Permissions declaration form**: the app does **not** declare `ACCESS_BACKGROUND_LOCATION`, so the "background location" access form is not required. Driver tracking runs as a foreground service.
+* **Foreground service declaration** (Policy > App content): type **Location**, permission `FOREGROUND_SERVICE_LOCATION`. Core feature: a driver who is online or on a trip shares their position with passengers and dispatch while the app is in the background; the service shows a persistent notification and stops when the driver goes offline. Provide a short screen recording: driver accepts the disclosure, taps Go online, switches to another app, notification visible, taps Go offline, notification disappears.
+* **Prominent disclosure**: shown in the driver Home card before first use (strings `drv.location.*`, `drv.bg.*`, all three languages) with an explicit "I agree" button; the privacy policy must repeat it.
+* **Data safety form**: location (approximate and precise) collected, not sold, used for app functionality; also device push token (device IDs) and crash diagnostics.
 
 ## Permissions requested
 
-`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` (foreground only), `CAMERA` (driver documents), `INTERNET`, `ACCESS_NETWORK_STATE`. Background location and storage permissions are explicitly blocked in `app.json`.
+`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_LOCATION` (driver tracking service), `POST_NOTIFICATIONS`, `CAMERA` (driver documents), `INTERNET`, `ACCESS_NETWORK_STATE`. `ACCESS_BACKGROUND_LOCATION` and storage permissions are explicitly blocked in `app.config.js`.
 
 ## Device test plan (not yet executed)
 

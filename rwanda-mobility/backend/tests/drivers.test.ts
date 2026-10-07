@@ -1,13 +1,13 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { boot, KCC, type Ctx } from './helpers.ts';
+import { boot, makeJpeg, KCC, type Ctx } from './helpers.ts';
 
 let t: Ctx;
 before(async () => { t = await boot('rwanda_mobility_test'); });
 after(async () => { await t.close(); });
 beforeEach(async () => { await t.reset(); });
 
-const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 1)]);
+const JPEG = makeJpeg();
 
 function multipart(fields: Record<string, string>, file: { name: string; data: Buffer; type: string }) {
   const b = '----rm' + Math.random().toString(16).slice(2);

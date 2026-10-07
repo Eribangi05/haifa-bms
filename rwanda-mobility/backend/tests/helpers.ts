@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { randomUUID } from 'node:crypto';
+import { deflateSync, crc32 } from 'node:zlib';
 
 export type Ctx = Awaited<ReturnType<typeof boot>>;
 let counter = 0;
@@ -14,6 +15,7 @@ export async function boot(dbName = 'rwanda_mobility_test') {
   process.env.MOMO_MODE = 'simulator';
   process.env.RATE_LIMIT_MAX = '1000000';
   process.env.AUTH_RATE_MAX = '1000000';
+  for (const k of ['UPLOAD_RATE_MAX', 'BOOKING_RATE_MAX', 'PAYMENT_RATE_MAX', 'ESTIMATE_RATE_MAX', 'CLIENT_ERR_RATE_MAX']) process.env[k] = '1000000';
   process.env.STORAGE_DIR = `/tmp/rm-test-storage-${process.pid}`;
   process.env.DATABASE_URL = `postgres://rm:rm@localhost:5432/${dbName}`;
   const admin = new pg.Client({ connectionString: process.env.DATABASE_URL });
@@ -115,3 +117,18 @@ export async function boot(dbName = 'rwanda_mobility_test') {
   const close = async () => { await app.close(); await db.pool.end(); };
   return { app, api, routes, reset, register, staff, driver, estimate, book, runTrip, db, close, crypto, phone };
 }
+
+/** Minimal but structurally valid files for upload tests (the upload scanner is strict). */
+export function makeJpeg(w = 64, h = 64): Buffer {
+  const seg = (m: number, body: Buffer) => Buffer.concat([Buffer.from([0xff, m, (body.length + 2) >> 8, (body.length + 2) & 255]), body]);
+  const sof = Buffer.from([8, h >> 8, h & 255, w >> 8, w & 255, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1]);
+  const sos = Buffer.from([3, 1, 0, 2, 0x11, 3, 0x11, 0, 63, 0]);
+  return Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe0, Buffer.from('JFIF\0\x01\x01\0\0\x01\0\x01\0\0')), seg(0xc0, sof), seg(0xda, sos), Buffer.alloc(300, 0x11), Buffer.from([0xff, 0xd9])]);
+}
+export function makePng(w = 64, h = 64): Buffer {
+  const chunk = (type: string, data: Buffer) => { const t = Buffer.concat([Buffer.from(type), data]); const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const c = Buffer.alloc(4); c.writeUInt32BE(crc32(t)); return Buffer.concat([len, t, c]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 0;
+  const raw = Buffer.alloc((w + 1) * h); for (let i = 0; i < raw.length; i++) raw[i] = (i * 2654435761) >>> 24;   // incompressible-ish so the file is realistically sized
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+export const makePdf = (extra = '') => Buffer.from(`%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R ${extra}>>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n`);

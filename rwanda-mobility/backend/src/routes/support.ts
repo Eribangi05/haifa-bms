@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
-import { anyAuth, actorOf } from '../guards.js';
+import { anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { notFound, badRequest, conflict } from '../errors.js';
 import { notify } from '../services/notify.js';
@@ -71,7 +71,7 @@ export async function supportRoutes(app: FastifyInstance) {
     await q("update support_cases set updated_at=now(), status = case when status in ('awaiting_user','resolved') then 'open' else status end where id=$1", [id]);
     return { ok: true };
   });
-  app.post('/support/cases/:id/evidence', pre, async (req) => {
+  app.post('/support/cases/:id/evidence', { ...pre, config: routeLimit('UPLOAD_RATE_MAX', 20) }, async (req) => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const c = await q1<any>('select id from support_cases where id=$1 and reporter_id=$2', [id, req.auth!.id]);
     if (!c) throw notFound('case');

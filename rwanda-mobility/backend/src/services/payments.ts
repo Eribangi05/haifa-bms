@@ -5,6 +5,7 @@ import { providerFor, newReference, type ProviderStatus } from '../providers/pay
 import { transition, logEvent, type BookingRow } from './bookingMachine.js';
 import { resolveCommission, calcCommission } from './commission.js';
 import { post } from './ledger.js';
+import { settleDebts } from './debts.js';
 import { notify } from './notify.js';
 import { maskMsisdn } from '../util/money.js';
 import { bps } from '../util/money.js';
@@ -59,7 +60,9 @@ export async function settleBookingPayment(c: PoolClient, bookingId: string, pay
     { account: 'DRIVER_PAYABLE', credit: fleetShare, owner: fleetOwner },
     { account: 'COMMISSION_REVENUE', credit: commission },
     { account: 'TAX_PAYABLE', credit: bd.tax },
+    { account: 'PASSENGER_RECEIVABLE', credit: bd.debt ?? 0, owner: b.passenger_id },   // earlier cancellation fee collected with this fare
   ], { memo: `trip ${b.ref} settlement (${pay.method})`, bookingId: b.id, paymentId: pay.id });
+  await settleDebts(c, b.id, b.passenger_id, bd.debt ?? 0);
   if (pay.fee_amount && pay.fee_amount > 0)
     await post(c, [{ account: 'PROCESSOR_FEES', debit: pay.fee_amount }, { account: 'PROVIDER_CLEARING', credit: pay.fee_amount }], { memo: `processor fee ${b.ref}`, bookingId: b.id, paymentId: pay.id });
   await transition(c, b.id, 'PAYMENT_COMPLETED', { id: null, role: 'system' }, { meta: { payment_id: pay.id, method: pay.method } });

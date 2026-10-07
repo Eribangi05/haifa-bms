@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { q, q1 } from '../db.js';
 import { conflict, notFound } from '../errors.js';
+import { releaseDebts } from './debts.js';
 
 export type Status =
   | 'DRAFT' | 'FARE_ESTIMATED' | 'SCHEDULED' | 'REQUESTED' | 'SEARCHING_DRIVER' | 'DRIVER_ASSIGNED' | 'DRIVER_ARRIVING'
@@ -58,6 +59,8 @@ export async function transition(
   const row = (await q<BookingRow>(`update bookings set ${sets.join(', ')} where id=$1 returning *`, [bookingId, to, ...keys.map((k) => patch[k])], c))[0];
   await q(`insert into booking_events(booking_id,type,from_status,to_status,actor_id,actor_role,reason,meta) values ($1,'status_change',$2,$3,$4,$5,$6,$7)`,
     [bookingId, cur.status, to, actor.id, actor.role, opts.reason ?? null, JSON.stringify(opts.meta ?? {})], c);
+  // a booking that ends unpaid hands any carried cancellation fee back to the passenger's open balance
+  if (CANCELS.includes(to)) await releaseDebts(c, bookingId);
   return row;
 }
 

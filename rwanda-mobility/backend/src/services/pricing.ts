@@ -16,6 +16,7 @@ export type Line = { code: string; label_en: string; label_rw: string; label_fr:
 export type Breakdown = {
   lines: Line[]; subtotal: number; discount: number; tax: number; total: number;
   passthrough: number; commissionable: number; currency: 'RWF'; promo_code?: string;
+  debt?: number;                      // previous cancellation fee carried on top of the fare (not taxed, not driver income)
 };
 export type FareInput = {
   distance_m: number; duration_s: number; airport?: boolean; scheduled?: boolean;
@@ -139,7 +140,7 @@ export function finalizeFare(rule: Rule, quote: Breakdown, adj: { waiting_min: n
   if (quote.discount > 0) lines.push(L('discount', `Promo ${quote.promo_code}`, `Igabanywa ${quote.promo_code}`, `Promo ${quote.promo_code}`, -quote.discount));
   const tax = bps(subtotal - quote.discount, rule.tax_bps);
   if (tax > 0) lines.push(L('tax', 'Tax', 'Umusoro', 'Taxe', tax));
-  return { ...quote, lines, subtotal, tax, passthrough, commissionable: subtotal - passthrough, total: subtotal - quote.discount + tax };
+  return { ...quote, lines, subtotal, tax, passthrough, commissionable: subtotal - passthrough, total: subtotal - quote.discount + tax + (quote.debt ?? 0) };
 }
 
 export async function activeRule(serviceId: string, zoneId: string, at = new Date(), db: Db = pool): Promise<Rule> {

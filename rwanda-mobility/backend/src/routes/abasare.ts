@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { anyAuth, requireRole, requirePerm, actorOf } from '../guards.js';
+import { anyAuth, requireRole, requirePerm, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { badRequest, conflict, notFound } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
@@ -52,7 +52,7 @@ export async function abasareRoutes(app: FastifyInstance) {
   });
 
   // ---- check-in / check-out of the customer's car ----
-  app.post('/bookings/:id/handover/photos', { preHandler: requireRole('driver') }, async (req) => {
+  app.post('/bookings/:id/handover/photos', { config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: requireRole('driver') }, async (req) => {
     const { id } = parse(idp, req.params);
     const { phase: ph } = parse(z.object({ phase }), req.query);
     let buf: Buffer | null = null;
