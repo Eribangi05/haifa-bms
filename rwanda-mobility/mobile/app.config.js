@@ -9,7 +9,7 @@ module.exports = () => ({
     name: 'Abasare',
     slug: 'abasare',
     scheme: 'abasare',
-    version: '0.3.0',
+    version: '0.4.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -17,7 +17,7 @@ module.exports = () => ({
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
     android: {
       package: 'rw.abasare.app',
-      versionCode: 3,
+      versionCode: 4,
       adaptiveIcon: {
         backgroundColor: '#FFFFFF',
         foregroundImage: './assets/android-icon-foreground.png',
