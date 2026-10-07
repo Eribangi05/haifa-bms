@@ -54,3 +54,7 @@
 * No device-attestation or fake-GPS detection beyond plausibility checks (speed, out-of-order, arrival radius).
 * Email addresses are stored but **email verification is not implemented**.
 * Password reset for staff is manual (super admin re-creates the account).
+
+
+## Staff onboarding and MFA
+Staff are created only by invitation: an admin enters name, email and role and receives a one-time link (48 hours, single use, stored hashed). The invitee opens it, chooses their own password and scans their own authenticator QR code, then proves it with a first code. The server never returns the invitee's secret to the inviting admin. A lost authenticator is recovered with the one-time `ADMIN_MFA_RESET_*` variables (see ENVIRONMENT_VARIABLES.md).

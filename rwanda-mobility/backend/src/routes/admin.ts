@@ -393,13 +393,6 @@ export async function adminRoutes(app: FastifyInstance) {
     staff: await q(`select u.id, u.email, u.display_name, u.status, array(select role from user_roles r where r.user_id=u.id) roles from users u where exists (select 1 from user_roles r where r.user_id=u.id and r.role = any($1))`, [STAFF_ROLES]),
     roles: Object.fromEntries(Object.entries(ROLE_PERMISSIONS).filter(([r]) => STAFF_ROLES.includes(r))),
   }));
-  app.post('/admin/staff', { preHandler: requirePerm('users.manage') }, async (req) => {
-    const b = parse(z.object({ email: z.string().email(), name: z.string().min(2).max(80), role: z.enum(STAFF_ROLES as [string, ...string[]]), password: z.string().min(12).max(128) }), req.body);
-    if (b.role === 'super_admin' && !req.auth!.roles.includes('super_admin')) throw forbidden();
-    const s = await createStaff(b.email, b.password, b.role, b.name);
-    await audit(actorOf(req), 'staff.created', 'user', s.id, undefined, { email: b.email, role: b.role });
-    return { id: s.id, totp_secret: s.totpSecret, totp_uri: totpUri(s.totpSecret, b.email), note: 'Shown once. MFA is mandatory for all staff.' };
-  });
   app.post('/admin/staff/:id/sessions/revoke', { preHandler: requirePerm('users.manage') }, async (req) => {
     const { id } = parse(idp, req.params);
     await q('update sessions set revoked_at=now() where user_id=$1 and revoked_at is null', [id]); await audit(actorOf(req), 'staff.sessions_revoked', 'user', id); return { ok: true };

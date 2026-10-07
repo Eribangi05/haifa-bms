@@ -68,7 +68,7 @@ test('every user-facing code thrown by the API has an rw and fr message (admin-o
   const files = ['src/routes', 'src/services'].flatMap((d) => readdirSync(d).map((f) => `${d}/${f}`)).filter((f) => f.endsWith('.ts') && !f.includes('errmsg'));
   const codes = new Set<string>();
   for (const f of files) for (const m of readFileSync(f, 'utf8').matchAll(/(?:badRequest|conflict|AppError\(\d+,)\s*\(?\s*'([a-z_]+)'/g)) codes.add(m[1]);
-  const adminOnly = new Set(['bad_key', 'bad_timestamp', 'code_exists', 'email_in_use', 'fixed_required', 'invalid_clawback', 'invalid_driver_transition', 'invalid_percent', 'percent_required',
+  const adminOnly = new Set(['invite_invalid', 'invite_expired', 'mfa_not_started', 'bad_key', 'bad_timestamp', 'code_exists', 'email_in_use', 'fixed_required', 'invalid_clawback', 'invalid_driver_transition', 'invalid_percent', 'percent_required',
     'polygon_not_closed', 'unknown_setting', 'provider_reference_required', 'resolution_required', 'review_required', 'nothing_to_invoice', 'already_invoiced', 'credit_limit_required', 'forbidden_placeholder']);
   const FULL = { min: 1, max: 2, minutes: 3, years: 4, seconds: 5 };
   const missing = [...codes].filter((c) => !adminOnly.has(c) && localizeError(c, 'rw', 'x', FULL) === GENERIC.rw);

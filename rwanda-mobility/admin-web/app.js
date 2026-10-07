@@ -275,16 +275,50 @@ V.audit = async (el, state = {}) => {
     table([{ h: 'When', f: (l) => when(l.created_at) }, { h: 'Actor', f: (l) => l.actor_name || l.actor_id?.slice(0, 8) || 'system' }, { h: 'Action', k: 'action' }, { h: 'Entity', f: (l) => `${l.entity_type || ''} ${l.entity_id || ''}` }, { h: 'Change', f: (l) => h('code', {}, JSON.stringify(l.after ?? '').slice(0, 120)) }], d.logs));
 };
 V.staff = async (el) => {
-  const d = await api('GET', '/admin/staff');
-  el.append(h('h1', {}, 'Staff & roles'), h('div', { class: 'banner' }, 'Two-factor authentication is mandatory for every staff account.'), table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Roles', f: (s) => s.roles.join(', ') }, { h: 'Status', k: 'status' }, { h: '', f: (s) => h('button', { class: 'b sec', onclick: async () => { const a = await ask('Sign this person out everywhere?', { danger: true }); if (a) act(() => api('POST', `/admin/staff/${s.id}/sessions/revoke`)); } }, 'Revoke sessions') }], d.staff),
-    h('button', { class: 'b', onclick: async () => { const a = await ask('Create staff account', { fields: [{ name: 'name', label: 'Full name' }, { name: 'email', label: 'Email' }, { name: 'role', label: 'role', type: 'select', options: Object.keys(d.roles) }, { name: 'password', label: 'Temporary password (12+ chars)' }] }); if (a) { delete a.reason; act(async () => { const r = await api('POST', '/admin/staff', a); alert('Give this to the new staff member NOW (shown once):\n\nTOTP secret: ' + r.totp_secret + '\n' + r.totp_uri); }, () => go('staff')); } } }, 'Add staff member'),
+  const d = await api('GET', '/admin/staff'); d.invites = (await api('GET', '/admin/staff/invites')).invites;
+  el.append(h('h1', {}, 'Staff & roles'), h('div', { class: 'banner' }, 'Two-factor authentication is mandatory. New staff are invited by a one-time link: they choose their own password and scan their own authenticator QR code. You never see their secret.'), table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Roles', f: (s) => s.roles.join(', ') }, { h: 'Status', k: 'status' }, { h: '', f: (s) => h('button', { class: 'b sec', onclick: async () => { const a = await ask('Sign this person out everywhere?', { danger: true }); if (a) act(() => api('POST', `/admin/staff/${s.id}/sessions/revoke`)); } }, 'Revoke sessions') }], d.staff),
+    h('button', { class: 'b', onclick: async () => { const a = await ask('Invite a staff member', { confirmText: 'Create invitation', fields: [{ name: 'name', label: 'Full name' }, { name: 'email', label: 'Email' }, { name: 'role', label: 'role', type: 'select', options: Object.keys(d.roles) }] }); if (a) { delete a.reason; try { const r = await api('POST', '/admin/staff/invites', a); showInvite(r, a.email); } catch (e) { toast(e.message, true); } } } }, 'Invite staff member'),
+    h('h2', {}, 'Pending invitations'), inviteTable(d.invites, () => go('staff')),
     h('h2', {}, 'Role permissions'), table([{ h: 'Role', k: 'r' }, { h: 'Permissions', f: (x) => x.p.join(', ') }], Object.entries(d.roles).map(([r, p]) => ({ r, p }))));
 };
+
+
+function showInvite(r, email) {
+  const d = h('dialog', {}); const link = h('input', { readonly: true, value: r.invite_url, style: 'width:100%;margin:6px 0' });
+  d.append(h('h2', {}, 'Invitation created'), h('p', {}, 'Send this link ONLY to ' + email + ' (it works once and expires ' + new Date(r.expires_at).toLocaleString() + '). They will set their own password and scan their own authenticator QR code. You will not see their secret.'), link,
+    h('div', { class: 'row' }, h('button', { class: 'b', onclick: async () => { try { await navigator.clipboard.writeText(r.invite_url); toast('Link copied'); } catch { link.select(); toast('Select and copy the link'); } } }, 'Copy link'), h('button', { class: 'b sec', onclick: () => { d.close(); d.remove(); go('staff'); } }, 'Close')));
+  document.body.append(d); d.showModal(); link.select();
+}
+function inviteTable(rows, reload) {
+  if (!rows.length) return h('div', { style: 'color:var(--mut)' }, 'No pending invitations.');
+  return table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Role', k: 'role' }, { h: 'Expires', f: (x) => new Date(x.expires_at).toLocaleString() },
+    { h: '', f: (x) => h('button', { class: 'b sec', onclick: () => act(() => api('DELETE', '/admin/staff/invites/' + x.id), reload) }, 'Revoke') }], rows);
+}
+// ---- invitee: activate account (public page opened from the invite link) ----
+async function activationView(root, token) {
+  const pub = async (m, p, body) => { const r = await fetch(API + p, { method: m, headers: { 'content-type': 'application/json' }, body: m === 'POST' ? JSON.stringify(body || {}) : undefined }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error?.message || 'Request failed'); return j; };
+  const card = h('div', { class: 'card login' }); root.append(card);
+  let info; try { info = await pub('GET', '/staff-invite/' + token); } catch (e) { card.append(h('h1', {}, 'Invitation'), h('div', { class: 'err' }, e.message + '. Ask your administrator for a new invitation.')); return; }
+  const err = h('div', { class: 'err' });
+  const step1 = () => { card.replaceChildren(h('h1', {}, 'Welcome, ' + info.name), h('p', {}, 'You were invited as ' + info.role.replace(/_/g, ' ') + ' (' + info.email + '). Next you will set up two-factor authentication on your own phone.'), err,
+    h('button', { class: 'b', style: 'width:100%', onclick: begin }, 'Start setup')); };
+  const begin = async () => { err.textContent = ''; try { const b = await pub('POST', '/staff-invite/' + token + '/begin'); step2(b); } catch (e) { err.textContent = e.message; } };
+  const step2 = (b) => {
+    const pw = h('input', { type: 'password', placeholder: 'Choose a password (12+ characters)', autocomplete: 'new-password' }), pw2 = h('input', { type: 'password', placeholder: 'Repeat the password', autocomplete: 'new-password' }), code = h('input', { placeholder: '6-digit code from the app', inputmode: 'numeric', maxlength: 6 });
+    const qr = h('img', { alt: 'Authenticator QR code', src: 'data:image/svg+xml;utf8,' + encodeURIComponent(b.qr_svg), style: 'width:220px;height:220px;display:block;margin:8px auto;background:#fff' });
+    card.replaceChildren(h('h1', {}, 'Set up your authenticator'), h('p', {}, '1. Open Google Authenticator or Microsoft Authenticator on your phone and scan this QR code.'), qr,
+      h('details', {}, h('summary', {}, 'Cannot scan? Enter the key by hand'), h('code', { style: 'word-break:break-all;display:block;margin:6px 0' }, b.secret)),
+      h('p', {}, '2. Choose your password and type the 6-digit code shown in the app.'), pw, pw2, code, err,
+      h('button', { class: 'b', style: 'width:100%', onclick: async () => { err.textContent = ''; if (pw.value !== pw2.value) { err.textContent = 'The passwords do not match.'; return; } try { await pub('POST', '/staff-invite/' + token + '/activate', { password: pw.value, code: code.value.trim() }); history.replaceState(null, '', location.pathname); card.replaceChildren(h('h1', {}, 'All set'), h('p', {}, 'Your account is active. Sign in with your email, your password and the code from your authenticator app.'), h('button', { class: 'b', style: 'width:100%', onclick: () => render() }, 'Go to sign in')); } catch (e) { err.textContent = e.message; } } }, 'Activate my account'));
+  };
+  step1();
+}
 
 // ---------------- shell ----------------
 function go(tab) { S.tab = tab; render(); }
 async function render() {
   const root = $('#app'); root.replaceChildren();
+  const m = /^#activate=(.+)$/.exec(location.hash); if (m && !S.access) return activationView(root, m[1]);
   if (!S.access) return loginView(root);
   const tabs = TABS.filter(([, , need]) => !need.length ? can() : can(...need));
   const view = h('main', { id: 'view' });
@@ -295,6 +329,6 @@ function loginView(root) {
   const email = h('input', { type: 'email', placeholder: 'Email', autocomplete: 'username' }), pw = h('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' }), totp = h('input', { placeholder: '6-digit authenticator code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' }), err = h('div', { class: 'err' });
   const submit = async () => { err.textContent = ''; try { const r = await fetch(API + '/auth/staff/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pw.value, totp: totp.value }) }); const j = await r.json(); if (!r.ok) throw new Error(j.error?.message || 'Sign-in failed'); save(j); S.tab = 'dashboard'; render(); } catch (e) { err.textContent = e.message; } };
   totp.addEventListener('keydown', (e) => e.key === 'Enter' && submit());
-  root.append(h('div', { class: 'card login' }, h('h1', {}, 'Rwanda Mobility · Staff sign-in'), email, pw, totp, err, h('button', { class: 'b', style: 'width:100%', onclick: submit }, 'Sign in'), h('p', { style: 'color:var(--mut)' }, 'Staff accounts require two-factor authentication.')));
+  root.append(h('div', { class: 'card login' }, h('h1', {}, 'Abasare · Staff sign-in'), email, pw, totp, err, h('button', { class: 'b', style: 'width:100%', onclick: submit }, 'Sign in'), h('p', { style: 'color:var(--mut)' }, 'Staff accounts require two-factor authentication.')));
 }
 render();

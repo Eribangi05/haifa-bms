@@ -224,8 +224,10 @@
 | GET | `/admin/settings` |
 | PUT | `/admin/settings/:key` |
 | GET | `/admin/staff` |
-| POST | `/admin/staff` |
 | POST | `/admin/staff/:id/sessions/revoke` |
+| GET | `/admin/staff/invites` |
+| POST | `/admin/staff/invites` |
+| DELETE | `/admin/staff/invites/:id` |
 | GET | `/admin/support/cases` |
 | GET | `/admin/support/cases/:id` |
 | POST | `/admin/support/cases/:id/update` |
