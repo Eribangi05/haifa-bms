@@ -13,6 +13,7 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `FILE_SIGNING_SECRET` | prod | dev value | Signs 5-minute document links. |
 | `PUBLIC_BASE_URL` | yes | `http://localhost:8080` | Used to build public trip-share links. |
 | `SMS_PROVIDER` | prod | `console` | `console` only logs (**SIMULATED**); `http` posts `{to,text}` to `SMS_HTTP_URL` with `Bearer SMS_HTTP_TOKEN` (adapt to your aggregator's format in `providers/sms.ts`). |
+| `APP_ENV` | no | | Set `staging` on a test deployment to allow `OTP_DEV_ECHO=true` there (the code is returned in the API response and shown in the app). Never set on production. |
 | `SMS_HTTP_URL`, `SMS_HTTP_TOKEN` | if `http` | | SMS gateway endpoint and token. |
 | `OTP_DEV_ECHO` | never in prod | `false` | `true` returns the OTP in the API response for testing. Ignored when `NODE_ENV=production`. |
 | `MOMO_MODE` | yes | `simulator` | `simulator` (local fake, **no real money**), `sandbox` (MTN sandbox), `live`. |

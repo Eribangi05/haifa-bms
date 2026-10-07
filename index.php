@@ -1,10 +1,10 @@
 <?php
 // ==================== DATABASE CONFIGURATION ====================
-$db_host = 'sql.freedb.tech';
+$db_host = getenv('DB_HOST') ?: 'localhost';
 $db_port = '3306';                     // default MySQL port
-$db_name = 'freedb_gRE2FJkn';
-$db_user = 'u_HC79Cw';
-$db_pass = '7AqQbrKMglhJ';            // 👈 REPLACE with the actual password from FreeDB
+$db_name = getenv('DB_NAME') ?: '';
+$db_user = getenv('DB_USER') ?: '';
+$db_pass = getenv('DB_PASS') ?: '';   // set in the host's environment, never in code
 
 $db_port = '3306';
 
