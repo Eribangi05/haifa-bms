@@ -1,9 +1,16 @@
 # Abasare test build: guide for testers
 
-**Build:** Abasare 0.4.0 (Android 7 or newer, works on 32-bit and 64-bit phones). **Server:** staging only, so **no real money moves and no real SMS is sent**.
+**Build:** Abasare 0.5.0 (Android 7 or newer, works on 32-bit and 64-bit phones). **Server:** staging only, so **no real money moves and no real SMS is sent**.
+
+## If the file came in two parts (`.part00` and `.part01`)
+Put both parts in one folder on a computer and join them, then copy the joined `.apk` to the phone:
+- **Windows (Command Prompt, in that folder):** `copy /b Abasare-0.5.0-arm64-v8a.apk.part00 + Abasare-0.5.0-arm64-v8a.apk.part01 Abasare-0.5.0-arm64-v8a.apk`
+- **Mac / Linux:** `cat Abasare-0.5.0-arm64-v8a.apk.part0* > Abasare-0.5.0-arm64-v8a.apk`
+- Check it with `SHA256.txt` (Windows: `certutil -hashfile Abasare-0.5.0-arm64-v8a.apk SHA256`); the values must match.
+(The same steps apply to the `armeabi-v7a` file.)
 
 ## Install (2 minutes)
-**Which file?** Most phones from the last ~6 years: `Abasare-0.4.0-arm64-v8a.apk`. Older or very cheap phones (32-bit): `Abasare-0.4.0-armeabi-v7a.apk`. If one says "app not installed" or crashes on start, try the other.
+**Which file?** Most phones from the last ~6 years: `Abasare-0.5.0-arm64-v8a.apk`. Older or very cheap phones (32-bit): `Abasare-0.5.0-armeabi-v7a.apk`. If one says "app not installed" or crashes on start, try the other.
 
 1. Copy the right `.apk` to the phone (WhatsApp, Bluetooth, USB cable or Google Drive link).
 2. Tap the file. If Android says "install blocked", tap **Settings** and allow **Install unknown apps** for the app you opened the file from (Files, WhatsApp or Chrome), then go back and tap **Install**.
@@ -17,6 +24,7 @@
 ## What to try
 - **Passenger:** book a moto, watch the status steps, check the price breakdown, cancel a trip, try SOS (it only records an alert in this build).
 - **Pay:** cash, or MTN Mobile Money using MTN's **sandbox** test number only (ask the project owner for it). Amounts may show in EUR because the sandbox only accepts EUR.
+- **Scan a code:** tap **Scan a code** on the home screen and scan a venue QR code (the project owner prints these from the admin console), or type the code. The venue becomes your pickup point.
 - **Abasare:** add your car (Profile → My cars), book "Drive me home" or "By the hour", and review the car check photos.
 - **Driver:** Profile → Start driver application. The project owner approves it in the admin console, then Go online.
 - Switch language in Profile and make sure the screens never mix two languages.
