@@ -18,7 +18,14 @@ services:
       - { key: NODE_ENV, value: production }
       - { key: APP_ENV, value: staging }
       - { key: OTP_DEV_ECHO, value: "true" }     # STAGING ONLY: shows the OTP in the app because no SMS gateway is connected yet
-      - { key: MOMO_MODE, value: simulator }     # payments are simulated until MTN credentials exist
+      - { key: MOMO_MODE, value: sandbox }       # MTN sandbox (fake money, EUR only). Set back to simulator to go fully local-simulated
+      - { key: MOMO_TARGET_ENV, value: sandbox }
+      - { key: MOMO_CURRENCY, value: EUR }       # MTN sandbox accepts EUR only; use RWF for live
+      - { key: MOMO_CALLBACK_URL, value: "https://abasare-api.onrender.com/api/v1/webhooks/payments/mtn_momo" }
+      - { key: MOMO_SUBSCRIPTION_KEY, sync: false }   # secrets: you type these in the Render dashboard, never in git
+      - { key: MOMO_API_USER, sync: false }
+      - { key: MOMO_API_KEY, sync: false }
+      - { key: MOMO_CALLBACK_TOKEN, sync: false }
       - { key: SMS_PROVIDER, value: console }
       - { key: PUSH_PROVIDER, value: none }
       - { key: JWT_SECRET, generateValue: true }
