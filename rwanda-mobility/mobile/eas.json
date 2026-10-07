@@ -20,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://smart-school-cloud-sync.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://abasare-api.onrender.com",
         "EXPO_PUBLIC_ALLOW_CLEARTEXT": "0"
       }
     },
