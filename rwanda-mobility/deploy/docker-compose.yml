@@ -1,0 +1,29 @@
+# Single-host production-style stack: API + PostgreSQL + Caddy (automatic HTTPS).
+# 1) cp deploy/.env.example deploy/.env and fill EVERY value (generate secrets with: openssl rand -base64 32)
+# 2) docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+# 3) docker compose -f deploy/docker-compose.yml exec api npx tsx src/migrate.ts && ... exec api npx tsx src/seed.ts   (first run only)
+# Back up the `pgdata` volume (pg_dump nightly to off-host storage) and test a restore before launch.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment: { POSTGRES_USER: rm, POSTGRES_PASSWORD: "${DB_PASSWORD:?set DB_PASSWORD}", POSTGRES_DB: rwanda_mobility }
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U rm -d rwanda_mobility"], interval: 10s, retries: 6 }
+  api:
+    build: { context: .., dockerfile: backend/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      DATABASE_URL: "postgres://rm:${DB_PASSWORD}@db:5432/rwanda_mobility"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data"]
+    environment: { API_DOMAIN: "${API_DOMAIN:?set API_DOMAIN}" }
+    depends_on: [api]
+volumes: { pgdata: {}, caddy_data: {} }
