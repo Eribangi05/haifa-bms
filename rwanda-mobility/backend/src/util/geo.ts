@@ -18,5 +18,3 @@ export function pointInPolygon(p: LatLng, ring: [number, number][]): boolean {
   return inside;
 }
 
-export const validLatLng = (lat: unknown, lng: unknown) =>
-  typeof lat === 'number' && typeof lng === 'number' && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;

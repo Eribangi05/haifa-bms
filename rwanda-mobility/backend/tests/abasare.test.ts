@@ -311,5 +311,5 @@ test('handover photos are purged after the retention period, unless a dispute is
   await t.db.q("update support_cases set status='closed' where ref='CS-KEEP'");
   assert.equal(await purgeHandoverPhotos(), 2);
   assert.equal((await t.db.q<any>('select 1 from handover_photos where booking_id=$1', [bid])).length, 0);
-  await assert.rejects(() => readFileByKey(keys[0]), /ENOENT/);
+  await assert.rejects(() => readFileByKey(keys[0]), /file not found/);
 });

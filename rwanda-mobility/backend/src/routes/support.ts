@@ -1,15 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
-import { anyAuth, actorOf, routeLimit } from '../guards.js';
+import { anyAuth, routeLimit } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { notFound, badRequest, conflict } from '../errors.js';
 import { notify } from '../services/notify.js';
 import { saveFile } from '../services/storage.js';
 import { getSetting } from '../services/settings.js';
 import { sms } from '../providers/sms.js';
+import { pickLang } from '../services/errmsg.js';
 import { randomBytes } from 'node:crypto';
-import { sharedView } from '../services/bookings.js';
 
 const refOf = (p: string) => p + '-' + randomBytes(4).toString('hex').toUpperCase();
 const PRIORITY: Record<string, [string, number, boolean]> = {   // priority, SLA hours, sensitive
@@ -39,7 +39,7 @@ export async function supportRoutes(app: FastifyInstance) {
   const pre = { preHandler: anyAuth };
   app.get('/support/faq', async () => ({ faq: FAQ }));
 
-  app.post('/support/cases', pre, async (req) => {
+  app.post('/support/cases', { ...pre, config: routeLimit('CASE_RATE_MAX', 10) }, async (req) => {
     const b = parse(z.object({ category: z.enum(Object.keys(PRIORITY) as [string, ...string[]]), subject: z.string().min(3).max(140), body: z.string().min(3).max(2000), booking_id: z.string().uuid().optional() }), req.body);
     if (b.booking_id) {
       const own = await q1('select 1 from bookings where id=$1 and (passenger_id=$2 or driver_id=$2)', [b.booking_id, req.auth!.id]);
@@ -62,7 +62,7 @@ export async function supportRoutes(app: FastifyInstance) {
     const events = await q("select id, author_id, kind, body, created_at from case_events where case_id=$1 and visibility='public' order by id", [id]);   // internal notes never leave staff tools
     return { ...c, events };
   });
-  app.post('/support/cases/:id/messages', pre, async (req) => {
+  app.post('/support/cases/:id/messages', { ...pre, config: routeLimit('CASE_RATE_MAX', 10) }, async (req) => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const b = parse(z.object({ body: z.string().min(1).max(2000) }), req.body);
     const c = await q1<any>('select status from support_cases where id=$1 and reporter_id=$2', [id, req.auth!.id]);
@@ -75,6 +75,8 @@ export async function supportRoutes(app: FastifyInstance) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const c = await q1<any>('select id from support_cases where id=$1 and reporter_id=$2', [id, req.auth!.id]);
     if (!c) throw notFound('case');
+    const have = await q1<{ n: number }>("select count(*)::int n from case_events where case_id=$1 and kind='evidence'", [id]);
+    if (have!.n >= 20) throw conflict('limit', 'Too many attachments on this case');
     let buf: Buffer | null = null;
     for await (const p of req.parts({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } })) if (p.type === 'file') buf = await p.toBuffer();
     if (!buf) throw badRequest('file_required');
@@ -91,7 +93,7 @@ export async function supportRoutes(app: FastifyInstance) {
   });
 
   // ---- safety ----
-  app.post('/safety/sos', pre, async (req) => {
+  app.post('/safety/sos', { ...pre, config: routeLimit('SOS_RATE_MAX', 6) }, async (req) => {
     const b = parse(z.object({ booking_id: z.string().uuid().optional(), lat: lat.optional(), lng: lng.optional() }), req.body);
     let loc = { lat: b.lat ?? null, lng: b.lng ?? null };
     if (b.booking_id) {
@@ -116,12 +118,15 @@ export async function supportRoutes(app: FastifyInstance) {
     return {
       incident: inc.ref, recorded: true, location_recorded: loc.lat != null,
       escalation_sms_sent_to_contacts: alerted, human_response_confirmed: false,
-      message: 'Your SOS is recorded. No one has confirmed contact yet. If you are in danger call 112 (police) or 912 (ambulance) now.',
+      message: pickLang(req, {
+        en: 'Your SOS is recorded. No one has confirmed contact yet. If you are in danger call 112 (police) or 912 (ambulance) now.',
+        fr: 'Votre SOS est enregistré. Personne n\'a encore confirmé vous avoir contacté. Si vous êtes en danger, appelez dès maintenant le 112 (police) ou le 912 (ambulance).',
+        rw: 'SOS yawe yanditswe. Nta muntu uremeza ko yakuvugishije. Niba uri mu kaga, hamagara ubu 112 (Polisi) cyangwa 912 (ambulance).' }),
       emergency_numbers: { police: '112', ambulance: '912', traffic_police: '113' },
     };
   });
 
-  app.post('/safety/incidents', pre, async (req) => {
+  app.post('/safety/incidents', { ...pre, config: routeLimit('CASE_RATE_MAX', 10) }, async (req) => {
     const b = parse(z.object({ kind: z.enum(['accident', 'harassment', 'misconduct', 'lost_property', 'other']), booking_id: z.string().uuid().optional(), description: z.string().min(5).max(2000), lat: lat.optional(), lng: lng.optional() }), req.body);
     if (b.booking_id) {
       const own = await q1('select 1 from bookings where id=$1 and (passenger_id=$2 or driver_id=$2)', [b.booking_id, req.auth!.id]);

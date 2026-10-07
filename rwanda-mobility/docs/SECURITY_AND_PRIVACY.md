@@ -16,7 +16,7 @@
 | Data at rest | National ID, emergency contact, MFA secrets AES-256-GCM encrypted; passwords scrypt; OTPs, refresh tokens hashed; PINs derived (never stored) | `util/crypto.ts` |
 | Money integrity | Integer RWF; balanced immutable ledger; idempotent payments; provider-verified status | `finance.test.ts`, `journey.test.ts` |
 | Audit | Append-only `audit_logs` (DB trigger blocks UPDATE/DELETE); admin reads of driver/user/case records are themselves audited; exports audited | `security.test.ts` |
-| Transport | HSTS in production; `nosniff`, `no-referrer`, `X-Frame-Options`; `Cache-Control: no-store` on API; admin console CSP | `app.ts` |
+| Transport | HSTS in production; `nosniff`, `no-referrer`, `X-Frame-Options`; `Cache-Control: no-store` on API; admin console CSP (a `<meta>` tag in `admin-web/index.html`: scripts from this origin only, map tiles from OpenStreetMap only; framing is blocked by the `X-Frame-Options: DENY` response header) | `app.ts`, `admin-web/index.html` |
 | Abuse | Global per-IP rate limit; stricter per-route limits on OTP, client-error reports, uploads, bookings, payments and estimates (per user where signed in); CSV formula-injection neutralised; generic 500s with a request id (no stack traces) | `security.test.ts` |
 | Safety | Trip PIN (derived, 5 attempts then lock, logged override only), live-share links (random, expiring, revocable, no phone numbers), SOS records and never claims an agency was contacted, safety blocks removed from dispatch | `journey.test.ts`, `security.test.ts` |
 
@@ -49,7 +49,7 @@
 
 * Client error reports are scrubbed with pattern matching (tokens, JWTs, phone numbers, e-mail, long numbers); patterns can miss unusual personal data, so treat the table as sensitive and keep the short retention.
 * Push payloads carry the notification title/body (trip references, driver first name and plate): they pass through the push provider and the OS notification tray; users can switch push off (`notif_prefs.push`) except for critical safety/trip events.
-* Staff tokens are held in `sessionStorage` in the console; a strict CSP is set but XSS would be impactful: keep third-party scripts minimal (Leaflet is the only one) or self-host it.
+* Staff tokens are held in `sessionStorage` in the console; a strict CSP is set but XSS would be impactful: the console loads no third-party script (Leaflet is vendored in `admin-web/vendor/leaflet`, with its licence) and a CSP limits scripts to the same origin, but the CSP allows inline *styles* (the map library needs them). The access token lives only for the browser tab; closing the tab signs the person out. The console never shows another person's authenticator secret.
 * OTP SMS pumping protection is rate-based only; add provider-side spend caps.
 * No device-attestation or fake-GPS detection beyond plausibility checks (speed, out-of-order, arrival radius).
 * Email addresses are stored but **email verification is not implemented**.

@@ -1,4 +1,4 @@
-import { q, q1, tx, pool } from '../db.js';
+import { q, q1, tx } from '../db.js';
 import { config } from '../config.js';
 import { getSetting } from './settings.js';
 import { hmac, randomDigits, randomToken, safeEqual, sha256, verifyPassword, decrypt, verifyTotp } from '../util/crypto.js';
@@ -40,8 +40,9 @@ export async function verifyOtp(phone: string, code: string, dev: Device, sign: 
   const ch = await q1<any>(
     `select * from otp_challenges where phone=$1 and consumed_at is null and expires_at > now() order by created_at desc limit 1`, [phone]);
   if (!ch) throw badRequest('otp_invalid', 'Code expired or not requested');
-  if (ch.attempts >= maxAttempts) throw tooMany('Too many wrong attempts. Request a new code.');
-  await q('update otp_challenges set attempts = attempts + 1 where id=$1', [ch.id]);
+  // Atomic: parallel guesses cannot slip past the attempt cap between the check and the increment.
+  const bumped = await q('update otp_challenges set attempts = attempts + 1 where id=$1 and attempts < $2 returning id', [ch.id, maxAttempts]);
+  if (!bumped.length) throw tooMany('Too many wrong attempts. Request a new code.');
   if (!safeEqual(ch.code_hash, hmac(config.jwtSecret, `${phone}:${code}`))) throw badRequest('otp_invalid', 'Wrong code');
   const used = await q('update otp_challenges set consumed_at=now() where id=$1 and consumed_at is null returning id', [ch.id]);
   if (!used.length) throw badRequest('otp_invalid', 'Code already used');
@@ -104,7 +105,9 @@ export async function refresh(token: string, dev: Device, sign: Sign): Promise<T
   if (new Date(s.expires_at) < new Date()) throw unauthorized('session expired');
   const u = await q1<any>('select status from users where id=$1', [s.user_id]);
   if (!u || ['deactivated', 'deleted', 'restricted'].includes(u.status)) throw forbidden('Account is not active');
-  await q('update sessions set revoked_at=now() where id=$1', [s.id]);
+  // Rotation is single-use even under a race: of two parallel refreshes with the same token only one may win.
+  const won = await q('update sessions set revoked_at=now() where id=$1 and revoked_at is null returning id', [s.id]);
+  if (!won.length) throw unauthorized('session revoked');
   return issueSession(s.user_id, { id: s.device_id, name: s.device_name, ip: dev.ip }, sign, s.privileged);
 }
 

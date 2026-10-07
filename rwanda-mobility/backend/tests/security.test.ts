@@ -1,7 +1,7 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { boot, KCC, KIMIRONKO, type Ctx } from './helpers.ts';
+import { boot, type Ctx } from './helpers.ts';
 
 let t: Ctx;
 before(async () => { t = await boot('rwanda_mobility_test'); });

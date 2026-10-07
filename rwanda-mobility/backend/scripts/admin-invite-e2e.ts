@@ -34,6 +34,6 @@ try {
   await B.getByText('All set').waitFor(); ok('invitee activated');
   await B.getByRole('button', { name: 'Go to sign in' }).click();
   await B.getByPlaceholder('Email').fill(invitee); await B.getByPlaceholder('Password').fill(newPw); await B.getByPlaceholder('6-digit authenticator code').fill(totpAt(secret));
-  await B.getByRole('button', { name: 'Sign in' }).click(); await B.getByRole('button', { name: 'Drivers' }).waitFor({ timeout: 15000 }); ok('invitee signed in with own password + own authenticator');
+  await B.getByRole('button', { name: 'Sign in' }).click(); await B.getByRole('heading', { name: 'Drivers' }).waitFor({ timeout: 15000 }); ok('invitee signed in with own password + own authenticator');
 } catch (e: any) { failed = true; console.log('FAIL', e.message.split('\n')[0]); }
 await br.close(); await pool.end(); process.exit(failed ? 1 : 0);

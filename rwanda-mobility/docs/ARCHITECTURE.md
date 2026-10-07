@@ -116,7 +116,7 @@ A driver's **eligible payout** = `DRIVER_PAYABLE - CASH_WITH_DRIVERS` (floored a
 - **Settings metadata.** `services/settingsMeta.ts` maps every `SETTING_DEFAULTS` key to label, description, unit, range, type and group; `GET /admin/settings` returns `items[]` (value, default, is_default, last change from `audit_logs`), `PUT` validates against the metadata, `DELETE /admin/settings/:key` resets to default (`setting.reset` audit). Keys that exist only in `system_settings` (legacy) are shown and editable under **Advanced**, with no range check; brand-new keys are still rejected.
 - **Promotion audiences.** `promotions.segment` (`all|first_ride|corporate|referred|phones`) and `segment_phones`; enforced in `checkPromo` at quote and again at booking commit.
 - **Services.** `PATCH /admin/services/:id` also renames (en/rw/fr); `PUT /admin/services/:id/zones/:zone` toggles `zone_services` (needs an active price for the zone).
-- The console screens for these live in `admin-web/business.js`.
+- The console screens for these live in `admin-web/business.js` (see "Operations console" below).
 
 ## Request codes
 
@@ -137,3 +137,18 @@ The app is trilingual: Kinyarwanda (`rw`, default), French (`fr`) and English (`
 - Catalogue data: `name_rw/name_fr/name_en` (+ descriptions) on `service_categories`, `name_*` on `places`; fare lines carry `label_en/label_rw/label_fr`; FAQ entries `q_*/a_*`.
 
 Adding a language (say `xx`): add it to `SUPPORTED_LANGS`, the `Lang` unions, the zod enums (`routes/auth.ts`, `routes/catalog.ts`, `routes/me.ts`) and `/config` `languages`; add an `xx` entry to every template, `VALUE_LABELS`, the error table, `Line` labels in `services/pricing.ts` and the FAQ; add `name_xx`/`description_xx` columns in a migration (with backfill) and seed data; extend `tests/i18n.test.ts`. The mobile app keeps its own locale files in `mobile/src/lib/locales`.
+
+## Operations console (`admin-web/`)
+
+Framework-free JavaScript served by the API as static files at `/admin/` (no build step; classic scripts loaded in this order by `index.html`):
+
+| File | Role |
+|---|---|
+| `core.js` | DOM builder, API client (token refresh, one expiry path to the sign-in page, friendly 403/network errors), role-to-permission mirror, dialogs with field validation, sortable/filterable/paged tables with CSV, KPI cards and inline-SVG sparklines |
+| `views-ops.js` | Overview, Live map, Bookings, Drivers, Abasare, Passengers, Support, Safety |
+| `views-admin.js` | Request codes, Finance (sub-pages), Business and fleets, Privacy, Audit log, Staff, staff-invite activation page |
+| `business.js` | Pricing editor, Settings, Promotions, Services |
+| `app.js` | Shell: sign-in, role-based menu, `#/page` routing, theme, loading and error states |
+| `vendor/leaflet/` | Self-hosted Leaflet 1.9.4 (BSD-2 licence included) |
+
+A view is `V.name = async (el, state) => {...}`; it may return a function that runs after the page is shown (the map uses this). The menu is built from permissions, not hard-coded role names: `ROLE_PERMISSIONS` in `core.js` mirrors `backend/src/rbac.ts` and `scripts/admin-console-e2e.ts` fails if they drift. The API remains the authority: every call is re-checked server side, the console only avoids showing pages and buttons that would answer 403. Constraints worth knowing: list endpoints return at most 200 rows and have no offset, so the console pages through what it received and says when the limit was reached; the dashboard trend lines call `/admin/dashboard` once per day for seven days (3 at a time) because the API has no time-series endpoint.

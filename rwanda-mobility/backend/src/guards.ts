@@ -23,7 +23,6 @@ export const requirePerm = (perm: string) => async (req: FastifyRequest, reply: 
   if (!isStaff(req.auth!.roles) || !can(req.auth!.roles, perm)) throw forbidden(`missing permission ${perm}`);
 };
 export const anyAuth = authenticate;
-export const clientIp = (req: FastifyRequest) => req.ip;
 export const actorOf = (req: FastifyRequest) => ({ id: req.auth!.id, role: req.auth!.roles[0], ip: req.ip });
 
 /**

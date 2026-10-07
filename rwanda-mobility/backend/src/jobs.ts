@@ -3,37 +3,100 @@ import { sweepPendingPayments } from './services/payments.js';
 import { flushSms } from './services/notify.js';
 import { flushPush, checkPushReceipts } from './services/push.js';
 import { expiryReminders, refreshEligibility } from './services/drivers.js';
-import { q } from './db.js';
+import { q, pool } from './db.js';
 import { getSetting } from './services/settings.js';
 import { deleteFileByKey } from './services/storage.js';
 
-/** In-process scheduler (single instance). For multi-instance deployments run jobs on one worker or use pg-boss; every job is idempotent. */
+/** Last-run bookkeeping for every job, exposed through /ready and the system-health endpoint. */
+type JobState = { runs: number; failures: number; last_start: number | null; last_ok: number | null; last_error: string | null; running: boolean; every_ms: number };
+const jobState = new Map<string, JobState>();
+let jobsStarted = false;
+
+export function jobHealth() {
+  const now = Date.now();
+  return {
+    started: jobsStarted,
+    jobs: Object.fromEntries([...jobState].map(([name, j]) => [name, {
+      runs: j.runs, failures: j.failures, running: j.running, last_error: j.last_error,
+      last_ok_age_s: j.last_ok ? Math.round((now - j.last_ok) / 1000) : null,
+      // a job is stale when it has not succeeded for 10 intervals (and at least 2 minutes); the first run gets that long to complete too
+      stale: now - (j.last_ok ?? startedAt) > Math.max(120_000, j.every_ms * 10),
+    }])),
+  };
+}
+let startedAt = Date.now();
+
+/**
+ * Runs `fn` under a cluster-wide advisory lock so that two API instances never run the same job at once
+ * (SMS and push flushing would otherwise double-send). Returns false when another instance holds the lock.
+ */
+async function withJobLock<T>(name: string, fn: () => Promise<T>): Promise<{ ran: boolean }> {
+  const c = await pool.connect();
+  try {
+    const got = (await c.query('select pg_try_advisory_lock(hashtext($1)) ok', [`job:${name}`])).rows[0].ok;
+    if (!got) return { ran: false };
+    try { await fn(); } finally { await c.query('select pg_advisory_unlock(hashtext($1))', [`job:${name}`]).catch(() => {}); }
+    return { ran: true };
+  } finally { c.release(); }
+}
+
+/**
+ * In-process scheduler. Each job never overlaps itself (a slow run skips the next tick), takes a cluster-wide lock, and records its health.
+ * Every job is idempotent, so a missed or repeated tick is harmless.
+ */
 export function startJobs(log: (m: string) => void = console.log) {
-  const guard = (name: string, fn: () => Promise<unknown>) => async () => { try { await fn(); } catch (e: any) { log(`job ${name} failed: ${e.message}`); } };
-  const timers = [
-    setInterval(guard('dispatch', dispatchSweep), 3_000),
-    setInterval(guard('payments', sweepPendingPayments), 30_000),
-    setInterval(guard('sms', () => flushSms()), 5_000),
-    setInterval(guard('push', () => flushPush()), 3_000),
-    setInterval(guard('push-receipts', () => checkPushReceipts()), 60_000),
-    setInterval(guard('eligibility', async () => { await expiryReminders(); await refreshEligibility(); }), 60 * 60_000),
-    setInterval(guard('retention', retention), 6 * 60 * 60_000),
-    // stale drivers: no heartbeat for 2 minutes => offline (never trust last-known location)
-    setInterval(guard('stale-drivers', () => q("update driver_profiles set is_online=false where is_online and (last_seen_at is null or last_seen_at < now() - interval '2 minutes') and not exists (select 1 from bookings b where b.driver_id=driver_profiles.user_id and b.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))")), 30_000),
-  ];
+  jobsStarted = true; startedAt = Date.now();
+  const timers: NodeJS.Timeout[] = [];
+  const every = (name: string, ms: number, fn: () => Promise<unknown>) => {
+    const st: JobState = { runs: 0, failures: 0, last_start: null, last_ok: null, last_error: null, running: false, every_ms: ms };
+    jobState.set(name, st);
+    const tick = async () => {
+      if (st.running) return;
+      st.running = true; st.last_start = Date.now();
+      try {
+        const r = await withJobLock(name, fn);
+        if (r.ran) { st.runs++; st.last_ok = Date.now(); st.last_error = null; } else st.last_ok = Date.now();   // another instance is running it: healthy
+      } catch (e: any) { st.failures++; st.last_error = String(e.message).slice(0, 200); log(`job ${name} failed: ${e.message}`); }
+      finally { st.running = false; }
+    };
+    timers.push(setInterval(tick, ms));
+    return tick;
+  };
+  every('dispatch', 3_000, dispatchSweep);
+  every('payments', 30_000, sweepPendingPayments);
+  every('sms', 5_000, () => flushSms());
+  every('push', 3_000, () => flushPush());
+  every('push-receipts', 60_000, () => checkPushReceipts());
+  const eligibility = every('eligibility', 60 * 60_000, async () => { await expiryReminders(); await refreshEligibility(); });
+  every('retention', 6 * 60 * 60_000, retention);
+  // stale drivers: no heartbeat for 2 minutes => offline (never trust last-known location)
+  every('stale-drivers', 30_000, () => q("update driver_profiles set is_online=false where is_online and (last_seen_at is null or last_seen_at < now() - interval '2 minutes') and not exists (select 1 from bookings b where b.driver_id=driver_profiles.user_id and b.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))"));
   timers.forEach((t) => t.unref());
-  void guard('eligibility', async () => { await expiryReminders(); await refreshEligibility(); })();
-  return () => timers.forEach(clearInterval);
+  void eligibility();
+  return () => { timers.forEach(clearInterval); jobsStarted = false; };
+}
+
+/** Deletes in slices so one purge of a large backlog never runs into the statement timeout or holds long locks. `table`/`where` are constants of this file. */
+async function deleteInBatches(table: string, where: string, params: unknown[] = [], slice = 5000) {
+  for (;;) {
+    const r = await pool.query(`delete from ${table} where ctid in (select ctid from ${table} where ${where} limit ${slice})`, params);
+    if ((r.rowCount ?? 0) < slice) return;
+  }
 }
 
 export async function retention() {
-  const days = await getSetting('retention.location_days');
-  await q("delete from driver_locations where received_at < now() - make_interval(days => $1)", [days]);
+  const [days, notifDays, sessionDays] = await Promise.all([getSetting('retention.location_days'), getSetting('retention.notification_days'), getSetting('retention.session_days')]);
+  await deleteInBatches('driver_locations', 'received_at < now() - make_interval(days => $1)', [days]);
   await q("delete from otp_challenges where created_at < now() - interval '2 days'");
   await purgeHandoverPhotos();
   await purgeClientErrors();
   await q("delete from push_tokens where revoked_at < now() - interval '30 days'");
   await q("delete from fare_quotes where expires_at < now() - interval '2 days' and used_booking_id is null");
+  // Delivered/finished notifications carry names and plates; sessions pile up (one per token refresh); invites and share links hold emails / tokens.
+  await deleteInBatches('notifications', "created_at < now() - make_interval(days => $1) and status <> 'queued'", [notifDays]);
+  await deleteInBatches('sessions', 'revoked_at < now() - make_interval(days => $1) or expires_at < now() - make_interval(days => $1)', [sessionDays]);
+  await q("delete from staff_invites where coalesce(used_at, revoked_at, expires_at) < now() - interval '30 days'");
+  await q("delete from trip_shares where expires_at < now() - interval '7 days'");
 }
 
 /** Car check-in/out photos can show personal belongings: purge after the retention period unless the booking has an open case. */

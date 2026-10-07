@@ -8,6 +8,9 @@ export function reqLang(header?: string): Lang {
   return first === 'rw' || first === 'fr' || first === 'en' ? first : 'en';
 }
 
+/** Picks the text for the caller's language (Accept-Language), for static sentences in successful responses. Never mixes languages. */
+export const pickLang = (req: { headers: Record<string, any> }, text: Record<Lang, string>): string => text[reqLang(req.headers['accept-language'])];
+
 type Pair = [rw: string, fr: string];
 
 export const GENERIC: Record<Exclude<Lang, 'en'>, string> = {

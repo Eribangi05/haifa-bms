@@ -158,7 +158,9 @@ async function enforceCorporate(c: PoolClient, userId: string, corporateId: stri
     const h = (when.getUTCHours() + 2) % 24; // Africa/Kigali
     if (h < pol.start_hour || h >= pol.end_hour) throw new AppError(403, 'corporate_time_not_allowed', 'Booking time not allowed by company policy');
   }
-  const monthStart = new Date(Date.UTC(when.getUTCFullYear(), when.getUTCMonth(), 1));
+  // the budget month starts at 00:00 Kigali time (UTC+2), not UTC
+  const kl = new Date(when.getTime() + 2 * 3600e3);
+  const monthStart = new Date(Date.UTC(kl.getUTCFullYear(), kl.getUTCMonth(), 1) - 2 * 3600e3);
   const spend = (where: string, p: unknown[]) => q1<{ s: number }>(
     `select coalesce(sum(coalesce(final_fare, estimated_fare)),0)::int s from bookings where corporate_id=$1 ${where}
        and status not in ('CANCELLED_BY_PASSENGER','CANCELLED_BY_DRIVER','CANCELLED_BY_SYSTEM','NO_DRIVER_FOUND') and created_at >= $2`, [corporateId, monthStart, ...p], c);
@@ -182,8 +184,13 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
   if ((inp.payment_method === 'corporate') !== !!inp.corporate_id) throw badRequest('corporate_payment_mismatch', 'Corporate payment requires a business account');
   if (inp.corporate_id && !(await flag('corporate.enabled'))) throw badRequest('corporate_disabled');
 
+  // Same key + same quote = a retry (return the booking). Same key for a different quote is a client bug: refuse instead of silently returning another trip.
+  const replayOf = (b: BookingRow) => {
+    if (b.quote_id !== inp.quote_id) throw conflict('idempotency_conflict', 'This Idempotency-Key was already used for a different request');
+    return { booking: b, replay: true as const };
+  };
   const existing = await q1<BookingRow>('select * from bookings where passenger_id=$1 and idempotency_key=$2', [passengerId, inp.idempotency_key]);
-  if (existing) return { booking: existing, replay: true };
+  if (existing) return replayOf(existing);
   const reqCode = inp.request_code ? await requireUsableCode(inp.request_code) : null;
 
   let created: BookingRow;
@@ -197,6 +204,8 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
       if (!svc.enabled) throw badRequest('service_unavailable');
       // Re-validate a promo at commit time so a spent/expired promo can never be silently honoured.
       if (quote.promo_code) {
+        // Serialise redemptions of one code: concurrent bookings must not both pass the per-user / usage / budget checks.
+        await q('select 1 from promotions where upper(code)=upper($1) for update', [quote.promo_code], c);
         const pc = await checkPromo(quote.promo_code, passengerId, quote.service_id, quote.zone_id, quote.breakdown.subtotal - quote.breakdown.passthrough, c);
         if (!pc.ok || pc.discount !== quote.breakdown.discount) throw conflict('promo_invalid', 'Promotion is no longer valid; please re-check the price.');
       }
@@ -244,7 +253,7 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
         throw new AppError(409, 'active_booking_exists', 'You already have an active trip', open);
       }
       const again = await q1<BookingRow>('select * from bookings where passenger_id=$1 and idempotency_key=$2', [passengerId, inp.idempotency_key]);
-      if (again) return { booking: again, replay: true };
+      if (again) return replayOf(again);
     }
     throw e;
   }
@@ -471,6 +480,8 @@ export async function completeTrip(driverId: string, bookingId: string) {
 export async function createShare(passengerId: string, bookingId: string, ttlMin = 240) {
   const b = await q1<BookingRow>('select * from bookings where id=$1 and passenger_id=$2', [bookingId, passengerId]);
   if (!b) throw notFound('booking');
+  const live = await q1<{ n: number }>('select count(*)::int n from trip_shares where booking_id=$1 and revoked_at is null and expires_at > now()', [bookingId]);
+  if (live!.n >= 10) throw conflict('limit', 'Too many active share links for this trip');
   const token = randomToken(24);
   const exp = new Date(Date.now() + Math.min(ttlMin, 24 * 60) * 60000);
   await q('insert into trip_shares(booking_id, token_hash, expires_at, created_by) values ($1,$2,$3,$4)', [bookingId, sha256(token), exp, passengerId]);
@@ -519,5 +530,5 @@ export async function postMessage(userId: string, bookingId: string, body: strin
 export async function listMessages(userId: string, bookingId: string) {
   const b = await q1<BookingRow>('select * from bookings where id=$1', [bookingId]);
   if (!b || (b.passenger_id !== userId && b.driver_id !== userId)) throw notFound('booking');
-  return q('select id, sender_id, body, created_at from trip_messages where booking_id=$1 order by id', [bookingId]);
+  return q('select id, sender_id, body, created_at from (select id, sender_id, body, created_at from trip_messages where booking_id=$1 order by id desc limit 200) m order by id', [bookingId]);
 }

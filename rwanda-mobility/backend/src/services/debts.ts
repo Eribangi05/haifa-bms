@@ -63,8 +63,25 @@ export async function releaseDebts(c: PoolClient, bookingId: string) {
   await q("update passenger_debts set applied_booking_id=null where applied_booking_id=$1 and status='open'", [bookingId], c);
 }
 
+/**
+ * A search that ended with NO_DRIVER_FOUND released its fee (it can ride on a later booking). If a dispatcher restarts that search, carry the
+ * fee again; if the open balance changed meanwhile, re-state the booking's fare line so what is collected always equals what is carried.
+ * Returns the updated booking row, or null when nothing changed.
+ */
+export async function reattachDebts(c: PoolClient, b: { id: string; passenger_id: string; payer_type?: string; fare_breakdown: Breakdown }) {
+  if (b.payer_type === 'corporate') return null;
+  const carried = b.fare_breakdown?.debt ?? 0;
+  const rows = await q<{ id: string; amount: number }>(
+    "select id, amount from passenger_debts where user_id=$1 and status='open' and applied_booking_id is null order by created_at for update", [b.passenger_id], c);
+  const sum = rows.reduce((s, r) => s + r.amount, 0);
+  if (rows.length) await q('update passenger_debts set applied_booking_id=$2 where id = any($1::uuid[])', [rows.map((r) => r.id), b.id], c);
+  if (sum === carried) return null;
+  const bd = withDebt(withoutDebt(b.fare_breakdown), sum);
+  return (await q<any>('update bookings set fare_breakdown=$2, estimated_fare=$3 where id=$1 returning *', [b.id, JSON.stringify(bd), bd.total], c))[0];
+}
+
 /** Called from settleBookingPayment (exactly once per booking). Marks the carried debts settled and clears the receivable. */
-export async function settleDebts(c: PoolClient, bookingId: string, passengerId: string, expected: number) {
+export async function settleDebts(c: PoolClient, bookingId: string, expected: number) {
   const rows = await q<{ id: string; amount: number }>("select id, amount from passenger_debts where applied_booking_id=$1 and status='open' for update", [bookingId], c);
   const sum = rows.reduce((s, r) => s + r.amount, 0);
   if (sum !== expected) throw new Error(`debt mismatch on booking ${bookingId}: carried ${sum}, expected ${expected}`);

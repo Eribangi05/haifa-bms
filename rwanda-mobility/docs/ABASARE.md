@@ -95,7 +95,7 @@ Examples: 5.6 km at night = **5,600 RWF**; 10 km by day = 6,000; 10 km at night 
 | Dispatch/eligibility | `services/dispatch.ts` (skills query), `services/drivers.ts` (`abasarePermission`, `accepting`) |
 | Booking | `services/bookings.ts` (quote meta, attestation, handover guards, overtime, views) |
 | Handover & applications | `services/abasare.ts`, `routes/abasare.ts` |
-| Admin | Console tab **Abasare**, driver detail decisions, booking detail with handover photos, pricing proposal fields |
+| Admin | Console page **Abasare** (applications by status; open a driver to approve, reject, suspend or reinstate; only the decisions valid for the current status are offered), booking detail with handover photos, pricing proposal fields (Pricing page) |
 | Mobile | `screens/cars.tsx`, Abasare mode in `passenger.tsx` (Home/Options/Track/HandoverReview), `driver.tsx` (path choice, Abasare form, accepting toggles, HandoverForm, ride-home) |
 | Tests | `tests/abasare.test.ts` (13), pricing unit tests (5), browser e2e `mobile/e2e/abasare-e2e.mjs` |
 

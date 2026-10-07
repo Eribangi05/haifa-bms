@@ -5,12 +5,33 @@ import { config } from './config.js';
 pg.types.setTypeParser(20, (v) => Number(v));
 pg.types.setTypeParser(1700, (v) => Number(v));
 
-export let pool = new pg.Pool({ connectionString: config.databaseUrl, max: 20 });
+/**
+ * Pool limits: a bounded wait for a free connection (fail fast instead of piling up requests), a server-side statement timeout so one slow
+ * query cannot hold a connection forever, and an idle-in-transaction timeout so a crashed handler cannot hold row locks.
+ * All three can be tuned per deployment; migrations disable the statement timeout for themselves.
+ */
+const POOL_MAX = Math.max(16, Number(process.env.DB_POOL_MAX ?? 20));   // never below 16: each of the 8 background jobs briefly holds one connection for its cluster-wide lock
+const poolOpts = (url: string): pg.PoolConfig => ({
+  connectionString: url,
+  max: POOL_MAX,
+  connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT_MS ?? 5000),
+  idleTimeoutMillis: 30_000,
+  statement_timeout: Number(process.env.DB_STATEMENT_TIMEOUT_MS ?? 30_000),
+  idle_in_transaction_session_timeout: Number(process.env.DB_IDLE_TX_TIMEOUT_MS ?? 30_000),
+  application_name: 'abasare-api',
+});
 
-export function useDatabase(url: string) {
-  pool = new pg.Pool({ connectionString: url, max: 20 });
-  return pool;
+/** An idle client that loses its connection (DB restart, failover) emits 'error' on the pool; unhandled, that would crash the process. */
+function makePool(url: string) {
+  const p = new pg.Pool(poolOpts(url));
+  p.on('error', (e) => { if (process.env.QUIET !== '1') console.error('[db] idle client error:', e.message); });
+  return p;
 }
+
+export const pool = makePool(config.databaseUrl);
+
+/** Pool saturation, for the system-health endpoint. */
+export const poolStats = () => ({ total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount, max: POOL_MAX });
 
 export type Db = Pick<pg.PoolClient, 'query'>;
 

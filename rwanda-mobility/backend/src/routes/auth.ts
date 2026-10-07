@@ -5,8 +5,8 @@ import { parse } from '../util/validate.js';
 import { normalizePhone } from '../util/phone.js';
 import { badRequest } from '../errors.js';
 import * as auth from '../services/auth.js';
-import { anyAuth } from '../guards.js';
-import { q, q1 } from '../db.js';
+import { anyAuth, routeLimit } from '../guards.js';
+import { q } from '../db.js';
 import { audit } from '../services/audit.js';
 
 // language from the body, else the Accept-Language header, else Kinyarwanda (the product default)
@@ -27,7 +27,7 @@ export async function authRoutes(app: FastifyInstance) {
     return auth.verifyOtp(b.phone, b.code, dev(req), sign, { lang: b.language ?? headerLang(req), role: b.role, referral: b.referral_code });
   });
 
-  app.post('/auth/refresh', async (req) => {
+  app.post('/auth/refresh', { config: routeLimit('REFRESH_RATE_MAX', 120) }, async (req) => {
     const b = parse(z.object({ refresh_token: z.string().min(20) }), req.body);
     return auth.refresh(b.refresh_token, dev(req), sign);
   });
@@ -43,7 +43,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   app.get('/users/me/sessions', { preHandler: anyAuth }, async (req) => {
-    const rows = await q('select id, device_name, ip, created_at, last_used_at, privileged from sessions where user_id=$1 and revoked_at is null and expires_at > now() order by last_used_at desc', [req.auth!.id]);
+    const rows = await q('select id, device_name, ip, created_at, last_used_at, privileged from sessions where user_id=$1 and revoked_at is null and expires_at > now() order by last_used_at desc limit 50', [req.auth!.id]);
     return { sessions: rows.map((r: any) => ({ ...r, current: r.id === req.auth!.sid })) };
   });
   app.delete('/users/me/sessions/:id', { preHandler: anyAuth }, async (req) => {

@@ -1,0 +1,11 @@
+# Keep the Docker build context small: only backend/ and admin-web/ are used by backend/Dockerfile.
+mobile
+dist
+docs
+store
+**/node_modules
+**/storage
+**/.env
+**/.expo
+**/*.log
+.git

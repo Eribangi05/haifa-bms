@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { requirePerm, requireRole, actorOf, authenticate } from '../guards.js';
+import { requirePerm, actorOf, authenticate } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { audit } from '../services/audit.js';
@@ -17,11 +17,8 @@ import { computeFare, activeRule, type Rule } from '../services/pricing.js';
 import { signFileToken } from '../util/crypto.js';
 import { notify } from '../services/notify.js';
 import { exportUserData, executeDeletion } from '../services/privacy.js';
-import { createStaff } from '../seed.js';
-import { totpUri } from '../util/crypto.js';
 import { ROLE_PERMISSIONS, STAFF_ROLES, can, isStaff } from '../rbac.js';
 import { config } from '../config.js';
-import { refOf } from '../util/ids.js';
 
 const timeWindow = z.object({ label: z.string().trim().min(1).max(40), days: z.array(z.number().int().min(0).max(6)).max(7).default([]), start_hour: z.number().int().min(0).max(23), end_hour: z.number().int().min(1).max(24), percent: z.number().int().min(-50).max(100) })
   .refine((w) => w.start_hour !== w.end_hour, { message: 'Start and end hour must differ' });
@@ -69,8 +66,8 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/admin/analytics', { preHandler: requirePerm('analytics.view') }, async () => analytics());
 
   app.get('/admin/live', { preHandler: requirePerm('bookings.view_all') }, async () => ({
-    bookings: await q(`select b.id, b.ref, b.status, b.pickup_lat, b.pickup_lng, b.dest_lat, b.dest_lng, b.service_id, b.driver_id from bookings b where b.status in ('SEARCHING_DRIVER','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS')`),
-    drivers: await q(`select user_id, last_lat lat, last_lng lng, last_seen_at from driver_profiles where is_online and last_seen_at > now() - interval '60 seconds' and last_lat is not null`),
+    bookings: await q(`select b.id, b.ref, b.status, b.pickup_lat, b.pickup_lng, b.dest_lat, b.dest_lng, b.service_id, b.driver_id from bookings b where b.status in ('SEARCHING_DRIVER','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS') order by b.created_at desc limit 1000`),
+    drivers: await q(`select user_id, last_lat lat, last_lng lng, last_seen_at from driver_profiles where is_online and last_seen_at > now() - interval '60 seconds' and last_lat is not null limit 2000`),
   }));
 
   // ---------- drivers ----------
@@ -108,6 +105,11 @@ export async function adminRoutes(app: FastifyInstance) {
       if (!d) throw notFound('document');
       await q('update driver_documents set review_status=$2, review_note=$3, reviewer_id=$4, reviewed_at=now() where id=$1', [id, b.decision, b.note ?? null, req.auth!.id], c);
       if (b.decision === 'approved') await q('update driver_documents set superseded=true where driver_id=$1 and doc_type=$2 and id<>$3 and not superseded', [d.driver_id, d.doc_type, id], c);
+      // The photo passengers see is the reviewed one: set on approval, withdrawn if the current photo is later rejected.
+      if (d.doc_type === 'profile_photo') {
+        if (b.decision === 'approved') await q('update users set photo_key=$2 where id=$1', [d.driver_id, d.file_key], c);
+        else await q('update users set photo_key=null where id=$1 and photo_key=$2', [d.driver_id, d.file_key], c);
+      }
       await audit(actorOf(req), 'document.review', 'driver_document', id, { status: d.review_status }, b, c);
       return { ok: true };
     }).then(async (r) => { await Dr.refreshEligibility((await q1<any>('select driver_id from driver_documents where id=$1', [id]))!.driver_id); return r; });
@@ -150,6 +152,10 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ status: z.enum(['active', 'restricted', 'deactivated']), reason: z.string().min(5).max(300) }), req.body);
     const before = await q1<any>('select status from users where id=$1', [id]); if (!before) throw notFound('user');
+    // Support leads may restrict customers, never colleagues: locking a staff account (or your own) is a super-admin decision.
+    if (id === req.auth!.id) throw forbidden('You cannot change your own account status');
+    const isStaffTarget = await q1('select 1 from user_roles where user_id=$1 and role = any($2)', [id, STAFF_ROLES]);
+    if (isStaffTarget && !req.auth!.roles.includes('super_admin')) throw forbidden('Only a super admin can change a staff account');
     await q('update users set status=$2 where id=$1', [id, b.status]);
     if (b.status !== 'active') await q('update sessions set revoked_at=now() where user_id=$1 and revoked_at is null', [id]);
     await audit(actorOf(req), 'user.status', 'user', id, before, b);
@@ -404,7 +410,7 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // ---------- business / fleet verification ----------
-  app.get('/admin/businesses', { preHandler: requirePerm('corporate.manage') }, async () => ({ businesses: await q('select * from corporate_accounts order by created_at desc'), fleets: await q('select * from fleets order by created_at desc') }));
+  app.get('/admin/businesses', { preHandler: requirePerm('corporate.manage') }, async () => ({ businesses: await q('select * from corporate_accounts order by created_at desc limit 500'), fleets: await q('select * from fleets order by created_at desc limit 500') }));
   app.post('/admin/businesses/:id/decision', { preHandler: requirePerm('corporate.manage') }, async (req) => {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ status: z.enum(['active', 'suspended']), billing_mode: z.enum(['prepaid', 'payg', 'credit']).optional(), credit_limit: z.number().int().min(0).optional() }), req.body);

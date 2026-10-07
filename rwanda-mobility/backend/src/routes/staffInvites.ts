@@ -70,10 +70,11 @@ export async function staffInviteRoutes(app: FastifyInstance) {
     if (!verifyTotp(secret, b.code)) throw badRequest('otp_invalid', 'Wrong code');
     if (!ROLE_PERMISSIONS[inv.role]) throw badRequest('invite_invalid', 'This invitation is not valid');
     const hash = await hashPassword(b.password);
-    const uid = await tx(async (db) => {
+    const uid = await tx(async (db) => {   // (a 23505 below means the e-mail was registered after the invite was issued)
       const used = await db.query('update staff_invites set used_at=now() where id=$1 and used_at is null and revoked_at is null returning id', [inv.id]);
       if (!used.rowCount) throw badRequest('invite_invalid', 'This invitation is not valid');
-      const u = await db.query('insert into users(email,password_hash,display_name,mfa_secret_enc,mfa_enabled) values ($1,$2,$3,$4,true) returning id', [inv.email, hash, inv.display_name, inv.pending_mfa_enc]);
+      const u = await db.query('insert into users(email,password_hash,display_name,mfa_secret_enc,mfa_enabled) values ($1,$2,$3,$4,true) returning id', [inv.email, hash, inv.display_name, inv.pending_mfa_enc])
+        .catch((e: any) => { throw e.code === '23505' ? conflict('email_in_use', 'Email already registered') : e; });
       await db.query('insert into user_roles(user_id, role) values ($1,$2)', [u.rows[0].id, inv.role]);
       return u.rows[0].id as string;
     });

@@ -43,13 +43,13 @@ const redact = (p: Record<string, unknown>) => { const c = { ...p }; delete c.co
 export async function flushSms(limit = 50) {
   const rows = await q<any>(
     `select n.id, n.body, u.phone from notifications n join users u on u.id=n.user_id
-     where n.channel='sms' and n.status='queued' order by n.created_at limit $1`, [limit]);
+     where n.channel='sms' and n.status='queued' and (n.next_attempt_at is null or n.next_attempt_at <= now()) order by n.created_at limit $1`, [limit]);   // back-off 15s, 1m, 2m, 4m between attempts
   for (const r of rows) {
     try {
       await sms.send(r.phone, r.body);
       await q("update notifications set status='sent', sent_at=now(), attempts=attempts+1 where id=$1", [r.id]);
     } catch (e: any) {
-      await q(`update notifications set attempts=attempts+1, error=$2,
+      await q(`update notifications set attempts=attempts+1, error=$2, next_attempt_at = now() + make_interval(secs => (attempts+1)*(attempts+1)*15),
                status = case when attempts+1 >= 5 then 'failed' else 'queued' end where id=$1`, [r.id, String(e.message).slice(0, 200)]);
     }
   }

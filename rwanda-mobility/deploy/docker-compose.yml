@@ -1,8 +1,9 @@
 # Single-host production-style stack: API + PostgreSQL + Caddy (automatic HTTPS).
 # 1) cp deploy/.env.example deploy/.env and fill EVERY value (generate secrets with: openssl rand -base64 32)
 # 2) docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
-# 3) docker compose -f deploy/docker-compose.yml exec api npx tsx src/migrate.ts && ... exec api npx tsx src/seed.ts   (first run only)
-# Back up the `pgdata` volume (pg_dump nightly to off-host storage) and test a restore before launch.
+#    The api container applies migrations and seeds the catalogue by itself on every start. On the FIRST start it also creates the super admin
+#    from BOOTSTRAP_ADMIN_*: read the authenticator secret once with  docker compose -f deploy/docker-compose.yml logs api | grep -A2 "FIRST SUPER ADMIN"
+# 3) Back up nightly with deploy/backup.sh (database + uploaded documents) to storage OFF this host, and test a restore (docs/OPERATIONS_RUNBOOK.md).
 services:
   db:
     image: postgres:16
@@ -19,6 +20,11 @@ services:
       NODE_ENV: production
       PORT: "8080"
       DATABASE_URL: "postgres://rm:${DB_PASSWORD}@db:5432/rwanda_mobility"
+      STORAGE_DIR: /data/storage
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-https://${API_DOMAIN}}"
+      TRUST_PROXY: "1"            # exactly one proxy (Caddy) in front: client IPs for rate limits come from it
+    volumes: ["storage:/data/storage"]      # driver documents, evidence, handover photos (private files)
+    stop_grace_period: 20s
   caddy:
     image: caddy:2
     restart: unless-stopped
@@ -26,4 +32,4 @@ services:
     volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data"]
     environment: { API_DOMAIN: "${API_DOMAIN:?set API_DOMAIN}" }
     depends_on: [api]
-volumes: { pgdata: {}, caddy_data: {} }
+volumes: { pgdata: {}, caddy_data: {}, storage: {} }

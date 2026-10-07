@@ -1,5 +1,13 @@
-# Render Blueprint for the Abasare API (staging). Dashboard: New > Blueprint > select this repo.
-# Creates a managed PostgreSQL and a Docker web service. Migrations and seeding run on start.
+# Render Blueprint for the Abasare API (STAGING). Dashboard: New > Blueprint > select this repo.
+# Creates a managed PostgreSQL and a Docker web service. Migrations and seeding run automatically on every start (src/server.ts).
+# Variable names and meanings: rwanda-mobility/docs/ENVIRONMENT_VARIABLES.md. Day-2 operations: rwanda-mobility/docs/OPERATIONS_RUNBOOK.md.
+#
+# After the FIRST deploy (the service URL is not known before):
+#   1. set PUBLIC_BASE_URL to the service URL (https://<service>.onrender.com) and make MOMO_CALLBACK_URL = PUBLIC_BASE_URL + /api/v1/webhooks/payments/mtn_momo
+#   2. read the first super admin's authenticator secret once in the service logs (search "FIRST SUPER ADMIN CREATED"), then delete BOOTSTRAP_ADMIN_PASSWORD
+# STAGING LIMITS to know about: the free web service sleeps when idle; uploaded documents live on the container disk and are LOST on every
+# deploy/restart (add a paid plan and a persistent disk mounted at /data, STORAGE_DIR=/data/storage, before any real driver uploads documents);
+# the free Postgres expires after 30 days. For production use the docker-compose stack (deploy/) or paid plans with a disk and PITR backups.
 databases:
   - name: abasare-db
     plan: free            # free Postgres expires after 30 days on Render: use a paid plan for anything lasting
@@ -12,26 +20,31 @@ services:
     plan: free            # free web services sleep after inactivity: first request is slow
     dockerContext: rwanda-mobility
     dockerfilePath: rwanda-mobility/backend/Dockerfile
-    healthCheckPath: /health
+    healthCheckPath: /health          # liveness. /ready also checks the database
+    autoDeploy: true                  # staging follows the branch. For production set false and deploy by hand after CI is green
+    buildFilter:
+      paths: [rwanda-mobility/backend/**, rwanda-mobility/admin-web/**]
     envVars:
       - { key: DATABASE_URL, fromDatabase: { name: abasare-db, property: connectionString } }
       - { key: NODE_ENV, value: production }
-      - { key: APP_ENV, value: staging }
+      - { key: APP_ENV, value: staging }         # allows OTP_DEV_ECHO and the simulator without startup warnings. NEVER on production
       - { key: OTP_DEV_ECHO, value: "true" }     # STAGING ONLY: shows the OTP in the app because no SMS gateway is connected yet
       - { key: MOMO_MODE, value: sandbox }       # MTN sandbox (fake money, EUR only). Set back to simulator to go fully local-simulated
       - { key: MOMO_TARGET_ENV, value: sandbox }
       - { key: MOMO_CURRENCY, value: EUR }       # MTN sandbox accepts EUR only; use RWF for live
-      - { key: MOMO_CALLBACK_URL, value: "https://abasare-api.onrender.com/api/v1/webhooks/payments/mtn_momo" }
+      - { key: MOMO_CALLBACK_URL, value: "https://abasare-api.onrender.com/api/v1/webhooks/payments/mtn_momo" }   # change if Render gave your service a different URL
       - { key: MOMO_SUBSCRIPTION_KEY, sync: false }   # secrets: you type these in the Render dashboard, never in git
       - { key: MOMO_API_USER, sync: false }
       - { key: MOMO_API_KEY, sync: false }
-      - { key: MOMO_CALLBACK_TOKEN, sync: false }
-      - { key: SMS_PROVIDER, value: console }
-      - { key: PUSH_PROVIDER, value: none }
+      - { key: MOMO_CALLBACK_TOKEN, sync: false }     # >= 16 random characters
+      - { key: SMS_PROVIDER, value: console }         # production: http + SMS_HTTP_URL + SMS_HTTP_TOKEN
+      - { key: PUSH_PROVIDER, value: none }           # expo = deliver through the Expo Push API (also set EXPO_ACCESS_TOKEN if your project enforces push security)
       - { key: JWT_SECRET, generateValue: true }
-      - { key: DATA_ENC_KEY, generateValue: true }
+      - { key: DATA_ENC_KEY, generateValue: true }    # copy this value into your password manager: losing it makes MFA secrets and national IDs unreadable
       - { key: PIN_SECRET, generateValue: true }
       - { key: FILE_SIGNING_SECRET, generateValue: true }
       - { key: BOOTSTRAP_ADMIN_EMAIL, value: admin@abasare.example }   # change to your email
-      - { key: BOOTSTRAP_ADMIN_PASSWORD, sync: false }                  # you type it in the dashboard (>= 12 chars)
-      - { key: PUBLIC_BASE_URL, sync: false }                           # e.g. https://abasare-api.onrender.com
+      - { key: BOOTSTRAP_ADMIN_PASSWORD, sync: false }                  # you type it in the dashboard (>= 12 chars); remove after the first deploy
+      - { key: PUBLIC_BASE_URL, sync: false }                           # https://abasare-api.onrender.com (QR codes and share links are built from it)
+      - { key: APP_DOWNLOAD_URL, sync: false }                          # optional: Play Store / APK link shown on the venue QR landing page
+      - { key: TRUST_PROXY, value: "1" }                                # Render puts one proxy in front: client IPs for rate limits

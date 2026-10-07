@@ -8,6 +8,8 @@ EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 npx expo start --android   # emulator r
 ```
 Physical device on the same Wi-Fi: use `http://<your-LAN-IP>:8080`. The backend must be running (`npm run dev`), seeded, with `OTP_DEV_ECHO=true` so the OTP appears on the OTP screen in test builds.
 
+Before a build: `npm run typecheck && npm test` (28 unit tests; CI runs both, plus an Android bundle export).
+
 Because the app uses native modules (secure store, location, camera, WebView) it needs a **development build** or release APK, not Expo Go.
 
 ## Local release APK (what was verified in the build environment)

@@ -92,7 +92,7 @@ const MAX_ATTEMPTS = 5;
 /** Worker: deliver queued push notifications (retry like SMS, give up after 5 attempts). */
 export async function flushPush(limit = 50) {
   const rows = await q<any>(
-    `select id, user_id, title, body, template_key, params from notifications where channel='push' and status='queued' order by created_at limit $1`, [limit]);
+    `select id, user_id, title, body, template_key, params from notifications where channel='push' and status='queued' and (next_attempt_at is null or next_attempt_at <= now()) order by created_at limit $1`, [limit]);
   const a = getPushAdapter();
   for (const n of rows) {
     const tokens = await q<{ id: string; token: string }>('select id, token from push_tokens where user_id=$1 and revoked_at is null', [n.user_id]);
@@ -118,7 +118,7 @@ export async function flushPush(limit = 50) {
   return rows.length;
 }
 const retryOrFail = (id: string, err: string) => q(
-  `update notifications set attempts=attempts+1, error=$2, status = case when attempts+1 >= ${MAX_ATTEMPTS} then 'failed' else 'queued' end where id=$1`, [id, err.slice(0, 200)]);
+  `update notifications set attempts=attempts+1, error=$2, next_attempt_at = now() + make_interval(secs => (attempts+1)*(attempts+1)*15), status = case when attempts+1 >= ${MAX_ATTEMPTS} then 'failed' else 'queued' end where id=$1`, [id, err.slice(0, 200)]);
 
 /** Worker: read delivery receipts for tickets older than a minute; revoke tokens reported DeviceNotRegistered. */
 export async function checkPushReceipts(limit = 300) {

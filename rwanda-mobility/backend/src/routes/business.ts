@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { anyAuth, requireRole, actorOf } from '../guards.js';
+import { anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
@@ -10,6 +10,7 @@ import * as B from '../services/bookings.js';
 import { requestPayout } from '../services/finance.js';
 import { driverBalance } from '../services/ledger.js';
 import { audit } from '../services/audit.js';
+import { pickLang } from '../services/errmsg.js';
 
 const idp = z.object({ id: z.string().uuid() });
 
@@ -29,14 +30,14 @@ export async function businessRoutes(app: FastifyInstance) {
   const pre = { preHandler: anyAuth };
 
   // ================= corporate =================
-  app.post('/businesses', pre, async (req) => {
+  app.post('/businesses', { ...pre, config: routeLimit('ORG_RATE_MAX', 5) }, async (req) => {
     if (!(await flag('corporate.enabled'))) throw badRequest('corporate_disabled');
     const b = parse(z.object({ legal_name: z.string().min(2).max(160), tin: z.string().max(30).optional() }), req.body);
     return tx(async (c) => {
       const a = (await q<any>('insert into corporate_accounts(legal_name, tin, created_by) values ($1,$2,$3) returning id, legal_name, status', [b.legal_name, b.tin ?? null, req.auth!.id], c))[0];
       await q("insert into corporate_members(corporate_id,user_id,role) values ($1,$2,'admin')", [a.id, req.auth!.id], c);
       await q("insert into user_roles values ($1,'corporate_admin') on conflict do nothing", [req.auth!.id], c);
-      return { ...a, note: 'Pending manual verification by our team before bookings are allowed.' };
+      return { ...a, note: pickLang(req, { en: 'Pending manual verification by our team before bookings are allowed.', fr: 'En attente de vérification par notre équipe avant de pouvoir réserver.', rw: 'Dutegereje ko itsinda ryacu rigenzura mbere yo kwemererwa gutumiza.' }) };
     });
   });
   app.get('/businesses/mine', pre, async (req) => ({
@@ -56,7 +57,7 @@ export async function businessRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params); await corpMember(req.auth!.id, id, true);
     return { members: await q(`select m.user_id, u.display_name, u.phone, m.role, m.spending_limit, m.cost_centre, m.active from corporate_members m join users u on u.id=m.user_id where m.corporate_id=$1`, [id]) };
   });
-  app.post('/businesses/:id/members', pre, async (req) => {
+  app.post('/businesses/:id/members', { ...pre, config: routeLimit('MEMBER_RATE_MAX', 30) }, async (req) => {
     const { id } = parse(idp, req.params); await corpMember(req.auth!.id, id, true);
     const b = parse(z.object({ phone: z.string(), role: z.enum(['admin', 'booker', 'employee']).default('employee'), spending_limit: z.number().int().positive().optional(), cost_centre: z.string().max(60).optional(), name: z.string().max(80).optional() }), req.body);
     const phone = normalizePhone(b.phone); if (!phone) throw badRequest('invalid_phone');
@@ -106,18 +107,18 @@ export async function businessRoutes(app: FastifyInstance) {
   });
 
   // ================= fleets =================
-  app.post('/fleets', pre, async (req) => {
+  app.post('/fleets', { ...pre, config: routeLimit('ORG_RATE_MAX', 5) }, async (req) => {
     if (!(await flag('fleet.enabled'))) throw badRequest('fleet_disabled');
     const b = parse(z.object({ name: z.string().min(2).max(120) }), req.body);
     return tx(async (c) => {
       const f = (await q<any>('insert into fleets(name, owner_user_id) values ($1,$2) returning id, name, status', [b.name, req.auth!.id], c))[0];
       await q("insert into fleet_members(fleet_id,user_id,role) values ($1,$2,'owner')", [f.id, req.auth!.id], c);
       await q("insert into user_roles values ($1,'fleet_manager') on conflict do nothing", [req.auth!.id], c);
-      return { ...f, note: 'Pending verification by our team.' };
+      return { ...f, note: pickLang(req, { en: 'Pending verification by our team.', fr: 'En attente de vérification par notre équipe.', rw: 'Dutegereje ko itsinda ryacu rigenzura.' }) };
     });
   });
   app.get('/fleets/mine', pre, async (req) => ({ fleets: await q('select f.id, f.name, f.status, f.revenue_share_bps, m.role from fleet_members m join fleets f on f.id=m.fleet_id where m.user_id=$1', [req.auth!.id]) }));
-  app.post('/fleets/:id/invites', pre, async (req) => {
+  app.post('/fleets/:id/invites', { ...pre, config: routeLimit('MEMBER_RATE_MAX', 30) }, async (req) => {
     const { id } = parse(idp, req.params); await fleetMember(req.auth!.id, id);
     const b = parse(z.object({ phone: z.string() }), req.body);
     const phone = normalizePhone(b.phone); if (!phone) throw badRequest('invalid_phone');
@@ -157,6 +158,6 @@ export async function businessRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params); const m = await fleetMember(req.auth!.id, id);
     if (m.role !== 'owner') throw forbidden('Only the fleet owner can request payouts');
     const b = parse(z.object({ amount: z.number().int().positive() }), req.body);
-    return requestPayout(req.auth!.id, b.amount, 'fleet');
+    return requestPayout(req.auth!.id, b.amount, 'fleet', String(req.headers['idempotency-key'] ?? '').slice(0, 100) || undefined);
   });
 }

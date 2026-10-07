@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 import { q, q1 } from '../db.js';
 import { conflict, notFound } from '../errors.js';
-import { releaseDebts } from './debts.js';
+import { releaseDebts, reattachDebts } from './debts.js';
 
 export type Status =
   | 'DRAFT' | 'FARE_ESTIMATED' | 'SCHEDULED' | 'REQUESTED' | 'SEARCHING_DRIVER' | 'DRIVER_ASSIGNED' | 'DRIVER_ARRIVING'
@@ -34,7 +34,6 @@ export const TRANSITIONS: Record<Status, Status[]> = {
 };
 
 export const ACTIVE_TRIP: Status[] = ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION', 'IN_PROGRESS'];
-export const PRE_ASSIGN: Status[] = ['REQUESTED', 'SEARCHING_DRIVER', 'SCHEDULED'];
 export const canTransition = (from: Status, to: Status) => TRANSITIONS[from]?.includes(to) ?? false;
 
 export type Actor = { id: string | null; role: string };
@@ -59,8 +58,9 @@ export async function transition(
   const row = (await q<BookingRow>(`update bookings set ${sets.join(', ')} where id=$1 returning *`, [bookingId, to, ...keys.map((k) => patch[k])], c))[0];
   await q(`insert into booking_events(booking_id,type,from_status,to_status,actor_id,actor_role,reason,meta) values ($1,'status_change',$2,$3,$4,$5,$6,$7)`,
     [bookingId, cur.status, to, actor.id, actor.role, opts.reason ?? null, JSON.stringify(opts.meta ?? {})], c);
-  // a booking that ends unpaid hands any carried cancellation fee back to the passenger's open balance
-  if (CANCELS.includes(to)) await releaseDebts(c, bookingId);
+  // a booking that ends unpaid (cancelled, or no driver found) hands any carried cancellation fee back to the passenger's open balance
+  if (CANCELS.includes(to) || to === 'NO_DRIVER_FOUND') await releaseDebts(c, bookingId);
+  if (cur.status === 'NO_DRIVER_FOUND' && to === 'SEARCHING_DRIVER') return (await reattachDebts(c, row as any)) ?? row;
   return row;
 }
 

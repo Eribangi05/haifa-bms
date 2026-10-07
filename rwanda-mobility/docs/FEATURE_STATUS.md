@@ -2,7 +2,7 @@
 
 Labels (assigned by evidence, not intent):
 
-* **TESTED** - implemented and exercised by automated tests that pass: `backend` 135 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities); `mobile` 10 tests of the network layer; and three browser end-to-end scripts (passenger, driver, Abasare; ~50 steps) that drive the real React Native screens against a live backend.
+* **TESTED** - implemented and exercised by automated tests that pass: `backend` 154 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities; the count is of `test(...)` cases in `backend/tests`); `mobile` 28 unit tests (network layer, formatting, trip logic, request-code parsing); six browser end-to-end scripts in `mobile/e2e` (passenger, driver, Abasare, languages, responsive layouts, venue QR) that drive the real React Native screens against a live backend; and four browser scripts for the operations console in `backend/scripts` (see the Admin rows).
 * **IMPLEMENTED** - code exists and type-checks (and the Android bundle compiles) but has **no automated or on-device test**.
 * **SIMULATED** - works against a local stand-in, not the real external system.
 * **PENDING INTEGRATION** - needs third-party credentials/approval or a build-out not done here.
@@ -14,8 +14,8 @@ Labels (assigned by evidence, not intent):
 |---|---|
 | All backend business rules via integration tests; a smoke sweep that calls every registered route (800+ calls, six identities, junk bodies) and asserts no 5xx | **The Android app has not been run on a device or emulator** (no KVM in the build environment, so no emulator). Native-only behaviour is unverified: the WebView map, permission prompts, camera, SecureStore, `geo:` navigation hand-off, back button, layout on real small screens. |
 | The app's real screens run end to end in Chromium (via react-native-web) against a live server: **passenger** journey (language, OTP, consent, landmark, prices, confirm, assignment, PIN, SOS, completion, cash, rating through the offline outbox, history, offline booking queued then sent exactly once) and **driver** journey (apply, upload 5 documents through the file picker, submit, review, consent, online, GPS heartbeat, offer with earnings, accept, arrive by GPS, wrong/correct PIN, complete, cash, earnings, offline) | The web build uses a different storage/dialog/map path from native (guarded by `Platform.OS`); passing on web does not prove the native build |
-| Admin console renders and works against a live server (Chromium, real login with TOTP) | MTN's real sandbox/production: **no call has been made** (no credentials); payment logic is verified against an in-repo simulator |
-| Android **release APK builds** (Gradle, Hermes, R8): package `rw.abasare.app`, arm64, ~28 MB, debug-signed | iOS build; Play Store packaging; load, penetration and accessibility testing; a native-speaker review of the Kinyarwanda copy |
+| The operations console, driven in Chromium with real TOTP logins: **every tab opened as each of the nine staff roles at 1280 px and 768 px** with no failed API call, script error, sideways page scroll or missing title (`scripts/admin-audit-e2e.ts`); table sorting/filtering/CSV, dashboard numbers re-derived from SQL, map without tile access, dark mode, phone menu, form validation, permission gating, staff disable/enable (`scripts/admin-console-e2e.ts`); staff invitation and pricing flows (`admin-invite-e2e.ts`, `admin-pricing-e2e.ts`) | MTN's real sandbox/production: **no call has been made** (no credentials); payment logic is verified against an in-repo simulator |
+| The Docker image's start-up path (production-mode install from the lockfile, migrations on an empty database, `/health`, the console and its vendored map library) reproduced step by step outside Docker; Android **release APK builds** (Gradle, Hermes, R8): package `rw.abasare.app`, arm64, ~28 MB, debug-signed | `docker build` itself and the `docker compose` stack (no Docker daemon was available: they are checked by CI and by reading, not run); the CI workflow (not executed on GitHub); the console on a real phone, in Safari or Firefox, or with a screen reader; iOS build; Play Store packaging; load, penetration and accessibility testing; a native-speaker review of the Kinyarwanda copy |
 
 > **Bugs found by the UI end-to-end run that unit/API tests had missed** (now fixed and covered by regression tests): `GET /drivers/me/earnings` returned HTTP 500 (reserved SQL alias); an empty JSON body on action endpoints (`/accept`, `/arrived`...) was rejected by the server; a deletion request locked users out of their own session. Treat first device testing the same way: expect findings.
 
@@ -45,6 +45,9 @@ Labels (assigned by evidence, not intent):
 | | OTP SMS delivery | SIMULATED (console) / IMPLEMENTED (generic HTTP gateway, untested against a real gateway) |
 | | Refresh rotation, reuse detection, logout, device list/revoke | TESTED |
 | | Staff password + mandatory TOTP, lockout | TESTED |
+| | Staff invitation by single-use link (own password, own authenticator, secret never shown to the inviter, expiry, revoke), staff disable and session revoke | TESTED (`staffinvite.test.ts`) + browser e2e |
+| | Lost authenticator recovery by environment variables (`ADMIN_MFA_RESET_EMAIL` / `ADMIN_MFA_RESET_TOKEN`, once per token, audited) | TESTED |
+| | Languages: Kinyarwanda, French and English across the app, server messages, SMS/push templates, share page and catalogue; staff console English only | TESTED (`i18n.test.ts`, `mobile/e2e/i18n-e2e.mjs`) |
 | | Suspicious registration (device velocity) | TESTED |
 | | Profile, language, notification prefs, saved places, emergency contacts | TESTED |
 | | Account deactivation (admin/user request) | IMPLEMENTED |
@@ -102,7 +105,7 @@ Labels (assigned by evidence, not intent):
 | Public share page | Trip-share web page localised rw/fr/en (`?lang=` or `Accept-Language`) | TESTED |
 | Request codes | Venue QR codes: public resolve `GET /request-codes/:code`, landing page `/r/:code` (rw/fr/en, XSS-safe), booking attribution (`request_code`), scan counting | TESTED |
 | | Admin: create/list/edit/deactivate, QR download (SVG/PNG 1024 px), `codes.view`/`codes.manage`, audited | TESTED (API) |
-| | Admin-web tab: create form with browser geolocation, QR download, A5 trilingual print poster | IMPLEMENTED (not browser-tested) |
+| | Admin-web tab: create form (validation, optional expiry), QR download, activate/deactivate, A5 trilingual print poster | TESTED in browser (create, validation, QR PNG download, deactivate); the print poster and the geolocation button are IMPLEMENTED but not exercised (they open a print window / ask for location) |
 | | Mobile: `scan` screen (in-app QR camera, typed code or full URL), `abasare://r/<CODE>` deep link (pending code kept across sign-in), venue confirmation card, Home prefilled (pickup = venue, default service), `request_code` sent with the booking | IMPLEMENTED; parser + pending-code unit-tested; flow (deep-link-equivalent `?code=` on web, sign-in, prefill, booking stored with `request_code_id`, typed bad code in rw/fr/en) browser-e2e TESTED (`e2e/scan-e2e.mjs`). **Camera scanning and the Android deep link/intent filter have not been run on a device** |
 | Performance | Small load test (`scripts/loadtest.ts`) on a single dev machine | MEASURED once, see `PERFORMANCE_NOTES.md`; not a capacity test |
 | Corporate | Accounts, members, policies, limits, isolation, statements, invoices | TESTED |
@@ -110,10 +113,15 @@ Labels (assigned by evidence, not intent):
 | Growth | Promotions (budget, limits, first-ride), referral rewards, self-referral block | TESTED |
 | | Promotion audiences: everyone, first ride, corporate members, referred sign-ups, phone list; start/end dates and budget editable | TESTED |
 | | Loyalty points, subscriptions | NOT BUILT |
-| Admin | KPI dashboard, drivers, bookings, support, safety, pricing, finance, privacy, settings, audit, staff | TESTED (APIs) + exercised in a browser smoke test |
+| Admin | KPI dashboard, drivers, bookings, support, safety, pricing, finance, privacy, settings, audit, staff | TESTED (APIs) + browser audit of every tab for every role (see above) |
+| | Console shell: role-based menu (a tab is shown only when the role holds the permission the API needs, mirror of `rbac.ts` checked by test), responsive drawer menu, breadcrumbs, light/dark theme, loading/empty/error states, sign-in page with explanation when the session expires | TESTED in browser |
+| | Dashboard: needs-attention cards, KPIs with change vs the previous period, 7-day sparklines, zone table with names, period selector | TESTED (numbers compared with SQL over a fixed window; sparklines rendered). **Known data caveat**: "Active bookings" counts bookings *created in the selected period* that are not finished |
+| | Tables: sticky header, sort, row filter, 50-row pages, CSV of the rows shown (formula-injection safe); finance CSV exports with a date range | TESTED in browser |
+| | Finance sub-pages: ledger and exports, transactions (status/method filters), refunds, payouts, **cancellation fee debts with waiver**, reconciliation (validated input) | TESTED for load, validation and export; money-moving buttons (approve, pay, waive) are covered by the API tests, **not clicked** by the browser scripts |
+| | Staff: invite by link, revoke sessions, disable / re-enable (disabled staff cannot sign in) | TESTED in browser |
 | | Settings page: grouped, labelled, units/ranges, default + reset-to-default, last change from audit, legacy keys under Advanced | TESTED (API) + browser e2e |
 | | Services screen: enable per zone, rename (rw/fr/en), seats | TESTED (API); screen rendered in browser e2e |
-| | Live map | IMPLEMENTED (needs map tiles) |
+| | Live map (self-hosted Leaflet, OpenStreetMap tiles, 5 s refresh that stops when you leave the page, driver and booking tables under the map, notice when tiles are blocked) | TESTED in browser (`admin-console-e2e.ts`: renders, tile failure notice); **driver and booking markers were not exercised with live traffic** (no driver was online during the run) |
 | Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android) | IMPLEMENTED (type-checked, APK built; **not run on a device**) |
 | | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e) |
 | | Network layer: retry/backoff, idempotency keys, single-flight refresh, persistent outbox | TESTED |

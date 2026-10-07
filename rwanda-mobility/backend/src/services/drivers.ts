@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { q, q1, tx, pool, type Db } from '../db.js';
-import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
+import { AppError, badRequest, conflict, notFound } from '../errors.js';
 import { notify } from './notify.js';
 import { audit, type Actor } from './audit.js';
 import { getSetting } from './settings.js';

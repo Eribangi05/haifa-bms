@@ -1,375 +1,111 @@
 'use strict';
-// Rwanda Mobility operations console. No framework, no build step. All dynamic text is inserted with textContent (XSS-safe).
-const API = '/api/v1';
-const S = { access: sessionStorage.getItem('rm_a'), refresh: sessionStorage.getItem('rm_r'), roles: JSON.parse(sessionStorage.getItem('rm_roles') || '[]'), tab: 'dashboard', dirty: new Set() };
-const $ = (s, r = document) => r.querySelector(s);
-function h(tag, attrs, ...kids) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs || {})) {
-    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c)));
-  return e;
-}
-const money = (n) => (n == null ? '-' : Number(n).toLocaleString('en-US') + ' RWF');
-const when = (d) => (d ? new Date(d).toLocaleString('en-GB', { timeZone: 'Africa/Kigali' }) : '-');
-const pill = (t, cls = '') => h('span', { class: 'pill ' + cls }, String(t).replace(/_/g, ' '));
-const statusCls = (s) => (/CANCEL|REJECT|SUSPEND|FAIL|NO_DRIVER|EXPIRED|open|urgent/i.test(s) ? 'bad' : /PENDING|REVIEW|INFO|SEARCH|REQUEST|pending/i.test(s) ? 'warn' : '');
+// Shell: sign-in, navigation, routing (#/tab), theme, loading and error states. Views live in views-ops.js, views-admin.js and business.js.
 
-async function api(method, path, body, retry = true) {
-  const r = await fetch(API + path, { method, headers: { 'content-type': 'application/json', ...(S.access ? { authorization: 'Bearer ' + S.access } : {}) }, body: body ? JSON.stringify(body) : undefined });
-  if (r.status === 401 && retry && S.refresh) { if (await doRefresh()) return api(method, path, body, false); logout(); throw new Error('Session expired'); }
-  const ct = r.headers.get('content-type') || '';
-  const data = ct.includes('json') ? await r.json() : await r.text();
-  if (!r.ok) throw new Error(data?.error?.message || 'Request failed (' + r.status + ')');
-  return data;
-}
-async function doRefresh() {
-  try {
-    const r = await fetch(API + '/auth/refresh', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refresh_token: S.refresh }) });
-    if (!r.ok) return false; save(await r.json()); return true;
-  } catch { return false; }
-}
-function save(t) { S.access = t.access_token; S.refresh = t.refresh_token; S.roles = t.roles || S.roles; sessionStorage.setItem('rm_a', S.access); sessionStorage.setItem('rm_r', S.refresh); sessionStorage.setItem('rm_roles', JSON.stringify(S.roles)); }
-function logout() { if (S.access) fetch(API + '/auth/logout', { method: 'POST', headers: { authorization: 'Bearer ' + S.access } }).catch(() => {}); sessionStorage.clear(); S.access = S.refresh = null; render(); }
-const can = (...roles) => S.roles.includes('super_admin') || roles.some((r) => S.roles.includes(r));
-
-// ---- confirm dialog with optional reason (destructive actions need typed intent) ----
-function ask(title, { reason = false, confirmText = 'Confirm', danger = false, fields = [], message = null } = {}) {
-  return new Promise((res) => {
-    const d = h('dialog', {});
-    const inputs = {};
-    const rs = reason ? h('textarea', { rows: 3, placeholder: 'Reason (required, kept in the audit log)', style: 'width:100%' }) : null;
-    const f = fields.map((x) => { inputs[x.name] = h(x.type === 'select' ? 'select' : 'input', { placeholder: x.label, type: x.type === 'number' ? 'number' : x.type === 'date' ? 'date' : 'text', value: x.value ?? null, style: 'width:100%;margin:4px 0' }, x.options?.map((o) => h('option', { value: o, selected: o === x.value }, o))); return h('label', {}, x.label, inputs[x.name]); });
-    const err = h('div', { class: 'err' });
-    let done = false;
-    const finish = (v) => { if (done) return; done = true; if (d.open) d.close(); d.remove(); res(v); };
-    const submit = () => {
-      if (reason && (!rs.value || rs.value.trim().length < 5)) { err.textContent = 'Please give a reason (min 5 characters).'; return; }
-      const out = { reason: rs?.value.trim() }; for (const x of fields) out[x.name] = x.type === 'number' ? Number(inputs[x.name].value) : inputs[x.name].value;
-      finish(out);
-    };
-    d.append(...[h('h2', {}, title), message && (typeof message === 'string' ? h('p', { class: 'effect' }, message) : message), ...f, rs, err, h('div', { class: 'row' },
-      h('button', { class: 'b ' + (danger ? 'red' : ''), onclick: submit }, confirmText),
-      h('button', { class: 'b sec', onclick: () => finish(null) }, 'Cancel'))].filter(Boolean));
-    d.addEventListener('cancel', () => finish(null));            // Esc
-    d.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); submit(); } });
-    document.body.append(d); d.showModal();
-    (Object.values(inputs)[0] || rs)?.focus();
-  });
-}
-async function act(fn, after) { try { await fn(); toast('Done'); if (after) after(); } catch (e) { toast(e.message, true); } }
-function toast(msg, bad) {
-  let box = $('#toasts'); if (!box) { box = h('div', { id: 'toasts', role: 'status', 'aria-live': 'polite' }); document.body.append(box); }
-  const t = h('div', { class: 'toast ' + (bad ? 'err' : 'ok') }, msg); box.append(t); setTimeout(() => t.remove(), 4000);
-}
-
-function table(cols, rows, onRow, empty = 'Nothing here yet.') {
-  return h('div', { class: 'tbl' }, h('table', {}, h('thead', {}, h('tr', {}, cols.map((c) => h('th', {}, c.h)))),
-    h('tbody', {}, rows.length ? rows.map((r) => h('tr', { class: onRow ? 'click' : '', onclick: onRow ? () => onRow(r) : null }, cols.map((c) => h('td', {}, c.f ? c.f(r) : r[c.k] ?? '-')))) : h('tr', {}, h('td', { colspan: cols.length, class: 'empty' }, empty)))));
-}
-const kpi = (l, v, warn) => h('div', { class: 'card kpi' + (warn ? ' warn' : '') }, h('div', { class: 'v' }, v ?? '-'), h('div', { class: 'l' }, l));
-
-// ---------------- views ----------------
+// [tab key, label, permissions that unlock it (any), group]. A tab is only shown when the signed-in role holds one of them, so no tab ever answers 403.
 const TABS = [
-  ['dashboard', 'Overview', ['analytics.view']], ['live', 'Live map', ['dispatcher']], ['bookings', 'Bookings', ['dispatcher', 'support_agent', 'support_lead']],
-  ['drivers', 'Drivers', ['driver_verifier', 'dispatcher', 'support_agent', 'support_lead', 'finance_officer']], ['abasare', 'Abasare', ['driver_verifier']], ['users', 'Passengers', ['support_agent', 'support_lead']],
-  ['support', 'Support', ['support_agent', 'support_lead']], ['safety', 'Safety', ['support_lead', 'dispatcher']],
-  ['pricing', 'Pricing', ['business_manager', 'finance_approver']], ['services', 'Services', ['business_manager']], ['promos', 'Promotions', ['business_manager']], ['codes', 'Request codes', ['business_manager', 'support_lead', 'analyst']],
-  ['finance', 'Finance', ['finance_officer', 'finance_approver']], ['business', 'Business & fleets', ['business_manager']],
-  ['privacy', 'Privacy', ['support_lead']], ['settings', 'Settings', []], ['audit', 'Audit log', []], ['staff', 'Staff', []],
+  ['dashboard', 'Overview', ['analytics.view'], 'Operations'], ['live', 'Live map', ['bookings.view_all'], 'Operations'], ['bookings', 'Bookings', ['bookings.view_all'], 'Operations'],
+  ['drivers', 'Drivers', ['drivers.view'], 'Operations'], ['abasare', 'Abasare', ['drivers.view'], 'Operations'], ['safety', 'Safety', ['safety.respond'], 'Operations'],
+  ['users', 'Passengers', ['users.view'], 'People and support'], ['support', 'Support', ['support.handle'], 'People and support'], ['privacy', 'Privacy', ['privacy.handle'], 'People and support'],
+  ['finance', 'Finance', ['finance.view'], 'Money'],
+  ['pricing', 'Pricing', ['pricing.manage', 'pricing.approve'], 'Business'], ['services', 'Services', ['pricing.manage'], 'Business'], ['promos', 'Promotions', ['promotions.manage'], 'Business'],
+  ['codes', 'Request codes', ['codes.view'], 'Business'], ['business', 'Business & fleets', ['corporate.manage', 'fleet.manage'], 'Business'],
+  ['settings', 'Settings', ['settings.manage'], 'Administration'], ['audit', 'Audit log', ['audit.view'], 'Administration'], ['staff', 'Staff', ['users.manage'], 'Administration'],
 ];
-const V = {};
-V.dashboard = async (el) => {
-  const d = await api('GET', '/admin/dashboard'); const b = d.bookings, p = d.payments, r = d.revenue;
-  el.append(h('h1', {}, 'Operations overview'), h('div', { class: 'banner' }, 'Last 30 days. Gross booking value is customer spend; platform revenue is commission only.'),
-    h('div', { class: 'grid' }, kpi('Registered passengers', d.passengers), kpi('Drivers (total)', d.drivers.total), kpi('Verified drivers', d.drivers.verified), kpi('Pending verification', d.drivers.pending, d.drivers.pending > 10),
-      kpi('Online now', d.drivers.online), kpi('Active bookings', b.active), kpi('Completed', b.completed), kpi('Cancelled', b.cancelled), kpi('No driver found', b.no_driver, b.no_driver > 0),
-      kpi('Fulfilment rate', b.fulfilment_rate_pct == null ? '-' : b.fulfilment_rate_pct + '%'), kpi('Avg. time to assign', b.avg_assign_s + 's'), kpi('Avg. driver arrival', b.avg_arrival_s + 's'),
-      kpi('Payment success', p.success_rate_pct == null ? '-' : p.success_rate_pct + '%'), kpi('Gross booking value', money(r.gross_booking_value)), kpi('Platform commission', money(r.platform_commission_revenue)),
-      kpi('Cash collected', money(r.cash_collected)), kpi('Driver earnings payable', money(d.driver_earnings_payable)), kpi('Refunds pending', d.refunds.pending_refunds, d.refunds.pending_refunds > 0),
-      kpi('Disputed trips', d.disputes, d.disputes > 0), kpi('Support backlog', d.support.backlog), kpi('Support overdue', d.support.overdue, d.support.overdue > 0), kpi('Open safety incidents', d.safety_incidents.open, d.safety_incidents.open > 0)),
-    h('h2', {}, 'Zone performance'), table([{ h: 'Zone', k: 'zone_id' }, { h: 'Requests', k: 'requests' }, { h: 'Completed', k: 'completed' }, { h: 'Gross booking value', f: (z) => money(z.gbv) }], d.zones));
-};
-V.live = async (el) => {
-  el.append(h('h1', {}, 'Live operations'), h('div', { id: 'map' }), h('div', { id: 'liveinfo', class: 'row' }));
-  if (!window.L) { el.append(h('div', { class: 'banner' }, 'Map library not reachable (offline?). Showing a table instead.')); }
-  const m = window.L ? L.map('map').setView([-1.9536, 30.0927], 12) : null;
-  if (m) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m);
-  const layer = m ? L.layerGroup().addTo(m) : null;
-  async function tick() {
-    if (S.tab !== 'live') return; try {
-      const d = await api('GET', '/admin/live'); $('#liveinfo').textContent = `${d.drivers.length} drivers online · ${d.bookings.length} active bookings`;
-      if (layer) { layer.clearLayers(); d.drivers.forEach((x) => L.circleMarker([x.lat, x.lng], { radius: 6, color: '#00704a' }).bindTooltip('driver ' + x.user_id.slice(0, 6)).addTo(layer)); d.bookings.forEach((x) => L.marker([x.pickup_lat, x.pickup_lng]).bindTooltip(x.ref + ' · ' + x.status).addTo(layer)); }
-    } catch (e) { $('#liveinfo').textContent = e.message; }
-    setTimeout(tick, 5000);
-  } tick();
-};
-V.bookings = async (el, state = {}) => {
-  const q = state.q || ''; const st = state.status || '';
-  const data = await api('GET', `/admin/bookings?limit=100${q ? '&q=' + encodeURIComponent(q) : ''}${st ? '&status=' + st : ''}`);
-  const inp = h('input', { placeholder: 'Search booking ref, phone, name, payment reference', value: q, style: 'min-width:320px' });
-  const sel = h('select', {}, ['', 'SEARCHING_DRIVER', 'DRIVER_ASSIGNED', 'IN_PROGRESS', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'DISPUTED', 'NO_DRIVER_FOUND', 'CANCELLED_BY_PASSENGER'].map((s) => h('option', { value: s, selected: s === st }, s || 'any status')));
-  const go = () => { $('#view').replaceChildren(); V.bookings($('#view'), { q: inp.value, status: sel.value }); };
-  el.append(h('h1', {}, 'Bookings'), h('div', { class: 'row' }, inp, sel, h('button', { class: 'b', onclick: go }, 'Search')),
-    table([{ h: 'Ref', k: 'ref' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, { h: 'Service', k: 'service_id' }, { h: 'Passenger', f: (r) => r.passenger || r.passenger_phone }, { h: 'Driver', f: (r) => r.driver || '-' }, { h: 'Fare', f: (r) => money(r.final_fare ?? r.estimated_fare) }, { h: 'Pay', k: 'payment_method' }, { h: 'Code', f: (r) => r.request_code_label || r.request_code || '' }, { h: 'Created', f: (r) => when(r.created_at) }], data.bookings, (r) => bookingDetail(r.id)));
-};
-async function bookingDetail(id) {
-  const [b, ev] = await Promise.all([api('GET', '/bookings/' + id), api('GET', `/bookings/${id}/events`)]);
-  const d = h('dialog', { style: 'max-width:760px' });
-  const close = () => { d.close(); d.remove(); };
-  const refresh = () => { close(); bookingDetail(id); };
-  d.append(h('h2', {}, `${b.ref} · `, pill(b.status, statusCls(b.status))),
-    h('div', {}, `Fare ${money(b.final_fare ?? b.estimated_fare)} ${b.fare_is_final ? '(final)' : '(estimate)'} · ${b.payment_method} · ${(b.distance_m / 1000).toFixed(1)} km`),
-    h('div', {}, `From: ${b.pickup.name || b.pickup.lat + ',' + b.pickup.lng}  →  ${b.destination.name || b.destination.lat + ',' + b.destination.lng}`),
-    b.request_code ? h('div', {}, `Request code: ${b.request_code.code} · ${b.request_code.label}`) : null,
-    b.driver ? h('div', {}, `Driver: ${b.driver.name} · ${b.vehicle?.plate || ''}`) : null,
-    b.payment ? h('div', {}, `Payment: ${b.payment.status} · ref ${b.payment.reference}`) : null,
-    b.abasare ? h('div', { class: 'card' }, h('b', {}, `Abasare · ${b.abasare.mode === 'hourly' ? b.abasare.hours + ' h hire' : 'drive me home'}`),
-      h('div', {}, `Customer car: ${b.abasare.vehicle.plate} · ${[b.abasare.vehicle.color, b.abasare.vehicle.make, b.abasare.vehicle.model].filter(Boolean).join(' ')} · ${b.abasare.vehicle.vehicle_class}, ${b.abasare.vehicle.transmission}`),
-      b.abasare.overtime_blocks ? h('div', {}, `Overtime blocks: ${b.abasare.overtime_blocks}`) : null,
-      b.abasare.handovers.length ? b.abasare.handovers.map((x) => h('div', { style: 'margin-top:8px' }, h('b', {}, `${x.phase} check`), ` · odometer ${x.odometer_km} km · fuel ${x.fuel_percent}% · owner: `, pill(x.owner_response || 'not yet', x.owner_response === 'issue' ? 'bad' : ''),
-        x.notes ? h('div', {}, 'Driver notes: ' + x.notes) : null, x.owner_note ? h('div', { class: 'err' }, 'Owner note: ' + x.owner_note) : null,
-        h('div', { class: 'row' }, x.photos.map((u, i) => h('a', { href: u, target: '_blank', rel: 'noopener' }, 'photo ' + (i + 1)))))) : h('div', { class: 'muted' }, 'No car check recorded yet.')) : null,
-    h('div', { class: 'row' },
-      can('dispatcher') && h('button', { class: 'b sec', onclick: async () => { const a = await ask('Assign a driver', { reason: true, fields: [{ name: 'driver_id', label: 'Driver user id' }] }); if (a) act(() => api('POST', `/admin/bookings/${id}/assign`, { driver_id: a.driver_id, reason: a.reason }), refresh); } }, 'Assign / reassign'),
-      can('dispatcher') && h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/bookings/${id}/restart-search`), refresh) }, 'Restart search'),
-      can('dispatcher') && h('button', { class: 'b sec', onclick: async () => { const a = await ask('PIN override (logged exception)', { reason: true, danger: true, confirmText: 'Override' }); if (a) act(() => api('POST', `/admin/bookings/${id}/pin-override`, { reason: a.reason }), refresh); } }, 'PIN override'),
-      can('dispatcher') && h('button', { class: 'b red', onclick: async () => { const a = await ask('Cancel this booking?', { reason: true, danger: true, confirmText: 'Cancel booking' }); if (a) act(() => api('POST', `/admin/bookings/${id}/cancel`, { reason: a.reason }), refresh); } }, 'Cancel booking'),
-      can('support_agent', 'support_lead') && h('button', { class: 'b sec', onclick: async () => { const a = await ask('Mark as disputed', { reason: true }); if (a) act(() => api('POST', `/admin/bookings/${id}/dispute`, { reason: a.reason }), refresh); } }, 'Mark disputed'),
-      can('support_lead', 'finance_officer') && h('button', { class: 'b sec', onclick: async () => { const a = await ask('Request refund (needs a second person to approve)', { reason: true, fields: [{ name: 'amount', label: 'Amount RWF', type: 'number' }, { name: 'driver_clawback', label: 'Driver clawback RWF (0 if none)', type: 'number' }] }); if (a) act(() => api('POST', '/admin/finance/refunds', { booking_id: id, amount: a.amount, reason: a.reason, driver_clawback: a.driver_clawback || 0 })); } }, 'Request refund')),
-    h('h2', {}, 'Timeline'), table([{ h: 'When', f: (e) => when(e.created_at) }, { h: 'Event', f: (e) => e.type === 'status_change' ? `${e.from_status || ''} → ${e.to_status}` : e.type }, { h: 'By', k: 'actor_role' }, { h: 'Reason', k: 'reason' }], ev.events),
-    h('div', { class: 'row' }, h('button', { class: 'b sec', onclick: close }, 'Close')));
-  document.body.append(d); d.showModal();
-}
-V.drivers = async (el, state = {}) => {
-  const st = state.status ?? 'DOCUMENTS_SUBMITTED';
-  const data = await api('GET', `/admin/drivers?limit=100${st ? '&status=' + st : ''}${state.q ? '&q=' + encodeURIComponent(state.q) : ''}`);
-  const sel = h('select', { onchange: () => { $('#view').replaceChildren(); V.drivers($('#view'), { status: sel.value }); } }, ['', 'DOCUMENTS_SUBMITTED', 'UNDER_REVIEW', 'INFO_REQUIRED', 'APPROVED', 'SUSPENDED', 'EXPIRED_INELIGIBLE', 'REJECTED'].map((s) => h('option', { value: s, selected: s === st }, s || 'all')));
-  el.append(h('h1', {}, 'Drivers'), h('div', { class: 'row' }, 'Status:', sel),
-    table([{ h: 'Name', k: 'display_name' }, { h: 'Phone', k: 'phone' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, { h: 'Vehicle', f: (r) => (r.plate || '-') + ' ' + (r.vehicle_type || '') }, { h: 'Online', f: (r) => (r.is_online ? 'yes' : 'no') }, { h: 'Rating', k: 'rating_avg' }, { h: 'Trips', k: 'completed_count' }, { h: 'Submitted', f: (r) => when(r.submitted_at) }], data.drivers, (r) => driverDetail(r.user_id)));
-};
-async function driverDetail(id) {
-  const x = await api('GET', '/admin/drivers/' + id);
-  const d = h('dialog', { style: 'max-width:820px' }); const close = () => { d.close(); d.remove(); }; const refresh = () => { close(); driverDetail(id); };
-  const decide = (decision, title, needReason, danger) => async () => { const a = await ask(title, { reason: needReason, danger }); if (a) act(() => api('POST', `/admin/drivers/${id}/decision`, { decision, reason: a.reason }), refresh); };
-  d.append(h('h2', {}, `${x.profile.display_name || x.profile.legal_name || 'Driver'} · `, pill(x.profile.status, statusCls(x.profile.status))),
-    h('div', {}, `${x.profile.phone} · rating ${x.profile.rating_avg} (${x.profile.rating_count}) · completed ${x.profile.completed_count} · cancelled ${x.profile.cancel_count}`),
-    h('div', { class: x.permission.can_work ? 'ok' : 'err' }, x.permission.can_work ? 'Permitted to work' : 'Not dispatchable: ' + x.permission.reasons.join(', ') + (x.permission.missing_documents.length ? ' · missing/unapproved: ' + x.permission.missing_documents.join(', ') : '') + (x.permission.expired_documents.length ? ' · expired: ' + x.permission.expired_documents.join(', ') : '')),
-    x.profile.abasare_status && x.profile.abasare_status !== 'none' ? h('div', { class: 'card' }, h('h2', {}, 'Abasare application ', pill(x.profile.abasare_status, statusCls(x.profile.abasare_status))),
-      h('div', {}, `Licence since ${x.profile.abasare_skills.licence_since} · ${x.profile.abasare_skills.years_experience} yrs experience · returns by ${x.profile.abasare_skills.return_mode}`),
-      h('div', {}, `Can drive: ${(x.profile.abasare_skills.classes || []).join(', ')} · ${(x.profile.abasare_skills.transmissions || []).join(', ')}`),
-      can('driver_verifier') ? h('div', { class: 'row' },
-        ...[['approve', 'Approve Abasare', false, 'b'], ['reject', 'Reject', true, 'b red'], ['suspend', 'Suspend', true, 'b red'], ['reinstate', 'Reinstate', false, 'b sec']].map(([dec, label, need, cls]) => h('button', { class: cls, onclick: async () => { const a = await ask(label + '?', { reason: need, danger: need }); if (a) act(() => api('POST', `/admin/drivers/${id}/abasare-decision`, { decision: dec, reason: a.reason }), refresh); } }, label))) : null) : null,
-    h('h2', {}, 'Vehicle'), table([{ h: 'Plate', k: 'plate' }, { h: 'Type', k: 'vehicle_type' }, { h: 'Make', f: (v) => `${v.make} ${v.model} ${v.color}` }, { h: 'Seats', k: 'capacity' }, { h: 'Status', k: 'status' }], x.vehicles),
-    h('h2', {}, 'Documents (links expire in 5 minutes)'),
-    table([{ h: 'Type', k: 'doc_type' }, { h: 'Status', f: (r) => pill(r.review_status, statusCls(r.review_status)) }, { h: 'Expiry', k: 'expiry_date' }, { h: 'Note', k: 'review_note' }, { h: 'File', f: (r) => h('a', { href: r.url, target: '_blank', rel: 'noopener' }, 'view') },
-      { h: '', f: (r) => can('driver_verifier') && !r.superseded ? h('span', { class: 'row' }, h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/documents/${r.id}/review`, { decision: 'approved' }), refresh) }, 'Approve'),
-        h('button', { class: 'b sec', onclick: async () => { const a = await ask('Reject / request new upload', { reason: true, fields: [{ name: 'decision', label: 'rejected or resubmit', type: 'select', options: ['resubmit', 'rejected'] }] }); if (a) act(() => api('POST', `/admin/documents/${r.id}/review`, { decision: a.decision, note: a.reason }), refresh); } }, 'Reject')) : '' }], x.documents),
-    h('div', { class: 'row' }, can('driver_verifier') && h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/drivers/${id}/start-review`), refresh) }, 'Start review'),
-      can('driver_verifier') && h('button', { class: 'b', onclick: decide('approve', 'Approve this driver?', false) }, 'Approve driver'),
-      can('driver_verifier') && h('button', { class: 'b sec', onclick: decide('info_required', 'Ask for more information', true) }, 'Need more info'),
-      can('driver_verifier') && h('button', { class: 'b red', onclick: decide('reject', 'Reject application', true, true) }, 'Reject'),
-      can('driver_verifier') && h('button', { class: 'b red', onclick: decide('suspend', 'Suspend driver', true, true) }, 'Suspend'),
-      can('driver_verifier') && h('button', { class: 'b sec', onclick: decide('reinstate', 'Reinstate driver', false) }, 'Reinstate')),
-    h('h2', {}, 'Status history'), table([{ h: 'When', f: (r) => when(r.created_at) }, { h: 'From', k: 'from_status' }, { h: 'To', k: 'to_status' }, { h: 'Reason', k: 'reason' }], x.history),
-    h('div', { class: 'row' }, h('button', { class: 'b sec', onclick: close }, 'Close')));
-  document.body.append(d); d.showModal();
-}
-V.abasare = async (el, state = {}) => {
-  const st = state.status || 'pending';
-  const d = await api('GET', '/admin/abasare/applications?status=' + st);
-  const sel = h('select', { onchange: () => { $('#view').replaceChildren(); V.abasare($('#view'), { status: sel.value }); } }, ['pending', 'approved', 'rejected', 'suspended'].map((s) => h('option', { value: s, selected: s === st }, s)));
-  el.append(h('h1', {}, 'Abasare (drivers for customers\' own cars)'), h('div', { class: 'banner' }, 'Approve only after the driving licence (held 2+ years), national ID, photo and a valid police clearance are verified. Open a driver to review documents.'),
-    h('div', { class: 'row' }, 'Status:', sel),
-    table([{ h: 'Name', k: 'display_name' }, { h: 'Phone', k: 'phone' }, { h: 'Account', k: 'account_status' }, { h: 'Licence since', f: (r) => r.abasare_skills.licence_since }, { h: 'Experience', f: (r) => r.abasare_skills.years_experience + ' yrs' },
-      { h: 'Cars', f: (r) => (r.abasare_skills.classes || []).join(', ') + ' / ' + (r.abasare_skills.transmissions || []).join(', ') }, { h: 'Applied', f: (r) => when(r.abasare_applied_at) }], d.applications, (r) => driverDetail(r.user_id)));
-};
-V.users = async (el) => {
-  const inp = h('input', { placeholder: 'Name, phone or email (min 2 chars)', style: 'min-width:280px' }); const out = h('div');
-  const go = async () => { out.replaceChildren(table([{ h: 'Name', k: 'display_name' }, { h: 'Phone', k: 'phone' }, { h: 'Email', k: 'email' }, { h: 'Status', f: (u) => pill(u.status, statusCls(u.status)) }, { h: 'Roles', f: (u) => u.roles.join(', ') }], (await api('GET', '/admin/users?q=' + encodeURIComponent(inp.value))).users, userDetail)); };
-  el.append(h('h1', {}, 'Passengers & users'), h('div', { class: 'row' }, inp, h('button', { class: 'b', onclick: () => act(go) }, 'Search')), out);
-};
-async function userDetail(u) {
-  const x = await api('GET', '/admin/users/' + u.id); const d = h('dialog', {}); const close = () => { d.close(); d.remove(); };
-  d.append(h('h2', {}, x.user.display_name || x.user.phone), h('div', {}, `${x.user.phone || ''} · status ${x.user.status}`),
-    table([{ h: 'Ref', k: 'ref' }, { h: 'Status', k: 'status' }, { h: 'Fare', f: (r) => money(r.final_fare ?? r.estimated_fare) }, { h: 'Date', f: (r) => when(r.created_at) }], x.bookings),
-    h('div', { class: 'row' }, can('support_lead') && h('button', { class: 'b red', onclick: async () => { const a = await ask('Restrict this account', { reason: true, danger: true, fields: [{ name: 'status', label: 'status', type: 'select', options: ['restricted', 'deactivated', 'active'] }] }); if (a) act(() => api('POST', `/admin/users/${u.id}/status`, { status: a.status, reason: a.reason }), close); } }, 'Change account status'), h('button', { class: 'b sec', onclick: close }, 'Close')));
-  document.body.append(d); d.showModal();
-}
-V.support = async (el, state = {}) => {
-  const data = await api('GET', '/admin/support/cases' + (state.q ? '?q=' + encodeURIComponent(state.q) : ''));
-  const inp = h('input', { placeholder: 'Case, booking ref, payment reference, phone', value: state.q || '', style: 'min-width:300px' });
-  el.append(h('h1', {}, 'Support cases'), h('div', { class: 'row' }, inp, h('button', { class: 'b', onclick: () => { $('#view').replaceChildren(); V.support($('#view'), { q: inp.value }); } }, 'Search')),
-    table([{ h: 'Case', k: 'ref' }, { h: 'Priority', f: (c) => pill(c.priority, statusCls(c.priority)) }, { h: 'Status', k: 'status' }, { h: 'Category', k: 'category' }, { h: 'Subject', k: 'subject' }, { h: 'Reporter', k: 'reporter' }, { h: 'SLA due', f: (c) => h('span', { class: c.overdue ? 'err' : '' }, when(c.sla_due_at)) }, { h: '', f: (c) => (c.sensitive ? pill('sensitive', 'bad') : '') }], data.cases, (c) => caseDetail(c.id)));
-};
-async function caseDetail(id) {
-  const x = await api('GET', '/admin/support/cases/' + id); const d = h('dialog', { style: 'max-width:720px' }); const close = () => { d.close(); d.remove(); };
-  const reply = h('textarea', { rows: 3, placeholder: 'Reply to customer (visible to them)', style: 'width:100%' }); const note = h('textarea', { rows: 2, placeholder: 'Internal note (staff only)', style: 'width:100%' });
-  const status = h('select', {}, ['', 'in_progress', 'awaiting_user', 'resolved', 'closed'].map((s) => h('option', { value: s }, s || 'status unchanged'))); const res = h('input', { placeholder: 'Resolution (required when resolving)', style: 'width:100%' });
-  d.append(h('h2', {}, x.case.ref + ' · ' + x.case.subject), h('div', {}, `${x.case.category} · ${x.case.priority} · ${x.case.status}`),
-    h('div', {}, x.events.map((e) => h('div', { class: 'card', style: e.visibility === 'internal' ? 'background:#f2b70522' : '' }, h('b', {}, e.kind + (e.visibility === 'internal' ? ' (internal)' : '') + ' · ' + when(e.created_at)), h('div', {}, e.body || (e.file_key ? 'Evidence attached' : ''))))),
-    reply, note, h('div', { class: 'row' }, status, res), h('div', { class: 'row' }, h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/support/cases/${id}/update`, { reply: reply.value || undefined, internal_note: note.value || undefined, status: status.value || undefined, resolution: res.value || undefined, assign_to_me: true }), () => { close(); caseDetail(id); }) }, 'Save'), h('button', { class: 'b sec', onclick: close }, 'Close')));
-  document.body.append(d); d.showModal();
-}
-V.safety = async (el) => {
-  const d = await api('GET', '/admin/safety/incidents');
-  el.append(h('h1', {}, 'Safety incidents'), h('div', { class: 'banner' }, 'SOS alerts are recorded here. The platform never reports that police or ambulance were contacted; record in the resolution what you actually did.'),
-    table([{ h: 'Ref', k: 'ref' }, { h: 'Kind', f: (i) => pill(i.kind, i.kind === 'sos' ? 'bad' : '') }, { h: 'Status', k: 'status' }, { h: 'Reporter', k: 'reporter' }, { h: 'Location', f: (i) => i.lat != null ? h('a', { href: `https://www.openstreetmap.org/?mlat=${i.lat}&mlon=${i.lng}#map=16/${i.lat}/${i.lng}`, target: '_blank', rel: 'noopener' }, 'map') : '-' }, { h: 'When', f: (i) => when(i.created_at) },
-      { h: '', f: (i) => i.status !== 'resolved' ? h('span', { class: 'row' }, i.status === 'open' && h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/safety/incidents/${i.id}/update`, { status: 'acknowledged' }), () => go('safety')) }, 'Acknowledge'),
-        h('button', { class: 'b', onclick: async () => { const a = await ask('Resolve incident', { reason: true }); if (a) act(() => api('POST', `/admin/safety/incidents/${i.id}/update`, { status: 'resolved', resolution: a.reason }), () => go('safety')); } }, 'Resolve')) : '' }], d.incidents));
-};
-// ---- Request codes: printable QR codes for venues ----
-async function fetchBlob(path) {
-  const r = await fetch(API + path, { headers: { authorization: 'Bearer ' + S.access } });
-  if (!r.ok) throw new Error('Download failed (' + r.status + ')');
-  return r.blob();
-}
-const blobToDataUrl = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
-async function downloadQr(c) {
-  const url = URL.createObjectURL(await fetchBlob(`/admin/request-codes/${c.id}/qr.png`));
-  const a = h('a', { href: url, download: `abasare-${c.code}.png` }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
-}
-// The printed poster is for the public at the venue, so it deliberately shows all three languages together.
-async function printPoster(c) {
-  const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups to print the poster', true); return; }
-  const qr = await blobToDataUrl(await fetchBlob(`/admin/request-codes/${c.id}/qr.png`));
-  const logo = await fetch('logo.png').then((r) => r.blob()).then(blobToDataUrl).catch(() => '');
-  const d = w.document; d.title = 'Abasare ' + c.code;
-  const st = d.createElement('style');
-  st.textContent = '@page{size:A5;margin:0}*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;color:#14281d;text-align:center}.p{width:148mm;height:210mm;padding:10mm;border-top:8mm solid #00A1DE;border-bottom:8mm solid #20603D;display:flex;flex-direction:column;align-items:center;justify-content:space-between}.logo{height:22mm}h1{font-size:26pt;margin:0}.qr{width:100mm;height:100mm}.l{font-size:15pt;font-weight:700;margin:1mm 0}.s{font-size:10pt;color:#456}.bar{height:3mm;width:60mm;background:#FAD201;border-radius:2mm}';
-  d.head.append(st);
-  const el = (tag, cls, txt) => { const e = d.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-  const box = el('div', 'p'); const top = el('div'); if (logo) { const i = el('img', 'logo'); i.src = logo; top.append(i); }
-  top.append(el('h1', '', c.label)); if (c.partner_name) top.append(el('div', 's', c.partner_name));
-  const q = el('img', 'qr'); q.src = qr;
-  const txt = el('div'); txt.append(el('div', 'l', 'Sikana usabe umushoferi'), el('div', 'l', 'Scannez pour demander un chauffeur'), el('div', 'l', 'Scan to request a driver'), el('div', 'bar'), el('div', 's', c.code));
-  box.append(top, q, txt); d.body.append(box);
-  setTimeout(() => { w.focus(); w.print(); }, 400);
-}
-V.codes = async (el) => {
-  const d = await api('GET', '/admin/request-codes'), manage = can('business_manager', 'support_lead');
-  const f = { label: h('input', { placeholder: 'Venue name (e.g. Hotel Serena)', maxlength: 120 }), partner: h('input', { placeholder: 'Partner name (optional)', maxlength: 120 }),
-    lat: h('input', { placeholder: 'Latitude', type: 'number', step: 'any' }), lng: h('input', { placeholder: 'Longitude', type: 'number', step: 'any' }),
-    note: h('input', { placeholder: 'Pickup note (e.g. Main entrance, ask the receptionist)', maxlength: 300 }), svc: h('select', {}, h('option', { value: 'ride' }, 'Default: ride'), h('option', { value: 'abasare' }, 'Default: Abasare (driver for your car)')) };
-  const form = h('div', { class: 'card' }, h('h2', {}, 'New request code'), f.label, f.partner, h('div', { class: 'row' }, f.lat, f.lng,
-    h('button', { class: 'b sec', onclick: () => { if (!navigator.geolocation) { toast('Location is not available in this browser', true); return; } navigator.geolocation.getCurrentPosition((p) => { f.lat.value = p.coords.latitude.toFixed(6); f.lng.value = p.coords.longitude.toFixed(6); }, () => toast('Could not get your location', true)); } }, 'Use my current location')),
-    f.note, f.svc,
-    h('button', { class: 'b', onclick: () => { const body = { label: f.label.value.trim(), lat: Number(f.lat.value), lng: Number(f.lng.value), default_service: f.svc.value };
-      if (f.partner.value.trim()) body.partner_name = f.partner.value.trim(); if (f.note.value.trim()) body.pickup_note = f.note.value.trim();
-      if (!body.label || !f.lat.value || !f.lng.value) { toast('Venue name, latitude and longitude are required', true); return; }
-      act(() => api('POST', '/admin/request-codes', body), () => go('codes')); } }, 'Create code'));
-  el.append(h('h1', {}, 'Request codes'), h('div', { class: 'banner' }, 'Print a QR code for a hotel, bar, mall or taxi rank. Customers scan it and request a ride or an Abasare with almost no steps. Scans are counted once per phone network every 10 minutes.'),
-    table([{ h: 'Code', f: (c) => h('code', {}, c.code) }, { h: 'Venue', f: (c) => c.label + (c.partner_name ? ' (' + c.partner_name + ')' : '') }, { h: 'Default', k: 'default_service' },
-      { h: 'Scans', k: 'scans' }, { h: 'Bookings', k: 'bookings' }, { h: 'Completed', k: 'completed' }, { h: 'Expires', f: (c) => (c.expires_at ? when(c.expires_at) : '-') },
-      { h: 'Status', f: (c) => (c.active && !c.expired ? pill('active') : pill(c.expired ? 'expired' : 'inactive', 'bad')) },
-      { h: '', f: (c) => h('span', { class: 'row' }, h('button', { class: 'b sec', onclick: () => act(() => downloadQr(c)) }, 'Download QR'), h('button', { class: 'b sec', onclick: () => act(() => printPoster(c)) }, 'Print poster'),
-        manage && h('button', { class: 'b sec', onclick: () => act(() => api('PATCH', '/admin/request-codes/' + c.id, { active: !c.active }), () => go('codes')) }, c.active ? 'Deactivate' : 'Activate')) }], d.codes),
-    manage && form);
-};
-V.finance = async (el, state = {}) => {
-  const [pos, pays, refunds, payouts, rec] = await Promise.all([api('GET', '/admin/finance/position'), api('GET', '/admin/finance/payments?limit=50' + (state.q ? '&q=' + encodeURIComponent(state.q) : '')), api('GET', '/admin/finance/refunds'), api('GET', '/admin/finance/payouts'), api('GET', '/admin/finance/reconciliation')]);
-  const inp = h('input', { placeholder: 'Payment/provider reference or booking ref', value: state.q || '', style: 'min-width:320px' });
-  const file = h('textarea', { rows: 4, placeholder: 'Provider settlement rows as JSON: [{"reference":"…","amount":1500,"status":"SUCCESS"}]', style: 'width:100%' });
-  el.append(h('h1', {}, 'Finance'),
-    h('div', { class: 'banner' }, pos.integrity.balanced ? 'Ledger integrity check: balanced (debits = credits).' : 'LEDGER IMBALANCE DETECTED. Stop payouts and investigate.'),
-    h('h2', {}, 'Ledger position'), table([{ h: 'Account', k: 'name' }, { h: 'Type', k: 'type' }, { h: 'Debit', f: (a) => money(a.debit) }, { h: 'Credit', f: (a) => money(a.credit) }, { h: 'Balance', f: (a) => money(a.balance) }], pos.accounts),
-    h('div', { class: 'row' }, ['payments', 'ledger', 'trips', 'earnings'].map((k) => h('button', { class: 'b sec', onclick: () => act(async () => { const r = await fetch(`${API}/admin/finance/export/${k}`, { headers: { authorization: 'Bearer ' + S.access } }); if (!r.ok) throw new Error('Export denied'); const u = URL.createObjectURL(await r.blob()); const a = h('a', { href: u, download: k + '.csv' }); document.body.append(a); a.click(); a.remove(); }) }, 'Export ' + k + '.csv'))),
-    h('h2', {}, 'Transactions'), h('div', { class: 'row' }, inp, h('button', { class: 'b', onclick: () => { $('#view').replaceChildren(); V.finance($('#view'), { q: inp.value }); } }, 'Search')),
-    table([{ h: 'Reference', k: 'reference' }, { h: 'Booking', k: 'booking_ref' }, { h: 'Method', k: 'method' }, { h: 'Status', f: (p) => pill(p.status, statusCls(p.status)) }, { h: 'Amount', f: (p) => money(p.amount) }, { h: 'Settlement', k: 'settlement_status' }, { h: 'Issue', k: 'failure_reason' }, { h: 'Date', f: (p) => when(p.created_at) }], pays.payments),
-    h('h2', {}, 'Refunds (maker-checker)'), table([{ h: 'Booking', k: 'booking_ref' }, { h: 'Amount', f: (r) => money(r.amount) }, { h: 'Clawback', f: (r) => money(r.driver_clawback) }, { h: 'Reason', k: 'reason' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) },
-      { h: '', f: (r) => r.status === 'REQUESTED' && can('finance_approver') ? h('span', { class: 'row' }, h('button', { class: 'b', onclick: async () => { const a = await ask('Approve refund of ' + money(r.amount) + '?', {}); if (a) act(() => api('POST', `/admin/finance/refunds/${r.id}/decision`, { approve: true }), () => go('finance')); } }, 'Approve'), h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/finance/refunds/${r.id}/decision`, { approve: false }), () => go('finance')) }, 'Reject')) : '' }], refunds.refunds),
-    h('h2', {}, 'Driver / fleet payouts'), table([{ h: 'Owner', k: 'owner' }, { h: 'Amount', f: (p) => money(p.amount) }, { h: 'Fee', f: (p) => money(p.fee) }, { h: 'MoMo number', k: 'msisdn' }, { h: 'Status', f: (p) => pill(p.status, statusCls(p.status)) }, { h: 'Requested', f: (p) => when(p.requested_at) },
-      { h: '', f: (p) => h('span', { class: 'row' },
-        p.status === 'REQUESTED' && can('finance_officer', 'finance_approver') && h('button', { class: 'b sec', onclick: () => act(() => api('POST', `/admin/finance/payouts/${p.id}/review`), () => go('finance')) }, 'Review'),
-        ['REQUESTED', 'REVIEWED'].includes(p.status) && can('finance_approver') && h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/finance/payouts/${p.id}/approve`), () => go('finance')) }, 'Approve'),
-        p.status === 'APPROVED' && can('finance_approver') && h('button', { class: 'b', onclick: async () => { const a = await ask('Mark paid (after you sent the MoMo transfer)', { fields: [{ name: 'provider_reference', label: 'MoMo transaction id' }] }); if (a) act(() => api('POST', `/admin/finance/payouts/${p.id}/paid`, { provider_reference: a.provider_reference }), () => go('finance')); } }, 'Mark paid'),
-        ['REQUESTED', 'REVIEWED', 'APPROVED'].includes(p.status) && can('finance_officer', 'finance_approver') && h('button', { class: 'b red', onclick: async () => { const a = await ask('Reject payout', { reason: true, danger: true }); if (a) act(() => api('POST', `/admin/finance/payouts/${p.id}/reject`, { note: a.reason }), () => go('finance')); } }, 'Reject')) }], payouts.payouts),
-    h('h2', {}, 'Reconciliation'), h('div', { class: 'banner' }, 'Upload the provider settlement report rows for a day. Differences are listed for investigation. Never mark a payment paid from a screenshot.'),
-    file, h('div', { class: 'row' }, h('input', { id: 'recdate', type: 'date', value: new Date().toISOString().slice(0, 10) }), h('button', { class: 'b', onclick: () => act(async () => { const r = await api('POST', '/admin/finance/reconcile', { provider: 'mtn_momo', run_date: $('#recdate').value, rows: JSON.parse(file.value || '[]') }); toast(JSON.stringify(r.summary)); }, () => go('finance')) }, 'Run reconciliation')),
-    h('h3', {}, 'Payment exceptions'), table([{ h: 'Reference', k: 'reference' }, { h: 'Status', k: 'status' }, { h: 'Amount', f: (p) => money(p.amount) }, { h: 'Issue', k: 'failure_reason' }, { h: 'Created', f: (p) => when(p.created_at) }], rec.payment_exceptions),
-    h('h3', {}, 'Open reconciliation items'), table([{ h: 'Run date', k: 'run_date' }, { h: 'Kind', f: (i) => pill(i.kind, 'warn') }, { h: 'Reference', k: 'provider_reference' }, { h: 'Internal', f: (i) => money(i.internal_amount) }, { h: 'Provider', f: (i) => money(i.provider_amount) },
-      { h: '', f: (i) => h('button', { class: 'b sec', onclick: async () => { const a = await ask('Resolve item', { reason: true }); if (a) act(() => api('POST', `/admin/finance/reconciliation/items/${i.id}/resolve`, { note: a.reason }), () => go('finance')); } }, 'Resolve') }], rec.open_items),
-    h('h3', {}, 'Cash outstanding > 1 hour'), table([{ h: 'Booking', k: 'ref' }, { h: 'Due', f: (p) => money(p.amount) }, { h: 'Collected', f: (p) => money(p.amount_collected) }], rec.cash_outstanding));
-};
-V.business = async (el) => {
-  const d = await api('GET', '/admin/businesses');
-  el.append(h('h1', {}, 'Business accounts'), table([{ h: 'Company', k: 'legal_name' }, { h: 'TIN', k: 'tin' }, { h: 'Status', f: (b) => pill(b.status, statusCls(b.status)) }, { h: 'Billing', k: 'billing_mode' }, { h: '', f: (b) => h('span', { class: 'row' }, b.status !== 'active' && h('button', { class: 'b', onclick: () => act(() => api('POST', `/admin/businesses/${b.id}/decision`, { status: 'active' }), () => go('business')) }, 'Verify & activate'), b.status === 'active' && h('button', { class: 'b sec', onclick: async () => { const a = await ask('Issue monthly invoice', { fields: [{ name: 'month', label: 'YYYY-MM' }] }); if (a) act(() => api('POST', `/admin/businesses/${b.id}/invoice`, { month: a.month })); } }, 'Invoice month')) }], d.businesses),
-    h('h1', {}, 'Fleets'), table([{ h: 'Fleet', k: 'name' }, { h: 'Status', f: (b) => pill(b.status, statusCls(b.status)) }, { h: 'Revenue share', f: (b) => b.revenue_share_bps / 100 + '%' }, { h: '', f: (f) => h('button', { class: 'b', onclick: async () => { const a = await ask('Fleet agreement', { fields: [{ name: 'revenue_share_bps', label: 'Fleet share of driver net, basis points (1000 = 10%)', type: 'number' }] }); if (a) act(() => api('POST', `/admin/fleets/${f.id}/decision`, { status: 'active', revenue_share_bps: a.revenue_share_bps }), () => go('business')); } }, 'Activate / set share') }], d.fleets));
-};
-V.privacy = async (el) => {
-  const d = await api('GET', '/admin/privacy-requests');
-  el.append(h('h1', {}, 'Privacy requests'), table([{ h: 'Kind', k: 'kind' }, { h: 'User', k: 'display_name' }, { h: 'Status', f: (r) => pill(r.status, statusCls(r.status)) }, { h: 'Due', f: (r) => when(r.due_at) }, { h: '', f: (r) => ['open', 'in_progress'].includes(r.status) ? h('button', { class: 'b', onclick: async () => { const a = await ask(r.kind === 'deletion' ? 'Execute deletion? Personal data is erased; financial records are kept in anonymised form.' : 'Execute ' + r.kind, { danger: r.kind === 'deletion', confirmText: 'Execute' }); if (a) act(async () => { const o = await api('POST', `/admin/privacy-requests/${r.id}/execute`); if (r.kind === 'access') { const a = h('a', { href: URL.createObjectURL(new Blob([JSON.stringify(o, null, 2)], { type: 'application/json' })), download: 'user-data.json' }); document.body.append(a); a.click(); a.remove(); } }, () => go('privacy')); } }, 'Execute') : '' }], d.requests));
-};
-V.audit = async (el, state = {}) => {
-  const d = await api('GET', '/admin/audit?limit=200' + (state.action ? '&action=' + encodeURIComponent(state.action) : ''));
-  const inp = h('input', { placeholder: 'Action prefix e.g. refund, pricing, driver', value: state.action || '' });
-  el.append(h('h1', {}, 'Audit log (append-only)'), h('div', { class: 'row' }, inp, h('button', { class: 'b', onclick: () => { $('#view').replaceChildren(); V.audit($('#view'), { action: inp.value }); } }, 'Filter')),
-    table([{ h: 'When', f: (l) => when(l.created_at) }, { h: 'Actor', f: (l) => l.actor_name || l.actor_id?.slice(0, 8) || 'system' }, { h: 'Action', k: 'action' }, { h: 'Entity', f: (l) => `${l.entity_type || ''} ${l.entity_id || ''}` }, { h: 'Change', f: (l) => h('code', {}, JSON.stringify(l.after ?? '').slice(0, 120)) }], d.logs));
-};
-V.staff = async (el) => {
-  const d = await api('GET', '/admin/staff'); d.invites = (await api('GET', '/admin/staff/invites')).invites;
-  el.append(h('h1', {}, 'Staff & roles'), h('div', { class: 'banner' }, 'Two-factor authentication is mandatory. New staff are invited by a one-time link: they choose their own password and scan their own authenticator QR code. You never see their secret.'), table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Roles', f: (s) => s.roles.join(', ') }, { h: 'Status', k: 'status' }, { h: '', f: (s) => h('button', { class: 'b sec', onclick: async () => { const a = await ask('Sign this person out everywhere?', { danger: true }); if (a) act(() => api('POST', `/admin/staff/${s.id}/sessions/revoke`)); } }, 'Revoke sessions') }], d.staff),
-    h('button', { class: 'b', onclick: async () => { const a = await ask('Invite a staff member', { confirmText: 'Create invitation', fields: [{ name: 'name', label: 'Full name' }, { name: 'email', label: 'Email' }, { name: 'role', label: 'role', type: 'select', options: Object.keys(d.roles) }] }); if (a) { delete a.reason; try { const r = await api('POST', '/admin/staff/invites', a); showInvite(r, a.email); } catch (e) { toast(e.message, true); } } } }, 'Invite staff member'),
-    h('h2', {}, 'Pending invitations'), inviteTable(d.invites, () => go('staff')),
-    h('h2', {}, 'Role permissions'), table([{ h: 'Role', k: 'r' }, { h: 'Permissions', f: (x) => x.p.join(', ') }], Object.entries(d.roles).map(([r, p]) => ({ r, p }))));
-};
+const visibleTabs = () => TABS.filter(([, , need]) => can(...need));
 
+// ---------------- theme (auto follows the OS; the toggle overrides and is remembered) ----------------
+const effectiveTheme = () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+function applyTheme(t) { if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
+applyTheme(pref.get('rm_theme'));
 
-function showInvite(r, email) {
-  const d = h('dialog', {}); const link = h('input', { readonly: true, value: r.invite_url, style: 'width:100%;margin:6px 0' });
-  d.append(h('h2', {}, 'Invitation created'), h('p', {}, 'Send this link ONLY to ' + email + ' (it works once and expires ' + new Date(r.expires_at).toLocaleString() + '). They will set their own password and scan their own authenticator QR code. You will not see their secret.'), link,
-    h('div', { class: 'row' }, h('button', { class: 'b', onclick: async () => { try { await navigator.clipboard.writeText(r.invite_url); toast('Link copied'); } catch { link.select(); toast('Select and copy the link'); } } }, 'Copy link'), h('button', { class: 'b sec', onclick: () => { d.close(); d.remove(); go('staff'); } }, 'Close')));
-  document.body.append(d); d.showModal(); link.select();
-}
-function inviteTable(rows, reload) {
-  if (!rows.length) return h('div', { style: 'color:var(--mut)' }, 'No pending invitations.');
-  return table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Role', k: 'role' }, { h: 'Expires', f: (x) => new Date(x.expires_at).toLocaleString() },
-    { h: '', f: (x) => h('button', { class: 'b sec', onclick: () => act(() => api('DELETE', '/admin/staff/invites/' + x.id), reload) }, 'Revoke') }], rows);
-}
-// ---- invitee: activate account (public page opened from the invite link) ----
-async function activationView(root, token) {
-  const pub = async (m, p, body) => { const r = await fetch(API + p, { method: m, headers: { 'content-type': 'application/json' }, body: m === 'POST' ? JSON.stringify(body || {}) : undefined }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error?.message || 'Request failed'); return j; };
-  const card = h('div', { class: 'card login' }); root.append(card);
-  let info; try { info = await pub('GET', '/staff-invite/' + token); } catch (e) { card.append(h('h1', {}, 'Invitation'), h('div', { class: 'err' }, e.message + '. Ask your administrator for a new invitation.')); return; }
-  const err = h('div', { class: 'err' });
-  const step1 = () => { card.replaceChildren(h('h1', {}, 'Welcome, ' + info.name), h('p', {}, 'You were invited as ' + info.role.replace(/_/g, ' ') + ' (' + info.email + '). Next you will set up two-factor authentication on your own phone.'), err,
-    h('button', { class: 'b', style: 'width:100%', onclick: begin }, 'Start setup')); };
-  const begin = async () => { err.textContent = ''; try { const b = await pub('POST', '/staff-invite/' + token + '/begin'); step2(b); } catch (e) { err.textContent = e.message; } };
-  const step2 = (b) => {
-    const pw = h('input', { type: 'password', placeholder: 'Choose a password (12+ characters)', autocomplete: 'new-password' }), pw2 = h('input', { type: 'password', placeholder: 'Repeat the password', autocomplete: 'new-password' }), code = h('input', { placeholder: '6-digit code from the app', inputmode: 'numeric', maxlength: 6 });
-    const qr = h('img', { alt: 'Authenticator QR code', src: 'data:image/svg+xml;utf8,' + encodeURIComponent(b.qr_svg), style: 'width:220px;height:220px;display:block;margin:8px auto;background:#fff' });
-    card.replaceChildren(h('h1', {}, 'Set up your authenticator'), h('p', {}, '1. Open Google Authenticator or Microsoft Authenticator on your phone and scan this QR code.'), qr,
-      h('details', {}, h('summary', {}, 'Cannot scan? Enter the key by hand'), h('code', { style: 'word-break:break-all;display:block;margin:6px 0' }, b.secret)),
-      h('p', {}, '2. Choose your password and type the 6-digit code shown in the app.'), pw, pw2, code, err,
-      h('button', { class: 'b', style: 'width:100%', onclick: async () => { err.textContent = ''; if (pw.value !== pw2.value) { err.textContent = 'The passwords do not match.'; return; } try { await pub('POST', '/staff-invite/' + token + '/activate', { password: pw.value, code: code.value.trim() }); history.replaceState(null, '', location.pathname); card.replaceChildren(h('h1', {}, 'All set'), h('p', {}, 'Your account is active. Sign in with your email, your password and the code from your authenticator app.'), h('button', { class: 'b', style: 'width:100%', onclick: () => render() }, 'Go to sign in')); } catch (e) { err.textContent = e.message; } } }, 'Activate my account'));
-  };
-  step1();
-}
+// ---------------- navigation ----------------
+const unsaved = () => S.dirty.size > 0;
+window.addEventListener('beforeunload', (e) => { if (unsaved()) { e.preventDefault(); e.returnValue = ''; } });
+const setDirty = (id, on) => { if (on) S.dirty.add(id); else S.dirty.delete(id); };   // forms register here; leaving the page then asks first
 
-// ---------------- shell ----------------
-// Unsaved-changes guard: forms register themselves with setDirty(id, true/false); leaving the tab or page asks first.
-const setDirty = (id, on) => { if (on) S.dirty.add(id); else S.dirty.delete(id); };
-const isDirty = () => S.dirty.size > 0;
-window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
-function go(tab) {
-  if (isDirty() && !window.confirm('You have unsaved changes on this page. Leave without saving?')) return;
-  S.dirty.clear(); S.tab = tab; render();
+/** go('bookings', {q: 'x'}): open a tab. Same tab without state = reload keeping filters. */
+function go(tab, state) {
+  if (unsaved() && !window.confirm('You have unsaved changes on this page. Leave without saving?')) return;
+  S.dirty.clear();
+  if (tab !== S.tab) { S.tab = tab; S.state = state || {}; history.pushState(null, '', '#/' + tab); S.focusView = true; }
+  else if (state) S.state = state;
+  render();
 }
+window.addEventListener('popstate', () => { const t = tabFromHash(); if (t && t !== S.tab) { S.tab = t; S.state = {}; S.dirty.clear(); render(); } });
+function tabFromHash() { const m = /^#\/([a-z]+)$/.exec(location.hash); return m && TABS.some((t) => t[0] === m[1]) ? m[1] : null; }
+
+function closeNav() { const n = $('#sidenav'); if (n) n.classList.remove('open'); const t = $('[data-nav-toggle]'); if (t) t.setAttribute('aria-expanded', 'false'); }
+
 async function render() {
-  const root = $('#app'); root.replaceChildren(); S.dirty.clear();
-  const m = /^#activate=(.+)$/.exec(location.hash); if (m && !S.access) return activationView(root, m[1]);
-  if (!S.access) return loginView(root);
-  const tabs = TABS.filter(([, , need]) => !need.length ? can() : can(...need));
-  const view = h('main', { id: 'view' });
-  root.append(h('div', { class: 'shell' }, h('nav', {}, h('div', { class: 'brand' }, h('img', { src: 'logo.png', alt: '', style: 'width:28px;height:28px;border-radius:7px;vertical-align:middle;margin-right:8px' }), 'Abasare'), tabs.map(([k, l]) => h('button', { class: S.tab === k ? 'on' : '', onclick: () => go(k) }, l)), h('button', { onclick: logout }, 'Sign out')), view));
-  try { await (V[S.tab] || V.dashboard)(view); } catch (e) { view.append(h('div', { class: 'err' }, e.message)); }
+  const root = $('#app');
+  const m = /^#activate=(.+)$/.exec(location.hash); if (m && !S.access) { root.replaceChildren(); return activationView(root, m[1]); }
+  if (!S.access) { root.replaceChildren(); return loginView(root); }
+  const tabs = visibleTabs();
+  if (!tabs.length) { root.replaceChildren(h('main', { class: 'loginpage' }, h('div', { class: 'card login' }, h('h1', {}, 'No access'), h('p', {}, 'Your account has no operations role. Ask a super admin to assign one.'), h('button', { class: 'b wide', onclick: logout }, 'Sign out')))); return; }
+  const wanted = tabFromHash();
+  if (!S.tabSet) { S.tabSet = true; if (wanted) S.tab = wanted; }
+  if (!tabs.some((t) => t[0] === S.tab)) { S.tab = tabs[0][0]; history.replaceState(null, '', '#/' + S.tab); }
+  if (!$('#shell')) buildShell(root, tabs);
+  const cur = TABS.find((t) => t[0] === S.tab);
+  document.querySelectorAll('#sidenav button[data-tab]').forEach((b) => { const on = b.dataset.tab === S.tab; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $('#crumbs').replaceChildren(h('li', {}, cur[3]), h('li', { 'aria-current': 'page' }, cur[1]));
+  document.title = cur[1] + ' · Abasare Operations';
+  closeNav();
+  await loadView();
 }
+
+async function loadView() {
+  const my = ++S.nav, view = $('#view');
+  const box = h('div', { class: 'page' });
+  view.classList.add('loading'); view.replaceChildren(loading(), box);
+  let after;
+  try { await catalog(); if (!V[S.tab]) throw new Error('This page failed to load its code. Reload the page; if it persists, tell an engineer.'); after = await V[S.tab](box, S.state || {}); }
+  catch (e) { if (my !== S.nav) return; view.classList.remove('loading'); view.replaceChildren(errorPanel(e, () => loadView())); return; }
+  if (my !== S.nav) return;
+  view.classList.remove('loading'); view.querySelector('.loader')?.remove();
+  if (typeof after === 'function') { try { after(); } catch (e) { toast('Part of this page failed to load: ' + e.message, true); } }
+  if (S.focusView) { S.focusView = false; const t = view.querySelector('h1'); if (t) { t.tabIndex = -1; t.focus({ preventScroll: true }); } }
+}
+
+function buildShell(root, tabs) {
+  const groups = [...new Set(tabs.map((t) => t[3]))];
+  const email = store.get('rm_email');
+  const nav = h('nav', { id: 'sidenav', 'aria-label': 'Main navigation' },
+    h('div', { class: 'brand' }, h('img', { src: 'logo.png', alt: '', width: 28, height: 28 }), h('span', {}, 'Abasare'), h('small', {}, 'Operations')),
+    groups.map((g) => h('div', { class: 'navgroup', role: 'group', 'aria-label': g }, h('div', { class: 'navhead' }, g), tabs.filter((t) => t[3] === g).map(([k, l]) => h('button', { 'data-tab': k, onclick: () => go(k) }, l)))),
+    h('div', { class: 'navfoot' }, h('button', { onclick: logout }, 'Sign out')));
+  const themeBtn = h('button', { class: 'iconbtn', 'aria-label': 'Switch between light and dark theme', title: 'Light / dark', onclick: () => { const t = effectiveTheme() === 'dark' ? 'light' : 'dark'; applyTheme(t); pref.set('rm_theme', t); themeBtn.textContent = t === 'dark' ? '☀' : '☾'; } }, effectiveTheme() === 'dark' ? '☀' : '☾');
+  const top = h('header', { class: 'topbar' },
+    h('button', { class: 'iconbtn', 'data-nav-toggle': '', 'aria-label': 'Open menu', 'aria-expanded': 'false', 'aria-controls': 'sidenav', onclick: () => { const open = nav.classList.toggle('open'); $('[data-nav-toggle]').setAttribute('aria-expanded', String(open)); } }, '☰'),
+    h('ol', { id: 'crumbs', class: 'crumbs', 'aria-label': 'Breadcrumb' }), h('span', { class: 'grow' }), themeBtn,
+    h('span', { class: 'who', title: S.roles.join(', ') }, h('b', {}, email || 'Signed in'), h('small', {}, S.roles.map(human).join(', '))));
+  const scrim = h('div', { class: 'scrim', onclick: closeNav });
+  root.replaceChildren(h('a', { class: 'skip', href: '#view', onclick: (e) => { e.preventDefault(); $('#view').focus(); } }, 'Skip to content'),
+    h('div', { class: 'shell', id: 'shell' }, nav, scrim, h('div', { class: 'content' }, top, h('main', { id: 'view', tabindex: '-1' }))));
+}
+
+// ---------------- sign-in ----------------
 function loginView(root) {
-  const email = h('input', { type: 'email', placeholder: 'Email', autocomplete: 'username' }), pw = h('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' }), totp = h('input', { placeholder: '6-digit authenticator code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' }), err = h('div', { class: 'err' });
-  const submit = async () => { err.textContent = ''; try { const r = await fetch(API + '/auth/staff/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pw.value, totp: totp.value }) }); const j = await r.json(); if (!r.ok) throw new Error(j.error?.message || 'Sign-in failed'); save(j); S.tab = 'dashboard'; render(); } catch (e) { err.textContent = e.message; } };
-  totp.addEventListener('keydown', (e) => e.key === 'Enter' && submit());
-  root.append(h('div', { class: 'card login' }, h('h1', {}, 'Abasare · Staff sign-in'), email, pw, totp, err, h('button', { class: 'b', style: 'width:100%', onclick: submit }, 'Sign in'), h('p', { style: 'color:var(--mut)' }, 'Staff accounts require two-factor authentication.')));
+  const email = h('input', { type: 'email', placeholder: 'Email', 'aria-label': 'Email', autocomplete: 'username', required: true }), pw = h('input', { type: 'password', placeholder: 'Password', 'aria-label': 'Password', autocomplete: 'current-password', required: true }),
+    totp = h('input', { placeholder: '6-digit authenticator code', 'aria-label': 'Authenticator code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code', required: true });
+  const err = h('div', { class: 'err', role: 'alert' }), btn = h('button', { class: 'b wide', type: 'submit' }, 'Sign in');
+  const submit = async (ev) => {
+    ev.preventDefault(); err.textContent = '';
+    if (!email.value.trim() || !pw.value) { err.textContent = 'Enter your email and password.'; return; }
+    if (!/^\d{6}$/.test(totp.value.trim())) { err.textContent = 'Enter the 6-digit code from your authenticator app.'; totp.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      let r; try { r = await fetch(API + '/auth/staff/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: email.value.trim(), password: pw.value, totp: totp.value.trim() }) }); } catch { throw new Error('Cannot reach the server. Check your connection.'); }
+      const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error?.message || 'Sign-in failed');
+      save(j); store.set('rm_email', email.value.trim()); S.notice = ''; S.tabSet = false; S.tab = 'dashboard'; S.state = {}; if (!tabFromHash()) history.replaceState(null, '', location.pathname); render();
+    } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Sign in'; }
+  };
+  root.append(h('main', { class: 'loginpage' }, h('form', { class: 'card login', onsubmit: submit, novalidate: true },
+    h('div', { class: 'brand big' }, h('img', { src: 'logo.png', alt: '', width: 40, height: 40 }), h('span', {}, 'Abasare Operations')), h('h1', {}, 'Staff sign-in'),
+    S.notice ? h('div', { class: 'alert warn', role: 'alert' }, S.notice) : null, email, pw, totp, err, btn, h('p', { class: 'muted' }, 'Staff accounts require two-factor authentication. Lost your authenticator? Ask a super admin.'))));
+  email.focus();
 }
+
+// Sign out in other tabs of this browser is not shared (sessionStorage), but a revoked server session shows up as a 401 on the next call and ends here.
+catalog();
 render();

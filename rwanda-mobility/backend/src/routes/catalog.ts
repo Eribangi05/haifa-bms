@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
-import { anyAuth, requireRole, routeLimit } from '../guards.js';
-import { q, q1 } from '../db.js';
+import { anyAuth, routeLimit } from '../guards.js';
+import { q } from '../db.js';
 import { estimate, zoneFor } from '../services/bookings.js';
 import { searchPlaces } from '../services/maps.js';
 import { flag, getSetting } from '../services/settings.js';
@@ -27,7 +27,7 @@ export async function catalogRoutes(app: FastifyInstance) {
     services: await q('select id,name_en,name_rw,name_fr,description_en,description_rw,description_fr,passenger_capacity,luggage,phase from service_categories where enabled order by sort'),
   }));
 
-  app.get('/places/search', { preHandler: anyAuth }, async (req) => {
+  app.get('/places/search', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);
     return { places: await searchPlaces(b.q, b.lang) };
   });
@@ -52,7 +52,7 @@ export async function catalogRoutes(app: FastifyInstance) {
     return estimate(req.auth!.id, b);
   });
 
-  app.post('/promotions/validate', { preHandler: anyAuth }, async (req) => {
+  app.post('/promotions/validate', { config: routeLimit('PROMO_RATE_MAX', 30), preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({ code: z.string(), service_id: z.string(), fare: z.number().int().positive() }), req.body);
     const r = await checkPromo(b.code, req.auth!.id, b.service_id, 'kigali', b.fare);
     return r.ok ? { valid: true, discount: r.discount } : { valid: false, reason: r.reason };

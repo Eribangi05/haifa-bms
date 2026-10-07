@@ -12,6 +12,7 @@ import { config, isProd } from './config.js';
 import { AppError } from './errors.js';
 import { reqLang, localizeError } from './services/errmsg.js';
 import { pool } from './db.js';
+import { jobHealth } from './jobs.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { catalogRoutes } from './routes/catalog.js';
@@ -28,10 +29,31 @@ import { staffInviteRoutes } from './routes/staffInvites.js';
 import { requestCodeRoutes, requestCodeLandingRoutes } from './routes/requestCodes.js';
 import { diagnosticsRoutes } from './routes/diagnostics.js';
 
+/** Capability URLs (share links, staff invitations) and signed-link / webhook tokens must never reach the logs. */
+export function redactUrl(url: string): string {
+  return url
+    .replace(/^(\/share\/)[^/?#]+/, '$1[redacted]')
+    .replace(/^(\/api\/v1\/staff-invite\/)[^/?#]+/, '$1[redacted]')
+    .replace(/([?&](?:token|code|otp|password)=)[^&#]*/gi, '$1[redacted]');
+}
+
+function parseTrustProxy(v: string | undefined): boolean | number | string[] {
+  if (v == null || v === '' || v === 'true') return true;
+  if (v === 'false') return false;
+  if (/^\d+$/.test(v)) return Number(v);
+  return v.split(',').map((x) => x.trim()).filter(Boolean);
+}
+
 export async function buildApp(opts: { onRoute?: (r: { method: string | string[]; url: string; config?: any }) => void } = {}) {
   const app = Fastify({
-    logger: process.env.QUIET === '1' ? false : { level: 'info', redact: ['req.headers.authorization', 'req.headers["x-callback-token"]'] },
-    trustProxy: true, bodyLimit: 1_000_000, genReqId: () => crypto.randomUUID(),
+    logger: process.env.QUIET === '1' ? false : {
+      level: process.env.LOG_LEVEL ?? 'info', redact: ['req.headers.authorization', 'req.headers["x-callback-token"]', 'req.headers.cookie'],
+      serializers: { req: (r: any) => ({ method: r.method, url: redactUrl(r.url), host: r.host, remoteAddress: r.ip, remotePort: r.socket?.remotePort }) },
+    },
+    // TRUST_PROXY: "true" (default, the API sits behind a load balancer), "false", a hop count, or a comma-separated list of proxy addresses/CIDRs.
+    trustProxy: parseTrustProxy(process.env.TRUST_PROXY) as any,
+    bodyLimit: 1_000_000, genReqId: () => crypto.randomUUID(),
+    requestTimeout: Number(process.env.REQUEST_TIMEOUT_MS ?? 30_000), keepAliveTimeout: 65_000,
   });
   if (opts.onRoute) app.addHook('onRoute', (r) => opts.onRoute!({ method: r.method, url: r.url }));
   // Mobile clients often send Content-Type: application/json with no body on action endpoints (accept, arrived...). Treat as {}.
@@ -39,9 +61,17 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     if (!body || !String(body).trim()) return done(null, {});
     try { done(null, JSON.parse(String(body))); } catch { const e: any = new Error('Malformed JSON'); e.statusCode = 400; e.code = 'bad_json'; done(e, undefined); }
   });
-  await app.register(cors, { origin: true, exposedHeaders: ['x-request-id'] });
+  // CORS_ORIGINS="https://admin.example.rw,https://app.example.rw" restricts browsers; unset keeps it open (bearer tokens only, no cookies).
+  const origins = (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
+  await app.register(cors, { origin: origins.length ? origins : true, exposedHeaders: ['x-request-id'] });
   await app.register(jwt, { secret: config.jwtSecret });
-  await app.register(rateLimit, { global: true, max: Number(process.env.RATE_LIMIT_MAX ?? 300), timeWindow: '1 minute' });
+  // Rate-limit bucket: the signed-in user (token verified, no database), else the client IP. Without this, everyone behind one mobile-carrier NAT shares 300 requests a minute.
+  const globalKey = (req: any): string => {
+    const h = String(req.headers.authorization ?? '');
+    if (h.startsWith('Bearer ')) { try { const p: any = app.jwt.verify(h.slice(7)); if (p?.sub) return `u:${p.sub}`; } catch { /* anonymous */ } }
+    return `ip:${req.ip}`;
+  };
+  await app.register(rateLimit, { global: true, max: Number(process.env.RATE_LIMIT_MAX ?? 300), timeWindow: '1 minute', keyGenerator: globalKey });
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
   app.addHook('onSend', async (req, reply) => {
@@ -50,7 +80,12 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     reply.header('referrer-policy', 'no-referrer');
     if (!req.url.startsWith('/share/')) reply.header('x-frame-options', 'DENY');
     if (isProd) reply.header('strict-transport-security', 'max-age=31536000; includeSubDomains');
-    if (req.url.startsWith('/api/')) reply.header('cache-control', 'no-store');
+    if (req.url.startsWith('/api/')) {
+      reply.header('cache-control', 'no-store');
+      reply.header('content-security-policy', "default-src 'none'; frame-ancestors 'none'");   // API responses are data, never documents
+      reply.header('cross-origin-resource-policy', 'cross-origin');
+    }
+    reply.header('permissions-policy', 'geolocation=(), camera=(), microphone=()');
   });
 
   const langOf = (req: { headers: Record<string, any> }) => reqLang(req.headers['accept-language']);
@@ -68,8 +103,13 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
   app.setNotFoundHandler((req, reply) => reply.code(404).send({ error: { code: 'not_found', message: localizeError('not_found', langOf(req), 'Not found') } }));
 
   app.get('/health', async () => ({ ok: true, time: new Date().toISOString() }));
+  // Readiness: the database answers and (when the scheduler runs in this process) no job has been failing for 10 intervals.
   app.get('/ready', async (_r, reply) => {
-    try { await pool.query('select 1'); return { ready: true }; } catch { return reply.code(503).send({ ready: false }); }
+    try { await pool.query('select 1'); } catch { return reply.code(503).send({ ready: false, db: false }); }
+    const h = jobHealth();
+    const stale = Object.entries(h.jobs).filter(([, j]) => j.stale).map(([n]) => n);
+    if (h.started && stale.length) return reply.code(503).send({ ready: false, db: true, stale_jobs: stale });
+    return { ready: true };
   });
 
   await app.register(async (api) => {

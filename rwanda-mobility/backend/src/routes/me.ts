@@ -2,9 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
 import { normalizePhone } from '../util/phone.js';
-import { anyAuth, actorOf } from '../guards.js';
+import { anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
-import { notFound, conflict } from '../errors.js';
+import { conflict } from '../errors.js';
 import { audit } from '../services/audit.js';
 import { myDebts } from '../services/debts.js';
 import { registerToken, revokeUserTokens } from '../services/push.js';
@@ -31,7 +31,7 @@ export async function meRoutes(app: FastifyInstance) {
   app.patch('/users/me', pre, async (req) => {
     const b = parse(z.object({
       display_name: z.string().min(1).max(80).optional(),
-      email: z.string().email().optional(),
+      email: z.string().email().max(160).transform((e) => e.trim().toLowerCase()).optional(),
       preferred_language: z.enum(['rw', 'fr', 'en']).optional(),
       notif_prefs: z.object({ push: z.boolean(), sms: z.boolean(), email: z.boolean(), marketing: z.boolean() }).partial().optional(),
     }).strict(), req.body);
@@ -81,12 +81,12 @@ export async function meRoutes(app: FastifyInstance) {
   });
 
   // consent + privacy
-  app.post('/users/me/consents', pre, async (req) => {
+  app.post('/users/me/consents', { ...pre, config: routeLimit('CONSENT_RATE_MAX', 30) }, async (req) => {
     const b = parse(z.object({ kind: z.enum(['terms', 'privacy', 'location', 'background_location', 'marketing']), version: z.string().max(20), granted: z.boolean() }), req.body);
     await q('insert into consents(user_id,kind,version,granted) values ($1,$2,$3,$4)', [req.auth!.id, b.kind, b.version, b.granted]);
     return { ok: true };
   });
-  app.post('/users/me/privacy-requests', pre, async (req) => {
+  app.post('/users/me/privacy-requests', { ...pre, config: routeLimit('PRIVACY_RATE_MAX', 10) }, async (req) => {
     const b = parse(z.object({ kind: z.enum(['access', 'correction', 'deletion', 'deactivation']), notes: z.string().max(1000).optional() }), req.body);
     const open = await q1("select 1 from privacy_requests where user_id=$1 and kind=$2 and status in ('open','in_progress')", [req.auth!.id, b.kind]);
     if (open) throw conflict('already_open', 'You already have an open request of this type');

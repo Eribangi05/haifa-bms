@@ -1,13 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { anyAuth, requireRole, actorOf, routeLimit } from '../guards.js';
+import { anyAuth, requireRole, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import * as B from '../services/bookings.js';
 import * as P from '../services/payments.js';
 import * as D from '../services/dispatch.js';
 import { badRequest } from '../errors.js';
 import { can } from '../rbac.js';
+import { pickLang } from '../services/errmsg.js';
 
 const idp = z.object({ id: z.string().uuid() });
 
@@ -51,7 +52,8 @@ export async function bookingRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params);
     const { b, as } = await B.accessBooking(req.auth!, id, can(req.auth!.roles, 'bookings.view_all'));
     const rows = await q('select type, from_status, to_status, actor_role, reason, created_at from booking_events where booking_id=$1 order by id', [b.id]);
-    return { events: as === 'passenger' ? rows.filter((r: any) => !['offer_sent', 'offer_rejected', 'pin_failed'].includes(r.type)) : rows };
+    // dispatch internals (which drivers were offered the trip) are for the driver's own view and staff only
+    return { events: as !== 'driver' && as !== 'staff' ? rows.filter((r: any) => !['offer_sent', 'offer_rejected', 'pin_failed'].includes(r.type)) : rows };
   });
   app.get('/bookings/:id/receipt', { preHandler: anyAuth }, async (req) => {
     const { id } = parse(idp, req.params);
@@ -64,7 +66,10 @@ export async function bookingRoutes(app: FastifyInstance) {
       route: { from: b.pickup_name, to: b.dest_name, distance_m: b.distance_m, duration_s: b.duration_s },
       fare: as === 'driver' ? undefined : b.fare_breakdown, total: b.final_fare,
       payment: pay ? { method: pay.method, status: pay.status, reference: pay.reference, paid_at: pay.completed_at } : null,
-      driver: d ? { name: d.display_name, plate: d.plate } : null, final_fare_note: 'Final fare equals the accepted estimate unless disclosed waiting time or authorised extras apply.',
+      driver: d ? { name: d.display_name, plate: d.plate } : null, final_fare_note: pickLang(req, {
+        en: 'Final fare equals the accepted estimate unless disclosed waiting time or authorised extras apply.',
+        fr: 'Le prix final est égal à l\'estimation acceptée, sauf temps d\'attente signalé ou suppléments autorisés.',
+        rw: 'Igiciro cya nyuma kingana n\'icyo wemeye mbere, uretse igihe cyo gutegereza cyatangajwe cyangwa ibyongeweho byemewe.' }),
     };
   });
 
@@ -79,14 +84,14 @@ export async function bookingRoutes(app: FastifyInstance) {
     const b = parse(z.object({ score: z.number().int().min(1).max(5), comment: z.string().max(500).optional(), tags: z.array(z.string().max(30)).max(6).optional() }), req.body);
     return B.rateBooking(req.auth!.id, id, b.score, b.comment, b.tags);
   });
-  app.post('/bookings/:id/share', { preHandler: anyAuth }, async (req) => {
+  app.post('/bookings/:id/share', { config: routeLimit('SHARE_RATE_MAX', 20), preHandler: anyAuth }, async (req) => {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ ttl_minutes: z.number().int().min(10).max(1440).default(240) }), req.body);
     return B.createShare(req.auth!.id, id, b.ttl_minutes);
   });
   app.delete('/bookings/:id/share', { preHandler: anyAuth }, async (req) => { const { id } = parse(idp, req.params); await B.revokeShares(req.auth!.id, id); return { ok: true }; });
   app.get('/bookings/:id/messages', { preHandler: anyAuth }, async (req) => { const { id } = parse(idp, req.params); return { messages: await B.listMessages(req.auth!.id, id) }; });
-  app.post('/bookings/:id/messages', { preHandler: anyAuth }, async (req) => {
+  app.post('/bookings/:id/messages', { config: routeLimit('CHAT_RATE_MAX', 30), preHandler: anyAuth }, async (req) => {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ body: z.string().min(1).max(500) }), req.body);
     await B.postMessage(req.auth!.id, id, b.body); return { ok: true };
@@ -127,6 +132,7 @@ export async function bookingRoutes(app: FastifyInstance) {
   app.post('/bookings/:id/cash-collected', drv, async (req) => {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ amount: z.number().int().positive() }), req.body);
-    return P.confirmCash(req.auth!.id, id, b.amount);
+    const key = String(req.headers['idempotency-key'] ?? '').slice(0, 100) || undefined;
+    return P.confirmCash(req.auth!.id, id, b.amount, key);
   });
 }

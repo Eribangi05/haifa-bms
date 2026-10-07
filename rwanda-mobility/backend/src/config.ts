@@ -49,6 +49,30 @@ export const config = {
   bootstrapAdminPassword: env.BOOTSTRAP_ADMIN_PASSWORD ?? '',
 };
 
+/**
+ * Boot-time safety checks. `fatal` problems stop the server in production (they would make it unsafe or non-functional);
+ * `warn` problems are logged loudly. Pure function of its input so it can be tested.
+ */
+export function configProblems(c: typeof config = config, e: Record<string, string | undefined> = env, prod = isProd): { fatal: string[]; warn: string[] } {
+  const fatal: string[] = [], warn: string[] = [];
+  if (!prod) return { fatal, warn };
+  const staging = e.APP_ENV === 'staging';
+  if (c.momo.mode === 'live') {
+    if (!c.momo.subscriptionKey || !c.momo.apiUser || !c.momo.apiKey) fatal.push('MOMO_MODE=live needs MOMO_SUBSCRIPTION_KEY, MOMO_API_USER and MOMO_API_KEY');
+    if (c.momo.callbackToken === 'dev-callback-token' || c.momo.callbackToken.length < 16) fatal.push('MOMO_CALLBACK_TOKEN must be set (>=16 chars) when MOMO_MODE=live');
+  } else if (c.momo.mode === 'sandbox' && (c.momo.callbackToken === 'dev-callback-token' || c.momo.callbackToken.length < 16)) warn.push('MOMO_CALLBACK_TOKEN is the public development default: set a secret value');
+  if (c.momo.mode === 'simulator' && !staging) warn.push('MOMO_MODE=simulator in production: mobile-money payments are SIMULATED');
+  if (c.smsProvider === 'http' && !c.smsHttpUrl) fatal.push('SMS_PROVIDER=http needs SMS_HTTP_URL');
+  if (c.smsProvider === 'console' && !staging) warn.push('SMS_PROVIDER=console in production: OTP codes are not delivered');
+  if (c.pushProvider === 'expo' && !c.expoPushUrl) fatal.push('PUSH_PROVIDER=expo needs EXPO_PUSH_URL');
+  if (/localhost|127\.0\.0\.1/.test(c.publicBaseUrl)) warn.push('PUBLIC_BASE_URL points at localhost: share and request-code links will not work');
+  if (/\/\/rm:rm@/.test(c.databaseUrl)) warn.push('DATABASE_URL uses the default development credentials');
+  const secrets = [c.jwtSecret, c.dataEncKey, c.pinSecret, c.fileSigningSecret];
+  if (new Set(secrets).size !== secrets.length) warn.push('JWT_SECRET, DATA_ENC_KEY, PIN_SECRET and FILE_SIGNING_SECRET should all be different values');
+  if (c.bootstrapAdminPassword && c.bootstrapAdminPassword.length < 12) warn.push('BOOTSTRAP_ADMIN_PASSWORD is shorter than 12 characters and will be ignored');
+  return { fatal, warn };
+}
+
 /** Defaults for admin-editable settings (system_settings table overrides these). */
 export const SETTING_DEFAULTS = {
   'dispatch.offer_timeout_s': 20,
@@ -72,6 +96,8 @@ export const SETTING_DEFAULTS = {
   'driver.expiry_reminder_days': [30, 14, 7, 1],
   'retention.location_days': 30,
   'retention.client_error_days': 30,
+  'retention.notification_days': 180,      // delivered notifications (bodies can name drivers and plates) are deleted after this
+  'retention.session_days': 30,            // revoked / expired sign-in sessions are kept this long (refresh-token reuse detection), then deleted
   'otp.ttl_s': 300,
   'otp.max_attempts': 5,
   'otp.resend_cooldown_s': 60,

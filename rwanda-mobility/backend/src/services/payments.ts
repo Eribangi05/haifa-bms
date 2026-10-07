@@ -62,7 +62,7 @@ export async function settleBookingPayment(c: PoolClient, bookingId: string, pay
     { account: 'TAX_PAYABLE', credit: bd.tax },
     { account: 'PASSENGER_RECEIVABLE', credit: bd.debt ?? 0, owner: b.passenger_id },   // earlier cancellation fee collected with this fare
   ], { memo: `trip ${b.ref} settlement (${pay.method})`, bookingId: b.id, paymentId: pay.id });
-  await settleDebts(c, b.id, b.passenger_id, bd.debt ?? 0);
+  await settleDebts(c, b.id, bd.debt ?? 0);
   if (pay.fee_amount && pay.fee_amount > 0)
     await post(c, [{ account: 'PROCESSOR_FEES', debit: pay.fee_amount }, { account: 'PROVIDER_CLEARING', credit: pay.fee_amount }], { memo: `processor fee ${b.ref}`, bookingId: b.id, paymentId: pay.id });
   await transition(c, b.id, 'PAYMENT_COMPLETED', { id: null, role: 'system' }, { meta: { payment_id: pay.id, method: pay.method } });
@@ -71,23 +71,29 @@ export async function settleBookingPayment(c: PoolClient, bookingId: string, pay
   if (ref) {
     for (const [uid, tag] of [[ref.referrer_id, 'A'], [ref.referee_id, 'B']]) {
       await q(`insert into promotions(code, kind, value, min_fare, per_user_limit, usage_limit, user_id, valid_to, budget)
-               values ($1,'fixed',1000,1500,1,1,$2, now() + interval '60 days', 1000)`, [`REF-${ref.id.slice(0, 6).toUpperCase()}${tag}`, uid], c);
+               values ($1,'fixed',1000,1500,1,1,$2, now() + interval '60 days', 1000)`, [`REF-${ref.id.replace(/-/g, '').slice(0, 8).toUpperCase()}${tag}`, uid], c);
     }
     await q("update referrals set status='rewarded' where id=$1", [ref.id], c);
   }
 }
 
 // ---------- cash ----------
-export async function confirmCash(driverId: string, bookingId: string, amount: number) {
+export async function confirmCash(driverId: string, bookingId: string, amount: number, idemKey?: string) {
   const out = await tx(async (c) => {
     const b = await q1<BookingRow>('select * from bookings where id=$1 for update', [bookingId], c);
     if (!b || b.driver_id !== driverId) throw notFound('booking');
+    // Partial collections add up, so a retried request would count twice: an Idempotency-Key makes the retry a no-op that repeats the answer.
+    if (idemKey && await q1("select 1 from booking_events where booking_id=$1 and type='cash_collected' and meta->>'key'=$2", [bookingId, idemKey], c)) {
+      const last = await q1<any>("select amount, amount_collected, status from payments where booking_id=$1 and method='cash' order by created_at desc limit 1", [bookingId], c);
+      const got = last?.amount_collected ?? 0;
+      return { status: last?.status === 'SUCCESS' ? 'SUCCESS' : 'PARTIAL', outstanding: Math.max(0, (last?.amount ?? 0) - got), collected: got, replay: true };
+    }
     const p = await q1<any>("select * from payments where booking_id=$1 and method='cash' and status='PENDING' for update", [bookingId], c);
     if (!p) throw conflict('no_cash_due', 'No cash payment is due for this booking');
     if (!Number.isInteger(amount) || amount <= 0 || amount > p.amount) throw badRequest('invalid_amount', `Amount must be 1..${p.amount} RWF`);
     const total = (p.amount_collected ?? 0) + amount;
     if (total > p.amount) throw badRequest('invalid_amount', 'More than the amount due');
-    await logEvent(c, bookingId, 'cash_collected', { id: driverId, role: 'driver' }, { amount, total_collected: total });
+    await logEvent(c, bookingId, 'cash_collected', { id: driverId, role: 'driver' }, { amount, total_collected: total, ...(idemKey ? { key: idemKey } : {}) });
     if (total < p.amount) {
       await q('update payments set amount_collected=$2, updated_at=now() where id=$1', [p.id, total], c);
       return { status: 'PARTIAL', outstanding: p.amount - total, collected: total };
@@ -96,7 +102,7 @@ export async function confirmCash(driverId: string, bookingId: string, amount: n
     await settleBookingPayment(c, bookingId, done);
     return { status: 'SUCCESS', outstanding: 0, collected: total, passenger: b.passenger_id, ref: b.ref };
   });
-  if (out.status === 'SUCCESS') await notify((out as any).passenger, 'payment_success', { amount: out.collected, ref: (out as any).ref });
+  if (out.status === 'SUCCESS' && !(out as any).replay) await notify((out as any).passenger, 'payment_success', { amount: out.collected, ref: (out as any).ref });
   return out;
 }
 
@@ -131,11 +137,17 @@ export async function initiateMomo(passengerId: string, bookingId: string, msisd
     if (!b || b.passenger_id !== passengerId) throw notFound('booking');
     if (b.status !== 'PAYMENT_PENDING') throw conflict('invalid_state', 'Nothing to pay for this booking right now');
     if (b.payer_type === 'corporate') throw conflict('corporate_booking', 'Corporate bookings are billed to the company');
-    const live = await q1<any>("select * from payments where booking_id=$1 and status in ('INITIATED','PENDING','SUCCESS')", [bookingId], c);
+    const live = await q1<any>("select * from payments where booking_id=$1 and status in ('INITIATED','PENDING','SUCCESS') for update", [bookingId], c);
     if (live && live.method === method && live.status !== 'INITIATED') return { reuse: live };     // idempotent: never create a second charge
     if (live && live.method === 'cash') {
       if ((live.amount_collected ?? 0) > 0) throw conflict('cash_partly_collected', 'Part of the cash was already collected');
       await q("update payments set status='CANCELLED', updated_at=now() where id=$1", [live.id], c);
+    } else if (live) {
+      // Another mobile-money request exists. A PENDING one (or a request being sent right now) must finish first; an INITIATED row
+      // older than a minute never reached the provider (crash between the two steps) and is safe to abandon. Never two live charges.
+      const stuck = live.status === 'INITIATED' && Date.now() - new Date(live.updated_at ?? live.created_at).getTime() > 60_000;
+      if (!stuck) throw conflict('payment_in_flight', 'Wait for the mobile-money request to finish before starting another');
+      await q("update payments set status='CANCELLED', failure_reason='abandoned_before_send', updated_at=now() where id=$1", [live.id], c);
     }
     const ref = newReference();
     const p = (await q<any>(`insert into payments(booking_id, payer_user_id, method, provider, amount, status, reference, msisdn_masked, settlement_status)
@@ -149,7 +161,9 @@ export async function initiateMomo(passengerId: string, bookingId: string, msisd
     const r = await providerFor(method).initiate({ reference: pay.reference, amount: pay.amount, msisdn, note: `Abasare ${b.ref}` });
     await q("update payments set status='PENDING', provider_reference=$2, updated_at=now() where id=$1", [pay.id, r.providerRef ?? null]);
   } catch (e: any) {
-    await q("update payments set status='FAILED', failure_reason=$2, updated_at=now() where id=$1", [pay.id, String(e.message).slice(0, 200)]);
+    // The provider's raw error text (status codes, response bodies, credential problems) stays in the staff-only event log, never in what the passenger sees.
+    await q("update payments set status='FAILED', failure_reason='provider_unreachable', updated_at=now() where id=$1", [pay.id]);
+    await q("insert into payment_provider_events(provider,event_key,payment_id,payload,verified,processed_at) values ($1,$2,$3,$4,false,now()) on conflict (event_key) do nothing", [method, `${method}:${pay.reference}:INITIATE_ERROR`, pay.id, JSON.stringify({ error: String(e.message).slice(0, 300) })]);
     await notify(passengerId, 'payment_failed', { ref: b.ref });
     throw new AppError(502, 'provider_error', 'Could not reach the mobile-money provider. You can retry or pay cash.');
   }
@@ -216,6 +230,8 @@ export async function sweepPendingPayments() {
   const rows = await q<{ id: string }>("select id from payments where method in ('mtn_momo','airtel_money') and created_at > now() - interval '2 days' and (status='PENDING' or (status='FAILED' and failure_reason='timeout'))");
   for (const r of rows) await verifyPayment(r.id, 'sweep').catch(() => {});
   // abandon requests that never resolved after 15 minutes so the passenger can retry or pay cash
+  // a request that was recorded but never sent to the provider (crash in between) is closed after 5 minutes so the passenger can retry
+  await q("update payments set status='CANCELLED', failure_reason='abandoned_before_send', updated_at=now() where status='INITIATED' and method in ('mtn_momo','airtel_money') and updated_at < now() - interval '5 minutes'");
   const stale = await q<any>("update payments set status='FAILED', failure_reason='timeout', updated_at=now() where status='PENDING' and method in ('mtn_momo','airtel_money') and created_at < now() - interval '15 minutes' returning id");
   return { checked: rows.length, timedOut: stale.length };
 }

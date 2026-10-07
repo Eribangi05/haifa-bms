@@ -1,11 +1,10 @@
 'use strict';
-// Business-settings screens: pricing editor, settings, promotions, services. Loaded after app.js and shares its helpers (h, api, ask, table, act, toast, V, S, go).
+// Business-settings screens: pricing editor, settings, promotions, services. Loaded after core.js and views-*.js and shares their helpers (h, api, ask, table, act, toast, V, S, go, can).
 // Everything here is a front-end over audited server endpoints; the server re-validates every value.
 
 const fmt = (n) => (n == null || Number.isNaN(n) ? '' : Number(n).toLocaleString('en-US'));
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const kigaliNow = () => { const d = new Date(Date.now() + 2 * 3600e3); return { hour: d.getUTCHours(), dow: d.getUTCDay() }; };
-const myId = () => { try { return JSON.parse(atob(S.access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub; } catch { return null; } };
 const hourLabel = (n) => String(n).padStart(2, '0') + ':00';
 
 /** Number input with thousands separators, unit suffix, range validation. get() -> number | null (blank, if nullable) | NaN (invalid). */
@@ -98,7 +97,7 @@ const diffSentence = (diff) => diff.map((x) => `${x.label} ${x.from} → ${x.to}
 
 V.pricing = async (el) => {
   const d = await api('GET', '/admin/pricing');
-  const manage = can('business_manager'), approve = can('finance_approver'), me = myId();
+  const manage = can('pricing.manage'), approve = can('pricing.approve'), me = myId();
   const active = d.rules.filter((r) => r.status === 'active'), pending = d.rules.filter((r) => r.status === 'pending_approval');
   const baseFor = (service, zone) => active.find((r) => r.service_id === service && r.zone_id === zone) || active.find((r) => r.service_id === service && r.zone_id == null) || null;
   const canApproveRow = (x) => approve && (x.created_by !== me || d.self_approval);
@@ -156,7 +155,7 @@ V.pricing = async (el) => {
 };
 
 function priceEditor(el, d, startRule) {
-  const manage = can('business_manager');
+  const manage = can('pricing.manage');
   const editable = d.services;           // ride + abasare
   const t = { service: startRule?.service_id || editable[0]?.id, zone: startRule ? startRule.zone_id : d.zones[0]?.id ?? null };
   const active = d.rules.filter((r) => r.status === 'active');
@@ -308,7 +307,7 @@ function priceEditor(el, d, startRule) {
   async function propose() {
     const cur = readState(); const diff = diffStates(baseState, cur);
     const effective = effectiveEl.value ? new Date(effectiveEl.value).toISOString() : undefined;
-    const self = d.self_approval && can('finance_approver');
+    const self = d.self_approval && can('pricing.approve');
     const msg = base
       ? `This changes the ${targetText()}: ${diffSentence(diff)}. It applies to new bookings ${effective ? 'from ' + when(effective) : 'once approved'}; accepted quotes are unaffected. ${d.self_approval ? 'Self-approval is on, so you can approve it yourself right after.' : 'A different person must approve it before it goes live.'}`
       : `This sets the first ${targetText()}: ${diffSentence(diff)}. It applies to new bookings ${effective ? 'from ' + when(effective) : 'once approved'}.`;

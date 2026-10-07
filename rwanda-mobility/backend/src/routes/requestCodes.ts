@@ -32,7 +32,7 @@ export async function requestCodeRoutes(app: FastifyInstance) {
   app.get('/admin/request-codes', { preHandler: requirePerm('codes.view') }, async () => ({
     codes: (await q(`select c.*, coalesce(b.n,0)::int bookings, coalesce(b.done,0)::int completed
       from request_codes c left join lateral (select count(*) n, count(*) filter (where completed_at is not null) done from bookings where request_code_id=c.id) b on true
-      order by c.created_at desc`)).map((c: any) => ({ ...c, url: R.landingUrl(c.code), expired: !!c.expires_at && new Date(c.expires_at) <= new Date() })),
+      order by c.created_at desc limit 1000`)).map((c: any) => ({ ...c, url: R.landingUrl(c.code), expired: !!c.expires_at && new Date(c.expires_at) <= new Date() })),
   }));
 
   app.post('/admin/request-codes', { preHandler: requirePerm('codes.manage') }, async (req, reply) => {

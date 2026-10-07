@@ -14,6 +14,10 @@ export const EXCUSED_REASONS = new Set(['safety_concern', 'platform_error', 'con
 type Cand = { user_id: string; last_lat: number; last_lng: number; vehicle_id: string; vehicle_type: string; fleet_id: string | null;
   accepted_count: number; rejected_count: number; offers_count: number; last_trip_at: Date | null; };
 
+/**
+ * Eligible drivers for a booking, WITHOUT locking them. (Locking every candidate made two bookings searching at the same moment starve each other:
+ * the second saw all drivers locked and found none. Only the drivers actually offered are locked: see `claimDriver`.)
+ */
 export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, heartbeatS: number): Promise<Cand[]> {
   if (svc.kind === 'abasare') {
     // The driver drives the CUSTOMER's car: match on skills (vehicle class + transmission), not on a driver vehicle.
@@ -32,8 +36,7 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
          and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.status = 'pending')
          and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $5)
          and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $6)
-         and dp.last_lat is not null
-       for update of dp skip locked`,
+         and dp.last_lat is not null`,
       [heartbeatS, b.zone_id, cv.vehicle_class, cv.transmission, b.id, b.passenger_id], c);
   }
   return q<Cand>(
@@ -50,9 +53,21 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
        and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.status = 'pending')
        and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $6)
        and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $7)
-       and dp.last_lat is not null
-     for update of dp skip locked`,
+       and dp.last_lat is not null`,
     [heartbeatS, b.zone_id, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, b.id, b.passenger_id], c);
+}
+
+/**
+ * Take the row lock on one driver and re-check, in a fresh statement, that nobody offered them a trip or assigned them one since the
+ * candidate list was read. Returns false when another dispatch round holds or has just used the driver: pick the next candidate instead.
+ */
+async function claimDriver(c: PoolClient, driverId: string, bookingId: string): Promise<boolean> {
+  if (!(await q1('select 1 from driver_profiles where user_id=$1 for update skip locked', [driverId], c))) return false;
+  const busy = await q1(
+    `select 1 where exists (select 1 from bookings x where x.driver_id=$1 and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))
+        or exists (select 1 from dispatch_offers o where o.driver_id=$1 and o.status='pending')
+        or exists (select 1 from dispatch_offers o where o.driver_id=$1 and o.booking_id=$2)`, [driverId, bookingId], c);
+  return !busy;
 }
 
 /** Lower is better. ETA first; small fairness credit for idle time and a penalty for unexcused rejections. */
@@ -95,15 +110,16 @@ export async function runRound(bookingId: string): Promise<{ offered: number; st
     const radiusM = Math.min(baseKm + stepKm * (round - 1), maxKm) * 1000;
     const svc = (await q1<any>('select * from service_categories where id=$1', [b.service_id], c))!;
     const pickup = { lat: b.pickup_lat, lng: b.pickup_lng };
-    const cands = (await findCandidates(c, b, svc, hb))
+    const ranked = (await findCandidates(c, b, svc, hb))
       .map((d) => ({ d, dist: haversineM({ lat: d.last_lat, lng: d.last_lng }, pickup) }))
       .filter((x) => x.dist <= radiusM)
       .map((x) => { const eta = etaS({ lat: x.d.last_lat, lng: x.d.last_lng }, pickup, x.d.vehicle_type); return { ...x, eta, score: strategy === 'nearest' ? x.dist : rankScore(eta, x.d) }; })
-      .sort((a, z) => a.score - z.score)
-      .slice(0, Math.max(1, group));
+      .sort((a, z) => a.score - z.score);
+    const chosen: typeof ranked = [];
+    for (const x of ranked) { if (chosen.length >= Math.max(1, group)) break; if (await claimDriver(c, x.d.user_id, bookingId)) chosen.push(x); }
     await q('update bookings set dispatch_round=$2, last_round_at=now() where id=$1', [bookingId, round], c);
     const quote = (await q1<any>('select breakdown from fare_quotes where id=$1', [b.quote_id], c))!;
-    for (const x of cands) {
+    for (const x of chosen) {
       const comm = calcCommission(await resolveCommission(b.service_id, x.d.user_id, x.d.fleet_id, new Date(), c), quote.breakdown.commissionable);
       const net = quote.breakdown.subtotal - comm;
       await q(`insert into dispatch_offers(booking_id, driver_id, round, eta_s, distance_m, driver_net, expires_at)
@@ -112,7 +128,7 @@ export async function runRound(bookingId: string): Promise<{ offered: number; st
       await logEvent(c, bookingId, 'offer_sent', { id: null, role: 'system' }, { driver_id: x.d.user_id, round, eta_s: x.eta });
       await notify(x.d.user_id, 'offer', { km: (x.dist / 1000).toFixed(1), net }, { db: c });
     }
-    return { offered: cands.length, status: b.status, notifyNoDriver: false, passenger: b.passenger_id, ref: b.ref };
+    return { offered: chosen.length, status: b.status, notifyNoDriver: false, passenger: b.passenger_id, ref: b.ref };
   });
   if (out.notifyNoDriver) {
     const b = await q1<any>('select passenger_id, ref from bookings where id=$1', [bookingId]);

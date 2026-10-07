@@ -1,6 +1,6 @@
 import { q, q1, tx } from '../db.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
-import { post, driverBalance, accountBalance, integrityReport } from './ledger.js';
+import { post, driverBalance, integrityReport } from './ledger.js';
 import { getSetting } from './settings.js';
 import { transition } from './bookingMachine.js';
 import { audit, type Actor } from './audit.js';
@@ -59,7 +59,7 @@ export async function decideRefund(approver: Actor, refundId: string, approve: b
 }
 
 // ---------------- payouts ----------------
-export async function requestPayout(ownerId: string, amount: number, kind: 'driver' | 'fleet' = 'driver') {
+export async function requestPayout(ownerId: string, amount: number, kind: 'driver' | 'fleet' = 'driver', idemKey?: string) {
   const [min, fee] = await Promise.all([getSetting('payout.min_amount'), getSetting('payout.fee')]);
   if (!Number.isInteger(amount) || amount < min) throw badRequest('below_minimum', `Minimum payout is ${min} RWF`, { min });
   const dp = kind === 'driver' ? await q1<any>('select payout_provider, payout_msisdn from driver_profiles where user_id=$1', [ownerId]) : await q1<any>('select phone as payout_msisdn, \'mtn_momo\' as payout_provider from users where id=$1', [ownerId]);
@@ -67,6 +67,8 @@ export async function requestPayout(ownerId: string, amount: number, kind: 'driv
   if (amount <= fee) throw badRequest('below_fee');
   return tx(async (c) => {
     await q('select pg_advisory_xact_lock(hashtext($1))', [ownerId], c);          // serialise payouts per owner
+    // A retry carrying the same Idempotency-Key returns the payout already created instead of holding the money twice.
+    if (idemKey) { const dup = await q1<any>('select * from payouts where owner_user_id=$1 and idempotency_key=$2', [ownerId, idemKey], c); if (dup) return dup; }
     // net cash held against earnings first, so commission owed on cash trips is deducted
     const bal0 = await driverBalance(ownerId, c);
     const net = Math.min(bal0.payable, bal0.cash_held);
@@ -74,7 +76,7 @@ export async function requestPayout(ownerId: string, amount: number, kind: 'driv
     const bal = await driverBalance(ownerId, c);
     const eligible = bal.payable - bal.cash_held;
     if (amount > eligible) throw new AppError(409, 'insufficient_balance', `Eligible balance is ${Math.max(0, eligible)} RWF`);
-    const p = (await q<any>('insert into payouts(owner_user_id, kind, amount, fee, provider, msisdn) values ($1,$2,$3,$4,$5,$6) returning *', [ownerId, kind, amount, fee, dp.payout_provider ?? 'mtn_momo', dp.payout_msisdn], c))[0];
+    const p = (await q<any>('insert into payouts(owner_user_id, kind, amount, fee, provider, msisdn, idempotency_key) values ($1,$2,$3,$4,$5,$6,$7) returning *', [ownerId, kind, amount, fee, dp.payout_provider ?? 'mtn_momo', dp.payout_msisdn, idemKey ?? null], c))[0];
     await post(c, [
       { account: 'DRIVER_PAYABLE', debit: amount, owner: ownerId },
       { account: 'PAYOUT_CLEARING', credit: amount - fee },
@@ -191,7 +193,7 @@ export async function reconcile(staff: Actor, provider: string, runDate: string,
         if (p.status === 'SUCCESS') await q("update payments set settlement_status='settled' where id=$1", [p.id], c);
       }
     }
-    const internal = await q<any>("select * from payments where method=$1 and status='SUCCESS' and completed_at::date = $2::date", [provider, runDate], c);
+    const internal = await q<any>("select * from payments where method=$1 and status='SUCCESS' and (completed_at at time zone 'Africa/Kigali')::date = $2::date", [provider, runDate], c);
     for (const p of internal) if (!seen.has(p.reference)) await add('MISSING_PROVIDER', p.id, p.reference, p.amount, null);
     const integrity = await integrityReport(c);
     const summary = { ...sum, ledger_balanced: integrity.balanced };

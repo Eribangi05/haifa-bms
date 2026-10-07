@@ -247,6 +247,7 @@
 | GET | `/admin/support/cases` |
 | GET | `/admin/support/cases/:id` |
 | POST | `/admin/support/cases/:id/update` |
+| GET | `/admin/system/health` |
 | PUT | `/admin/templates/:key/:lang` |
 | GET | `/admin/users` |
 | GET | `/admin/users/:id` |

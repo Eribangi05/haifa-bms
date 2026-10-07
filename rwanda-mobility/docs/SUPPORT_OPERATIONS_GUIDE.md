@@ -1,21 +1,42 @@
 # Operations and support guide
 
+## Using the console
+
+Sign in at `/admin/` with your email, password and the 6-digit code from your authenticator app. The left menu (a drawer behind the menu button on a tablet or phone) only lists the pages your role may use; if a page you expect is missing, ask a super admin about your role. If you are signed out (session ended or revoked) the sign-in page appears with a message: sign in again and you return to the page you were on.
+
+* **Tables**: click a column heading to sort, type in *Filter these rows* to narrow what is on screen, and use *Download CSV* to save the rows currently shown (filtered and sorted). Large tables show 50 rows per page. Searches that ask the server (bookings, drivers, support, payments, audit) return at most 200 rows: narrow the search to see older ones.
+* **Dialogs** close with the Esc key, the x button or Cancel. Actions that change money, accounts or driver status ask for a reason; it is stored in the audit log.
+* **Dark mode**: the moon/sun button in the top bar. The choice is remembered in this browser.
+* The **Live map** needs access to `tile.openstreetmap.org`. If the network blocks it, a notice says so and the tables under the map still list every driver and booking position.
+
 ## Roles on shift
 
-| Role | Console tabs | Typical work |
+| Role | Pages in the console | Typical work |
 |---|---|---|
-| Dispatcher | Live map, Bookings | Watch searching bookings; manually assign; restart searches; PIN override (reason mandatory) |
-| Driver verifier | Drivers | Review documents, approve/reject/ask for more info, suspend/reinstate |
-| Support agent / lead | Support, Bookings, Passengers, Safety (lead) | Answer cases, mark disputes, request refunds (lead), restrict accounts (lead) |
-| Finance officer / approver | Finance | Reconcile, review payouts, approve refunds/payouts/fare changes, record cash remittances |
-| Business manager | Pricing, Promotions, Business & fleets | Propose fares/commissions, verify companies/fleets, issue invoices |
-| Super admin | everything + Settings, Audit, Staff | Flags, templates, staff accounts |
+| Dispatcher | Overview, Live map, Bookings, Drivers, Abasare, Safety | Watch searching bookings; manually assign (pick the driver from the list); restart searches; PIN override and cancel (reason mandatory); respond to SOS |
+| Driver verifier | Drivers, Abasare | Review documents, approve/reject/ask for more info, suspend/reinstate, approve Abasare applications |
+| Support agent | Live map, Bookings, Drivers and Abasare (view), Passengers, Support | Answer cases, mark bookings disputed |
+| Support lead | As support agent, plus Safety, Privacy, Request codes | Sensitive cases, request refunds, waive cancellation fees, restrict accounts, privacy requests, venue QR codes |
+| Finance officer | Overview, Drivers and Abasare (view), Finance | Reconcile, review payouts, request refunds, waive fees, record cash remittances |
+| Finance approver | Overview, Finance, Pricing | Approve refunds, payouts and fare/commission changes (never your own, unless self-approval is switched on) |
+| Business manager | Overview, Live map, Bookings, Drivers and Abasare (view), Pricing, Services, Promotions, Request codes, Business & fleets | Propose fares/commissions, switch services per zone, promotions, venue QR codes, verify companies/fleets, issue invoices |
+| Analyst | Overview, Request codes | Read-only numbers and scan counts |
+| Super admin | Everything, plus Settings, Audit log, Staff | Settings, flags, templates, staff accounts |
+
+The exact permission list per role is in [`PERMISSION_MATRIX.md`](PERMISSION_MATRIX.md).
+
+## Staff accounts
+
+* **Invite**: Staff -> *Invite staff member* (name, email, role). Send the one-time link to that person only. They choose their own password (12+ characters) and scan their own authenticator QR code; you never see their secret. Unused invitations are listed under *Pending invitations* and can be revoked.
+* **Leaver or lost laptop**: Staff -> *Revoke sessions* signs them out everywhere at once; *Disable* (with a reason) blocks sign-in until you press *Enable*.
+* **Lost phone / authenticator**: this needs an engineer (there is no self-service reset on purpose): see the "Reset a staff member's authenticator" section of [`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md).
 
 ## Daily routine
 
-1. **Morning**: Overview -> check Pending verification, Support overdue, Open safety incidents, Refunds pending. Finance -> *Payment exceptions* and *Cash outstanding > 1 hour*.
+1. **Morning**: Overview -> read *Needs attention* (drivers waiting for verification, refunds awaiting approval, support cases past SLA, open safety incidents, disputed trips, requests with no driver found); each card opens the page that fixes it. Finance -> Reconciliation -> *Payment exceptions* and *Cash outstanding for more than 1 hour*.
 2. **Reconciliation** (finance, once a day): download the MTN settlement report, paste rows into Finance -> Reconciliation (`reference`, `amount`, `status`), run it. Resolve each `MISSING_INTERNAL`, `MISSING_PROVIDER`, `AMOUNT_MISMATCH`, `STATUS_MISMATCH` with a note. Late-success items (`late_success_needs_review`) mean the passenger paid after our timeout: **never mark paid manually from a screenshot** - confirm in the provider portal, then ask a super admin/finance approver to settle via a documented adjustment or refund.
-3. **Cash**: drivers owe commission on cash trips. Finance records bank/MoMo remittances (Finance -> cash remittance API) - the driver's `owed_to_platform` goes down.
+3. **Cash**: drivers owe commission on cash trips. Finance records bank/MoMo remittances through the API (`POST /admin/finance/cash-remittance`; there is no console screen for it yet) - the driver's `owed_to_platform` goes down.
+3b. **Cancellation and no-show fees**: Finance -> *Cancellation fee debts* lists passengers who owe a fee (it is added to their next trip automatically). Waive one only with a clear reason, for example the driver was at fault; the waiver is audited.
 4. **Payouts**: review -> approve (large ones need a different approver) -> pay manually via MoMo -> *Mark paid* with the MoMo transaction id. Automated disbursement is a pending integration.
 5. **Document expiry**: the system reminds drivers at 30/14/7/1 days and removes ineligible drivers from dispatch automatically. Verifiers should clear the *Documents expired* list daily.
 
@@ -29,6 +50,8 @@
 | Passenger lost their phone (PIN) | Dispatcher *PIN override* with a written reason after verifying identity by an out-of-band call; it is audited. |
 | Driver complaint (harassment etc.) | Case is auto-marked *sensitive* (support_lead only). Suspend the driver pending investigation (reason required), add a safety block for the passenger if appropriate. |
 | Account deletion request | Privacy tab -> Execute (30-day SLA). It fails while trips/balances are open - settle first. |
+| Hotel or bar asks for a QR poster | Request codes -> *New request code* (venue name, latitude/longitude, optional pickup note and expiry), then *Print poster* (A5, in Kinyarwanda, French and English) or *Download QR*. The *Scans*, *Bookings* and *Completed* columns show whether the venue uses it; *Deactivate* stops a code at once. |
+| Passenger says they were charged a cancellation fee unfairly | Finance -> Cancellation fee debts -> find the passenger -> *Waive* with the reason. If it was already collected, request a refund from the booking instead. |
 
 ## Abasare operations
 
@@ -40,11 +63,11 @@
 
 ## Case priorities & SLAs (defaults)
 
-Safety **urgent**, 2 h (SOS cases 15 min); payment/refund/fare dispute **high**, 8-24 h; others normal, 24-72 h. Overdue cases are highlighted red.
+Safety **urgent**, 2 h (SOS cases 15 min); payment/refund/fare dispute **high**, 8-24 h; others normal, 24-72 h. Overdue cases are shown in red with "(overdue)" and are counted on the Overview.
 
 ## Settings you will touch
 
-Admin -> Settings (grouped by topic, each with its unit, allowed range, default and a Reset button): offer timeout, max rounds, group size (1 = sequential offers), cancellation grace/fee, no-show wait/fee, payout minimum/fee/large threshold, safety escalation contacts (SMS recipients for SOS), feature flags, notification templates (Kinyarwanda/English). Every change is audited.
+Admin -> Settings (grouped by topic, each with its unit, allowed range, default and a Reset button): offer timeout, max rounds, group size (1 = sequential offers), cancellation grace/fee, no-show wait/fee, payout minimum/fee/large threshold, safety escalation contacts (SMS recipients for SOS), feature flags, notification templates (Kinyarwanda, French and English: a message is only ever sent in one language). Every change is audited.
 
 ## How to change prices
 

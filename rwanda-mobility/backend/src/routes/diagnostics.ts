@@ -4,7 +4,8 @@ import { parse } from '../util/validate.js';
 import { sessionValid } from '../services/auth.js';
 import { recordClientError } from '../services/clientErrors.js';
 import { requirePerm } from '../guards.js';
-import { q } from '../db.js';
+import { q, q1, poolStats } from '../db.js';
+import { jobHealth } from '../jobs.js';
 
 /** Authentication is optional here: crashes can happen before sign-in. A bad or expired token is simply ignored. */
 async function optionalUserId(req: FastifyRequest): Promise<string | null> {
@@ -37,5 +38,30 @@ export async function diagnosticsRoutes(app: FastifyInstance) {
          and ($4::text is null or message ilike $5) and ($6::bigint is null or id < $6) order by id desc limit $7`,
       [b.platform ?? null, b.app_version ?? null, b.screen ?? null, b.q ?? null, `%${(b.q ?? '').replace(/[%_]/g, '')}%`, b.before_id ?? null, b.limit]);
     return { errors: rows, next_before_id: rows.length === b.limit ? (rows[rows.length - 1] as any).id : null };
+  });
+
+  // ---------- admin: system health (read-only, cheap: a handful of indexed counts) ----------
+  app.get('/admin/system/health', { preHandler: requirePerm('diagnostics.view') }, async () => {
+    const t0 = Date.now();
+    const db = await q1<any>(`select
+      (select count(*) from notifications where channel='sms' and status='queued')::int sms_queued,
+      (select coalesce(extract(epoch from now() - min(created_at)),0) from notifications where channel='sms' and status='queued')::int sms_oldest_s,
+      (select count(*) from notifications where channel='push' and status='queued')::int push_queued,
+      (select coalesce(extract(epoch from now() - min(created_at)),0) from notifications where channel='push' and status='queued')::int push_oldest_s,
+      (select count(*) from notifications where status='failed' and created_at > now() - interval '24 hours')::int notifications_failed_24h,
+      (select count(*) from payments where status='PENDING' and method <> 'cash' and created_at < now() - interval '15 minutes')::int payments_stuck_pending,
+      (select count(*) from payments where status='INITIATED' and updated_at < now() - interval '5 minutes')::int payments_stuck_initiated,
+      (select count(*) from bookings where status='SEARCHING_DRIVER')::int searching,
+      (select count(*) from driver_profiles where is_online and last_seen_at > now() - interval '2 minutes')::int drivers_online,
+      (select count(*) from schema_migrations)::int migrations_applied,
+      (select max(name) from schema_migrations) latest_migration`);
+    const jobs = jobHealth();
+    const problems = [
+      ...Object.entries(jobs.jobs).filter(([, j]) => j.stale).map(([n]) => `job ${n} is stale`),
+      ...(db.sms_oldest_s > 300 ? ['SMS queue is more than 5 minutes behind'] : []),
+      ...(db.push_oldest_s > 300 ? ['push queue is more than 5 minutes behind'] : []),
+      ...(db.payments_stuck_pending > 0 ? ['mobile-money payments pending for more than 15 minutes'] : []),
+    ];
+    return { ok: problems.length === 0, problems, db_latency_ms: Date.now() - t0, pool: poolStats(), jobs, ...db, uptime_s: Math.round(process.uptime()), node: process.version };
   });
 }

@@ -7,35 +7,46 @@
 | P01 | Welcome + language (Kinyarwanda/English) | `screens/auth.tsx` `Welcome` | Language switchable later in Profile |
 | P02 | Phone number | `Phone` | +250 validation, optional referral code |
 | P03 | OTP verification | `Otp` | Resend timer, lockout messages |
-| P04 | Location disclosure | `passenger.tsx` `Home` (consent gate) | Records consent |
-| P05 | Home: map, pickup (GPS/pin/landmark/note), destination search, saved, recent, popular, schedule, active-trip card, help, profile | `Home` | Drag pin to correct GPS; map tap sets destination; offline fallback chips |
-| P06 | Ride options: services, ETA, fare, breakdown, promo, payment method (cash / MoMo / company), schedule | `Options` | "No drivers" shown honestly with alternatives; "estimate" wording |
-| P07 | Live trip: searching, driver card (name, rating, vehicle, **plate**), **PIN**, map with driver, chat, share, cancel, SOS | `Track` | Unconfirmed-booking state when offline |
-| P08 | Payment (cash due / MoMo number, waiting, failure fallback to cash) | `PayCard` | Server-verified; "test mode" banner when simulated |
-| P09 | Receipt + rating + report a problem + rebook | `Done` | Rating goes through the offline outbox |
-| P10 | Trip history | `shared.tsx` `History` | |
-| P11 | Profile: name, language, notifications, emergency contacts, referral, companies, privacy requests, become a driver | `Profile` | |
-| P12 | Support: FAQ, new case, my cases | `Support` | |
-| P13 | SOS modal | `SosButton` | Red, separate from normal actions; never claims contact |
-| D01 | Driver application: personal, vehicle, payout, **documents** (camera/gallery/PDF + expiry) | `driver.tsx` `Onboarding` | Statuses incl. info-required & rejection reason |
-| D02 | Driver home: online toggle, eligibility reasons, location disclosure, document-expiry banners | `Working` | Online != allowed to work |
-| D03 | Trip offers with **earnings before accepting**, pickup distance/ETA, countdown, accept / decline with reason | `OfferCard` | |
-| D04 | Active trip: navigate, en-route, arrived, **PIN entry**, start, complete, cash confirm, no-show, cancel, SOS | `ActiveTrip` | Large buttons; "use only when stopped" |
-| D05 | Earnings day/week/month, wallet, owed commission, payout request/history | `Earnings` | |
-| A01 | Abasare mode on Home: car picker, Drive me home / By the hour (2-12 h), night note | `passenger.tsx` `Home` | Switch **Ride / Abasare** |
+| P04 | Location disclosure | `passenger/home.tsx` (consent gate) | Records consent |
+| P05 | Home: map, pickup (GPS/pin/landmark/note), destination search, saved, recent, popular, schedule, active-trip card, help, profile | `passenger/home.tsx` | Drag pin to correct GPS; map tap sets destination; offline fallback chips |
+| P06 | Ride options: services, ETA, fare, breakdown, promo, payment method (cash / MoMo / company), schedule | `passenger/options.tsx` | "No drivers" shown honestly with alternatives; "estimate" wording |
+| P07 | Live trip: searching, driver card (name, rating, vehicle, **plate**), **PIN**, map with driver, chat, share, cancel, SOS | `passenger/track.tsx` | Unconfirmed-booking state when offline |
+| P08 | Payment (cash due / MoMo number, waiting, failure fallback to cash) | `passenger/tripParts.tsx` `PayCard` | Server-verified; "test mode" banner when simulated |
+| P09 | Receipt + rating + report a problem + rebook | `passenger/tripParts.tsx` `Done` | Rating goes through the offline outbox |
+| P10 | Trip history | `history.tsx` | |
+| P11 | Profile: name, language, notifications, emergency contacts, referral, companies, privacy requests, become a driver | `profile.tsx` | |
+| P12 | Support: FAQ, new case, my cases | `support.tsx` | |
+| P13 | SOS modal | `sos.tsx` | Red, separate from normal actions; never claims contact |
+| D01 | Driver application: personal, vehicle, payout, **documents** (camera/gallery/PDF + expiry) | `driver/onboarding.tsx` | Statuses incl. info-required & rejection reason |
+| D02 | Driver home: online toggle, eligibility reasons, location disclosure, document-expiry banners | `driver/working.tsx` | Online != allowed to work |
+| D03 | Trip offers with **earnings before accepting**, pickup distance/ETA, countdown, accept / decline with reason | `driver/offer.tsx` | |
+| D04 | Active trip: navigate, en-route, arrived, **PIN entry**, start, complete, cash confirm, no-show, cancel, SOS | `driver/activeTrip.tsx` | Large buttons; "use only when stopped" |
+| D05 | Earnings day/week/month, wallet, owed commission, payout request/history | `driver/earnings.tsx` | |
+| A01 | Abasare mode on Home: car picker, Drive me home / By the hour (2-12 h), night note | `passenger/home.tsx` | Switch **Ride / Abasare** |
 | A02 | My cars: add/remove, class, manual/automatic, insurance confirmation | `cars.tsx` | Also from Profile |
-| A03 | Abasare price breakdown with return allowance/night/overtime rules + ownership & insurance attestation | `Options` | Confirm is blocked until attested |
-| A04 | Live trip: driver photo, years driving, rating, **your plate**, check-in/check-out review with photos (Looks right / Report an issue) | `Track`, `HandoverReview` | |
-| A05 | Abasare driver application: path choice (own vehicle / Abasare / both), skills, licence date, return mode, documents incl. police clearance | `driver.tsx` `Onboarding` | |
-| A06 | Driver: accept-jobs toggles (Rides/Abasare), Abasare offer card, customer's-car details, **check-in/check-out form** (photos, odometer, fuel, notes), hourly timer, Moto ride home | `driver.tsx` | |
+| A03 | Abasare price breakdown with return allowance/night/overtime rules + ownership & insurance attestation | `passenger/options.tsx` | Confirm is blocked until attested |
+| A04 | Live trip: driver photo, years driving, rating, **your plate**, check-in/check-out review with photos (Looks right / Report an issue) | `passenger/track.tsx`, `passenger/tripParts.tsx` | |
+| A05 | Abasare driver application: path choice (own vehicle / Abasare / both), skills, licence date, return mode, documents incl. police clearance | `driver/onboarding.tsx` | |
+| A06 | Driver: accept-jobs toggles (Rides/Abasare), Abasare offer card, customer's-car details, **check-in/check-out form** (photos, odometer, fuel, notes), hourly timer, Moto ride home | `driver/handover.tsx`, `driver/activeTrip.tsx` | |
 | Q01 | Scan a venue code: native QR camera (framing guide, torch, permission rationale + open-settings fallback), **type the code or paste the URL** (only option on web), venue confirmation card (name, pickup note, "Pickup point set", out-of-zone warning), then Home with pickup = venue and the code's default service | `scan.tsx` `Scan`, `ui/QrCamera.tsx` | Entry: "Scan a code" chip on Home (Ride and Abasare); deep link `abasare://r/<CODE>?svc=` (signed out: remembered through phone/OTP/consent); web: `/?code=<CODE>`. Booking carries `request_code` |
 | B01 | Company booking | `Options` (company payment chip) + Profile | Cost centre, PO reference, limits enforced server-side |
 
+## Cross-cutting behaviour of every mobile screen
+
+* **One screen shell** (`ui/components.tsx` `Screen`): safe-area insets on all four sides (notch, gesture bar, 3-button bar), header with a labelled 44 px **Back** control at top-left, sticky footer for the primary action (`max(inset.bottom, 12) + gap`), keyboard avoidance, pull-to-refresh and a 640 px content column on tablets/foldables.
+* **Back**: header Back on every non-root screen; Android system back/gesture closes sheets and modals first (`useBackHandler`), then pops; on Home (and driver home) a second press within 2 s exits; from the middle of a flow (e.g. Track after booking) it returns Home instead of closing the app.
+* **Permissions**: location (denied / blocked / GPS off) shows a recovery card with Allow or Open settings; camera refusal explains and offers settings; notifications refusal is shown in Profile.
+* **Errors** are never raw: network, timeout, session and server problems use the app language (`err.*`); API errors use the server's localised message.
+
 ## Admin console (`/admin/`)
 
-(New: **Abasare** tab for applications; handover evidence on booking details.)
+English only; the menu shows only the pages the signed-in role may use (see `SUPPORT_OPERATIONS_GUIDE.md` for the role table). Same layout on laptop, tablet (drawer menu) and phone; light and dark theme.
 
-Overview KPIs - Live map - Bookings (search, timeline, assign, restart, PIN override, cancel, dispute, refund request) - Drivers (queue, documents with signed links, approve/reject/suspend/reinstate) - Passengers - Support (cases, internal notes, SLA) - Safety (SOS/incidents) - Pricing (fare rules, commissions with approval) - Promotions - Finance (ledger position, transactions, refunds, payouts, reconciliation, exports) - Business & fleets (verify, invoice, revenue share) - Privacy requests - Settings (integration status, flags, runtime settings, templates) - Audit log - Staff & roles.
+* **Operations**: Overview (needs-attention cards, KPIs with change vs the previous period and 7-day trends, zone table) - Live map (drivers and active bookings, refreshed every 5 s) - Bookings (search, status filter, timeline, assign from a driver list, restart, PIN override, cancel, dispute, refund request) - Drivers (queue, documents with signed links, approve/reject/suspend/reinstate, only the actions valid for the current status) - **Abasare** (applications; handover evidence on booking details) - Safety (SOS/incidents).
+* **People and support**: Passengers - Support (cases, internal notes, SLA) - Privacy requests.
+* **Money**: Finance with sub-pages: Ledger and exports, Transactions, Refunds, Payouts, Cancellation fee debts, Reconciliation.
+* **Business**: Pricing (fare rules, peak/off-peak windows, commissions with approval) - Services (per zone) - Promotions - Request codes (venue QR posters) - Business & fleets (verify, invoice, revenue share).
+* **Administration**: Settings (integration status, flags, runtime settings, templates) - Audit log (click a row for before/after) - Staff & roles (invite by link, revoke sessions, disable).
 
 ## Key journeys
 

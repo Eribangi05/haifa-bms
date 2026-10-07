@@ -1,4 +1,4 @@
-import { test, before, after, beforeEach } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { boot, type Ctx } from './helpers.ts';
 import type { PushAdapter, PushMessage, PushTicket } from '../src/services/push.ts';
@@ -101,8 +101,13 @@ test('ticket and receipt errors revoke tokens; users without tokens are skipped;
   const down = fake(); down.fail = true; setPushAdapter(down);
   try {
     await drain(); await notify(w.id, 'offer', { km: '1.2', net: 900 });
-    for (let i = 1; i <= 4; i++) { await flushPush(); assert.equal((await t.db.q1<any>("select status from notifications where user_id=$1 and channel='push'", [w.id])).status, 'queued', `attempt ${i}`); }
-    await flushPush();
+    const wake = () => t.db.q("update notifications set next_attempt_at = null where user_id=$1 and channel='push'", [w.id]);   // pretend the back-off has elapsed
+    for (let i = 1; i <= 4; i++) { await wake(); await flushPush(); assert.equal((await t.db.q1<any>("select status from notifications where user_id=$1 and channel='push'", [w.id])).status, 'queued', `attempt ${i}`); }
+    const attempts = async () => (await t.db.q1<any>("select attempts from notifications where user_id=$1 and channel='push'", [w.id])).attempts;
+    const before = await attempts();
+    await flushPush();                                                           // back-off: a failed message is not retried on the very next tick
+    assert.equal(await attempts(), before, 'no immediate retry while the back-off runs');
+    await wake(); await flushPush();
     const f = await t.db.q1<any>("select status, attempts from notifications where user_id=$1 and channel='push'", [w.id]);
     assert.equal(f.status, 'failed'); assert.equal(f.attempts, 5);
   } finally { setPushAdapter(prev); }
@@ -114,7 +119,7 @@ test('expo adapter batches 100 messages per request and parses tickets and recei
     const body = JSON.parse(init.body);
     if (String(url).endsWith('/push/send')) {
       calls.push({ url: String(url), n: body.length });
-      return new Response(JSON.stringify({ data: body.map((m: any, i: number) => i === 0 ? { status: 'error', message: 'x', details: { error: 'DeviceNotRegistered' } } : { status: 'ok', id: `id-${i}` }) }));
+      return new Response(JSON.stringify({ data: body.map((_m: any, i: number) => i === 0 ? { status: 'error', message: 'x', details: { error: 'DeviceNotRegistered' } } : { status: 'ok', id: `id-${i}` }) }));
     }
     return new Response(JSON.stringify({ data: Object.fromEntries(body.ids.map((id: string) => [id, { status: 'error', message: 'm', details: { error: 'DeviceNotRegistered' } }])) }));
   }) as any;

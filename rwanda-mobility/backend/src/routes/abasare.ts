@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { parse } from '../util/validate.js';
 import { anyAuth, requireRole, requirePerm, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
-import { badRequest, conflict, notFound } from '../errors.js';
+import { badRequest, conflict } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
 import * as A from '../services/abasare.js';
 
@@ -18,7 +18,7 @@ export async function abasareRoutes(app: FastifyInstance) {
   app.post('/users/me/cars', { preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({
       plate: z.string().min(4).max(12), make: z.string().max(40).optional(), model: z.string().max(40).optional(), color: z.string().max(30).optional(), year: z.number().int().min(1980).max(2100).optional(),
-      vehicle_class: z.enum(A.CLASSES), transmission: z.enum(A.TRANSMISSIONS), insurance_confirmed: z.boolean(), insurance_expiry: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      vehicle_class: z.enum(A.CLASSES), transmission: z.enum(A.TRANSMISSIONS), insurance_confirmed: z.boolean(), insurance_expiry: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((d) => !Number.isNaN(Date.parse(d)) && new Date(d).toISOString().startsWith(d), 'Not a real calendar date').optional(),
     }), req.body);
     const n = await q1<any>('select count(*)::int n from customer_vehicles where owner_id=$1 and active', [req.auth!.id]);
     if (n.n >= 5) throw conflict('limit', 'Maximum 5 cars');
@@ -75,7 +75,7 @@ export async function abasareRoutes(app: FastifyInstance) {
   app.get('/admin/abasare/applications', { preHandler: requirePerm('drivers.view') }, async (req) => {
     const b = parse(z.object({ status: z.enum(['pending', 'approved', 'rejected', 'suspended']).default('pending') }), req.query);
     return { applications: await q(`select dp.user_id, u.display_name, u.phone, dp.status account_status, dp.abasare_status, dp.abasare_skills, dp.abasare_applied_at, dp.abasare_reason, dp.completed_count, dp.rating_avg
-      from driver_profiles dp join users u on u.id=dp.user_id where dp.abasare_status=$1 order by dp.abasare_applied_at`, [b.status]) };
+      from driver_profiles dp join users u on u.id=dp.user_id where dp.abasare_status=$1 order by dp.abasare_applied_at limit 500`, [b.status]) };
   });
   app.post('/admin/drivers/:id/abasare-decision', { preHandler: requirePerm('drivers.review') }, async (req) => {
     const { id } = parse(idp, req.params);

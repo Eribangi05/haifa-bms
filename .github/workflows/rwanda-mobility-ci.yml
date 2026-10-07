@@ -1,12 +1,23 @@
 name: rwanda-mobility-ci
+# Runs on every push / PR that touches the app. Jobs: backend (typecheck + tests + schema doc freshness), mobile (typecheck + unit tests + Android bundle),
+# web (Expo web export), console (admin JS syntax + docs link/env checks), docker (image builds, starts, migrates, serves /health and the console).
 on:
   push:
-    paths: ['rwanda-mobility/**', '.github/workflows/rwanda-mobility-ci.yml']
+    paths: ['rwanda-mobility/**', '.github/workflows/rwanda-mobility-ci.yml', 'render.yaml']
   pull_request:
-    paths: ['rwanda-mobility/**']
+    paths: ['rwanda-mobility/**', '.github/workflows/rwanda-mobility-ci.yml', 'render.yaml']
+  workflow_dispatch:
+concurrency:
+  group: rwanda-mobility-ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  NODE_VERSION: 22
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16
@@ -18,18 +29,100 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: rwanda-mobility/backend/package-lock.json }
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm, cache-dependency-path: rwanda-mobility/backend/package-lock.json }
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: docs/ERD.md matches the migrated schema
+        working-directory: rwanda-mobility
+        env: { DATABASE_URL: 'postgres://rm:rm@localhost:5432/rwanda_mobility_test' }
+        run: |
+          node docs/tools/gen-erd.mjs
+          git diff --exit-code -- docs/ERD.md || { echo "::error::docs/ERD.md is stale: run node docs/tools/gen-erd.mjs and commit"; exit 1; }
   mobile:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults: { run: { working-directory: rwanda-mobility/mobile } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: rwanda-mobility/mobile/package-lock.json }
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm, cache-dependency-path: rwanda-mobility/mobile/package-lock.json }
+      - uses: actions/cache@v4
+        with:
+          path: rwanda-mobility/mobile/node_modules/.cache
+          key: metro-android-${{ runner.os }}-${{ hashFiles('rwanda-mobility/mobile/package-lock.json') }}
+          restore-keys: metro-android-${{ runner.os }}-
       - run: npm ci
-      - run: npx tsc --noEmit
-      - run: node --test tests/net.test.ts
-      - run: npx expo export --platform android --output-dir /tmp/export
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx expo export --platform android --output-dir /tmp/android-export
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults: { run: { working-directory: rwanda-mobility/mobile } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm, cache-dependency-path: rwanda-mobility/mobile/package-lock.json }
+      - uses: actions/cache@v4
+        with:
+          path: rwanda-mobility/mobile/node_modules/.cache
+          key: metro-web-${{ runner.os }}-${{ hashFiles('rwanda-mobility/mobile/package-lock.json') }}
+          restore-keys: metro-web-${{ runner.os }}-
+      - run: npm ci
+      - name: Build the web export (same screens as the app, used for browser end-to-end tests)
+        env: { EXPO_PUBLIC_API_URL: 'https://abasare-api.onrender.com' }
+        run: npm run web:export
+      - uses: actions/upload-artifact@v4
+        with: { name: rm-web, path: /tmp/rm-web, retention-days: 7 }
+  console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults: { run: { working-directory: rwanda-mobility } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}' }
+      - name: Admin console JavaScript parses (each file, and all files together)
+        run: |
+          for f in admin-web/*.js; do node --check "$f" || exit 1; done
+          # The scripts share one global scope: a name declared in two files is a SyntaxError that silently breaks the later file in the browser.
+          cat admin-web/core.js admin-web/views-ops.js admin-web/views-admin.js admin-web/business.js admin-web/app.js > /tmp/console-all.js
+          node --check /tmp/console-all.js
+      - name: Docs - markdown links resolve, every doc is in the README, env vars match code/render/compose
+        run: node docs/tools/check-docs.mjs
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: rm, POSTGRES_PASSWORD: rm, POSTGRES_DB: rwanda_mobility_smoke }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rm" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: rwanda-mobility
+          file: rwanda-mobility/backend/Dockerfile
+          load: true
+          tags: abasare-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Compose file is valid
+        run: DB_PASSWORD=ci API_DOMAIN=ci.example docker compose -f rwanda-mobility/deploy/docker-compose.yml --env-file rwanda-mobility/deploy/.env.example config -q
+      - name: Container starts in production mode, migrates an empty database and serves the API and the console
+        run: |
+          docker run -d --name api --network host \
+            -e DATABASE_URL=postgres://rm:rm@localhost:5432/rwanda_mobility_smoke -e APP_ENV=staging -e MOMO_MODE=simulator -e SMS_PROVIDER=console \
+            -e JWT_SECRET=ci-jwt-secret-0123456789 -e DATA_ENC_KEY=ci-enc-key-0123456789ab -e PIN_SECRET=ci-pin-secret-0123456789 -e FILE_SIGNING_SECRET=ci-file-secret-0123456789 \
+            -e PUBLIC_BASE_URL=https://ci.example abasare-api:ci
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8080/health && break; sleep 2; done
+          curl -fsS http://127.0.0.1:8080/ready
+          curl -fsS -o /dev/null http://127.0.0.1:8080/admin/ && curl -fsS -o /dev/null http://127.0.0.1:8080/admin/vendor/leaflet/leaflet.js
+          curl -fsS http://127.0.0.1:8080/api/v1/services | grep -q '"moto"'
+      - if: failure()
+        run: docker logs api | tail -80

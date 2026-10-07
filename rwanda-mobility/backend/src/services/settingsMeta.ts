@@ -37,6 +37,8 @@ export const SETTING_META: Record<keyof typeof SETTING_DEFAULTS, SettingMeta> = 
   'otp.max_per_hour_ip': { group: 'Security & OTP', label: 'Codes per network per hour', desc: 'Per IP address. Mobile carriers share addresses, so keep this generous.', unit: 'codes', min: 1, max: 1000 },
   'retention.location_days': { group: 'Privacy & retention', label: 'Keep trip locations', desc: 'GPS traces are deleted after this many days.', unit: 'days', min: 1, max: 365 },
   'retention.client_error_days': { group: 'Privacy & retention', label: 'Keep app error reports', desc: 'Crash and error reports are deleted after this many days.', unit: 'days', min: 1, max: 365 },
+  'retention.notification_days': { group: 'Privacy & retention', label: 'Keep notifications', desc: 'Delivered in-app, SMS and push notifications are deleted after this many days.', unit: 'days', min: 7, max: 730 },
+  'retention.session_days': { group: 'Privacy & retention', label: 'Keep ended sign-in sessions', desc: 'Revoked or expired sessions are deleted after this many days. Keep at least 30 so token-theft detection keeps working.', unit: 'days', min: 30, max: 365 },
   'retention.handover_days': { group: 'Privacy & retention', label: 'Keep Abasare handover photos', desc: 'Deleted after this many days unless a dispute is open.', unit: 'days', min: 1, max: 365 },
   'safety.escalation_contacts': { group: 'Safety & tracking', label: 'Safety escalation contacts', desc: 'Phone numbers (+250...) alerted when an SOS is raised. Comma separated.', type: 'str_list' },
   'tracking.max_speed_kmh': { group: 'Safety & tracking', label: 'Maximum plausible speed', desc: 'Location updates implying a higher speed are ignored as GPS errors.', unit: 'km/h', min: 40, max: 300 },

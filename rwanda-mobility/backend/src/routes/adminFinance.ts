@@ -4,16 +4,15 @@ import { parse } from '../util/validate.js';
 import { requirePerm, actorOf } from '../guards.js';
 import { q } from '../db.js';
 import * as F from '../services/finance.js';
-import { driverBalance } from '../services/ledger.js';
 import { audit } from '../services/audit.js';
-import { badRequest, forbidden } from '../errors.js';
+import { forbidden } from '../errors.js';
 import { waiveDebt, listDebts } from '../services/debts.js';
 
 const idp = z.object({ id: z.string().uuid() });
 const csv = (rows: any[]) => {
   if (!rows.length) return '';
   const cols = Object.keys(rows[0]);
-  const esc = (v: any) => { let s = v instanceof Date ? v.toISOString() : v == null ? '' : String(v); if (/^[=+\-@]/.test(s)) s = "'" + s; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };   // CSV-injection safe
+  const esc = (v: any) => { let s = v instanceof Date ? v.toISOString() : v == null ? '' : String(v); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };   // CSV-injection safe
   return [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');
 };
 
@@ -38,11 +37,17 @@ export async function adminFinanceRoutes(app: FastifyInstance) {
     return { debt: await waiveDebt(actorOf(req), id, b.reason) };
   });
   app.get('/admin/finance/position', { preHandler: view }, async () => F.financialPosition());
-  app.get('/admin/finance/drivers', { preHandler: view }, async () => {
-    const ds = await q<any>('select dp.user_id, u.display_name from driver_profiles dp join users u on u.id=dp.user_id');
-    const out = [];
-    for (const d of ds) { const bal = await driverBalance(d.user_id); if (bal.payable || bal.cash_held) out.push({ ...d, ...bal }); }
-    return { drivers: out };
+  // one aggregate query (was two queries per driver); same figures as driverBalance()
+  app.get('/admin/finance/drivers', { preHandler: view }, async (req) => {
+    const { limit } = parse(z.object({ limit: z.coerce.number().int().min(1).max(1000).default(500) }), req.query);
+    const rows = await q<any>(`select e.owner_user_id user_id, u.display_name,
+        coalesce(sum(e.credit - e.debit) filter (where e.account_code='DRIVER_PAYABLE'),0)::bigint payable,
+        coalesce(sum(e.debit - e.credit) filter (where e.account_code='CASH_WITH_DRIVERS'),0)::bigint cash_held
+      from ledger_entries e join users u on u.id=e.owner_user_id where e.account_code in ('DRIVER_PAYABLE','CASH_WITH_DRIVERS')
+      group by e.owner_user_id, u.display_name having sum(e.credit - e.debit) filter (where e.account_code='DRIVER_PAYABLE') <> 0 or sum(e.debit - e.credit) filter (where e.account_code='CASH_WITH_DRIVERS') <> 0
+      order by u.display_name limit $1`, [limit]);
+    return { drivers: rows.map((r) => ({ user_id: r.user_id, display_name: r.display_name, payable: r.payable, cash_held: r.cash_held,
+      eligible_payout: Math.max(0, r.payable - r.cash_held), owed_to_platform: Math.max(0, r.cash_held - r.payable) })) };
   });
 
   // refunds: maker (request) and checker (approve) are different people
@@ -89,8 +94,8 @@ export async function adminFinanceRoutes(app: FastifyInstance) {
   app.get('/admin/finance/reconciliation', { preHandler: view }, async () => ({
     runs: await q('select * from reconciliation_runs order by created_at desc limit 30'),
     open_items: await q("select i.*, r.provider, r.run_date from reconciliation_items i join reconciliation_runs r on r.id=i.run_id where not i.resolved order by r.created_at desc limit 200"),
-    payment_exceptions: await q("select id, reference, method, status, amount, failure_reason, created_at from payments where failure_reason in ('amount_mismatch','late_success_needs_review') or (status='PENDING' and created_at < now() - interval '15 minutes' and method <> 'cash') order by created_at desc"),
-    cash_outstanding: await q("select p.id, p.reference, p.amount, p.amount_collected, p.created_at, b.ref from payments p join bookings b on b.id=p.booking_id where p.method='cash' and p.status='PENDING' and p.created_at < now() - interval '1 hour'"),
+    payment_exceptions: await q("select id, reference, method, status, amount, failure_reason, created_at from payments where failure_reason in ('amount_mismatch','late_success_needs_review') or (status='PENDING' and created_at < now() - interval '15 minutes' and method <> 'cash') order by created_at desc limit 500"),
+    cash_outstanding: await q("select p.id, p.reference, p.amount, p.amount_collected, p.created_at, b.ref from payments p join bookings b on b.id=p.booking_id where p.method='cash' and p.status='PENDING' and p.created_at < now() - interval '1 hour' order by p.created_at limit 500"),
   }));
   app.post('/admin/finance/reconciliation/items/:id/resolve', { preHandler: requirePerm('finance.reconcile') }, async (req) => {
     const { id } = parse(idp, req.params); const b = parse(z.object({ note: z.string().min(5).max(300) }), req.body);
@@ -110,6 +115,6 @@ export async function adminFinanceRoutes(app: FastifyInstance) {
     }[kind];
     await audit(actorOf(req), 'export', kind, null, undefined, r);
     reply.header('content-type', 'text/csv; charset=utf-8').header('content-disposition', `attachment; filename="${kind}.csv"`);
-    return csv(await q(sql, p));
+    return csv(await q(`${sql} limit 100000`, p));       // hard cap: export one period at a time (from/to) for more
   });
 }

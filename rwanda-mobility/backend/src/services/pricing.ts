@@ -1,4 +1,4 @@
-import { q, q1, type Db, pool } from '../db.js';
+import { q1, type Db, pool } from '../db.js';
 import { bps, roundTo } from '../util/money.js';
 import { badRequest } from '../errors.js';
 

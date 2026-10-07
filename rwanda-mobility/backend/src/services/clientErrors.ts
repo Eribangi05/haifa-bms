@@ -17,7 +17,12 @@ export function scrub(s: string): string {
 
 export type ClientErrorIn = { message: string; stack?: string; app_version?: string; platform?: string; screen?: string; lang?: string };
 
+/** Global ceiling on stored reports per hour: a flood from many addresses can never fill the table (excess reports are acknowledged and dropped). */
+const MAX_PER_HOUR = Number(process.env.CLIENT_ERR_MAX_PER_HOUR ?? 5000);
+
 export async function recordClientError(userId: string | null, e: ClientErrorIn) {
+  const recent = await q<{ n: number }>("select count(*)::int n from client_errors where created_at > now() - interval '1 hour'");
+  if (recent[0].n >= MAX_PER_HOUR) return 0;
   const s = (v?: string, n = 80) => (v ? scrub(v).slice(0, n) : null);
   const r = await q<{ id: number }>(
     `insert into client_errors(user_id, message, stack, app_version, platform, screen, lang) values ($1,$2,$3,$4,$5,$6,$7) returning id`,

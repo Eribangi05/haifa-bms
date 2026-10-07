@@ -1,11 +1,23 @@
+# Abasare API image. Build context is the rwanda-mobility/ folder (it needs backend/ and admin-web/):
+#   docker build -f backend/Dockerfile -t abasare-api .
+# Migrations and idempotent seeding (zones, services, prices, roles) run automatically on start (src/server.ts).
 FROM node:22-slim AS base
 WORKDIR /app
-COPY backend/package*.json ./backend/
-RUN cd backend && npm ci --omit=dev && npm i tsx typescript --no-save
+ENV NODE_ENV=production
+# Install exactly what package-lock.json pins. tsx is a devDependency but the server is started with it, so it is added at the locked version.
+COPY backend/package.json backend/package-lock.json ./backend/
+RUN cd backend && npm ci --omit=dev \
+ && npm i --no-save --no-audit --no-fund "tsx@$(node -p "require('./package-lock.json').packages['node_modules/tsx'].version")" \
+ && npm cache clean --force
 COPY backend ./backend
 COPY admin-web ./admin-web
-ENV NODE_ENV=production
+# Documents and evidence are written to STORAGE_DIR: mount a persistent volume there (see deploy/docker-compose.yml). The node user must own it.
+ENV STORAGE_DIR=/data/storage PORT=8080
+RUN mkdir -p /data/storage && chown -R node:node /data
 WORKDIR /app/backend
 EXPOSE 8080
 USER node
-CMD ["npx", "tsx", "src/server.ts"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# node is PID 1 (no npx wrapper) so SIGTERM from the platform reaches the server and its graceful shutdown (src/server.ts) runs
+CMD ["node", "--import", "tsx", "src/server.ts"]

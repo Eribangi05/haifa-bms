@@ -5,12 +5,13 @@ import { requireRole, anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, notFound, forbidden } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
-import { encrypt, signFileToken, verifyFileToken } from '../util/crypto.js';
+import { encrypt, verifyFileToken } from '../util/crypto.js';
 import { saveFile, readFileByKey } from '../services/storage.js';
 import * as Dr from '../services/drivers.js';
 import { driverBalance } from '../services/ledger.js';
 import { requestPayout } from '../services/finance.js';
 import { audit } from '../services/audit.js';
+import { pickLang } from '../services/errmsg.js';
 
 const KNOWN_DOCS = ['national_id', 'driving_licence', 'profile_photo', 'vehicle_registration', 'insurance', 'transport_permit', 'inspection', 'ownership_authorisation', 'police_clearance'];
 
@@ -18,25 +19,29 @@ export async function driverRoutes(app: FastifyInstance) {
   const drv = { preHandler: requireRole('driver') };
 
   /** An existing passenger starts the (separate, gated) driver onboarding. Grants no permission to receive trips. */
-  app.post('/drivers/enroll', { preHandler: anyAuth }, async (req) => {
+  app.post('/drivers/enroll', { config: routeLimit('ENROLL_RATE_MAX', 10), preHandler: anyAuth }, async (req) => {
     await tx(async (c) => {
       await q("insert into user_roles values ($1,'driver') on conflict do nothing", [req.auth!.id], c);
       await q('insert into driver_profiles(user_id) values ($1) on conflict do nothing', [req.auth!.id], c);
     });
-    return { ok: true, note: 'Complete your application and documents. You cannot receive trips until you are approved.' };
+    return { ok: true, note: pickLang(req, {
+      en: 'Complete your application and documents. You cannot receive trips until you are approved.',
+      fr: 'Complétez votre candidature et vos documents. Vous ne pouvez pas recevoir de courses avant d\'être approuvé.',
+      rw: 'Uzuza ubusabe bwawe n\'ibyangombwa. Ntushobora guhabwa ingendo mbere yo kwemezwa.' }) };
   });
 
   app.post('/drivers/applications', drv, async (req) => {
     const b = parse(z.object({
       legal_name: z.string().min(3).max(120), national_id: z.string().min(8).max(20),
       vehicle: z.object({ vehicle_type: z.enum(['moto', 'car', 'minivan', 'pickup', 'truck']), make: z.string().max(40), model: z.string().max(40), color: z.string().max(30), year: z.number().int().min(1990).max(2100).optional(), plate: z.string().min(4).max(12), capacity: z.number().int().min(1).max(60), comfort: z.boolean().default(false) }),
-      zone_id: z.string().default('kigali'), payout_msisdn: z.string().optional(), payout_provider: z.enum(['mtn_momo', 'airtel_money']).default('mtn_momo'),
+      zone_id: z.string().max(30).default('kigali'), payout_msisdn: z.string().optional(), payout_provider: z.enum(['mtn_momo', 'airtel_money']).default('mtn_momo'),
       preferred_hours: z.object({ start: z.number().min(0).max(23), end: z.number().min(0).max(24) }).optional(),
       emergency_contact: z.object({ name: z.string().max(80), phone: z.string() }).optional(),
     }), req.body);
     const msisdn = b.payout_msisdn ? normalizePhone(b.payout_msisdn) : null;
     if (b.payout_msisdn && !msisdn) throw badRequest('invalid_phone', 'Invalid payout number');
     const id = req.auth!.id;
+    if (!(await q1('select 1 from service_zones where id=$1 and active', [b.zone_id]))) throw badRequest('validation_error', 'Unknown service zone');
     const plate = b.vehicle.plate.toUpperCase().replace(/\s+/g, '');
     await tx(async (c) => {
       const dp = await q1<any>('select status from driver_profiles where user_id=$1 for update', [id], c);
@@ -61,7 +66,7 @@ export async function driverRoutes(app: FastifyInstance) {
       if (p.type === 'file') { declared = p.mimetype; buf = await p.toBuffer(); if ((p as any).file.truncated) throw badRequest('file_too_large', 'Maximum file size is 5 MB'); }
       else f[p.fieldname] = String(p.value);
     }
-    const body = parse(z.object({ doc_type: z.enum(KNOWN_DOCS as [string, ...string[]]), expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }), f);
+    const body = parse(z.object({ doc_type: z.enum(KNOWN_DOCS as [string, ...string[]]), expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((d) => !Number.isNaN(Date.parse(d)) && new Date(d).toISOString().startsWith(d), 'Not a real calendar date').optional() }), f);
     if (!buf) throw badRequest('file_required');
     const veh = await q1<any>("select vehicle_type from vehicles where driver_id=$1 order by created_at desc limit 1", [req.auth!.id]);
     const dpx = await q1<any>('select abasare_status from driver_profiles where user_id=$1', [req.auth!.id]);
@@ -72,7 +77,7 @@ export async function driverRoutes(app: FastifyInstance) {
     const saved = await saveFile(buf, body.doc_type === 'profile_photo' ? 'photos' : 'docs', declared);
     const d = await q1<any>(`insert into driver_documents(driver_id, doc_type, file_key, mime, size, expiry_date) values ($1,$2,$3,$4,$5,$6) returning id, doc_type, review_status, expiry_date`,
       [req.auth!.id, body.doc_type, saved.key, saved.mime, saved.size, body.expiry_date ?? null]);
-    if (body.doc_type === 'profile_photo') await q('update users set photo_key=$2 where id=$1', [req.auth!.id, saved.key]);
+    // (the photo shown to passengers is set only when staff approve it: see /admin/documents/:id/review)
     return d;
   });
 
@@ -157,7 +162,7 @@ export async function driverRoutes(app: FastifyInstance) {
   app.get('/drivers/me/payouts', drv, async (req) => ({ payouts: await q('select id, amount, fee, status, requested_at, paid_at from payouts where owner_user_id=$1 order by requested_at desc limit 50', [req.auth!.id]) }));
   app.post('/drivers/me/payouts', drv, async (req) => {
     const b = parse(z.object({ amount: z.number().int().positive() }), req.body);
-    return requestPayout(req.auth!.id, b.amount, 'driver');
+    return requestPayout(req.auth!.id, b.amount, 'driver', String(req.headers['idempotency-key'] ?? '').slice(0, 100) || undefined);
   });
 
   // signed private file access (links minted only for authorised staff)
