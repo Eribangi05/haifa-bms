@@ -6,7 +6,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useApp, useAsync, usePoll } from '../lib/app';
 import { ApiError } from '../lib/net';
 import { kv } from '../lib/storage';
-import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner } from '../ui/components';
+import { Banner, Btn, Card, Chip, Empty, Field, Header, LinkBtn, Money, Pill, Screen, Spinner } from '../ui/components';
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
 import { showAlert } from '../ui/dialog';
@@ -15,6 +15,7 @@ import { SosButton } from './shared';
 import { appendFile, pickPhoto } from '../lib/upload';
 import { Image } from 'react-native';
 import { API_URL } from '../config';
+import { bgSupported, startBgLocation, stopBgLocation } from '../lib/bgLocation';
 
 const VTYPES = ['moto', 'car', 'minivan'] as const;
 
@@ -120,7 +121,9 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
   const [accepting, setAccepting] = useState<string[]>(() => (status.profile.accepting ?? ['ride']).filter((x: string) => (x === 'ride' ? rideOk : absOk)));
   const sub = useRef<Location.LocationSubscription | null>(null);
   useEffect(() => { setIsOnline(!!status.profile.is_online); }, [status.profile.is_online]);
-  useEffect(() => { kv.get('rm_drv_loc_consent').then((v) => setConsent(v === '1')); }, []);
+  // On Android the disclosure also covers background (foreground-service) sharing, so it has its own consent record.
+  const consentKey = bgSupported ? 'rm_drv_bg_consent' : 'rm_drv_loc_consent'; const bgOn = useRef(false);
+  useEffect(() => { kv.get(consentKey).then((v) => setConsent(v === '1')); }, [consentKey]);
 
   // Foreground location while online: heartbeat + position. (Background tracking is not implemented; disclosed in docs.)
   useEffect(() => {
@@ -130,6 +133,7 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
       const p = await Location.requestForegroundPermissionsAsync(); if (p.status !== 'granted' || cancelled) return;
       sub.current = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 15 }, (l) => {
         setPos({ lat: l.coords.latitude, lng: l.coords.longitude });
+        if (bgOn.current) return;   // the background task is already posting
         client.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false }).catch((e) => { if (e instanceof ApiError && e.status === 403) reload(); });
       });
     })();
@@ -144,6 +148,17 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
   const active = usePoll(() => client.get('/bookings/active?role=driver'), 3000, [isOnline]);
   const offers = usePoll(() => client.get('/drivers/me/offers'), 3000, [isOnline], isOnline && !active.data?.booking);
   const perm = status.permission; const trip = active.data?.booking;
+  // Background sharing (Android foreground service): only while this driver is online or on a trip, and only after the disclosure was accepted.
+  const wantBg = consent && (isOnline || !!trip);
+  useEffect(() => {
+    if (!bgSupported) return;
+    if (!wantBg) { bgOn.current = false; void stopBgLocation(); return; }
+    let cancelled = false;
+    startBgLocation(lang).then((r) => { if (cancelled) return; bgOn.current = r === 'started'; if (r === 'denied') say(t('drv.bg.denied')); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantBg, lang]);
+  useEffect(() => () => { bgOn.current = false; void stopBgLocation(); }, []);
   const reasonText = (r: string) => { const k = `rs.${r}`; return k in DICTS[lang] ? t(k as TKey) : r.startsWith('account_') ? t('rs.other') : t('rs.other'); };
   const blockedText = () => {
     const ps = [(status.vehicle || status.abasare?.status === 'none') ? perm : null, status.abasare?.status !== 'none' ? absPerm : null].filter(Boolean) as any[];
@@ -154,7 +169,7 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
 
   return (
     <View style={S.screen}>
-      <Header title={t('drv.mode')} onBack={() => setMode('passenger')} right={trip ? <SosButton bookingId={trip.id} /> : <Pressable onPress={() => nav.push('support')}><Text style={{ color: C.primary, padding: 8, fontWeight: '700' }}>{t('home.help')}</Text></Pressable>} />
+      <Header title={t('drv.mode')} onBack={() => setMode('passenger')} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />} />
       <ScrollView contentContainerStyle={{ padding: 14 }}>
         {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
         <View style={[S.row, { marginBottom: 10 }]}><Chip text={t('drv.mode')} on={tab === 'work'} onPress={() => setTab('work')} /><Chip text={t('drv.earnings')} on={tab === 'earn'} onPress={() => setTab('earn')} /></View>
@@ -167,7 +182,9 @@ function Working({ status, reload }: { status: any; reload: () => void }) {
               {absOk ? <Chip text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => setAccepting((a) => (a.includes('abasare') ? (a.length > 1 ? a.filter((x) => x !== 'abasare') : a) : [...a, 'abasare']))} /> : null}</View></View> : null}
             {!rideOk && !absOk ? <Banner kind="bad" text={blockedText()} /> : null}
           </Card>
-          {!consent && (rideOk || absOk) ? <Card><Text style={S.h2}>{t('drv.location.title')}</Text><Text style={[S.body, { marginVertical: 8 }]}>{t('drv.location.body')}</Text><Btn title={t('drv.agree')} onPress={async () => { await kv.set('rm_drv_loc_consent', '1'); try { await client.post('/users/me/consents', { kind: 'background_location', version: 'v1', granted: true }); } catch { /* ok */ } setConsent(true); }} /></Card> : null}
+          {!consent && (rideOk || absOk) ? <Card><Text accessibilityRole="header" style={S.h2}>{t('drv.location.title')}</Text><Text style={[S.body, { marginVertical: 8 }]}>{t('drv.location.body')}</Text>
+            {bgSupported ? <><Text accessibilityRole="header" style={[S.h2, { fontSize: 16 }]}>{t('drv.bg.title')}</Text><Text style={[S.body, { marginVertical: 8 }]}>{t('drv.bg.body')}</Text></> : null}
+            <Btn title={t('drv.agree')} onPress={async () => { await kv.set(consentKey, '1'); try { await client.post('/users/me/consents', { kind: 'background_location', version: bgSupported ? 'v2' : 'v1', granted: true }); } catch { /* ok */ } setConsent(true); }} /></Card> : null}
           {status.documents.filter((d: any) => d.expiry_date && new Date(d.expiry_date).getTime() - Date.now() < 30 * 86400000 && d.review_status === 'approved').map((d: any) => <Banner key={d.id} text={`${t('drv.docs.expiring')}: ${label(lang, 'doc', d.doc_type)} (${String(d.expiry_date).slice(0, 10)})`} />)}
           {trip ? <ActiveTrip trip={trip} pos={pos} reload={active.reload} /> : isOnline ? <>
             {pos ? <MapBox center={pos} markers={[{ ...pos, label: '', color: '#1A5FB4' }]} height={180} zoom={14} /> : null}

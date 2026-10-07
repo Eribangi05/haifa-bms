@@ -1,11 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Easing, Pressable, useWindowDimensions, ScrollView, StyleProp, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Pressable, useWindowDimensions, ScrollView, StyleProp, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { C, S } from './theme';
 import { LANGS, type Lang } from '../lib/i18n';
 import { useApp } from '../lib/app';
 
 const MAX_W = 640;
+
+/** True when the OS asks for reduced motion (animations become instant). */
+export function useReduceMotion() {
+  const [r, setR] = React.useState(false);
+  useEffect(() => {
+    let live = true;
+    AccessibilityInfo.isReduceMotionEnabled?.().then((v) => live && setR(!!v)).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', (v: boolean) => setR(!!v));
+    return () => { live = false; sub?.remove?.(); };
+  }, []);
+  return r;
+}
 export function Screen({ children, scroll = true, footer, embedded }: { children: React.ReactNode; scroll?: boolean; footer?: React.ReactNode; embedded?: boolean }) {
   const { width } = useWindowDimensions();
   const wide = width > MAX_W + 40;
@@ -20,15 +32,15 @@ export function Screen({ children, scroll = true, footer, embedded }: { children
 
 /** Fade + slide-up entrance. Respects nothing fancy: short, native-driven, harmless when motion is reduced by the OS. */
 export function FadeIn({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 320, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v, delay]);
+  const v = useRef(new Animated.Value(0)).current; const reduce = useReduceMotion();
+  useEffect(() => { if (reduce) { v.setValue(1); return; } Animated.timing(v, { toValue: 1, duration: 320, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v, delay, reduce]);
   return <Animated.View style={[{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }, style]}>{children}</Animated.View>;
 }
 
 /** Pulsing placeholder shown while content loads (better than a lone spinner). */
 export function Skeleton({ height = 16, width = '100%', style }: { height?: number; width?: number | string; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0.45)).current;
-  useEffect(() => { const l = Animated.loop(Animated.sequence([Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(v, { toValue: 0.45, duration: 700, useNativeDriver: true })])); l.start(); return () => l.stop(); }, [v]);
+  const v = useRef(new Animated.Value(0.45)).current; const reduce = useReduceMotion();
+  useEffect(() => { if (reduce) { v.setValue(0.7); return; } const l = Animated.loop(Animated.sequence([Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(v, { toValue: 0.45, duration: 700, useNativeDriver: true })])); l.start(); return () => l.stop(); }, [v, reduce]);
   return <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[{ height, width: width as any, borderRadius: 8, backgroundColor: C.line, opacity: v }, style]} />;
 }
 
@@ -65,15 +77,15 @@ export function Btn({ title, onPress, kind = 'primary', disabled, loading, style
 }) {
   const bg = kind === 'primary' ? C.primary : kind === 'danger' ? C.danger : kind === 'gold' ? C.gold : 'transparent';
   const fg = kind === 'ghost' ? C.primary : kind === 'gold' ? C.ink : '#fff';
-  const sc = useRef(new Animated.Value(1)).current;
-  const to = (v: number) => Animated.spring(sc, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  const sc = useRef(new Animated.Value(1)).current; const reduce = useReduceMotion();
+  const to = (v: number) => { if (reduce) { sc.setValue(1); return; } Animated.spring(sc, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 0 }).start(); };
   return (
     <Animated.View style={{ transform: [{ scale: sc }] }}>
       <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }} onPress={onPress} disabled={disabled || loading}
         onPressIn={() => to(0.97)} onPressOut={() => to(1)} hitSlop={4}
-        style={({ pressed }) => [{ backgroundColor: bg, borderRadius: 14, minHeight: big ? 60 : 52, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
+        style={({ pressed }) => [{ backgroundColor: bg, borderRadius: 14, minHeight: big ? 60 : 52, minWidth: 44, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
           borderWidth: kind === 'ghost' ? 1.5 : 0, borderColor: C.primary }, style]}>
-        {loading ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontSize: big ? 19 : 16, fontWeight: '700', textAlign: 'center' }}>{title}</Text>}
+        {loading ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontSize: big ? 19 : 16, fontWeight: '700', textAlign: 'center', flexShrink: 1 }}>{title}</Text>}
       </Pressable>
     </Animated.View>
   );
@@ -87,6 +99,13 @@ export function Field({ label, ...p }: TextInputProps & { label?: string }) {
     </View>
   );
 }
+
+/** Text-only action (header links, "clear", "close"): role + label + a 44 px touch target. */
+export const LinkBtn = ({ title, onPress, label, color = C.primary, style }: { title: string; onPress: () => void; label?: string; color?: string; style?: StyleProp<ViewStyle> }) => (
+  <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label ?? title} hitSlop={4} style={[{ minHeight: 44, minWidth: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }, style]}>
+    <Text style={{ color, fontWeight: '700' }}>{title}</Text>
+  </Pressable>
+);
 
 export const Card = ({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) => <View style={[S.card, style]}>{children}</View>;
 
@@ -102,8 +121,8 @@ export const Pill = ({ text, tone = 'ok' }: { text: string; tone?: 'ok' | 'warn'
 );
 
 export const Chip = ({ text, onPress, on }: { text: string; onPress: () => void; on?: boolean }) => (
-  <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: !!on }} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : '#fff', marginRight: 8, marginBottom: 8 }}>
-    <Text style={{ color: on ? C.primary : C.ink, fontWeight: on ? '700' : '500' }}>{text}</Text>
+  <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: !!on }} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : '#fff', marginRight: 8, marginBottom: 8, maxWidth: '100%' }}>
+    <Text style={{ color: on ? C.primary : C.ink, fontWeight: on ? '700' : '500', flexShrink: 1 }}>{text}</Text>
   </Pressable>
 );
 

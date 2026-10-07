@@ -60,7 +60,8 @@ await step('driver goes online for Abasare', async () => {
 
 // ---------------- owner books ----------------
 await step('owner signs up, switches to Abasare and adds a car', async () => {
-  await signUp(O, oph); await O.page.getByText('Abasare', { exact: true }).first().click(); await O.page.getByText('Abasare: a driver for your own car').waitFor(); await shot(O, '6-owner-abasare');
+  await signUp(O, oph); await O.page.getByText('Abasare', { exact: true }).first().click(); await O.page.getByText('Abasare: a driver for your own car').waitFor(); await O.page.getByText('How Abasare works').waitFor(); await shot(O, '6-owner-abasare');
+  await O.page.getByText('Got it', { exact: true }).click(); await O.page.getByText('How Abasare works').waitFor({ state: 'detached' }); await O.page.reload(); await O.page.getByText('Abasare: a driver for your own car').waitFor(); if (await O.page.getByText('How Abasare works').count()) throw new Error('explainer came back after dismiss');
   await O.page.getByText('Add a car', { exact: true }).click(); await O.page.getByText('Add a car', { exact: true }).click();
   await O.page.getByLabel('Plate number').fill('RAE456D'); await O.page.getByLabel('Make').fill('Toyota'); await O.page.getByLabel('Model').fill('RAV4'); await O.page.getByLabel('Colour').fill('Silver');
   await O.page.getByText('SUV', { exact: true }).click(); await O.page.getByText('Automatic', { exact: true }).click(); await O.page.getByText(/My insurance covers/).click(); await shot(O, '7-add-car');

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, Text, View, useWindowDimensions } from 'react-native';
 import { useApp, useAsync } from '../lib/app';
 import { Banner, Btn, FadeIn, Field, IconBadge, LangPicker, Screen } from '../ui/components';
 import { C, S } from '../ui/theme';
@@ -8,6 +8,7 @@ import { ApiError } from '../lib/net';
 import { tokenStore } from '../lib/storage';
 
 export function Welcome() {
+  const narrow = useWindowDimensions().width < 340;
   const { t, lang, setLang, nav } = useApp();
   const feats: [string, string][] = [['🛡️', t('welcome.f1')], ['💰', t('welcome.f2')], ['🆘', t('welcome.f3')], ['🚗', t('welcome.f4')]];
   return (
@@ -21,7 +22,7 @@ export function Welcome() {
       </FadeIn>
       <FadeIn delay={120}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 18 }}>
-          {feats.map(([g, l]) => <View key={l} style={{ width: '50%', paddingRight: 8, paddingBottom: 8 }}><View style={[S.row, { backgroundColor: C.card, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: C.line }]}><IconBadge glyph={g} size={36} /><Text style={[S.body, { flex: 1, marginLeft: 8, fontSize: 13, fontWeight: '600' }]}>{l}</Text></View></View>)}
+          {feats.map(([g, l]) => <View key={l} style={{ width: narrow ? '100%' : '50%', paddingRight: 8, paddingBottom: 8 }}><View style={[S.row, { backgroundColor: C.card, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: C.line }]}><IconBadge glyph={g} size={36} /><Text style={[S.body, { flex: 1, marginLeft: 8, fontSize: 13, fontWeight: '600' }]}>{l}</Text></View></View>)}
         </View>
       </FadeIn>
       <Text accessibilityRole="header" style={[S.h2, { marginBottom: 10 }]}>{t('auth.language')}</Text>

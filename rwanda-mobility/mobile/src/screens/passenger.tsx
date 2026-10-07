@@ -5,7 +5,7 @@ import { useApp, useAsync, usePoll } from '../lib/app';
 import { label, pick } from '../lib/i18n';
 import { ApiError, uuid } from '../lib/net';
 import { kv, loadJson, saveJson } from '../lib/storage';
-import { Banner, Btn, Card, Chip, Empty, Field, Header, Money, Pill, Screen, Spinner, Stepper } from '../ui/components';
+import { Banner, Btn, Card, Chip, Empty, Field, FadeIn, Header, IconBadge, LinkBtn, Money, Pill, Screen, Spinner, Stepper } from '../ui/components';
 import { MapBox } from '../ui/MapView';
 import { C, S } from '../ui/theme';
 import { showAlert } from '../ui/dialog';
@@ -86,13 +86,14 @@ export function Home() {
       <Header title={svc === 'abasare' ? t('ab.tab.abasare') : t('home.where')} right={
         <View style={S.row}>
           {me?.roles.includes('driver') ? <Chip text={t('drv.mode')} onPress={() => setMode('driver')} /> : null}
-          <Pressable onPress={() => nav.push('support')} style={{ padding: 8 }}><Text style={{ color: C.primary, fontWeight: '700' }}>{t('home.help')}</Text></Pressable>
-          <Pressable onPress={() => nav.push('profile')} style={{ padding: 8 }}><Text style={{ color: C.primary, fontWeight: '700' }}>{t('home.profile')}</Text></Pressable>
+          <LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />
+          <LinkBtn title={t('home.profile')} onPress={() => nav.push('profile')} />
         </View>} />
       <ScrollView contentContainerStyle={{ padding: 14 }} keyboardShouldPersistTaps="handled">
         {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
         {activeB ? <Card style={{ borderColor: C.primary }}><View style={S.between}><View><Text style={S.h2}>{t('home.active')}</Text><Text style={S.muted}>{activeB.ref} · {activeB.status.replace(/_/g, ' ')}</Text></View><Btn title={t('home.resume')} onPress={() => nav.push('track', { id: activeB.id })} /></View></Card> : null}
         {abasareOn ? <View style={[S.row, { marginBottom: 8 }]}><Chip text={t('ab.tab.ride')} on={svc === 'ride'} onPress={() => setSvc('ride')} /><Chip text={t('ab.tab.abasare')} on={svc === 'abasare'} onPress={() => setSvc('abasare')} /></View> : null}
+        {svc === 'abasare' ? <HowItWorks /> : null}
         {svc === 'abasare' ? <Card style={{ borderColor: C.gold, borderWidth: 2 }}>
           <Text style={S.h2}>{t('ab.home.title')}</Text><Text style={[S.muted, { marginBottom: 8 }]}>{t('ab.home.sub')}</Text>
           <Text style={S.muted}>{t('ab.mycar')}</Text>
@@ -106,13 +107,13 @@ export function Home() {
           : <Banner text={t('home.map.off')} />}
         <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
         <Card>
-          <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><Pressable onPress={locate}><Text style={{ color: C.primary, fontWeight: '700' }}>{t('home.mylocation')}</Text></Pressable></View>
+          <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><LinkBtn title={t('home.mylocation')} onPress={locate} /></View>
           <Text style={[S.body, { fontWeight: '600', marginBottom: 8 }]}>{pickup ? pickup.name ?? `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}` : t('home.nolocation')}</Text>
           <Field value={note} onChangeText={setNote} placeholder={t('home.pickupnote')} maxLength={280} />
           {needsDest ? <Text style={S.muted}>{t('home.dest')}</Text> : null}
-          {!needsDest ? null : dest ? <View style={S.between}><Text style={[S.body, { fontWeight: '700', flex: 1 }]}>{dest.name}</Text><Pressable onPress={() => setDest(null)}><Text style={{ color: C.danger }}>✕</Text></Pressable></View>
+          {!needsDest ? null : dest ? <View style={S.between}><Text style={[S.body, { fontWeight: '700', flex: 1 }]}>{dest.name}</Text><Pressable onPress={() => setDest(null)} accessibilityRole="button" accessibilityLabel={t('a11y.clear')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: C.danger }}>✕</Text></Pressable></View>
             : <Field value={q} onChangeText={setQ} placeholder={t('home.search')} />}
-          {needsDest ? results.map((r) => <Pressable key={(r.id ?? '') + r.name + r.lat} onPress={() => void pickDest(r)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}><Text style={S.body}>{r.name}</Text></Pressable>) : null}
+          {needsDest ? results.map((r) => <Pressable key={(r.id ?? '') + r.name + r.lat} onPress={() => void pickDest(r)} accessibilityRole="button" accessibilityLabel={t('a11y.chooseplace', { name: r.name })} style={{ minHeight: 44, justifyContent: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}><Text style={S.body}>{r.name}</Text></Pressable>) : null}
         </Card>
         {needsDest && !dest ? <>
           {saved.length ? <><Text style={[S.h2, { marginBottom: 6 }]}>{t('home.saved')}</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{saved.map((p) => <Chip key={p.id} text={`${t(('prof.places.' + p.label) as any)} · ${p.name}`} onPress={() => void pickDest(p)} />)}</View></> : null}
@@ -129,6 +130,24 @@ export function Home() {
         <View style={{ height: 8 }} /><Btn kind="ghost" title={t('home.history')} onPress={() => nav.push('history')} />
       </ScrollView>
     </View>
+  );
+}
+
+/** First-time 3-step explainer for Abasare; dismissed once, remembered in local storage. */
+function HowItWorks() {
+  const { t } = useApp(); const [show, setShow] = useState(false);
+  useEffect(() => { kv.get('rm_ab_how').then((v) => setShow(v !== '1')).catch(() => setShow(true)); }, []);
+  if (!show) return null;
+  const steps = [{ g: '🚗', k: '1' }, { g: '🧑‍✈️', k: '2' }, { g: '💵', k: '3' }] as const;
+  return (
+    <FadeIn><Card style={{ backgroundColor: '#FFFBEA', borderColor: C.gold }}>
+      <View style={S.between}><Text accessibilityRole="header" style={[S.h2, { flex: 1 }]}>{t('ab.how.title')}</Text></View>
+      {steps.map((st, i) => { const title = t(`ab.how.${st.k}` as any), desc = t(`ab.how.${st.k}d` as any); return (
+        <View key={st.k} accessible accessibilityLabel={t('ab.how.step', { n: i + 1, title, desc })} style={[S.row, { marginTop: 10, alignItems: 'flex-start' }]}>
+          <IconBadge glyph={st.g} bg={C.warnBg} /><View style={{ flex: 1, marginLeft: 12 }}><Text style={[S.body, { fontWeight: '700' }]}>{i + 1}. {title}</Text><Text style={S.muted}>{desc}</Text></View>
+        </View>); })}
+      <View style={{ height: 12 }} /><Btn kind="ghost" title={t('ab.how.gotit')} onPress={() => { setShow(false); void kv.set('rm_ab_how', '1').catch(() => {}); }} />
+    </Card></FadeIn>
   );
 }
 
@@ -211,7 +230,7 @@ export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: st
           </View>
           {corp ? <><Field label={t('biz.cc')} value={cc} onChangeText={setCc} /><Field label={t('biz.po')} value={po} onChangeText={setPo} /></> : null}
           <View style={{ height: 8 }} />
-          {params.abasare ? <Pressable onPress={() => setAtt(!att)} accessibilityRole="checkbox" style={{ marginBottom: 10 }}><Card style={{ borderColor: att ? C.primary : C.line }}><Text style={S.body}>{att ? '☑ ' : '☐ '}{t('ab.attest')}</Text></Card></Pressable> : null}
+          {params.abasare ? <Pressable onPress={() => setAtt(!att)} accessibilityRole="checkbox" accessibilityState={{ checked: att }} accessibilityLabel={t('ab.attest')} style={{ marginBottom: 10 }}><Card style={{ borderColor: att ? C.primary : C.line }}><Text style={S.body}>{att ? '☑ ' : '☐ '}{t('ab.attest')}</Text></Card></Pressable> : null}
           <Btn big title={params.abasare && !att ? t('ab.attest.need') : t('opt.confirm')} onPress={confirm} loading={busy} disabled={!opt?.available || (!!params.abasare && !att)} />
           {!data.options.some((o: any) => o.available) ? <><View style={{ height: 8 }} /><Btn kind="ghost" title={t('trip.alt.later')} onPress={() => nav.pop()} /></> : null}
         </> : null}
@@ -221,10 +240,10 @@ export function Options({ params }: { params: { pickup: Pt; dest?: Pt; note?: st
 }
 
 // ------------------------------------------------------------------ live trip
-const Stars = ({ v, set }: { v: number; set: (n: number) => void }) => (
+const Stars = ({ v, set }: { v: number; set: (n: number) => void }) => { const { t } = useApp(); return (
   <View style={{ flexDirection: 'row', justifyContent: 'center', marginVertical: 8 }}>{[1, 2, 3, 4, 5].map((n) => (
-    <Pressable key={n} onPress={() => set(n)} accessibilityLabel={`${n} stars`} style={{ padding: 6 }}><Text style={{ fontSize: 38, color: n <= v ? C.gold : C.line }}>★</Text></Pressable>))}</View>
-);
+    <Pressable key={n} onPress={() => set(n)} accessibilityRole="button" accessibilityLabel={t('a11y.stars', { n })} accessibilityState={{ selected: n === v }} style={{ padding: 6, minWidth: 44, minHeight: 44, alignItems: 'center' }}><Text style={{ fontSize: 38, color: n <= v ? C.gold : C.line }}>★</Text></Pressable>))}</View>
+); };
 
 export function Track({ params }: { params: { id?: string; pending?: boolean } }) {
   const { t, lang, client, nav, outbox, pendingOutbox, online, say } = useApp();
@@ -313,7 +332,7 @@ function HandoverReview({ b, reload }: { b: any; reload: () => void }) {
           {!h.owner_response ? <Text style={S.muted}>{t('ab.check.review')}</Text> : null}
           <Text style={S.body}>{t('ab.check.odo')}: {Number(h.odometer_km).toLocaleString('en-US')} km · {t('ab.check.fuel')}: {h.fuel_percent}%</Text>
           {h.notes ? <Text style={S.muted}>{t('ab.check.notes')}: {h.notes}</Text> : null}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 }}>{h.photos.map((u: string, i: number) => <Image key={i} source={{ uri: API_URL + u }} style={{ width: 84, height: 64, borderRadius: 8, backgroundColor: C.line }} accessibilityLabel={`Photo ${i + 1}`} />)}</View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 }}>{h.photos.map((u: string, i: number) => <Image key={i} source={{ uri: API_URL + u }} style={{ width: 84, height: 64, borderRadius: 8, backgroundColor: C.line }} accessibilityLabel={t('a11y.photo', { n: i + 1 })} />)}</View>
           {h.owner_response === 'ok' ? <Pill text={t('ab.check.confirmed')} /> : h.owner_response === 'issue' ? <Banner kind="bad" text={t('ab.check.disputed')} /> : issue === h.phase ? <>
             <Field value={note} onChangeText={setNote} placeholder={t('ab.check.issue.ph')} multiline /><Btn kind="danger" title={t('ab.check.issue')} onPress={() => respond(h.phase, 'issue')} loading={busy} disabled={note.trim().length < 5} /></>
             : <View style={{ gap: 8 }}><Btn title={t('ab.check.ok')} onPress={() => respond(h.phase, 'ok')} loading={busy} /><Btn kind="ghost" title={t('ab.check.issue')} onPress={() => setIssue(h.phase)} /></View>}
@@ -373,7 +392,7 @@ function ChatModal({ id, visible, onClose }: { id: string; visible: boolean; onC
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen scroll={false} footer={<View style={S.row}><View style={{ flex: 1 }}><Field value={text} onChangeText={setText} placeholder={t('trip.msg.ph')} maxLength={480} /></View><View style={{ width: 8 }} /><Btn title={t('common.send')} onPress={send} /></View>}>
-        <Header title={t('trip.chat')} right={<Pressable onPress={onClose}><Text style={{ color: C.primary, padding: 8 }}>{t('common.close')}</Text></Pressable>} />
+        <Header title={t('trip.chat')} right={<LinkBtn title={t('common.close')} onPress={onClose} />} />
         <ScrollView contentContainerStyle={{ padding: 14 }}>{(msgs.data?.messages ?? []).map((m: any) => (
           <View key={m.id} style={{ alignSelf: m.sender_id === me?.id ? 'flex-end' : 'flex-start', backgroundColor: m.sender_id === me?.id ? C.okBg : '#fff', borderRadius: 12, padding: 10, marginBottom: 6, maxWidth: '80%', borderWidth: 1, borderColor: C.line }}><Text>{m.body}</Text></View>))}</ScrollView>
       </Screen>

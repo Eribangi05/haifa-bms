@@ -4,6 +4,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { API_URL } from '../config';
 import { Client, ApiError, createClient, createOutbox, Outbox } from './net';
 import { getDeviceId, kv, loadJson, saveJson, tokenStore } from './storage';
+import { stopBgLocation, setBgClient } from './bgLocation';
+import { unregisterPush } from './push';
 import { Lang, TKey, isLang, translate } from './i18n';
 
 export type Route = { name: string; params?: any };
@@ -35,6 +37,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const authLost = useRef<() => void>(() => {});
 
   const client = useMemo(() => createClient({ baseUrl: API_URL, tokens: tokenStore, deviceId: () => deviceRef.current, lang: () => langRef.current, onAuthLost: () => authLost.current() }), []);
+  setBgClient(client);
   const outbox = useMemo(() => createOutbox(kv, client), [client]);
   const say = useCallback((m: string) => { setToast(m); setTimeout(() => setToast(null), 3500); }, []);
 
@@ -63,10 +66,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [client]);
 
   const signOut = useCallback(async () => {
+    await stopBgLocation(); await unregisterPush(client);
     try { await client.post('/auth/logout'); } catch { /* ignore */ }
     await tokenStore.set(null); await kv.del('rm_me'); setMe(null); setModeState('passenger'); setStack([{ name: 'welcome' }]);
   }, [client]);
-  authLost.current = () => { setMe(null); setStack([{ name: 'welcome' }]); };
+  authLost.current = () => { void stopBgLocation(); setMe(null); setStack([{ name: 'welcome' }]); };
 
   const signedIn = useCallback(async () => { await refreshMe(); setStack([{ name: 'home' }]); }, [refreshMe]);
   const setMode = useCallback((m: 'passenger' | 'driver') => { setModeState(m); void kv.set('rm_mode', m); setStack([{ name: m === 'driver' ? 'driverHome' : 'home' }]); }, []);

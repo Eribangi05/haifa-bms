@@ -19,7 +19,7 @@ export function SosButton({ bookingId }: { bookingId?: string }) {
   const call = (n: string) => Linking.openURL(`tel:${n}`);
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="SOS" style={{ backgroundColor: C.danger, borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 }}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('sos.button')}</Text></Pressable>
+      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={t('sos.button')} style={{ backgroundColor: C.danger, borderRadius: 99, paddingHorizontal: 16, minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('sos.button')}</Text></Pressable>
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <Screen footer={<Btn kind="ghost" title={t('common.close')} onPress={() => { setOpen(false); setRes(null); }} />}>
           <Text style={[S.h1, { color: C.danger, marginTop: 16 }]}>{t('sos.title')}</Text>
@@ -39,7 +39,7 @@ export function History() {
   return (
     <View style={S.screen}><Header title={t('hist.title')} onBack={() => nav.pop()} />
       <Screen embedded>{!list.data ? <><Card><Skeleton height={18} width="70%" /><Skeleton height={14} width="45%" style={{ marginTop: 10 }} /></Card><Card><Skeleton height={18} width="60%" /><Skeleton height={14} width="40%" style={{ marginTop: 10 }} /></Card></> : list.data.bookings.length === 0 ? <Empty text={t('hist.empty')} /> : list.data.bookings.map((b: any) => (
-        <Pressable key={b.id} onPress={() => nav.push('track', { id: b.id })}><Card>
+        <Pressable key={b.id} accessibilityRole="button" onPress={() => nav.push('track', { id: b.id })}><Card>
           <View style={S.between}><Text style={S.h2}>{b.pickup.name ?? '…'} → {b.destination.name ?? '…'}</Text></View>
           <View style={[S.between, { marginTop: 4 }]}><Text style={S.muted}>{b.ref} · {new Date(b.requested_at).toLocaleDateString('en-GB')}</Text><Money n={b.final_fare ?? b.estimated_fare} style={{ fontWeight: '700' }} /></View>
           <View style={{ marginTop: 6 }}><Pill tone={b.status.startsWith('CANCEL') ? 'bad' : b.status === 'PAYMENT_COMPLETED' ? 'ok' : 'warn'} text={label(lang, 'bs', b.status)} /></View>
@@ -65,7 +65,7 @@ export function Profile() {
           {(['sms', 'marketing'] as const).map((k) => <View key={k} style={[S.between, { paddingVertical: 6 }]}><Text style={S.body}>{k === 'sms' ? t('prof.sms') : t('prof.promos')}</Text><Switch value={!!prefs[k]} onValueChange={(v) => setPrefs({ ...prefs, [k]: v })} trackColor={{ true: C.primary }} /></View>)}
           <Btn title={t('common.save')} onPress={save} loading={busy} /></Card>
         <Card><Text style={S.h2}>{t('prof.contacts')}</Text>
-          {contacts.map((c) => <View key={c.id} style={[S.between, { paddingVertical: 6 }]}><Text style={S.body}>{c.name} · {c.phone}</Text><Pressable onPress={() => run(async () => { await client.del(`/users/me/emergency-contacts/${c.id}`); load(); })}><Text style={{ color: C.danger }}>✕</Text></Pressable></View>)}
+          {contacts.map((c) => <View key={c.id} style={[S.between, { paddingVertical: 6 }]}><Text style={S.body}>{c.name} · {c.phone}</Text><Pressable onPress={() => run(async () => { await client.del(`/users/me/emergency-contacts/${c.id}`); load(); })} accessibilityRole="button" accessibilityLabel={`${t('a11y.remove')}: ${c.name}`} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: C.danger }}>✕</Text></Pressable></View>)}
           <Field label={t('prof.contact.name')} value={cn} onChangeText={setCn} /><Field label={t('prof.contact.phone')} value={cp} onChangeText={setCp} keyboardType="phone-pad" />
           <Btn kind="ghost" title={t('prof.contacts.add')} disabled={!cn || !cp} onPress={() => run(async () => { await client.post('/users/me/emergency-contacts', { name: cn, phone: cp }); setCn(''); setCp(''); load(); })} /></Card>
         <Card><Text style={S.h2}>{t('ab.cars.title')}</Text><Text style={S.muted}>{t('ab.home.sub')}</Text><View style={{ height: 8 }} /><Btn kind="ghost" title={t('ab.cars.title')} onPress={() => nav.push('cars')} /></Card>
@@ -90,7 +90,7 @@ export function Support({ params }: { params?: { booking_id?: string } }) {
     <View style={S.screen}><Header title={t('support.title')} onBack={() => nav.pop()} right={<SosButton bookingId={params?.booking_id} />} />
       <Screen embedded>
         <Text style={[S.h2, { marginBottom: 8 }]}>{t('support.faq')}</Text>
-        {faq.map((f) => <Pressable key={f.id} onPress={() => setOpen(open === f.id ? null : f.id)}><Card><Text style={[S.body, { fontWeight: '700' }]}>{pick(lang, f, 'q')}</Text>{open === f.id ? <Text style={[S.body, { marginTop: 6 }]}>{pick(lang, f, 'a')}</Text> : null}</Card></Pressable>)}
+        {faq.map((f) => <Pressable key={f.id} accessibilityRole="button" accessibilityState={{ expanded: open === f.id }} onPress={() => setOpen(open === f.id ? null : f.id)}><Card><Text style={[S.body, { fontWeight: '700' }]}>{pick(lang, f, 'q')}</Text>{open === f.id ? <Text style={[S.body, { marginTop: 6 }]}>{pick(lang, f, 'a')}</Text> : null}</Card></Pressable>)}
         <Text style={[S.h2, { marginVertical: 8 }]}>{t('support.new')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{CATS.map((c) => <Chip key={c} text={t(('support.cat.' + c) as any)} on={cat === c} onPress={() => setCat(c)} />)}</View>
         <Field label={t('support.subject')} value={subject} onChangeText={setSubject} maxLength={140} /><Field label={t('support.body')} value={body} onChangeText={setBody} multiline maxLength={1900} />

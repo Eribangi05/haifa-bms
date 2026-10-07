@@ -26,8 +26,8 @@ export function Cars() {
         {(cars ?? []).map((c) => (
           <Card key={c.id}>
             <View style={S.between}><View><Text style={[S.h2, { letterSpacing: 2 }]}>{c.plate}</Text><Text style={S.muted}>{[c.color, c.make, c.model].filter(Boolean).join(' ')}</Text></View>
-              <Pressable onPress={() => showAlert(t('ab.car.remove'), c.plate, [{ text: t('common.cancel') }, { text: t('common.confirm'), style: 'destructive', onPress: () => run(async () => { await client.del(`/users/me/cars/${c.id}`); await load(); }) }])}><Text style={{ color: C.danger }}>{t('ab.car.remove')}</Text></Pressable></View>
-            <View style={[S.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}><Pill text={t(('ab.cls.' + c.vehicle_class) as any)} /><Pill text={c.transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')} />{c.insurance_confirmed ? <Pill text="✓ insured" /> : <Pill tone="warn" text="insurance not confirmed" />}</View>
+              <Pressable onPress={() => showAlert(t('ab.car.remove'), c.plate, [{ text: t('common.cancel') }, { text: t('common.confirm'), style: 'destructive', onPress: () => run(async () => { await client.del(`/users/me/cars/${c.id}`); await load(); }) }])} accessibilityRole="button" accessibilityLabel={`${t('ab.car.remove')}: ${c.plate}`} style={{ minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: 8 }}><Text style={{ color: C.danger }}>{t('ab.car.remove')}</Text></Pressable></View>
+            <View style={[S.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}><Pill text={t(('ab.cls.' + c.vehicle_class) as any)} /><Pill text={c.transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')} />{c.insurance_confirmed ? <Pill text={'✓ ' + t('ab.car.insok')} /> : <Pill tone="warn" text={t('ab.car.insno')} />}</View>
           </Card>))}
         {adding ? (
           <Card>

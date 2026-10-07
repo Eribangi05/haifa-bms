@@ -9,10 +9,30 @@ import { History, Profile, Support } from './src/screens/shared';
 import { DriverHome } from './src/screens/driver';
 import { Cars } from './src/screens/cars';
 import { Spinner } from './src/ui/components';
+import { ErrorBoundary } from './src/ui/ErrorBoundary';
+import { installErrorReporting } from './src/lib/report';
+import { initNotifications, listenForTaps, registerPush, routeFor } from './src/lib/push';
+import './src/lib/bgLocation';   // registers the driver location task at startup (native Android only; inert elsewhere)
 import { C } from './src/ui/theme';
 
 // Respect the user's font-size setting but cap it so layouts do not break (accessibility vs. layout).
 (Text as any).defaultProps = { ...((Text as any).defaultProps ?? {}), maxFontSizeMultiplier: 1.4 };
+
+initNotifications();
+
+/** Wires error reporting, push registration and notification taps to the app context. Renders nothing. */
+function Bridges() {
+  const { client, lang, nav, me, ready } = useApp();
+  const live = React.useRef({ lang, nav, me }); live.current = { lang, nav, me };
+  React.useEffect(() => { installErrorReporting({ client, lang: () => live.current.lang, screen: () => live.current.nav.stack[live.current.nav.stack.length - 1]?.name ?? 'unknown' }); }, [client]);
+  const uid = me?.id; const isDriver = !!me?.roles.includes('driver');
+  React.useEffect(() => { if (uid) void registerPush(client, live.current.lang, isDriver); }, [uid, isDriver, client]);
+  React.useEffect(() => {
+    if (!ready || !uid) return;
+    return listenForTaps((data) => { const go = routeFor(data, !!live.current.me?.roles.includes('driver')); if (go) live.current.nav.push(go.name, go.params); });
+  }, [ready, uid]);
+  return null;
+}
 
 function Router() {
   const { ready, nav, toast } = useApp();
@@ -41,11 +61,16 @@ function Router() {
   );
 }
 
+function Guarded() {
+  const { nav, me } = useApp();
+  return <ErrorBoundary onReset={() => nav.reset(me ? 'home' : 'welcome')}><Router /></ErrorBoundary>;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      <AppProvider><Router /></AppProvider>
+      <AppProvider><Bridges /><Guarded /></AppProvider>
     </SafeAreaProvider>
   );
 }
