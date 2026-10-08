@@ -9,7 +9,7 @@ module.exports = () => ({
     name: 'Abasare',
     slug: 'abasare',
     scheme: 'abasare',
-    version: '0.5.0',
+    version: '0.5.1',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',   // light only: expo-system-ui applies it to the Android system bars so their icons stay dark on our light screens
@@ -18,7 +18,7 @@ module.exports = () => ({
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
     android: {
       package: 'rw.abasare.app',
-      versionCode: 5,
+      versionCode: 6,
       adaptiveIcon: {
         backgroundColor: '#FFFFFF',
         foregroundImage: './assets/android-icon-foreground.png',
