@@ -4,11 +4,11 @@
 // [tab key, label, permissions that unlock it (any), group]. A tab is only shown when the signed-in role holds one of them, so no tab ever answers 403.
 const TABS = [
   ['dashboard', 'Overview', ['analytics.view'], 'Operations'], ['live', 'Live map', ['bookings.view_all'], 'Operations'], ['bookings', 'Bookings', ['bookings.view_all'], 'Operations'],
-  ['drivers', 'Drivers', ['drivers.view'], 'Operations'], ['abasare', 'Abasare', ['drivers.view'], 'Operations'], ['safety', 'Safety', ['safety.respond'], 'Operations'],
+  ['drivers', 'Drivers', ['drivers.view'], 'Operations'], ['abasare', 'Abasare', ['drivers.view'], 'Operations'], ['safety', 'Safety', ['safety.respond'], 'Operations'], ['trust', 'Trust and safety', ['safety.respond', 'drivers.view'], 'Operations'],
   ['users', 'Passengers', ['users.view'], 'People and support'], ['support', 'Support', ['support.handle'], 'People and support'], ['privacy', 'Privacy', ['privacy.handle'], 'People and support'],
-  ['finance', 'Finance', ['finance.view'], 'Money'],
+  ['finance', 'Finance', ['finance.view'], 'Money'], ['wallet', 'Credit & loyalty', ['wallet.view'], 'Money'], ['claims', 'Claims', ['claims.view'], 'People and support'], ['ussd', 'USSD channel', ['ussd.view'], 'Operations'],
   ['pricing', 'Pricing', ['pricing.manage', 'pricing.approve'], 'Business'], ['services', 'Services', ['pricing.manage'], 'Business'], ['promos', 'Promotions', ['promotions.manage'], 'Business'],
-  ['codes', 'Request codes', ['codes.view'], 'Business'], ['business', 'Business & fleets', ['corporate.manage', 'fleet.manage'], 'Business'],
+  ['codes', 'Request codes', ['codes.view'], 'Business'], ['fixedroutes', 'Fixed-price routes', ['pricing.manage', 'pricing.approve'], 'Business'], ['quests', 'Driver quests', ['growth.manage'], 'Business'], ['campaigns', 'Campaigns', ['growth.manage'], 'Business'], ['demand', 'Demand map', ['analytics.view'], 'Operations'], ['partners', 'Venue partners', ['partners.manage'], 'Business'], ['partner', 'Your venue', ['partner.portal'], 'Partner'], ['business', 'Business & fleets', ['corporate.manage', 'fleet.manage'], 'Business'],
   ['settings', 'Settings', ['settings.manage'], 'Administration'], ['audit', 'Audit log', ['audit.view'], 'Administration'], ['staff', 'Staff', ['users.manage'], 'Administration'],
 ];
 const visibleTabs = () => TABS.filter(([, , need]) => can(...need));

@@ -1,0 +1,37 @@
+// rw / fr messages for the error codes of the growth round (merged into errmsg.ts's table). Placeholders: {max}.
+type Pair = [rw: string, fr: string];
+export const GROWTH_ERRORS: Record<string, Pair> = {
+  guest_not_allowed: ['Gutumira undi muntu birashoboka ku ngendo zisanzwe gusa.', 'Réserver pour une autre personne n\'est possible que pour les courses classiques.'],
+  guest_same_as_booker: ['Nimero y\'uwo mutumiye ni iyawe. Andika iy\'undi muntu.', 'Le numéro de l\'invité est le vôtre. Saisissez celui de l\'autre personne.'],
+  guest_limit_active: ['Ufite ingendo nyinshi zirimo gukorwa z\'abandi bantu (ntarengwa {max}). Tegereza ko zimwe zirangira.', 'Vous avez trop de courses ouvertes pour d\'autres personnes (maximum {max}). Attendez que certaines se terminent.'],
+  guest_limit_daily: ['Wageze ku mubare ntarengwa w\'ingendo watumiye abandi uyu munsi ({max}).', 'Vous avez atteint la limite quotidienne de courses pour d\'autres personnes ({max}).'],
+  guest_limit_phone: ['Iyi nimero imaze guhabwa ingendo zigera ku mubare ntarengwa uyu munsi ({max}).', 'Ce numéro a déjà reçu le nombre maximum de courses aujourd\'hui ({max}).'],
+  guest_contact_unavailable: ['Ntibishoboka guhamagara uwo mugenzi kuri uru rugendo.', 'Il n\'est pas possible de contacter l\'invité pour cette course.'],
+  schedule_dates: ['Itariki yo kurangiriraho iri mbere y\'itariki yo gutangiriraho.', 'La date de fin est antérieure à la date de début.'],
+  schedule_limit: ['Wageze ku mubare ntarengwa w\'ingendo zisubiramo ({max}).', 'Vous avez atteint le nombre maximum de courses récurrentes ({max}).'],
+  schedule_no_occurrence: ['Nta rugendo ruri hagati y\'itariki yo gutangira n\'iyo kurangiriraho.', 'Aucune course ne tombe entre la date de début et la date de fin.'],
+  schedule_ended: ['Uru rugendo rusubiramo rwarangiye.', 'Cette course récurrente est terminée.'],
+  schedule_no_price_change: ['Nta giciro gishya cyo kwemera kiriho.', 'Il n\'y a pas de nouveau prix à accepter.'],
+  heatmap_unavailable: ['Ikarita y\'aho abantu bakeneye ingendo iboneka gusa ku bashoferi bemejwe bari ku murongo.', 'La carte de la demande est réservée aux chauffeurs approuvés qui sont en ligne.'],
+  no_partner: ['Iyi konti ntifite umufatanyabikorwa ifitanye isano na we.', 'Ce compte n\'est lié à aucun partenaire.'],
+  partner_suspended: ['Konti y\'uyu mufatanyabikorwa yahagaritswe by\'agateganyo.', 'Le compte de ce partenaire est suspendu.'],
+  partner_billing_unavailable: ['Uru rugendo ntirushobora kwishyurwa n\'ahantu washakiye.', 'Cette course ne peut pas être facturée au lieu partenaire.'],
+  partner_max_fare: ['Igiciro kirenze igihe cyemewe n\'ahantu uri ({max} RWF).', 'Le tarif dépasse le plafond fixé par le lieu partenaire ({max} RWF).'],
+  partner_cap_reached: ['Ingengo y\'imari y\'ukwezi y\'ahantu uri yarangiye.', 'Le budget mensuel du lieu partenaire est épuisé.'],
+  partner_daily_limit: ['Wageze ku mubare ntarengwa w\'ingendo zishyurwa n\'ahantu uyu munsi ({max}).', 'Vous avez atteint la limite quotidienne de courses payées par un lieu partenaire ({max}).'],
+  partner_exists: ['Hari umufatanyabikorwa usanzwe ufite iri zina.', 'Un partenaire portant ce nom existe déjà.'],
+  code_linked_elsewhere: ['Iyi kode isanzwe ifitwe n\'undi mufatanyabikorwa.', 'Ce code appartient déjà à un autre partenaire.'],
+  partner_required: ['Tumira umuyobozi w\'umufatanyabikorwa uciye ku rupapuro rw\'umufatanyabikorwa.', 'Invitez un gestionnaire partenaire depuis la page du partenaire.'],
+  placeholder_price: ['Iyi nzira ikigira igiciro cy\'urugero. Shyiraho igiciro nyacyo cyangwa ukemeze.', 'Cet itinéraire a encore un prix d\'exemple. Saisissez le vrai prix ou confirmez-le.'],
+  nothing_pending: ['Nta gihinduka gitegereje kwemezwa.', 'Aucune modification n\'est en attente d\'approbation.'],
+  budget_below_spent: ['Ingengo y\'imari ntishobora kuba munsi y\'ayamaze gukoreshwa.', 'Le budget ne peut pas être inférieur au montant déjà dépensé.'],
+  campaign_not_editable: ['Ubukangurambaga bwatangiye ntibushobora guhindurwa.', 'Une campagne déjà lancée ne peut plus être modifiée.'],
+  campaign_too_large: ['Abakurikiranwa ni benshi cyane ({max} ntarengwa). Hitamo itsinda rito.', 'L\'audience est trop grande (maximum {max}). Choisissez un segment plus petit.'],
+  campaign_empty: ['Nta muntu muri iri tsinda washobora kwakira ubutumwa (nta bwumvikane bwo kwamamaza).', 'Personne dans ce segment ne peut recevoir le message (pas de consentement marketing).'],
+  campaign_not_cancellable: ['Ubu bukangurambaga bwararangiye.', 'Cette campagne est déjà terminée.'],
+};
+export const GROWTH_NOUNS: Record<string, Pair> = {
+  schedule: ['urugendo rusubiramo', 'la course récurrente'], campaign: ['ubukangurambaga', 'la campagne'], partner: ['umufatanyabikorwa', 'le partenaire'],
+  'fixed route': ['inzira y\'igiciro kidahinduka', 'l\'itinéraire à prix fixe'], quest: ['igikorwa cy\'igihembo', 'la quête'], 'pending change': ['igihinduka gitegereje', 'la modification en attente'],
+  place: ['ahantu', 'le lieu'], 'request code': ['kode y\'ubusabe', 'le code de demande'],
+};

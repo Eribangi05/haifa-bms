@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { depositBlocks } from './prepaidGuard.js';
 import { q, q1, tx } from '../db.js';
 import { conflict, notFound, AppError } from '../errors.js';
 import { getSetting } from './settings.js';
@@ -7,6 +8,7 @@ import { etaS } from './maps.js';
 import { transition, logEvent, type BookingRow } from './bookingMachine.js';
 import { DOCS_OK_SQL, driverPermission, abasarePermission } from './drivers.js';
 import { notify } from './notify.js';
+import { guestNotify } from './guestRides.js';
 import { resolveCommission, calcCommission } from './commission.js';
 
 export const EXCUSED_REASONS = new Set(['safety_concern', 'platform_error', 'connectivity', 'passenger_unreachable', 'vehicle_issue_reported']);
@@ -36,6 +38,7 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
          and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.status = 'pending')
          and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $5)
          and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $6)
+         and not exists (select 1 from passenger_driver_prefs pp where pp.driver_id = dp.user_id and pp.passenger_id = $6 and pp.kind = 'blocked')
          and dp.last_lat is not null`,
       [heartbeatS, b.zone_id, cv.vehicle_class, cv.transmission, b.id, b.passenger_id], c);
   }
@@ -53,6 +56,7 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
        and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.status = 'pending')
        and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $6)
        and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $7)
+       and not exists (select 1 from passenger_driver_prefs pp where pp.driver_id = dp.user_id and pp.passenger_id = $7 and pp.kind = 'blocked')
        and dp.last_lat is not null`,
     [heartbeatS, b.zone_id, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, b.id, b.passenger_id], c);
 }
@@ -78,6 +82,7 @@ export function rankScore(etaSec: number, d: Pick<Cand, 'rejected_count' | 'offe
 }
 
 export async function startSearch(bookingId: string) {
+  if (await depositBlocks(bookingId)) return { offered: 0, status: 'AWAITING_DEPOSIT' };   // Abasare deposit required and not paid: never dispatch unpaid
   await tx(async (c) => {
     const cur = await q1<BookingRow>('select * from bookings where id=$1', [bookingId], c);
     if (!cur) throw notFound('booking');
@@ -110,10 +115,14 @@ export async function runRound(bookingId: string): Promise<{ offered: number; st
     const radiusM = Math.min(baseKm + stepKm * (round - 1), maxKm) * 1000;
     const svc = (await q1<any>('select * from service_categories where id=$1', [b.service_id], c))!;
     const pickup = { lat: b.pickup_lat, lng: b.pickup_lng };
+    // favourite drivers of the passenger rank as if closer (setting-controlled, per-booking opt-out); blocked drivers were already excluded in findCandidates
+    const favBoost = b.prefer_favourite === false ? 0 : await getSetting('dispatch.favourite_boost_s');
+    const favs = new Set<string>(favBoost > 0 ? (await q<any>("select driver_id from passenger_driver_prefs where passenger_id=$1 and kind='favourite'", [b.passenger_id], c)).map((r) => r.driver_id) : []);
     const ranked = (await findCandidates(c, b, svc, hb))
       .map((d) => ({ d, dist: haversineM({ lat: d.last_lat, lng: d.last_lng }, pickup) }))
       .filter((x) => x.dist <= radiusM)
       .map((x) => { const eta = etaS({ lat: x.d.last_lat, lng: x.d.last_lng }, pickup, x.d.vehicle_type); return { ...x, eta, score: strategy === 'nearest' ? x.dist : rankScore(eta, x.d) }; })
+      .map((x) => ({ ...x, score: x.score - (favs.has(x.d.user_id) ? favBoost * (strategy === 'nearest' ? 7 : 1) : 0) }))
       .sort((a, z) => a.score - z.score);
     const chosen: typeof ranked = [];
     for (const x of ranked) { if (chosen.length >= Math.max(1, group)) break; if (await claimDriver(c, x.d.user_id, bookingId)) chosen.push(x); }
@@ -168,12 +177,13 @@ export async function acceptOffer(driverId: string, bookingId: string) {
 }
 
 async function notifyAssigned(row: BookingRow, driverId: string) {
+  await guestNotify(row, 'assigned');   // ride for someone else: SMS to the guest (no-op for normal rides)
   if (row.customer_vehicle_id) {
     const d = await q1<any>('select u.display_name, cv.plate from users u, customer_vehicles cv where u.id=$1 and cv.id=$2', [driverId, row.customer_vehicle_id]);
     await notify(row.passenger_id, 'abasare_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate }, { critical: true });
   } else {
     const d = await q1<any>('select u.display_name, v.plate from users u join vehicles v on v.id=$2 where u.id=$1', [driverId, row.vehicle_id]);
-    await notify(row.passenger_id, 'driver_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate }, { critical: true });
+    await notify(row.passenger_id, 'driver_assigned', { driver: d.display_name ?? 'Driver', plate: d.plate, ref: row.ref }, { critical: true });
   }
 }
 
@@ -212,6 +222,7 @@ export async function manualAssign(staffId: string, bookingId: string, driverId:
   const row = await tx(async (c) => {
     let b = await q1<BookingRow>('select * from bookings where id=$1 for update', [bookingId], c);
     if (!b) throw notFound('booking');
+    if (await depositBlocks(bookingId, c)) throw new AppError(409, 'deposit_required', 'The Abasare deposit has not been paid');
     if (['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) {
       b = await transition(c, bookingId, 'SEARCHING_DRIVER', { id: staffId, role: 'dispatcher' }, { reason: `reassigned: ${reason}`, patch: { driver_id: null, vehicle_id: null, assigned_at: null, arrived_at: null } });
     } else if (b.status === 'NO_DRIVER_FOUND') {

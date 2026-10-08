@@ -4,7 +4,7 @@ import { parse, lat, lng } from '../util/validate.js';
 import { normalizePhone } from '../util/phone.js';
 import { anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
-import { conflict } from '../errors.js';
+import { conflict, notFound } from '../errors.js';
 import { audit } from '../services/audit.js';
 import { myDebts } from '../services/debts.js';
 import { registerToken, revokeUserTokens } from '../services/push.js';
@@ -65,14 +65,21 @@ export async function meRoutes(app: FastifyInstance) {
   });
 
   // emergency contacts
-  app.get('/users/me/emergency-contacts', pre, async (req) => ({ contacts: await q('select id,name,phone from emergency_contacts where user_id=$1', [req.auth!.id]) }));
+  app.get('/users/me/emergency-contacts', pre, async (req) => ({ contacts: await q('select id,name,phone,notify_on_trip,lang from emergency_contacts where user_id=$1 order by created_at', [req.auth!.id]) }));
   app.post('/users/me/emergency-contacts', pre, async (req) => {
-    const b = parse(z.object({ name: z.string().min(1).max(80), phone: z.string() }), req.body);
+    const b = parse(z.object({ name: z.string().min(1).max(80), phone: z.string(), notify_on_trip: z.boolean().default(false), lang: z.enum(['rw', 'fr', 'en']).default('rw') }), req.body);
     const phone = normalizePhone(b.phone);
     if (!phone) throw conflict('invalid_phone', 'Invalid phone');
     const n = await q1<any>('select count(*)::int n from emergency_contacts where user_id=$1', [req.auth!.id]);
     if (n.n >= 5) throw conflict('limit', 'Maximum 5 emergency contacts');
-    return q1('insert into emergency_contacts(user_id,name,phone) values ($1,$2,$3) returning id,name,phone', [req.auth!.id, b.name, phone]);
+    return q1('insert into emergency_contacts(user_id,name,phone,notify_on_trip,lang) values ($1,$2,$3,$4,$5) returning id,name,phone,notify_on_trip,lang', [req.auth!.id, b.name, phone, b.notify_on_trip, b.lang]);
+  });
+  app.patch('/users/me/emergency-contacts/:id', pre, async (req) => {
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const b = parse(z.object({ name: z.string().min(1).max(80).optional(), notify_on_trip: z.boolean().optional(), lang: z.enum(['rw', 'fr', 'en']).optional() }).strict(), req.body);
+    const r = await q1('update emergency_contacts set name=coalesce($3,name), notify_on_trip=coalesce($4,notify_on_trip), lang=coalesce($5,lang) where id=$1 and user_id=$2 returning id,name,phone,notify_on_trip,lang', [id, req.auth!.id, b.name ?? null, b.notify_on_trip ?? null, b.lang ?? null]);
+    if (!r) throw notFound('contact');
+    return r;
   });
   app.delete('/users/me/emergency-contacts/:id', pre, async (req) => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);

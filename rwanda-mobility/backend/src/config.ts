@@ -1,3 +1,6 @@
+import { GROWTH_DEFAULTS } from './services/growthSettings.js';
+import { MONEY_DEFAULTS } from './services/moneySettings.js';
+
 const env = process.env;
 export const isProd = env.NODE_ENV === 'production';
 
@@ -75,6 +78,8 @@ export function configProblems(c: typeof config = config, e: Record<string, stri
 
 /** Defaults for admin-editable settings (system_settings table overrides these). */
 export const SETTING_DEFAULTS = {
+  ...MONEY_DEFAULTS,                        // round 3: credit, loyalty, deposit, claims, USSD (services/moneySettings.ts)
+  ...GROWTH_DEFAULTS,                       // growth round: guest rides, schedules, quests, heat map, campaigns, partners (services/growthSettings.ts)
   'dispatch.offer_timeout_s': 20,
   'dispatch.max_rounds': 4,
   'dispatch.group_size': 1,                 // 1 = sequential offers, N = small-group broadcast
@@ -110,4 +115,19 @@ export const SETTING_DEFAULTS = {
   'retention.handover_days': 90,           // car check-in/out photos are deleted after this unless a dispute is open
   'pricing.self_approval': false,           // true = the proposer of a price/commission change may approve it themselves (audited, super_admin only switch)
   'abasare.issue_window_min': 30,          // owner can report a vehicle-condition issue this long after drop-off
+  // --- safety checks, sharing, tips, favourites (round 1)
+  'safety.checks_enabled': true,           // master switch for the route-deviation / long-stop "Are you OK?" checks
+  'safety.deviation_corridor_m': 700,      // corridor half-width around the pickup-destination line before a trip counts as off route
+  'safety.road_factor_pct': 150,           // roads are longer than straight lines: the corridor widens by (factor-100)% of the straight-line distance, halved
+  'safety.stop_minutes': 10,               // stationary this long during a trip => check
+  'safety.stop_radius_m': 75,              // "stationary" = every location in the window within this distance of the latest one
+  'safety.check_interval_s': 60,           // minimum spacing between checks of the same trip
+  'safety.response_wait_min': 3,           // no answer after this long => escalate to support
+  'safety.recheck_cooldown_min': 10,       // after the passenger says OK, the same kind of check waits this long
+  'safety.max_alerts_per_trip': 3,
+  'share.expiry_after_trip_min': 60,       // live-share links stop working this long after the trip ends
+  'tips.enabled': true,
+  'tips.min_amount': 100,
+  'tips.max_amount': 20000,
+  'dispatch.favourite_boost_s': 240,       // a favourite driver ranks as if this many seconds closer (0 = off)
 };

@@ -17,7 +17,7 @@ export async function boot(dbName = 'rwanda_mobility_test') {
   process.env.AUTH_RATE_MAX = '1000000';
   for (const k of ['UPLOAD_RATE_MAX', 'BOOKING_RATE_MAX', 'PAYMENT_RATE_MAX', 'ESTIMATE_RATE_MAX', 'CLIENT_ERR_RATE_MAX']) process.env[k] = '1000000';
   process.env.STORAGE_DIR = `/tmp/rm-test-storage-${process.pid}`;
-  process.env.DATABASE_URL = `postgres://rm:rm@localhost:5432/${dbName}`;
+  process.env.DATABASE_URL = `postgres://rm:rm@localhost:5432/${process.env.TEST_DB_NAME ?? dbName}`; // TEST_DB_NAME lets parallel workers use separate databases
   const admin = new pg.Client({ connectionString: process.env.DATABASE_URL });
   await admin.connect();
   await admin.query('drop schema public cascade; create schema public;');

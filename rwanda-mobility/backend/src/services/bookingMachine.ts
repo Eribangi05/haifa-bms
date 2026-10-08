@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 import { q, q1 } from '../db.js';
 import { conflict, notFound } from '../errors.js';
 import { releaseDebts, reattachDebts } from './debts.js';
+import { releasePrepaid } from './prepaid.js';
 
 export type Status =
   | 'DRAFT' | 'FARE_ESTIMATED' | 'SCHEDULED' | 'REQUESTED' | 'SEARCHING_DRIVER' | 'DRIVER_ASSIGNED' | 'DRIVER_ARRIVING'
@@ -60,6 +61,7 @@ export async function transition(
     [bookingId, cur.status, to, actor.id, actor.role, opts.reason ?? null, JSON.stringify(opts.meta ?? {})], c);
   // a booking that ends unpaid (cancelled, or no driver found) hands any carried cancellation fee back to the passenger's open balance
   if (CANCELS.includes(to) || to === 'NO_DRIVER_FOUND') await releaseDebts(c, bookingId);
+  if (CANCELS.includes(to) || to === 'NO_DRIVER_FOUND') await releasePrepaid(c, bookingId);   // reserved credit and a paid deposit go back to the customer as credit
   if (cur.status === 'NO_DRIVER_FOUND' && to === 'SEARCHING_DRIVER') return (await reattachDebts(c, row as any)) ?? row;
   return row;
 }

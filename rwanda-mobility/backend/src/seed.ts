@@ -4,6 +4,7 @@ import { migrate } from './migrate.js';
 import { config } from './config.js';
 import { hashPassword, encrypt, newTotpSecret, totpUri } from './util/crypto.js';
 import { audit } from './services/audit.js';
+import { seedGrowth } from './services/growthSeed.js';
 
 // Kigali operating zone: coarse bounding polygon (ASSUMPTION: replace with surveyed boundary).
 const KIGALI_RING: [number, number][] = [[29.97, -2.06], [30.22, -2.06], [30.22, -1.84], [29.97, -1.84], [29.97, -2.06]];
@@ -170,6 +171,7 @@ export async function seedCore() {
   }
   await q(`insert into promotions(code,kind,value,max_discount,min_fare,per_user_limit,first_ride_only,budget)
            values ('WELCOME','percent',20,1500,1500,1,true,500000) on conflict do nothing`);
+  await seedGrowth();   // round 2: PLACEHOLDER fixed routes (inactive)
 }
 
 export async function createStaff(email: string, password: string, role: string, name = email) {

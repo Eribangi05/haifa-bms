@@ -1,0 +1,27 @@
+// rw/fr texts for the error codes of credit, loyalty, deposit and claims (round 3). Spread into the table in errmsg.ts.
+type Pair = [rw: string, fr: string];
+export const MONEY_ERRORS: Record<string, Pair> = {
+  insufficient_credit: ['Amafaranga yawe yo gukoresha ntahagije.', 'Votre crédit est insuffisant.'],
+  credit_cap_exceeded: ['Konti yawe ntishobora kurenza amafaranga ntarengwa yo gukoresha.', 'Votre crédit ne peut pas dépasser le plafond autorisé.'],
+  wallet_disabled: ['Amafaranga yo gukoresha mu ngendo ntaraboneka ubu.', 'Le crédit n\'est pas disponible pour le moment.'],
+  loyalty_disabled: ['Amanota y\'ubudahemuka ntaraboneka ubu.', 'La fidélité n\'est pas disponible pour le moment.'],
+  invalid_points: ['Amanota agomba kuba imibare ya 100 (100, 200, 300...).', 'Les points doivent être un multiple de 100.'],
+  below_min_redeem: ['Ugomba guhindura nibura amanota {min}.', 'Échangez au moins {min} points.'],
+  insufficient_points: ['Amanota yawe ntahagije.', 'Vous n\'avez pas assez de points.'],
+  deposit_already_paid: ['Avansi yamaze kwishyurwa.', 'L\'acompte est déjà payé.'],
+  deposit_closed: ['Ubu busabe ntibukeneye avansi ukundi.', 'Cette réservation n\'a plus besoin d\'acompte.'],
+  deposit_required: ['Avansi ya Abasare ntiraba yishyurwa.', 'L\'acompte Abasare n\'a pas encore été payé.'],
+  claim_window_closed: ['Igihe cyo gutanga ikirego kuri uru rugendo cyarangiye.', 'Le délai pour déposer une réclamation sur cette course est dépassé.'],
+  claim_exists: ['Ufite ikirego gifunguye cy\'ubu bwoko kuri uru rugendo.', 'Vous avez déjà une réclamation ouverte de ce type pour cette course.'],
+  claim_transition: ['Ikirego ntigishobora guhindurwa gutya muri iki gihe.', 'La réclamation ne peut pas passer à cet état pour le moment.'],
+  reply_window_open: ['Undi muntu aracyafite igihe cyo gusubiza. Tegereza.', 'L\'autre partie a encore le temps de répondre. Veuillez patienter.'],
+  claim_closed: ['Iki kirego cyarafunzwe.', 'Cette réclamation est clôturée.'],
+  too_many_evidence: ['Ibimenyetso ni byinshi cyane kuri iki kirego.', 'Trop de pièces justificatives pour cette réclamation.'],
+  no_settlement_due: ['Nta kwishyura gutegerejwe kuri iki kirego.', 'Aucun règlement n\'est attendu pour cette réclamation.'],
+  settlement_pending: ['Kwishyura kuri iki kirego gutegereje kwemezwa.', 'Le règlement de cette réclamation attend une approbation.'],
+  settlement_exceeds: ['Amafaranga yo kwishyura arenze ayemejwe.', 'Le règlement dépasse le montant accordé.'],
+  reference_required: ['Andika nimero y\'ubwishyu bwakozwe.', 'Indiquez la référence du paiement effectué.'],
+  info_not_requested: ['Nta makuru yasabwe kuri iki kirego.', 'Aucune information n\'a été demandée pour cette réclamation.'],
+  invalid_assignee: ['Uwo muntu ntashobora gukurikirana ibirego.', 'Cette personne ne peut pas traiter les réclamations.'],
+  decision_required: ['Banza ufate umwanzuro kuri iki kirego.', 'Prenez d\'abord une décision sur cette réclamation.'],
+};

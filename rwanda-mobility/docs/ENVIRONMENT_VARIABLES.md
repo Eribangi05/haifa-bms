@@ -78,3 +78,41 @@ The server logs each problem at start; **fatal** ones stop it: `MOMO_MODE=live` 
 ## Admin-editable runtime settings (stored in `system_settings`, edit in Admin -> Settings)
 
 `dispatch.offer_timeout_s`, `dispatch.max_rounds`, `dispatch.group_size`, `dispatch.strategy`, `dispatch.heartbeat_max_age_s`, `dispatch.base_radius_km`, `dispatch.radius_step_km`, `dispatch.max_radius_km`, `booking.cancel_grace_s`, `booking.cancel_fee`, `booking.noshow_wait_min`, `booking.noshow_fee`, `booking.quote_ttl_s`, `booking.max_scheduled_days`, `payout.min_amount`, `payout.fee`, `payout.large_threshold`, `refund.large_threshold`, `driver.expiry_reminder_days`, `retention.location_days`, `retention.client_error_days` (client error reports, default 30), `retention.notification_days` (180), `retention.session_days` (30), `retention.handover_days` (Abasare car-check photos, 90), `otp.*`, `safety.escalation_contacts`, `tracking.max_speed_kmh`, `abasare.min_photos`, `abasare.min_licence_years`, `abasare.issue_window_min`, `pricing.self_approval` (super admin only; lets a proposer approve their own price change, flagged `self_approved` in the audit log).
+
+
+## Additional variables (feature rounds 1-3)
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `CLAIM_RATE_MAX` | no | 30 | Per-minute request limit for this endpoint group (tests raise it). |
+| `GUEST_CONTACT_RATE_MAX` | no | 20 | Per-minute request limit for this endpoint group (tests raise it). |
+| `SCHEDULE_RATE_MAX` | no | 20 | Per-minute request limit for this endpoint group (tests raise it). |
+| `HEATMAP_RATE_MAX` | no | 30 | Per-minute request limit for this endpoint group (tests raise it). |
+| `CAMPAIGN_TEST_RATE_MAX` | no | 10 | Per-minute request limit for this endpoint group (tests raise it). |
+| `WALLET_RATE_MAX` | no | 20 | Per-minute request limit for this endpoint group (tests raise it). |
+| `SAFETY_RATE_MAX` | no | 30 | Per-minute request limit for this endpoint group (tests raise it). |
+| `SHARE_STOP_RATE_MAX` | no | 10 | Per-minute request limit for this endpoint group (tests raise it). |
+| `TIP_RATE_MAX` | no | 6 | Per-minute request limit for this endpoint group (tests raise it). |
+| `PREF_RATE_MAX` | no | 30 | Per-minute request limit for this endpoint group (tests raise it). |
+| `USSD_SHARED_SECRET` | with USSD | | Shared secret (16+ characters) the aggregator sends with each USSD callback; without it the USSD endpoint answers 503. See USSD.md. |
+| `USSD_ALLOWED_IPS` | no | | Comma-separated IP allow-list for USSD callbacks. |
+| `USSD_RATE_MAX` | no | see code | Per-minute request limit for this endpoint group (tests raise it). |
+| `USSD_PHONE_RATE_MAX` | no | see code | Per-minute request limit for this endpoint group (tests raise it). |
+
+
+## Additional runtime settings (editable in the admin console, Settings page)
+| Setting | Default | Meaning |
+|---|---|---|
+| `safety.checks_enabled` | True | Route and long-stop safety checks: On: during a trip, a driver far from the route or stopped for too long triggers an "Are you OK?" message to the passenger. Passengers can switch it off per trip. |
+| `safety.deviation_corridor_m` | 700 | Route corridor: How far from the straight pickup-destination line the car may be before the trip is treated as off route (before the road-factor allowance). |
+| `safety.road_factor_pct` | 150 | Road factor: Roads are longer than straight lines. 150 means roads are assumed 50% longer; the corridor is widened accordingly so normal detours do not trigger checks. |
+| `safety.stop_minutes` | 10 | Long-stop time: A car that has not moved for this long during a trip (away from the destination) triggers a check. |
+| `safety.stop_radius_m` | 75 | Stationary radius: The car counts as stationary when all its recent locations are within this distance of each other. |
+| `safety.check_interval_s` | 60 | Safety check interval: Minimum time between two checks of the same trip. |
+| `safety.response_wait_min` | 3 | Time to answer: If the passenger does not answer "Are you OK?" within this time, a safety case is opened for support (no agency is contacted automatically). |
+| `safety.recheck_cooldown_min` | 10 | Pause after "OK": After the passenger answers OK, the same kind of check waits this long. |
+| `safety.max_alerts_per_trip` | 3 | Checks per trip: Upper limit of "Are you OK?" checks on one trip. |
+| `share.expiry_after_trip_min` | 60 | Share link lifetime after the trip: Live-share links keep working this long after the trip ends, then stop. |
+| `tips.enabled` | True | Tips: Passengers can tip the driver after a completed trip. Tips go 100% to the driver (no commission). |
+| `tips.min_amount` | 100 | Smallest tip: Mobile-money and cash tips below this amount are refused. |
+| `tips.max_amount` | 20000 | Largest tip: Abuse guard: a single tip above this amount is refused. |
+| `dispatch.favourite_boost_s` | 240 | Favourite driver boost: A passenger's favourite driver is ranked as if this many seconds closer. 0 switches the boost off. Blocked drivers are always excluded. |

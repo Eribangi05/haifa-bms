@@ -21,7 +21,7 @@ export async function adminFinanceRoutes(app: FastifyInstance) {
 
   app.get('/admin/finance/payments', { preHandler: view }, async (req) => {
     const b = parse(z.object({ q: z.string().max(60).optional(), status: z.string().optional(), method: z.string().optional(), limit: z.coerce.number().int().min(1).max(200).default(50) }), req.query);
-    return { payments: await q(`select p.id, p.reference, p.provider_reference, p.method, p.status, p.amount, p.amount_collected, p.fee_amount, p.failure_reason, p.settlement_status, p.created_at, p.completed_at, bk.ref booking_ref, bk.id booking_id
+    return { payments: await q(`select p.id, p.reference, p.provider_reference, p.method, p.status, p.amount, p.amount_collected, p.fee_amount, p.failure_reason, p.settlement_status, p.kind, p.created_at, p.completed_at, bk.ref booking_ref, bk.id booking_id
       from payments p join bookings bk on bk.id=p.booking_id
       where ($1::text is null or p.reference=$1 or p.provider_reference=$1 or bk.ref ilike $2) and ($3::text is null or p.status=$3) and ($4::text is null or p.method=$4) order by p.created_at desc limit $5`,
       [b.q ?? null, `%${b.q ?? ''}%`, b.status ?? null, b.method ?? null, b.limit]) };
@@ -53,8 +53,8 @@ export async function adminFinanceRoutes(app: FastifyInstance) {
   // refunds: maker (request) and checker (approve) are different people
   app.get('/admin/finance/refunds', { preHandler: view }, async () => ({ refunds: await q('select r.*, b.ref booking_ref from refunds r join bookings b on b.id=r.booking_id order by r.created_at desc limit 100') }));
   app.post('/admin/finance/refunds', { preHandler: requirePerm('finance.refund.request') }, async (req) => {
-    const b = parse(z.object({ booking_id: z.string().uuid(), amount: z.number().int().positive(), reason: z.string().min(5).max(300), driver_clawback: z.number().int().min(0).default(0) }), req.body);
-    return F.requestRefund(actorOf(req), b.booking_id, b.amount, b.reason, b.driver_clawback);
+    const b = parse(z.object({ booking_id: z.string().uuid(), amount: z.number().int().positive(), reason: z.string().min(5).max(300), driver_clawback: z.number().int().min(0).default(0), as_credit: z.boolean().default(false) }), req.body);
+    return F.requestRefund(actorOf(req), b.booking_id, b.amount, b.reason, b.driver_clawback, b.as_credit);
   });
   app.post('/admin/finance/refunds/:id/decision', { preHandler: requirePerm('finance.refund.approve') }, async (req) => {
     const { id } = parse(idp, req.params);

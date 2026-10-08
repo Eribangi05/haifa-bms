@@ -11,11 +11,27 @@ import { maskMsisdn } from '../util/money.js';
 import { bps } from '../util/money.js';
 import { flag } from './settings.js';
 import { normalizePhone } from '../util/phone.js';
+import { verifyTipPayment } from './tips.js';
+import { applyPrepaid, settlePrepaid } from './prepaid.js';
+import { awardTripPoints } from './loyalty.js';
+import { grantCredit } from './credit.js';
+import { handleDepositCallback } from './deposit.js';
+import { getSetting } from './settings.js';
 
 /** Called inside the completion transaction. Creates what the passenger owes and moves the booking to PAYMENT_PENDING. */
-export async function createDuePayment(c: PoolClient, b: BookingRow) {
+export async function createDuePayment(c: PoolClient, b0: BookingRow) {
   const sys = { id: null, role: 'system' };
-  const amount = b.final_fare as number;
+  // reserved credit and an Abasare deposit are applied to the final fare first; only the remainder is collected
+  const pre = await applyPrepaid(c, b0.id);
+  const b = pre.booking as BookingRow;
+  const amount = pre.remaining;
+  if (pre.total > 0 && amount === 0) {
+    const p = (await q<any>(`insert into payments(booking_id, payer_user_id, method, provider, amount, status, reference, settlement_status, completed_at)
+             values ($1,$2,'wallet','prepaid',$3,'SUCCESS',$4,'not_applicable', now()) returning *`, [b.id, b.passenger_id, b.final_fare, newReference()], c))[0];
+    await transition(c, b.id, 'PAYMENT_PENDING', sys);
+    await settleBookingPayment(c, b.id, p);
+    return;
+  }
   if (b.payment_method === 'cash') {
     await q(`insert into payments(booking_id, payer_user_id, method, provider, amount, status, reference, settlement_status)
              values ($1,$2,'cash','cash',$3,'PENDING',$4,'not_applicable')`, [b.id, b.passenger_id, amount, newReference()], c);
@@ -50,11 +66,13 @@ export async function settleBookingPayment(c: PoolClient, bookingId: string, pay
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) on conflict (booking_id) do nothing returning id`,
     [b.id, b.driver_id, dp.fleet_id, bd.subtotal, bd.discount, bd.tax, bd.passthrough, bd.commissionable, commission, fleetShare, net, rule.id, pay.method, collectedBy], c);
   if (!ins.length) return; // already settled (idempotent)
-  const paid = pay.method === 'cash' ? pay.amount_collected ?? pay.amount : pay.amount;
+  const paid = pay.method === 'wallet' ? 0 : pay.method === 'cash' ? pay.amount_collected ?? pay.amount : pay.amount;   // credit/deposit parts are debited below
   const asset = pay.method === 'cash' ? 'CASH_WITH_DRIVERS' : pay.method === 'corporate' ? 'CORPORATE_RECEIVABLE' : 'PROVIDER_CLEARING';
   const owner = pay.method === 'cash' ? b.driver_id : pay.method === 'corporate' ? b.corporate_id : null;
   await post(c, [
     { account: asset, debit: paid, owner },
+    { account: 'WALLET_HELD', debit: b.wallet_applied ?? 0, owner: b.passenger_id },       // reserved customer credit used for this fare
+    { account: 'DEPOSIT_HELD', debit: b.deposit_applied ?? 0, owner: b.passenger_id },     // Abasare deposit applied to this fare
     { account: 'PROMO_EXPENSE', debit: bd.discount },
     { account: 'DRIVER_PAYABLE', credit: net, owner: b.driver_id },
     { account: 'DRIVER_PAYABLE', credit: fleetShare, owner: fleetOwner },
@@ -63,12 +81,18 @@ export async function settleBookingPayment(c: PoolClient, bookingId: string, pay
     { account: 'PASSENGER_RECEIVABLE', credit: bd.debt ?? 0, owner: b.passenger_id },   // earlier cancellation fee collected with this fare
   ], { memo: `trip ${b.ref} settlement (${pay.method})`, bookingId: b.id, paymentId: pay.id });
   await settleDebts(c, b.id, bd.debt ?? 0);
+  await settlePrepaid(c, b.id);
   if (pay.fee_amount && pay.fee_amount > 0)
     await post(c, [{ account: 'PROCESSOR_FEES', debit: pay.fee_amount }, { account: 'PROVIDER_CLEARING', credit: pay.fee_amount }], { memo: `processor fee ${b.ref}`, bookingId: b.id, paymentId: pay.id });
   await transition(c, b.id, 'PAYMENT_COMPLETED', { id: null, role: 'system' }, { meta: { payment_id: pay.id, method: pay.method } });
   // referral: reward both sides after the referee's first paid trip
+  await awardTripPoints(c, { id: b.id, passenger_id: b.passenger_id, final_fare: b.final_fare });
   const ref = await q1<any>("select * from referrals where referee_id=$1 and status='pending' for update", [b.passenger_id], c);
-  if (ref) {
+  const refCredit = ref ? await getSetting('referral.reward_credit') : 0;
+  if (ref && refCredit > 0) {
+    for (const uid of [ref.referrer_id, ref.referee_id]) await grantCredit(c, uid, refCredit, 'referral', { refType: 'referral', refId: ref.id, idemKey: `ref:${ref.id}:${uid}`, memo: 'Referral reward' });
+    await q("update referrals set status='rewarded' where id=$1", [ref.id], c);
+  } else if (ref) {
     for (const [uid, tag] of [[ref.referrer_id, 'A'], [ref.referee_id, 'B']]) {
       await q(`insert into promotions(code, kind, value, min_fare, per_user_limit, usage_limit, user_id, valid_to, budget)
                values ($1,'fixed',1000,1500,1,1,$2, now() + interval '60 days', 1000)`, [`REF-${ref.id.replace(/-/g, '').slice(0, 8).toUpperCase()}${tag}`, uid], c);
@@ -113,7 +137,7 @@ export async function switchMethod(passengerId: string, bookingId: string, metho
     if (!b || b.passenger_id !== passengerId) throw notFound('booking');
     if (b.status !== 'PAYMENT_PENDING') throw conflict('invalid_state', 'Payment method can only change while payment is pending');
     if (b.payer_type === 'corporate') throw conflict('corporate_booking', 'Corporate bookings are billed to the company');
-    const live = await q1<any>("select * from payments where booking_id=$1 and status in ('INITIATED','PENDING') for update", [bookingId], c);
+    const live = await q1<any>("select * from payments where booking_id=$1 and kind='fare' and status in ('INITIATED','PENDING') for update", [bookingId], c);
     if (live) {
       if (live.method === method) return b;
       if ((live.amount_collected ?? 0) > 0) throw conflict('cash_partly_collected', 'Part of the cash was already collected');
@@ -122,7 +146,7 @@ export async function switchMethod(passengerId: string, bookingId: string, metho
     }
     await q('update bookings set payment_method=$2, updated_at=now() where id=$1', [bookingId, method], c);
     await logEvent(c, bookingId, 'payment_method_changed', { id: passengerId, role: 'passenger' }, { method });
-    if (method === 'cash') await q(`insert into payments(booking_id, payer_user_id, method, provider, amount, status, reference, settlement_status) values ($1,$2,'cash','cash',$3,'PENDING',$4,'not_applicable')`, [bookingId, passengerId, b.final_fare, newReference()], c);
+    if (method === 'cash') await q(`insert into payments(booking_id, payer_user_id, method, provider, amount, status, reference, settlement_status) values ($1,$2,'cash','cash',$3,'PENDING',$4,'not_applicable')`, [bookingId, passengerId, b.final_fare - (b.wallet_applied ?? 0) - (b.deposit_applied ?? 0), newReference()], c);
     return (await q1<BookingRow>('select * from bookings where id=$1', [bookingId], c))!;
   });
 }
@@ -137,7 +161,7 @@ export async function initiateMomo(passengerId: string, bookingId: string, msisd
     if (!b || b.passenger_id !== passengerId) throw notFound('booking');
     if (b.status !== 'PAYMENT_PENDING') throw conflict('invalid_state', 'Nothing to pay for this booking right now');
     if (b.payer_type === 'corporate') throw conflict('corporate_booking', 'Corporate bookings are billed to the company');
-    const live = await q1<any>("select * from payments where booking_id=$1 and status in ('INITIATED','PENDING','SUCCESS') for update", [bookingId], c);
+    const live = await q1<any>("select * from payments where booking_id=$1 and kind='fare' and status in ('INITIATED','PENDING','SUCCESS') for update", [bookingId], c);
     if (live && live.method === method && live.status !== 'INITIATED') return { reuse: live };     // idempotent: never create a second charge
     if (live && live.method === 'cash') {
       if ((live.amount_collected ?? 0) > 0) throw conflict('cash_partly_collected', 'Part of the cash was already collected');
@@ -151,7 +175,7 @@ export async function initiateMomo(passengerId: string, bookingId: string, msisd
     }
     const ref = newReference();
     const p = (await q<any>(`insert into payments(booking_id, payer_user_id, method, provider, amount, status, reference, msisdn_masked, settlement_status)
-      values ($1,$2,$3,$3,$4,'INITIATED',$5,$6,'unsettled') returning *`, [bookingId, passengerId, method, b.final_fare, ref, maskMsisdn(msisdn)], c))[0];
+      values ($1,$2,$3,$3,$4,'INITIATED',$5,$6,'unsettled') returning *`, [bookingId, passengerId, method, b.final_fare - (b.wallet_applied ?? 0) - (b.deposit_applied ?? 0), ref, maskMsisdn(msisdn)], c))[0];
     await q('update bookings set payment_method=$2 where id=$1', [bookingId, method], c);
     return { pay: p, b };
   });
@@ -175,6 +199,7 @@ export async function verifyPayment(paymentId: string, source: 'poll' | 'callbac
   const p = await q1<any>('select * from payments where id=$1', [paymentId]);
   if (!p) throw notFound('payment');
   if (p.method === 'cash' || p.method === 'corporate') return p;
+  if (p.kind === 'tip') return verifyTipPayment(paymentId, source, rawBody);   // tips never settle a booking
   if (p.status === 'FAILED' && p.failure_reason === 'timeout') {
     // late success after our local timeout: never auto-credit; surface in reconciliation for a human decision
     try {
@@ -219,6 +244,8 @@ export async function handleCallback(provider: string, body: any) {
   const reference = String(body?.externalId ?? body?.referenceId ?? body?.reference ?? '');
   const p = await q1<any>('select id from payments where reference=$1 and method=$2', [reference, provider]);
   if (!p) {
+    const dep = await handleDepositCallback(provider, reference);   // a deposit attempt, not a fare
+    if (dep) return dep;
     await q("insert into payment_provider_events(provider,event_key,payload,verified) values ($1,$2,$3,false) on conflict do nothing", [provider, `${provider}:unmatched:${reference}:${Date.now()}`, JSON.stringify(body ?? {})]);
     return { matched: false };
   }

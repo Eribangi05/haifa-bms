@@ -112,7 +112,7 @@ Labels (assigned by evidence, not intent):
 | Fleet | Fleet, invites, revenue share, isolation, vehicle availability, earnings | TESTED |
 | Growth | Promotions (budget, limits, first-ride), referral rewards, self-referral block | TESTED |
 | | Promotion audiences: everyone, first ride, corporate members, referred sign-ups, phone list; start/end dates and budget editable | TESTED |
-| | Loyalty points, subscriptions | NOT BUILT |
+| | Loyalty points (earn per trip, Bronze/Silver/Gold from settings, redeem for credit) | TESTED, see Round 3 rows below. Subscriptions: NOT BUILT |
 | Admin | KPI dashboard, drivers, bookings, support, safety, pricing, finance, privacy, settings, audit, staff | TESTED (APIs) + browser audit of every tab for every role (see above) |
 | | Console shell: role-based menu (a tab is shown only when the role holds the permission the API needs, mirror of `rbac.ts` checked by test), responsive drawer menu, breadcrumbs, light/dark theme, loading/empty/error states, sign-in page with explanation when the session expires | TESTED in browser |
 | | Dashboard: needs-attention cards, KPIs with change vs the previous period, 7-day sparklines, zone table with names, period selector | TESTED (numbers compared with SQL over a fixed window; sparklines rendered). **Known data caveat**: "Active bookings" counts bookings *created in the selected period* that are not finished |
@@ -133,3 +133,37 @@ Labels (assigned by evidence, not intent):
 | | Cleartext HTTP off by default (`app.config.js`, flag for dev builds) | IMPLEMENTED |
 | Ops | Health/ready endpoints, jobs, retention, structured logs | IMPLEMENTED |
 | | Backups, monitoring, alerting | operator task (documented) |
+
+### Round 1: safety, trust, tips, low data: see `FEATURE_ROUND1.md`
+
+| Feature | Status |
+|---|---|
+| Trusted contacts auto-notified on trip start / arrival, per-contact language, opt-outs | TESTED (SMS delivery SIMULATED until a provider is connected) |
+| Live share v2 (ETA, vehicle, revoke one, expiry trip end + 1h, auto-refresh page in rw/fr/en) | TESTED |
+| Tagged ratings, tips (MoMo tip as payment kind `tip`, balanced ledger, 100% to driver; cash tip informational) | TESTED (MoMo SIMULATED) |
+| Favourite and blocked drivers (dispatch exclusion and boost) | TESTED |
+| Route deviation and long-stop "Are you OK?" checks, escalation to sensitive case + incident | TESTED (push/SMS SIMULATED; corridor is straight-line with road-factor allowance, not validated on real GPS traces) |
+| Abasare owner tags and computed badges, audited training grant | TESTED |
+| Low-data mode: gzip, ETag/304, `lite=1` | TESTED |
+| Navigation hand-off links and live driver ETA | TESTED (deep links not opened on a device) |
+| Admin "Trust and safety" tab | IMPLEMENTED (loaded by the audit script for every role; see report) |
+
+## Round 2: growth and partners (see `FEATURE_ROUND2.md` for the endpoint contract)
+| Area | Feature | Status |
+|---|---|---|
+| Rides | Ride for someone else (`for_guest`): guest SMS in the booker's chosen language with driver, plate, PIN and live-share link on assignment and arrival, cancellation SMS, driver sees first name and may fetch the number only during the active trip (logged), abuse limits, retention purge of name and phone | TESTED (API). **SMS delivery SIMULATED** |
+| | Recurring rides (`/ride-schedules`): CRUD, pause/resume/skip-next/accept-price, idempotent booking job with re-quote, price-tolerance and no-coverage notices instead of blind booking | TESTED incl. restart/lost-claim, concurrent ticks and time travel. Push/SMS of the notices SIMULATED |
+| Pricing | Fixed-price routes: automatic labelled option (rw/fr/en lines), bidirectional, validity, tax and commission as normal fares, admin CRUD with maker-checker and audit | TESTED. The 4 seeded routes are **PLACEHOLDER prices and INACTIVE** |
+| Drivers | Quests and bonuses (trips, earnings, streak, peak hours; daily/weekly; budget cap): progress, history, ledger credit exactly once, admin CRUD with budget usage | TESTED incl. concurrency on the last budget unit. The 3 seeded quests are **PLACEHOLDERS and INACTIVE**; peak hours setting is a placeholder |
+| | Demand heat map (driver and admin): 500 m cells, 3 windows, k=3 distinct requesters, cached, approved online drivers only | TESTED |
+| Growth | Campaign manager: segments, three required languages, per-recipient language, marketing opt-in and quiet hours, daily cap, batches, preview, test-send, audit; admin UI with per-language preview | TESTED (API) + browser e2e (editor, count). **SMS and push delivery SIMULATED** |
+| Partners | Venue partners and the `partner_manager` role: own codes, requests, monthly statement with row-level isolation; `bill_to_partner` codes billed through the corporate invoice engine; invitation through the staff invite flow; admin and partner console views | TESTED (isolation A vs B, billing, caps, suspension) + browser e2e |
+| Console | Tabs: Fixed-price routes, Driver quests, Campaigns, Demand map, Venue partners, Your venue (`views-growth.js`, `views-partner.js`) | TESTED in browser (`scripts/growth-e2e.ts`) |
+| Credit (round 3) | Customer credit: ledger liability per user, FIFO lots, statement, credit-only (no cash-in, no cash-out), sources: refund-as-credit, promo, referral, quest/goodwill, claim settlement, loyalty, staff adjustment; optional expiry with reminder; cap; reconciliation against the ledger (also in the bank reconciliation run) | TESTED (`credit.test.ts`) |
+| | Pay a booking with credit (`wallet`, `wallet_partial` with cash or MoMo remainder): reserve at booking, apply final fare at completion, release on cancel, top-up for full-credit bookings | TESTED incl. ledger balance |
+| | Staff credit adjustment with reason, audit and second approver above a threshold (maker-checker) | TESTED |
+| | Loyalty: points per fare, tier bonus and free-cancel perk, redeem in steps of 100 (idempotent, parallel-safe) | TESTED |
+| Abasare deposit (round 3) | `abasare.deposit_percent`: booking not dispatched until paid (MoMo via the existing provider layer, or credit); applied to the final fare; refund as credit on cancel; fee kept from deposit after the free window; failure, timeout, double tap, duplicate callback and late success (kept as credit) | TESTED with the MoMo SIMULATOR; real MTN not run |
+| Claims (round 3) | Damage/loss/injury/other claims for owner, driver, passenger: state machine, filing window, evidence upload through the existing scanner, handover photos as before/after evidence, right of reply, internal notes, assignment, decision with reason and amount, SLA and reminder timers, settlement as credit or manual payout record with second approver, insurer fields, notifications in rw/fr/en, privacy | TESTED (`claims.test.ts`). Insurer integration: **PENDING** (fields entered by hand). Manual payout is a record of an outside transfer |
+| USSD (round 3) | `POST /ussd/callback` (Africa's Talking form and generic JSON), shared secret, IP allow-list, rate limits, stored sessions with expiry and retry safety, menu in rw/fr/en (ride, my trip with PIN, Abasare, help, language), consent step and account creation, `channel='ussd'`, SMS templates, `scripts/ussd-sim.ts` | TESTED against the simulator (`ussd.test.ts`). **No real shortcode, aggregator or network test: PENDING** |
+| Console (round 3) | `views-money.js`: Credit & loyalty, Claims (timeline, before/after evidence), USSD channel | TESTED in browser (`scripts/money-e2e.ts`) |

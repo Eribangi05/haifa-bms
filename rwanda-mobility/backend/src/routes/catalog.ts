@@ -9,6 +9,9 @@ import { flag, getSetting } from '../services/settings.js';
 import { checkPromo } from '../services/promos.js';
 import { badRequest } from '../errors.js';
 import { config } from '../config.js';
+import { tagCatalogue } from '../services/tags.js';
+import { isLite, liteEstimate } from '../services/lowdata.js';
+import { reqLang } from '../services/errmsg.js';
 
 export async function catalogRoutes(app: FastifyInstance) {
   app.get('/config', async () => ({
@@ -20,6 +23,9 @@ export async function catalogRoutes(app: FastifyInstance) {
     ],
     emergency_numbers: { police: '112', ambulance: '912', traffic_police: '113' },
     abasare: { enabled: await flag('abasare.enabled'), packages: [2, 4, 8, 12], min_hours: 2, max_hours: 12, night: { start: 22, end: 5 }, min_photos: await getSetting('abasare.min_photos'), classes: ['car', 'suv', 'minivan', 'pickup', 'moto'], transmissions: ['manual', 'automatic'] },
+    rating_tags: tagCatalogue(),
+    tips: { enabled: await getSetting('tips.enabled'), min_amount: await getSetting('tips.min_amount'), max_amount: await getSetting('tips.max_amount'), methods: ['cash_tip', 'mtn_momo'], commission: 0 },
+    safety: { checks_enabled: await getSetting('safety.checks_enabled'), response_wait_min: await getSetting('safety.response_wait_min') },
     features: { scheduled: await flag('booking.scheduled'), corporate: await flag('corporate.enabled'), promotions: await flag('promotions.enabled') },
   }));
 
@@ -49,7 +55,8 @@ export async function catalogRoutes(app: FastifyInstance) {
       promo_code: z.string().max(30).optional(), scheduled_for: z.string().datetime().optional(),
     }), req.body);
     if (b.promo_code && !(await flag('promotions.enabled'))) throw badRequest('promotions_disabled');
-    return estimate(req.auth!.id, b);
+    const e = await estimate(req.auth!.id, b);
+    return isLite(req) ? liteEstimate(e, reqLang(req.headers['accept-language'])) : e;
   });
 
   app.post('/promotions/validate', { config: routeLimit('PROMO_RATE_MAX', 30), preHandler: anyAuth }, async (req) => {

@@ -6,6 +6,12 @@ import { expiryReminders, refreshEligibility } from './services/drivers.js';
 import { q, pool } from './db.js';
 import { getSetting } from './services/settings.js';
 import { deleteFileByKey } from './services/storage.js';
+import { creditSweep } from './services/credit.js';
+import { depositSweep } from './services/deposit.js';
+import { claimsSweep } from './services/claims.js';
+import { purgeUssdSessions } from './services/ussd.js';
+import { registerGrowthJobs, growthRetention } from './services/growthJobs.js';
+import { runSafetyChecks } from './services/safety.js';
 
 /** Last-run bookkeeping for every job, exposed through /ready and the system-health endpoint. */
 type JobState = { runs: number; failures: number; last_start: number | null; last_ok: number | null; last_error: string | null; running: boolean; every_ms: number };
@@ -65,11 +71,16 @@ export function startJobs(log: (m: string) => void = console.log) {
   every('dispatch', 3_000, dispatchSweep);
   every('payments', 30_000, sweepPendingPayments);
   every('sms', 5_000, () => flushSms());
+  every('deposits', 20_000, depositSweep);          // round 3: Abasare deposits (verify, time out, expire)
+  every('credit', 10 * 60_000, creditSweep);        // credit expiry and reminders
+  every('claims', 5 * 60_000, claimsSweep);         // claim SLA warnings, reminders, auto-close
   every('push', 3_000, () => flushPush());
   every('push-receipts', 60_000, () => checkPushReceipts());
   const eligibility = every('eligibility', 60 * 60_000, async () => { await expiryReminders(); await refreshEligibility(); });
   every('retention', 6 * 60 * 60_000, retention);
+  registerGrowthJobs(every);   // guest SMS, recurring rides, quests, campaigns
   // stale drivers: no heartbeat for 2 minutes => offline (never trust last-known location)
+  every('safety-checks', 30_000, runSafetyChecks);   // route deviation / long stop: "Are you OK?" and escalation
   every('stale-drivers', 30_000, () => q("update driver_profiles set is_online=false where is_online and (last_seen_at is null or last_seen_at < now() - interval '2 minutes') and not exists (select 1 from bookings b where b.driver_id=driver_profiles.user_id and b.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))"));
   timers.forEach((t) => t.unref());
   void eligibility();
@@ -85,7 +96,9 @@ async function deleteInBatches(table: string, where: string, params: unknown[] =
 }
 
 export async function retention() {
+  await growthRetention();   // guest name/phone, campaign recipients, schedule runs
   const [days, notifDays, sessionDays] = await Promise.all([getSetting('retention.location_days'), getSetting('retention.notification_days'), getSetting('retention.session_days')]);
+  await purgeUssdSessions().catch(() => {});
   await deleteInBatches('driver_locations', 'received_at < now() - make_interval(days => $1)', [days]);
   await q("delete from otp_challenges where created_at < now() - interval '2 days'");
   await purgeHandoverPhotos();
@@ -105,7 +118,8 @@ export async function purgeHandoverPhotos() {
   const rows = await q<{ id: string; file_key: string }>(
     `select p.id, p.file_key from handover_photos p where p.created_at < now() - make_interval(days => $1)
        and not exists (select 1 from support_cases c where c.booking_id=p.booking_id and c.status in ('open','in_progress','awaiting_user'))
-       and not exists (select 1 from bookings b where b.id=p.booking_id and b.status='DISPUTED')`, [days]);
+       and not exists (select 1 from bookings b where b.id=p.booking_id and b.status='DISPUTED')
+       and not exists (select 1 from claims cl where cl.booking_id=p.booking_id and cl.status in ('submitted','under_review','info_requested','accepted','partially_accepted','rejected','settled'))`, [days]);   // evidence for a claim is kept until the claim is closed
   for (const r of rows) { await deleteFileByKey(r.file_key); await q('delete from handover_photos where id=$1', [r.id]); }
   return rows.length;
 }

@@ -1,6 +1,7 @@
 // Localised user-facing error messages. The API keeps stable machine `code`s; only `message` is localised.
 // Rule: the UI must never mix languages, so for rw/fr we NEVER fall back to the English text.
 // Placeholders: {min} {max} {minutes} {years} {seconds} are filled from `details` when present.
+import { GROWTH_ERRORS, GROWTH_NOUNS } from './errmsgGrowth.js';
 export type Lang = 'rw' | 'fr' | 'en';
 
 export function reqLang(header?: string): Lang {
@@ -12,6 +13,7 @@ export function reqLang(header?: string): Lang {
 export const pickLang = (req: { headers: Record<string, any> }, text: Record<Lang, string>): string => text[reqLang(req.headers['accept-language'])];
 
 type Pair = [rw: string, fr: string];
+import { MONEY_ERRORS } from './moneyErrors.js';
 
 export const GENERIC: Record<Exclude<Lang, 'en'>, string> = {
   rw: 'Hari ikitagenze neza. Ongera ugerageze.',
@@ -20,6 +22,7 @@ export const GENERIC: Record<Exclude<Lang, 'en'>, string> = {
 
 // Message variants of the same code are keyed `code|English message`; the plain `code` entry is the default.
 const T: Record<string, Pair> = {
+  ...MONEY_ERRORS,   // round 3: credit, loyalty, deposit, claims (services/moneyErrors.ts)
   // --- generic / transport
   validation_error: ['Amakuru winjije ntabwo ari yo. Suzuma hanyuma ongera ugerageze.', 'Les informations saisies ne sont pas valides. Vérifiez-les et réessayez.'],
   bad_request: ['Ubusabe ntibwumvikanye. Ongera ugerageze.', 'La requête est incorrecte. Veuillez réessayer.'],
@@ -190,7 +193,19 @@ const T: Record<string, Pair> = {
   exceeds_cash_held: ['Amafaranga arenze ayo umushoferi afite.', 'Le montant dépasse les espèces détenues par le chauffeur.'],
   fleet_disabled: ['Serivisi y\'ibigo by\'imodoka ntiraboneka ubu.', 'Le portail des flottes n\'est pas disponible pour le moment.'],
   already_decided: ['Ubu busabe bwamaze gufatwaho icyemezo.', 'Cette demande a déjà été traitée.'],
+
+  // --- tips, tags, favourites, safety checks
+  invalid_tag: ['Imvugo wahisemo ntiyemewe. Hitamo muri ziri ku rutonde.', 'Ce libellé n\'est pas valide. Choisissez parmi la liste proposée.'],
+  tips_disabled: ['Guhemba umushoferi ntibirashoboka ubu.', 'Les pourboires ne sont pas disponibles pour le moment.'],
+  tip_too_low: ['Agashimwe gake cyane. Nibura ni {min} RWF.', 'Pourboire trop faible. Le minimum est de {min} RWF.'],
+  tip_too_high: ['Agashimwe karenze ibyemewe. Ntikarenze {max} RWF.', 'Pourboire trop élevé. Le maximum est de {max} RWF.'],
+  tip_not_allowed: ['Guhemba umushoferi bishoboka nyuma y\'urugendo rwarangiye, mu minsi 7.', 'Le pourboire est possible après une course terminée, pendant 7 jours.'],
+  tip_exists: ['Wamaze guhemba umushoferi kuri uru rugendo.', 'Vous avez déjà laissé un pourboire pour cette course.'],
+  no_open_safety_check: ['Nta kibazo cyo kukugenzura gitegereje igisubizo cyawe.', 'Aucune vérification de sécurité n\'attend votre réponse.'],
+  not_ridden: ['Ushobora gushyira ku rutonde gusa umushoferi mwakoranye urugendo.', 'Vous ne pouvez ajouter qu\'un chauffeur avec qui vous avez fait une course.'],
 };
+
+Object.assign(T, GROWTH_ERRORS);   // round 2: guest rides, schedules, partners, campaigns (services/errmsgGrowth.ts)
 
 const NOUNS: Record<string, Pair> = {
   booking: ['urugendo', 'la course'], 'business account': ['konti y\'ikigo', 'le compte entreprise'], case: ['ikibazo', 'la demande'],
@@ -199,6 +214,8 @@ const NOUNS: Record<string, Pair> = {
   quote: ['igiciro', 'le tarif'], refund: ['kugarurirwa amafaranga', 'le remboursement'], request: ['ubusabe', 'la demande'], service: ['serivisi', 'le service'],
   'share link': ['link yo gusangiza', 'le lien de partage'], user: ['umukoresha', 'l\'utilisateur'], vehicle: ['imodoka', 'le véhicule'],
 };
+
+Object.assign(NOUNS, GROWTH_NOUNS);
 
 const fill = (s: string, d: any): string | null => {
   let missing = false;

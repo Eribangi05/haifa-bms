@@ -24,17 +24,26 @@ import { shareRoutes } from './routes/share.js';
 import { businessRoutes } from './routes/business.js';
 import { adminRoutes } from './routes/admin.js';
 import { adminFinanceRoutes } from './routes/adminFinance.js';
+import { safetyRoutes } from './routes/safety.js';
+import { trustRoutes } from './routes/trust.js';
+import compress from '@fastify/compress';
 import { abasareRoutes } from './routes/abasare.js';
+import { growthRoutes } from './routes/growth.js';
+import { growthAdminRoutes } from './routes/growthAdmin.js';
+import { partnerRoutes } from './routes/partners.js';
 import { staffInviteRoutes } from './routes/staffInvites.js';
 import { requestCodeRoutes, requestCodeLandingRoutes } from './routes/requestCodes.js';
 import { diagnosticsRoutes } from './routes/diagnostics.js';
+import { moneyRoutes } from './routes/money.js';
+import { claimRoutes } from './routes/claims.js';
+import { ussdRoutes, ussdAdminRoutes } from './routes/ussd.js';
 
 /** Capability URLs (share links, staff invitations) and signed-link / webhook tokens must never reach the logs. */
 export function redactUrl(url: string): string {
   return url
     .replace(/^(\/share\/)[^/?#]+/, '$1[redacted]')
     .replace(/^(\/api\/v1\/staff-invite\/)[^/?#]+/, '$1[redacted]')
-    .replace(/([?&](?:token|code|otp|password)=)[^&#]*/gi, '$1[redacted]');
+    .replace(/([?&](?:token|code|otp|password|secret)=)[^&#]*/gi, '$1[redacted]');
 }
 
 function parseTrustProxy(v: string | undefined): boolean | number | string[] {
@@ -72,6 +81,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     return `ip:${req.ip}`;
   };
   await app.register(rateLimit, { global: true, max: Number(process.env.RATE_LIMIT_MAX ?? 300), timeWindow: '1 minute', keyGenerator: globalKey });
+  await app.register(compress, { global: true, threshold: 512, encodings: ['br', 'gzip', 'deflate'] });   // low-data mode: gzip/brotli when the client asks for it
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
   app.addHook('onSend', async (req, reply) => {
@@ -81,7 +91,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     if (!req.url.startsWith('/share/')) reply.header('x-frame-options', 'DENY');
     if (isProd) reply.header('strict-transport-security', 'max-age=31536000; includeSubDomains');
     if (req.url.startsWith('/api/')) {
-      reply.header('cache-control', 'no-store');
+      if (!reply.getHeader('cache-control')) reply.header('cache-control', 'no-store');   // routes with an ETag set their own revalidation policy
       reply.header('content-security-policy', "default-src 'none'; frame-ancestors 'none'");   // API responses are data, never documents
       reply.header('cross-origin-resource-policy', 'cross-origin');
     }
@@ -117,9 +127,13 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await api.register(bookingRoutes); await api.register(driverRoutes); await api.register(paymentRoutes);
     await api.register(supportRoutes); await api.register(businessRoutes);
     await api.register(abasareRoutes); await api.register(staffInviteRoutes); await api.register(diagnosticsRoutes); await api.register(requestCodeRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes);
+    await api.register(moneyRoutes); await api.register(claimRoutes); await api.register(ussdAdminRoutes);   // round 3: credit/loyalty/deposit, claims, USSD admin views
+    await api.register(safetyRoutes); await api.register(trustRoutes);   // round 1: safety checks / live share, tips / tags / favourites / badges
+    await api.register(growthRoutes); await api.register(growthAdminRoutes); await api.register(partnerRoutes);   // round 2: guest rides, schedules, quests, heat map, campaigns, partners
   }, { prefix: '/api/v1' });
   // public trip-share page lives outside /api
   await app.register(shareRoutes);
+  await app.register(ussdRoutes);   // public USSD gateway callback (POST /ussd/callback, shared-secret protected)
   await app.register(requestCodeLandingRoutes);
 
   const here = dirname(fileURLToPath(import.meta.url));

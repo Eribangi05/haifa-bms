@@ -1,6 +1,8 @@
 // Default message templates (en, rw, fr). Admin-editable overrides live in notification_templates.
 // Keys: {{var}} placeholders. Never put payment credentials or document content in a template.
 // Rule: a user only ever sees ONE language. Every template must exist in every language in SUPPORTED_LANGS.
+import { MONEY_TEMPLATES, MONEY_LABELS } from './moneyTemplates.js';
+import { GROWTH_TEMPLATES } from './i18nGrowth.js';
 export const SUPPORTED_LANGS = ['rw', 'fr', 'en'] as const;
 export type Lang = (typeof SUPPORTED_LANGS)[number];
 type Tpl = { title: string; body: string };
@@ -111,7 +113,45 @@ export const DEFAULT_TEMPLATES: Record<string, Record<Lang, Tpl>> = {
     rw: { title: 'SOS yanditswe', body: 'SOS yawe yanditswe nka {{ref}}. Niba uri mu kaga, hamagara 112 (Polisi) cyangwa 912 (ambulance) ako kanya. Ubufasha ntiburemeza ko bwaguhamagaye.' },
     fr: { title: 'SOS enregistré', body: 'Votre SOS a été enregistré sous la référence {{ref}}. Si vous êtes en danger, appelez immédiatement le 112 (police) ou le 912 (ambulance). L\'assistance n\'a pas encore confirmé qu\'elle vous a contacté.' },
   },
+  // --- trusted contacts (sent to someone who is not a user, in the contact's own language) and safety checks
+  trusted_trip_started: {
+    en: { title: '{{who}} is on a trip', body: '{{who}} started a trip with driver {{driver}}, plate {{plate}}. Follow live: {{link}}' },
+    rw: { title: '{{who}} ari mu rugendo', body: '{{who}} yatangiye urugendo n\'umushoferi {{driver}}, plaque {{plate}}. Kurikirana aho ageze: {{link}}' },
+    fr: { title: '{{who}} est en route', body: '{{who}} a commencé une course avec le chauffeur {{driver}}, plaque {{plate}}. Suivez en direct : {{link}}' },
+  },
+  trusted_trip_arrived: {
+    en: { title: 'Arrived safely', body: '{{who}} has arrived safely at the destination.' },
+    rw: { title: 'Yageze amahoro', body: '{{who}} yageze amahoro iyo yajyaga.' },
+    fr: { title: 'Bien arrivé(e)', body: '{{who}} est bien arrivé(e) à destination, en toute sécurité.' },
+  },
+  safety_check_deviation: {
+    en: { title: 'Are you OK?', body: 'Your trip seems to be leaving its route. Open the app and tell us whether you are OK or need help within {{minutes}} minutes, or our support team will be alerted. In danger call 112.' },
+    rw: { title: 'Ese uri amahoro?', body: 'Urugendo rwawe rusa nk\'urwavuye mu nzira yaruteganyirijwe. Fungura porogaramu utubwire niba uri amahoro cyangwa ukeneye ubufasha mu minota {{minutes}}, bitabaye ibyo itsinda ry\'ubufasha rizamenyeshwa. Niba uri mu kaga hamagara 112.' },
+    fr: { title: 'Tout va bien ?', body: 'Votre course semble s\'écarter de son itinéraire. Ouvrez l\'application et indiquez si tout va bien ou si vous avez besoin d\'aide dans les {{minutes}} minutes, sinon notre équipe d\'assistance sera alertée. En cas de danger, appelez le 112.' },
+  },
+  safety_check_stop: {
+    en: { title: 'Are you OK?', body: 'Your trip has been stopped for about {{stop}} minutes. Open the app and tell us whether you are OK or need help within {{minutes}} minutes, or our support team will be alerted. In danger call 112.' },
+    rw: { title: 'Ese uri amahoro?', body: 'Imodoka yawe imaze iminota nka {{stop}} ihagaze. Fungura porogaramu utubwire niba uri amahoro cyangwa ukeneye ubufasha mu minota {{minutes}}, bitabaye ibyo itsinda ry\'ubufasha rizamenyeshwa. Niba uri mu kaga hamagara 112.' },
+    fr: { title: 'Tout va bien ?', body: 'Votre course est à l\'arrêt depuis environ {{stop}} minutes. Ouvrez l\'application et indiquez si tout va bien ou si vous avez besoin d\'aide dans les {{minutes}} minutes, sinon notre équipe d\'assistance sera alertée. En cas de danger, appelez le 112.' },
+  },
+  safety_escalated: {
+    en: { title: 'Support alerted', body: 'Following your safety check we opened safety case {{ref}} for our support team. No one has confirmed contact with you yet. If you are in danger call 112 (police) or 912 (ambulance) now.' },
+    rw: { title: 'Ubufasha bwamenyeshejwe', body: 'Nyuma yo kukugenzura twafunguye ikibazo cy\'umutekano {{ref}} ku itsinda ry\'ubufasha. Nta muntu uremeza ko yakuvugishije. Niba uri mu kaga, hamagara 112 (Polisi) cyangwa 912 (ambulance) ako kanya.' },
+    fr: { title: 'Assistance alertée', body: 'Suite à votre vérification de sécurité, nous avons ouvert le dossier {{ref}} pour notre équipe d\'assistance. Personne n\'a encore confirmé vous avoir contacté. Si vous êtes en danger, appelez immédiatement le 112 (police) ou le 912 (ambulance).' },
+  },
+  tip_received: {
+    en: { title: 'You received a tip', body: 'A passenger tipped you {{amount}} RWF. It is all yours: no commission is taken.' },
+    rw: { title: 'Wahawe agashimwe', body: 'Umugenzi yaguhaye agashimwe ka {{amount}} RWF. Kose ni akawe, nta komisiyo gakatwaho.' },
+    fr: { title: 'Vous avez reçu un pourboire', body: 'Un passager vous a laissé un pourboire de {{amount}} RWF. Il est entièrement à vous : aucune commission n\'est prélevée.' },
+  },
+  tip_failed: {
+    en: { title: 'Tip not sent', body: 'Your tip of {{amount}} RWF did not go through. You can try again.' },
+    rw: { title: 'Agashimwe ntikagezeyo', body: 'Agashimwe kawe ka {{amount}} RWF ntikagezeyo. Ushobora kongera kugerageza.' },
+    fr: { title: 'Pourboire non envoyé', body: 'Votre pourboire de {{amount}} RWF n\'a pas abouti. Vous pouvez réessayer.' },
+  },
 };
+
+Object.assign(DEFAULT_TEMPLATES, MONEY_TEMPLATES);   // round 3: credit, deposit, claims, USSD (services/moneyTemplates.ts)
 
 // Enumerated values that appear inside templates ({{status}}, {{doc}}, {{phase}}) are translated per language,
 // so a Kinyarwanda or French message never contains an English word.
@@ -141,6 +181,7 @@ export const VALUE_LABELS: Record<string, Triple> = {
   insurance: V('insurance', 'Ubwishingizi', 'assurance'), transport_permit: V('transport permit', 'Uruhushya rwo gutwara abantu', 'licence de transport'),
   inspection: V('inspection', 'Isuzuma ry\'ikinyabiziga', 'contrôle technique'), police_clearance: V('police clearance', 'Icyemezo cy\'imyitwarire myiza', 'casier judiciaire'),
 };
+Object.assign(VALUE_LABELS, MONEY_LABELS);
 const LABELLED_PARAMS = ['status', 'doc', 'phase'];
 
 /** Translate enumerated template params into the target language (unknown values pass through unchanged). */
@@ -152,6 +193,8 @@ export function localizeParams(params: Record<string, unknown>, lang: Lang): Rec
   }
   return out;
 }
+
+Object.assign(DEFAULT_TEMPLATES, GROWTH_TEMPLATES);   // round 2 templates (services/i18nGrowth.ts)
 
 export const render = (tpl: string, p: Record<string, unknown>) =>
   tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => String(p[k] ?? ''));

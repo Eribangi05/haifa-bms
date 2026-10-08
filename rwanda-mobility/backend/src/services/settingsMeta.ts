@@ -1,12 +1,16 @@
 import { SETTING_DEFAULTS } from '../config.js';
+import { GROWTH_META } from './growthSettings.js';
+import { MONEY_META } from './moneySettings.js';
 
 export type SettingType = 'int' | 'bool' | 'enum' | 'int_list' | 'str_list';
 export type SettingMeta = { label: string; desc: string; group: string; type?: SettingType; unit?: string; min?: number; max?: number; options?: string[]; superAdminOnly?: boolean };
 
-export const SETTING_GROUPS = ['Pricing & approvals', 'Dispatch', 'Bookings & cancellations', 'Payments & payouts', 'Drivers & Abasare', 'Security & OTP', 'Privacy & retention', 'Safety & tracking', 'Advanced'] as const;
+export const SETTING_GROUPS = ['Pricing & approvals', 'Dispatch', 'Bookings & cancellations', 'Payments & payouts', 'Drivers & Abasare', 'Security & OTP', 'Privacy & retention', 'Safety & tracking', 'Credit & loyalty', 'Claims', 'USSD', 'Advanced'] as const;
 
 /** Human metadata for every key in SETTING_DEFAULTS. The admin UI is data-driven from this; keys without an entry fall under "Advanced". */
 export const SETTING_META: Record<keyof typeof SETTING_DEFAULTS, SettingMeta> = {
+  ...MONEY_META,
+  ...GROWTH_META,
   'pricing.self_approval': { group: 'Pricing & approvals', label: 'Allow self-approval of price changes', desc: 'Off (recommended): a second person must approve every fare or commission change. On: the proposer may approve their own change (for very small teams). Every self-approval is flagged in the audit log.', type: 'bool', superAdminOnly: true },
   'dispatch.offer_timeout_s': { group: 'Dispatch', label: 'Driver offer timeout', desc: 'How long a driver has to accept a trip offer before it moves to the next driver.', unit: 'seconds', min: 5, max: 120 },
   'dispatch.max_rounds': { group: 'Dispatch', label: 'Maximum search rounds', desc: 'How many times the search widens before the passenger is told no driver was found.', unit: 'rounds', min: 1, max: 10 },
@@ -41,6 +45,20 @@ export const SETTING_META: Record<keyof typeof SETTING_DEFAULTS, SettingMeta> = 
   'retention.session_days': { group: 'Privacy & retention', label: 'Keep ended sign-in sessions', desc: 'Revoked or expired sessions are deleted after this many days. Keep at least 30 so token-theft detection keeps working.', unit: 'days', min: 30, max: 365 },
   'retention.handover_days': { group: 'Privacy & retention', label: 'Keep Abasare handover photos', desc: 'Deleted after this many days unless a dispute is open.', unit: 'days', min: 1, max: 365 },
   'safety.escalation_contacts': { group: 'Safety & tracking', label: 'Safety escalation contacts', desc: 'Phone numbers (+250...) alerted when an SOS is raised. Comma separated.', type: 'str_list' },
+  'safety.checks_enabled': { group: 'Safety & tracking', label: 'Route and long-stop safety checks', desc: 'On: during a trip, a driver far from the route or stopped for too long triggers an "Are you OK?" message to the passenger. Passengers can switch it off per trip.', type: 'bool' },
+  'safety.deviation_corridor_m': { group: 'Safety & tracking', label: 'Route corridor', desc: 'How far from the straight pickup-destination line the car may be before the trip is treated as off route (before the road-factor allowance).', unit: 'metres', min: 200, max: 5000 },
+  'safety.road_factor_pct': { group: 'Safety & tracking', label: 'Road factor', desc: 'Roads are longer than straight lines. 150 means roads are assumed 50% longer; the corridor is widened accordingly so normal detours do not trigger checks.', unit: '%', min: 100, max: 300 },
+  'safety.stop_minutes': { group: 'Safety & tracking', label: 'Long-stop time', desc: 'A car that has not moved for this long during a trip (away from the destination) triggers a check.', unit: 'minutes', min: 2, max: 60 },
+  'safety.stop_radius_m': { group: 'Safety & tracking', label: 'Stationary radius', desc: 'The car counts as stationary when all its recent locations are within this distance of each other.', unit: 'metres', min: 20, max: 500 },
+  'safety.check_interval_s': { group: 'Safety & tracking', label: 'Safety check interval', desc: 'Minimum time between two checks of the same trip.', unit: 'seconds', min: 15, max: 600 },
+  'safety.response_wait_min': { group: 'Safety & tracking', label: 'Time to answer', desc: 'If the passenger does not answer "Are you OK?" within this time, a safety case is opened for support (no agency is contacted automatically).', unit: 'minutes', min: 1, max: 30 },
+  'safety.recheck_cooldown_min': { group: 'Safety & tracking', label: 'Pause after "OK"', desc: 'After the passenger answers OK, the same kind of check waits this long.', unit: 'minutes', min: 1, max: 120 },
+  'safety.max_alerts_per_trip': { group: 'Safety & tracking', label: 'Checks per trip', desc: 'Upper limit of "Are you OK?" checks on one trip.', unit: 'checks', min: 1, max: 10 },
+  'share.expiry_after_trip_min': { group: 'Safety & tracking', label: 'Share link lifetime after the trip', desc: 'Live-share links keep working this long after the trip ends, then stop.', unit: 'minutes', min: 10, max: 1440 },
+  'tips.enabled': { group: 'Payments & payouts', label: 'Tips', desc: 'Passengers can tip the driver after a completed trip. Tips go 100% to the driver (no commission).', type: 'bool' },
+  'tips.min_amount': { group: 'Payments & payouts', label: 'Smallest tip', desc: 'Mobile-money and cash tips below this amount are refused.', unit: 'RWF', min: 0, max: 10000 },
+  'tips.max_amount': { group: 'Payments & payouts', label: 'Largest tip', desc: 'Abuse guard: a single tip above this amount is refused.', unit: 'RWF', min: 100, max: 1000000 },
+  'dispatch.favourite_boost_s': { group: 'Dispatch', label: 'Favourite driver boost', desc: 'A passenger\'s favourite driver is ranked as if this many seconds closer. 0 switches the boost off. Blocked drivers are always excluded.', unit: 'seconds', min: 0, max: 1800 },
   'tracking.max_speed_kmh': { group: 'Safety & tracking', label: 'Maximum plausible speed', desc: 'Location updates implying a higher speed are ignored as GPS errors.', unit: 'km/h', min: 40, max: 300 },
 };
 

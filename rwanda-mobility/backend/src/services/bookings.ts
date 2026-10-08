@@ -11,11 +11,24 @@ import { checkPromo } from './promos.js';
 import { getSetting, flag } from './settings.js';
 import { transition, logEvent, ACTIVE_TRIP, type BookingRow, type Status } from './bookingMachine.js';
 import { startSearch } from './dispatch.js';
+import { reserveForBooking } from './credit.js';
+import { requireDeposit, prepaidView } from './deposit.js';
+import { retainDepositFee } from './prepaid.js';
+import { tierPerks } from './loyalty.js';
 import { notify } from './notify.js';
 import { sha256, randomToken, signFileToken } from '../util/crypto.js';
 import { createDuePayment } from './payments.js';
 import { requireUsable as requireUsableCodeRaw } from './requestCodes.js';
 import { DOCS_OK_SQL } from './drivers.js';
+import { onTripStarted, onTripCompleted } from './safety.js';
+import { driverBadges } from './badges.js';
+import { navigationFor, driverEtaS } from './navigation.js';
+import { invalidTags } from './tags.js';
+import { createTip, type TipIn } from './tips.js';
+import { injectFixedOptions } from './fixedRoutes.js';
+import { attachGuest, guestNotify, guestViewPatch, type GuestIn } from './guestRides.js';
+import { resolvePartnerBilling, assertPartnerBillable } from './partners.js';
+import { evaluateDriverSafe } from './quests.js';
 
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newRef = () => 'RM-' + Array.from(randomBytes(6), (b) => REF_ALPHABET[b % 32]).join('');
@@ -29,28 +42,28 @@ export async function zoneFor(p: LatLng): Promise<{ id: string; name: string } |
   return zones.find((z) => pointInPolygon(p, z.polygon)) ?? null;
 }
 
-async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number) {
+export async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number, passengerId?: string) {
   const rows = await q<any>(
     `select dp.last_lat, dp.last_lng, v.vehicle_type from driver_profiles dp
      join users u on u.id=dp.user_id and u.status='active'
      join vehicles v on v.driver_id=dp.user_id and v.status='approved'
      where dp.status='APPROVED' and dp.is_online and 'ride' = any(dp.accepting) and dp.last_seen_at > now() - make_interval(secs => $1)
        and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
-       and v.vehicle_type = any($3) and v.capacity >= $4 and (not $5 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}
+       and ($6::uuid is null or not exists (select 1 from passenger_driver_prefs pp where pp.passenger_id=$6 and pp.driver_id=dp.user_id and pp.kind='blocked')) and v.vehicle_type = any($3) and v.capacity >= $4 and (not $5 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
-    [heartbeatS, zoneId, svc.vehicle_types, svc.min_capacity, svc.requires_comfort]);
+    [heartbeatS, zoneId, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, passengerId ?? null]);
   const near = rows.filter((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup) <= radiusM);
   return near.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup));
 }
 
-async function nearbyAbasare(cv: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number): Promise<number[]> {
+async function nearbyAbasare(cv: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number, passengerId?: string): Promise<number[]> {
   const rows = await q<any>(
     `select dp.last_lat, dp.last_lng from driver_profiles dp join users u on u.id=dp.user_id and u.status='active'
      where dp.status='APPROVED' and dp.abasare_status='approved' and 'abasare' = any(dp.accepting) and dp.is_online
        and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
-       and (dp.abasare_skills->'classes') ? $3 and (dp.abasare_skills->'transmissions') ? $4 and ${DOCS_OK_SQL('dp', "'abasare'")}
+       and ($5::uuid is null or not exists (select 1 from passenger_driver_prefs pp where pp.passenger_id=$5 and pp.driver_id=dp.user_id and pp.kind='blocked')) and (dp.abasare_skills->'classes') ? $3 and (dp.abasare_skills->'transmissions') ? $4 and ${DOCS_OK_SQL('dp', "'abasare'")}
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
-    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission]);
+    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission, passengerId ?? null]);
   return rows.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup)).filter((d) => d <= radiusM);
 }
 async function abasareSupply(cv: any): Promise<number> {
@@ -59,7 +72,7 @@ async function abasareSupply(cv: any): Promise<number> {
   return r!.n;
 }
 
-async function schedulableSupply(svc: any): Promise<number> {
+export async function schedulableSupply(svc: any): Promise<number> {
   const r = await q1<{ n: number }>(
     `select count(*)::int n from driver_profiles dp join vehicles v on v.driver_id=dp.user_id and v.status='approved'
      where dp.status='APPROVED' and 'ride' = any(dp.accepting) and v.vehicle_type = any($1) and v.capacity >= $2 and (not $3 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}`,
@@ -116,9 +129,9 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
     let available: boolean, near: number[] = [], reason: string | undefined;
     if (s.kind === 'abasare') {
       if (scheduled) { available = (await abasareSupply(cv)) > 0; if (!available) reason = 'no_abasare_for_this_car'; }
-      else { near = await nearbyAbasare(cv, pz.id, inp.pickup, radius * 1000, hb); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
+      else { near = await nearbyAbasare(cv, pz.id, inp.pickup, radius * 1000, hb, passengerId); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
     } else if (scheduled) { available = (await schedulableSupply(s)) > 0; if (!available) reason = 'no_vehicles_for_service'; }
-    else { near = await nearbyAvailable(s, pz.id, inp.pickup, radius * 1000, hb); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
+    else { near = await nearbyAvailable(s, pz.id, inp.pickup, radius * 1000, hb, passengerId); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
     let quoteId: string | null = null;
     if (available) {
       quoteId = (await q1<{ id: string }>(
@@ -136,6 +149,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
       is_estimate: true,
     });
   }
+  if (!inp.abasare && inp.dest) await injectFixedOptions({ passengerId, pickup: inp.pickup, dest: inp.dest, promoCode: inp.promo_code, scheduled, zoneId: pz.id, owed, ttl, options });   // fixed-price routes (inactive unless approved)
   const hasAny = options.some((o) => o.available);
   return { zone: pz.id, options, alternatives: hasAny ? [] : ['try_other_service', 'move_pickup', 'schedule_later'], quote_ttl_s: ttl };
 }
@@ -143,7 +157,9 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
 export type CreateIn = {
   quote_id: string; payment_method: string; pickup_name?: string; pickup_note?: string; dest_name?: string; idempotency_key: string;
   corporate_id?: string; cost_centre?: string; po_ref?: string; rider_name?: string; rider_phone?: string;
-  customer_vehicle_id?: string; owner_attested?: boolean; request_code?: string;
+  customer_vehicle_id?: string; owner_attested?: boolean; request_code?: string; prefer_favourite?: boolean;
+  for_guest?: GuestIn; partner_id?: string; partner_billed?: boolean;
+  wallet_amount?: number; remainder_method?: string; channel?: 'app' | 'ussd' | 'web';   // credit: payment_method 'wallet' | 'wallet_partial'
 };
 
 async function enforceCorporate(c: PoolClient, userId: string, corporateId: string, serviceId: string, total: number, when: Date) {
@@ -177,12 +193,21 @@ async function requireUsableCode(raw: string) {
 }
 
 export async function createBooking(passengerId: string, inp: CreateIn) {
-  const methods = ['cash', 'mtn_momo', 'airtel_money', 'corporate'];
+  if (inp.payment_method === 'partner') {   // charged to a venue partner through the corporate invoice engine
+    const pb = await resolvePartnerBilling(passengerId, inp.request_code);
+    inp = { ...inp, payment_method: 'corporate', corporate_id: pb.corporate_id, partner_id: pb.partner_id, partner_billed: true };
+  }
+  const walletMode = inp.payment_method === 'wallet' ? 'full' as const : inp.payment_method === 'wallet_partial' ? 'partial' as const : null;
+  if (walletMode) {
+    if (inp.corporate_id || inp.partner_billed || !['cash', 'mtn_momo', undefined].includes(inp.remainder_method)) throw badRequest('payment_method_unavailable');
+    inp = { ...inp, payment_method: walletMode === 'full' ? 'wallet' : (inp.remainder_method ?? 'cash') };
+  }
+  const methods = ['cash', 'mtn_momo', 'airtel_money', 'corporate', 'wallet'];
   if (!methods.includes(inp.payment_method)) throw badRequest('payment_method_unavailable');
   if (inp.payment_method === 'mtn_momo' && !(await flag('payments.mtn_momo'))) throw badRequest('payment_method_unavailable');
   if (inp.payment_method === 'airtel_money' && !(await flag('payments.airtel_money'))) throw badRequest('payment_method_unavailable', 'Airtel Money is not enabled yet');
   if ((inp.payment_method === 'corporate') !== !!inp.corporate_id) throw badRequest('corporate_payment_mismatch', 'Corporate payment requires a business account');
-  if (inp.corporate_id && !(await flag('corporate.enabled'))) throw badRequest('corporate_disabled');
+  if (inp.corporate_id && !inp.partner_billed && !(await flag('corporate.enabled'))) throw badRequest('corporate_disabled');
 
   // Same key + same quote = a retry (return the booking). Same key for a different quote is a client bug: refuse instead of silently returning another trip.
   const replayOf = (b: BookingRow) => {
@@ -222,7 +247,8 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
       // A personal cancellation fee is never billed to a company: strip it from corporate bookings (it stays on the passenger's balance).
       const bdoc: Breakdown = inp.corporate_id ? withoutDebt(quote.breakdown) : quote.breakdown;
       const fareTotal = bdoc.total;
-      if (inp.corporate_id) await enforceCorporate(c, passengerId, inp.corporate_id, quote.service_id, fareTotal, when);
+      if (inp.partner_billed) await assertPartnerBillable(c, inp.partner_id!, passengerId, fareTotal);
+      else if (inp.corporate_id) await enforceCorporate(c, passengerId, inp.corporate_id, quote.service_id, fareTotal, when);
       const scheduled = !!quote.scheduled_for;
       const ref = newRef();
       const b = (await q<BookingRow>(
@@ -233,9 +259,15 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
          quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, fareTotal, quote.distance_m, quote.duration_s, inp.payment_method,
          inp.corporate_id ? 'corporate' : 'passenger', inp.corporate_id ?? null, inp.cost_centre ?? null, inp.po_ref ?? null, inp.rider_name ?? null, inp.rider_phone ?? null,
          quote.scheduled_for, inp.idempotency_key, JSON.stringify(bdoc)], c))[0];
-      if (reqCode) await q('update bookings set request_code_id=$2 where id=$1', [b.id, reqCode.id], c);
+      if (inp.prefer_favourite === false) await q('update bookings set prefer_favourite=false where id=$1', [b.id], c);
+      if (reqCode) await q('update bookings set request_code_id=$2, partner_id=$3 where id=$1', [b.id, reqCode.id, (reqCode as any).partner_id ?? null], c);
+      if (inp.partner_billed) await q('update bookings set partner_billed=true, partner_id=$2 where id=$1', [b.id, inp.partner_id], c);
+      if (inp.for_guest) await attachGuest(c, b, svc.kind, inp.for_guest);
       if (!inp.corporate_id) await applyDebts(c, passengerId, b.id, quote.breakdown.debt ?? 0);
       if (svc.kind === 'abasare') await q('update bookings set hire_mode=$2, hours_booked=$3, customer_vehicle_id=$4, owner_attested_at=now() where id=$1', [b.id, meta.hire_mode, meta.hours, meta.customer_vehicle_id], c);
+      if (inp.channel && inp.channel !== 'app') await q('update bookings set channel=$2 where id=$1', [b.id, inp.channel], c);
+      if (walletMode) await reserveForBooking(c, b as any, walletMode, inp.wallet_amount);
+      if (svc.kind === 'abasare') await requireDeposit(c, { id: b.id, passenger_id: passengerId, estimated_fare: fareTotal, corporate_id: inp.corporate_id, scheduled_for: quote.scheduled_for });
       await q('update fare_quotes set used_booking_id=$2 where id=$1', [quote.id, b.id], c);
       await logEvent(c, b.id, 'booking_created', { id: passengerId, role: 'passenger' }, { quote_id: quote.id, total: quote.total, rule_version: quote.rule_version });
       if (quote.promo_code) {
@@ -310,7 +342,12 @@ export async function bookingView(b: BookingRow, as: Perspective) {
       else out.vehicle = { make: d.make, model: d.model, color: d.color, plate: d.plate, type: d.vehicle_type };
       if (ACTIVE_TRIP.includes(b.status) && d.last_lat != null)
         out.driver_location = { lat: d.last_lat, lng: d.last_lng, at: d.last_location_at };
+      if (ACTIVE_TRIP.includes(b.status)) {
+        Object.assign(out, driverEtaS(b, d));   // seconds to pickup / destination from the driver's latest location
+        out.driver.badges = await driverBadges(b.driver_id);
+      }
     }
+    if (as === 'driver' && ACTIVE_TRIP.includes(b.status)) out.navigation = navigationFor(b, d);
   }
   if (as === 'staff' && (b as any).request_code_id) out.request_code = await q1('select id, code, label from request_codes where id=$1', [(b as any).request_code_id]);
   if (b.customer_vehicle_id) out.abasare = await abasareView(b, as);
@@ -322,11 +359,13 @@ export async function bookingView(b: BookingRow, as: Perspective) {
     out.estimated_driver_net = net?.driver_net ?? null;
     delete out.fare_breakdown;
   }
+  if (as === 'passenger' || as === 'staff') Object.assign(out, await prepaidView(b));
   if (as === 'driver' || as === 'passenger' || as === 'staff' || as === 'fleet') {
-    const pay = await q1<any>("select id, method, status, amount, amount_collected, reference, failure_reason from payments where booking_id=$1 order by created_at desc limit 1", [b.id]);
+    const pay = await q1<any>("select id, method, status, amount, amount_collected, reference, failure_reason from payments where booking_id=$1 and kind='fare' order by created_at desc limit 1", [b.id]);
     if (pay) out.payment = { ...pay, outstanding: pay.method === 'cash' && pay.status !== 'SUCCESS' ? pay.amount - (pay.amount_collected ?? 0) : 0 };
   }
   if (as === 'driver') delete out.fare_breakdown;
+  Object.assign(out, guestViewPatch(b, as));   // ride for someone else: guest name / masked phone / driver-safe first name
   return out;
 }
 
@@ -357,11 +396,13 @@ export async function cancelBooking(actorId: string, bookingId: string, reason: 
       if (b.assigned_at && ACTIVE_TRIP.includes(b.status)) {
         const elapsed = (Date.now() - new Date(b.assigned_at).getTime()) / 1000;
         const driverResponsible = b.status === 'DRIVER_ASSIGNED' && reason === 'driver_too_far';
-        if (elapsed > grace && !driverResponsible) cancelFee = fee;
+        const perk = (await tierPerks(actorId)).extra_free_cancel_s;
+        if (elapsed > grace + perk && !driverResponsible) cancelFee = fee;
       }
+      const kept = await retainDepositFee(c, bookingId, cancelFee);   // an Abasare deposit pays the late-cancellation fee first
       const row = await transition(c, bookingId, 'CANCELLED_BY_PASSENGER', { id: actorId, role: 'passenger' },
         { reason, patch: { cancelled_at: new Date(), cancel_by: 'passenger', cancel_reason: reason, cancel_fee: cancelFee } });
-      if (cancelFee > 0) await recordDebt(c, b.passenger_id, bookingId, cancelFee, 'cancellation_fee');
+      if (cancelFee - kept > 0) await recordDebt(c, b.passenger_id, bookingId, cancelFee - kept, 'cancellation_fee');
       if (b.driver_id) await q("update dispatch_offers set status='cancelled' where booking_id=$1 and status='pending'", [bookingId], c);
       await q("update dispatch_offers set status='cancelled' where booking_id=$1 and status='pending'", [bookingId], c);
       return { row, driverId: b.driver_id };
@@ -375,7 +416,7 @@ export async function cancelBooking(actorId: string, bookingId: string, reason: 
     return { row, driverId: null };
   });
   if (who === 'driver') await startSearch(bookingId);
-  else await notify(res.row.passenger_id, res.row.cancel_fee ? 'booking_cancelled_fee' : 'booking_cancelled', { ref: res.row.ref, fee: res.row.cancel_fee, reason: '' });
+  else { await guestNotify(res.row, 'cancelled'); await notify(res.row.passenger_id, res.row.cancel_fee ? 'booking_cancelled_fee' : 'booking_cancelled', { ref: res.row.ref, fee: res.row.cancel_fee, reason: '' }); }
   return (await q1<BookingRow>('select * from bookings where id=$1', [bookingId]))!;
 }
 
@@ -400,7 +441,8 @@ export async function arrived(driverId: string, bookingId: string) {
     return transition(c, bookingId, 'DRIVER_ARRIVED', { id: driverId, role: 'driver' }, { expectFrom: ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING'], patch: { arrived_at: new Date() } });
   });
   const v = await q1<any>('select plate from vehicles where id=$1', [row.vehicle_id]);
-  await notify(row.passenger_id, 'driver_arrived', { plate: v?.plate }, { critical: true });
+  await notify(row.passenger_id, 'driver_arrived', { plate: v?.plate, ref: row.ref }, { critical: true });
+  await guestNotify(row, 'arrived');
   return row;
 }
 
@@ -428,6 +470,7 @@ export async function startTrip(driverId: string, bookingId: string, pin: string
   }, 0);
   if (!out.ok) throw new AppError(400, 'pin_invalid', 'Wrong PIN', { attempts_left: out.attemptsLeft });
   await notify(out.row.passenger_id, 'trip_started', { ref: out.row.ref });
+  await onTripStarted(out.row);
   return out.row;
 }
 
@@ -439,7 +482,7 @@ export async function overridePin(staffId: string, bookingId: string, reason: st
       { expectFrom: ['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'], reason: `pin_override: ${reason}`, patch: { started_at: new Date(), pin_override_by: staffId } });
     await logEvent(c, bookingId, 'pin_override', { id: staffId, role: 'staff' }, {}, reason);
     return row;
-  });
+  }).then(async (row) => { await onTripStarted(row); return row; });
 }
 
 export async function noShow(driverId: string, bookingId: string) {
@@ -448,9 +491,10 @@ export async function noShow(driverId: string, bookingId: string) {
     const b = await ownTrip(c, driverId, bookingId);
     if (!b.arrived_at || !['DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION'].includes(b.status)) throw conflict('invalid_state', 'Arrive at pickup first');
     if ((Date.now() - new Date(b.arrived_at).getTime()) / 60000 < wait) throw conflict('wait_longer', `Wait at least ${wait} minutes before reporting a no-show`, { minutes: wait });
+    const kept = await retainDepositFee(c, bookingId, fee);
     const row = await transition(c, bookingId, 'CANCELLED_BY_PASSENGER', { id: driverId, role: 'driver' },
       { reason: 'passenger_no_show', patch: { cancelled_at: new Date(), cancel_by: 'passenger_no_show', cancel_reason: 'passenger_no_show', cancel_fee: fee } });
-    if (fee > 0) await recordDebt(c, b.passenger_id, bookingId, fee, 'no_show_fee');
+    if (fee - kept > 0) await recordDebt(c, b.passenger_id, bookingId, fee - kept, 'no_show_fee');
     return row;
   });
 }
@@ -473,52 +517,53 @@ export async function completeTrip(driverId: string, bookingId: string) {
     return (await q1<BookingRow>('select * from bookings where id=$1', [bookingId], c))!;
   });
   await notify(row.passenger_id, 'trip_completed', { ref: row.ref, fare: row.final_fare });
+  await onTripCompleted(row);
+  await evaluateDriverSafe(driverId);   // quests: bonus credited exactly once when a target is reached
   return row;
 }
 
 // ---------- sharing, rating, messages ----------
-export async function createShare(passengerId: string, bookingId: string, ttlMin = 240) {
+export async function createShare(passengerId: string, bookingId: string, ttlMin = 240, hideDestination = false) {
   const b = await q1<BookingRow>('select * from bookings where id=$1 and passenger_id=$2', [bookingId, passengerId]);
   if (!b) throw notFound('booking');
   const live = await q1<{ n: number }>('select count(*)::int n from trip_shares where booking_id=$1 and revoked_at is null and expires_at > now()', [bookingId]);
   if (live!.n >= 10) throw conflict('limit', 'Too many active share links for this trip');
   const token = randomToken(24);
   const exp = new Date(Date.now() + Math.min(ttlMin, 24 * 60) * 60000);
-  await q('insert into trip_shares(booking_id, token_hash, expires_at, created_by) values ($1,$2,$3,$4)', [bookingId, sha256(token), exp, passengerId]);
-  return { url: `${config.publicBaseUrl}/share/${token}`, token, expires_at: exp };
+  await q('insert into trip_shares(booking_id, token_hash, expires_at, created_by, hide_destination) values ($1,$2,$3,$4,$5)', [bookingId, sha256(token), exp, passengerId, hideDestination]);
+  return { url: `${config.publicBaseUrl}/share/${token}`, token, expires_at: exp, hide_destination: hideDestination };
 }
 export async function revokeShares(passengerId: string, bookingId: string) {
   await q('update trip_shares set revoked_at=now() where booking_id=$1 and created_by=$2 and revoked_at is null', [bookingId, passengerId]);
 }
-/** Limited, unauthenticated view for trusted contacts: no phone, no PII beyond driver first name and plate. */
-export async function sharedView(token: string) {
-  const s = await q1<any>('select * from trip_shares where token_hash=$1', [sha256(token)]);
-  if (!s || s.revoked_at || new Date(s.expires_at) < new Date()) throw notFound('share link');
-  const b = (await q1<BookingRow>('select * from bookings where id=$1', [s.booking_id]))!;
-  const live = ACTIVE_TRIP.includes(b.status);
-  const d = b.driver_id ? await q1<any>(`select u.display_name, dp.last_lat, dp.last_lng, dp.last_location_at, v.plate, v.make, v.model, v.color from driver_profiles dp join users u on u.id=dp.user_id left join vehicles v on v.id=$2 where dp.user_id=$1`, [b.driver_id, b.vehicle_id]) : null;
-  return {
-    status: b.status, ref: b.ref, destination: b.dest_name ?? null,
-    driver: d ? { first_name: (d.display_name ?? '').split(' ')[0], plate: d.plate, vehicle: `${d.color ?? ''} ${d.make ?? ''} ${d.model ?? ''}`.trim() } : null,
-    location: live && d?.last_lat != null ? { lat: d.last_lat, lng: d.last_lng, at: d.last_location_at } : null,
-    expires_at: s.expires_at,
-  };
+export async function listShares(passengerId: string, bookingId: string) {
+  return q("select s.id, s.created_at, s.expires_at, s.revoked_at, s.auto, s.hide_destination, c.name contact_name from trip_shares s left join emergency_contacts c on c.id=s.contact_id where s.booking_id=$1 and s.created_by=$2 order by s.created_at desc limit 50", [bookingId, passengerId]);
 }
+export async function revokeShare(passengerId: string, bookingId: string, shareId: string) {
+  const r = await q('update trip_shares set revoked_at=coalesce(revoked_at, now()) where id=$1 and booking_id=$2 and created_by=$3 returning id', [shareId, bookingId, passengerId]);
+  if (!r.length) throw notFound('share link');
+}
+export { sharedView } from './safety.js';
 
-export async function rateBooking(userId: string, bookingId: string, score: number, comment?: string, tags?: string[]) {
-  return tx(async (c) => {
+export async function rateBooking(userId: string, bookingId: string, score: number, comment?: string, tags?: string[], tip?: TipIn) {
+  const res = await tx(async (c) => {
     const b = await q1<BookingRow>('select * from bookings where id=$1', [bookingId], c);
     if (!b || (b.passenger_id !== userId && b.driver_id !== userId)) throw notFound('booking');
     if (!['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'DISPUTED', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(b.status)) throw conflict('not_ratable', 'Only completed trips can be rated');
     const reviewee = userId === b.passenger_id ? b.driver_id! : b.passenger_id;
+    if (tags?.length) { const bad = invalidTags(tags, !!b.customer_vehicle_id); if (bad.length) throw badRequest('invalid_tag', 'Unknown rating tag', { tags: bad }); }
+    if (tip && userId !== b.passenger_id) throw forbidden();
     try {
       await q('insert into ratings(booking_id, reviewer_id, reviewee_id, score, comment, tags) values ($1,$2,$3,$4,$5,$6)', [bookingId, userId, reviewee, score, comment ?? null, tags ?? null], c);
     } catch (e: any) { if (e.code === '23505') throw conflict('already_rated', 'You already rated this trip'); throw e; }
     if (userId === b.passenger_id) {
       await q(`update driver_profiles set rating_avg = (select round(avg(score)::numeric,2) from ratings where reviewee_id=$1), rating_count = (select count(*) from ratings where reviewee_id=$1) where user_id=$1`, [reviewee], c);
     }
-    return { ok: true };
+    return { ok: true } as { ok: boolean; tip?: unknown };
   });
+  // the rating is saved even if the tip is then refused (validation, provider): the tip can be retried with POST /bookings/:id/tip
+  if (tip) res.tip = await createTip(userId, bookingId, tip);
+  return res;
 }
 
 export async function postMessage(userId: string, bookingId: string, body: string) {

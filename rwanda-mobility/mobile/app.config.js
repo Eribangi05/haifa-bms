@@ -9,7 +9,7 @@ module.exports = () => ({
     name: 'Abasare',
     slug: 'abasare',
     scheme: 'abasare',
-    version: '0.5.1',
+    version: '0.5.2',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',   // light only: expo-system-ui applies it to the Android system bars so their icons stay dark on our light screens
@@ -18,7 +18,7 @@ module.exports = () => ({
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
     android: {
       package: 'rw.abasare.app',
-      versionCode: 6,
+      versionCode: 7,
       adaptiveIcon: {
         backgroundColor: '#FFFFFF',
         foregroundImage: './assets/android-icon-foreground.png',
@@ -54,7 +54,7 @@ module.exports = () => ({
       ['expo-image-picker', { cameraPermission: 'Used to photograph your driver documents.', photosPermission: 'Used to attach your driver documents.' }],
       ['expo-camera', { cameraPermission: 'Abasare uses the camera only to scan QR codes for your pickup point.', recordAudioAndroid: false }],
       ['expo-notifications', { color: '#0077B0' }],
-      ['expo-build-properties', { android: { usesCleartextTraffic: allowCleartext } }],
+      ['expo-build-properties', { android: { usesCleartextTraffic: allowCleartext, useLegacyPackaging: true, enableShrinkResourcesInReleaseBuilds: true, enableProguardInReleaseBuilds: true, enablePngCrunchInReleaseBuilds: true } }],
     ],
     web: { bundler: 'metro', output: 'single', favicon: './assets/favicon.png' },
     ...(easProjectId ? { extra: { eas: { projectId: easProjectId } } } : {}),

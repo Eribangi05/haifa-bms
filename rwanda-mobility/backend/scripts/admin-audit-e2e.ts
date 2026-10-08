@@ -17,7 +17,7 @@ const bad = (m: string) => { failed++; problems.push(m); console.log('FAIL', m);
 // What each nav tab needs (permission names, mirrors the API guards). A role must see a tab iff it holds ANY of these.
 const TAB_NEEDS: Record<string, string[]> = {
   Overview: ['analytics.view'], 'Live map': ['bookings.view_all'], Bookings: ['bookings.view_all'], Drivers: ['drivers.view'], Abasare: ['drivers.view'], Passengers: ['users.view'],
-  Support: ['support.handle'], Safety: ['safety.respond'], Pricing: ['pricing.manage', 'pricing.approve'], Services: ['pricing.manage'], Promotions: ['promotions.manage'],
+  Support: ['support.handle'], Safety: ['safety.respond'], 'Trust and safety': ['safety.respond', 'drivers.view'], Pricing: ['pricing.manage', 'pricing.approve'], Services: ['pricing.manage'], Promotions: ['promotions.manage'],
   'Request codes': ['codes.view'], Finance: ['finance.view'], 'Business & fleets': ['corporate.manage'], Privacy: ['privacy.handle'], Settings: ['settings.manage'], 'Audit log': ['audit.view'], Staff: ['users.manage'],
 };
 const hasPerm = (role: string, needs: string[]) => { const p = ROLE_PERMISSIONS[role] ?? []; return p.includes('*') || needs.some((n) => p.includes(n)); };

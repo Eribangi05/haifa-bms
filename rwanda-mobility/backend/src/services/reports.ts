@@ -22,7 +22,7 @@ export async function dashboard(filter: { from?: string; to?: string; service_id
   const pay = await q1<any>(`select count(*) filter (where p.status='SUCCESS')::int ok, count(*) filter (where p.status in ('SUCCESS','FAILED'))::int tried,
       coalesce(sum(p.amount) filter (where p.status='SUCCESS' and p.method='cash'),0)::bigint cash_collected,
       coalesce(sum(p.amount) filter (where p.status='SUCCESS' and p.method in ('mtn_momo','airtel_money')),0)::bigint electronic_collected
-    from payments p join bookings b on b.id=p.booking_id where ${W}`, f);
+    from payments p join bookings b on b.id=p.booking_id where p.kind='fare' and ${W}`, f);
   const rev = await q1<any>(`select coalesce(sum(e.commission),0)::bigint commission_revenue, coalesce(sum(e.net),0)::bigint driver_earnings from driver_earnings e join bookings b on b.id=e.booking_id where ${W}`, f);
   const payable = await q1<any>(`select coalesce(sum(credit-debit),0)::bigint v from ledger_entries where account_code='DRIVER_PAYABLE'`);
   const support = await q1<any>(`select count(*) filter (where status in ('open','in_progress','awaiting_user'))::int backlog, count(*) filter (where status in ('open','in_progress','awaiting_user') and sla_due_at < now())::int overdue from support_cases`);

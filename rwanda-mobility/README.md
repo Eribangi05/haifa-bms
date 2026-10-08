@@ -116,3 +116,9 @@ cd mobile && npm run typecheck && npm test                      # 28 mobile unit
 ## Before you launch
 
 Complete the checklists in [`docs/LAUNCH_CHECKLIST.md`](docs/LAUNCH_CHECKLIST.md), [`docs/REGULATORY_AND_INTEGRATION_DEPENDENCIES.md`](docs/REGULATORY_AND_INTEGRATION_DEPENDENCIES.md) and [`docs/SETUP_AND_DEPLOYMENT.md`](docs/SETUP_AND_DEPLOYMENT.md): licences, data-protection obligations, tariffs, MTN production onboarding, SMS gateway, insurance, emergency arrangements, a pilot with verified drivers.
+
+- [docs/AUDIT_MOBILE.md](docs/AUDIT_MOBILE.md): mobile audit findings and fixes, display on many phones
+- [docs/FEATURE_ROUND1.md](docs/FEATURE_ROUND1.md): trust and safety features (contract for the app)
+- [docs/FEATURE_ROUND2.md](docs/FEATURE_ROUND2.md): growth features: guest rides, recurring rides, fixed routes, quests, campaigns, partners
+- [docs/FEATURE_ROUND3.md](docs/FEATURE_ROUND3.md): credit and loyalty, Abasare deposit, claims, USSD
+- [docs/USSD.md](docs/USSD.md): what the telecom/aggregator must configure for USSD booking

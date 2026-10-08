@@ -25,6 +25,7 @@ export async function staffInviteRoutes(app: FastifyInstance) {
   app.post('/admin/staff/invites', { preHandler: requirePerm('users.manage') }, async (req) => {
     const b = parse(z.object({ email: z.string().email(), name: z.string().min(2).max(80), role: z.enum(STAFF_ROLES as [string, ...string[]]) }), req.body);
     if (b.role === 'super_admin' && !req.auth!.roles.includes('super_admin')) throw forbidden();
+    if (b.role === 'partner_manager') throw badRequest('partner_required', 'Invite a partner manager from the partner page');
     const email = b.email.trim().toLowerCase();
     if (await q1('select 1 from users where lower(email)=$1', [email])) throw conflict('email_in_use', 'Email already registered');
     await q("update staff_invites set revoked_at=now() where lower(email)=$1 and used_at is null and revoked_at is null", [email]);
@@ -76,6 +77,7 @@ export async function staffInviteRoutes(app: FastifyInstance) {
       const u = await db.query('insert into users(email,password_hash,display_name,mfa_secret_enc,mfa_enabled) values ($1,$2,$3,$4,true) returning id', [inv.email, hash, inv.display_name, inv.pending_mfa_enc])
         .catch((e: any) => { throw e.code === '23505' ? conflict('email_in_use', 'Email already registered') : e; });
       await db.query('insert into user_roles(user_id, role) values ($1,$2)', [u.rows[0].id, inv.role]);
+      if (inv.partner_id) await db.query('insert into partner_users(user_id, partner_id) values ($1,$2)', [u.rows[0].id, inv.partner_id]);   // partner manager: bound to exactly this partner
       return u.rows[0].id as string;
     });
     await audit({ id: uid, role: inv.role, ip: req.ip }, 'staff.activated', 'user', uid, undefined, { email: inv.email, role: inv.role });
