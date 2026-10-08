@@ -1,5 +1,5 @@
 // English: the source dictionary. Every other language must define exactly these keys.
-export const en = {
+export const baseEn = {
   'app.tagline': 'Safe, simple rides across Rwanda',
   'common.continue': 'Continue', 'common.back': 'Back', 'common.cancel': 'Cancel', 'common.confirm': 'Confirm', 'common.save': 'Save', 'common.close': 'Close',
   'common.retry': 'Try again', 'common.loading': 'Loading…', 'common.error': 'Something went wrong', 'common.rwf': 'RWF', 'common.km': 'km', 'common.min': 'min',
@@ -275,4 +275,10 @@ export const en = {
   'prof.export.done': 'We received your request and will send you a copy of your data.',
   'prof.signout.confirm': 'Sign out of this phone?',
 } as const;
+import { r1en } from './r1.en';
+import { r2en } from './r2.en';
+import { r3en } from './r3.en';
+/** Full English dictionary = base + one module per feature round (so parallel work never edits the same file). */
+export const en = { ...baseEn, ...r1en, ...r2en, ...r3en } as const;
 export type K = keyof typeof en;
+export type BaseK = keyof typeof baseEn;

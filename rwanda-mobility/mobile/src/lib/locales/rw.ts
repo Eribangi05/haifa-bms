@@ -1,6 +1,9 @@
-import type { K } from './en';
+import type { K, BaseK } from './en';
+import { r1rw } from './r1.rw';
+import { r2rw } from './r2.rw';
+import { r3rw } from './r3.rw';
 // Kinyarwanda. Typed against English keys so a missing string is a compile error.
-export const rw: Record<K, string> = {
+const base: Record<BaseK, string> = {
   'app.tagline': 'Ingendo zizewe kandi zoroshye mu Rwanda',
   'common.continue': 'Komeza', 'common.back': 'Subira inyuma', 'common.cancel': 'Hagarika', 'common.confirm': 'Emeza', 'common.save': 'Bika', 'common.close': 'Funga',
   'common.retry': 'Ongera ugerageze', 'common.loading': 'Tegereza…', 'common.error': 'Hari ikitagenze neza', 'common.rwf': 'RWF', 'common.km': 'km', 'common.min': 'iminota',
@@ -276,3 +279,4 @@ export const rw: Record<K, string> = {
   'prof.export.done': 'Twakiriye ubusabe bwawe, tuzakoherereza kopi y\'amakuru yawe.',
   'prof.signout.confirm': 'Wifuza gusohoka kuri iyi telefone?',
 };
+export const rw: Record<K, string> = { ...base, ...r1rw, ...r2rw, ...r3rw };
