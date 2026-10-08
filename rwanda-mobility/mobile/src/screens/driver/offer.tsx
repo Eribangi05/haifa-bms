@@ -22,7 +22,7 @@ export function OfferCard({ o, done }: { o: Offer; done: () => void }) {
   const reject = (reason: string) => run(async () => { await client.post(`/bookings/${o.booking_id}/reject`, { reason }); done(); });
   return (
     <Card style={{ borderColor: left > 0 ? C.primary : C.line, borderWidth: 2, opacity: left > 0 ? 1 : 0.6 }}>
-      <View style={S.between}><Text style={S.muted}>{left > 0 ? `${t('drv.expires')} ${left}${t('unit.s')}` : t('drv.offer.expired')}</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={label(lang, 'pm', o.payment_method)} tone="warn" /></View></View>
+      <View style={S.between}><Text style={S.muted}>{left > 0 ? `${t('drv.expires')} ${left}${t('unit.s')}` : t('drv.offer.expired')}</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={o.payment_method === 'wallet' ? t('cr.prepaid') : label(lang, 'pm', o.payment_method)} tone="warn" /></View></View>
       {o.hire_mode ? <Text style={[S.body, { fontWeight: '700', marginTop: 6 }]}>{o.hire_mode === 'hourly' ? `${t('ab.offer.hourly')} · ${o.hours_booked} ${t('ab.h')}` : t('ab.offer.home')} · {t(('ab.cls.' + o.cv_class) as 'ab.cls.car')}, {o.cv_transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')}</Text> : null}
       <Text style={[S.muted, { marginTop: 6 }]}>{t('drv.earn')}</Text><Money n={o.driver_net} style={{ fontSize: 34, fontWeight: '800', color: C.primary }} />
       <Text style={S.body}>{t('drv.pickupin')}: {(o.distance_m / 1000).toFixed(1)} km · {Math.max(1, Math.round(o.eta_s / 60))} {t('common.min')}</Text>

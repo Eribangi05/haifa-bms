@@ -4,9 +4,10 @@ import { chromium } from 'playwright-core';
 // Usage: node e2e/scan-e2e.mjs <screenshot-dir> [rw|fr|en]     (env: DATABASE_URL, CHROMIUM_PATH, API_ORIGIN, WEB_ORIGIN)
 // Inserts a request code and an approved online driver straight into the database. Web equivalent of the deep link is  /?code=CODE[&svc=ride|abasare].
 import pg from 'pg';
-import { en } from '../src/lib/locales/en.ts';
-import { rw } from '../src/lib/locales/rw.ts';
-import { fr } from '../src/lib/locales/fr.ts';
+import fs from 'node:fs';
+// The locale modules import each other without file extensions (fine for the bundler, not for node), so read the strings from the files.
+const loadDict = (lang) => { const m = {}; for (const f of [`${lang}.ts`, `r1.${lang}.ts`, `r2.${lang}.ts`, `r3.${lang}.ts`]) { const p = new URL('../src/lib/locales/' + f, import.meta.url); if (!fs.existsSync(p)) continue; for (const mm of fs.readFileSync(p, 'utf8').matchAll(/'([\w.]+)': '((?:[^'\\]|\\.)*)'/g)) m[mm[1]] = mm[2].replace(/\\'/g, "'"); } return m; };
+const en = loadDict('en'), rw = loadDict('rw'), fr = loadDict('fr');
 const OUT = process.argv[2] ?? '/tmp', LANG = process.argv[3] ?? 'rw'; const T = { en, rw, fr }[LANG]; const t = (k) => T[k];
 const API = (process.env.API_ORIGIN ?? 'http://localhost:8080') + '/api/v1', WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8081';
 const call = async (m, p, { t: tk, body, h } = {}) => { const r = await fetch(API + p, { method: m, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(tk ? { authorization: 'Bearer ' + tk } : {}), ...(h || {}) }, body: body ? JSON.stringify(body) : undefined }); return { s: r.status, j: await r.json().catch(() => null) }; };

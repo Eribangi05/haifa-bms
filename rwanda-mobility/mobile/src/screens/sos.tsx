@@ -28,7 +28,7 @@ export function SosButton({ bookingId }: { bookingId?: string }) {
   const call = (n: string) => Linking.openURL(`tel:${n}`).catch(() => say(t('sos.callfail', { n })));
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={t('sos.button')} style={{ backgroundColor: C.danger, borderRadius: R.pill, paddingHorizontal: SP.lg, minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: '#fff', fontWeight: '800' }}>{t('sos.button')}</Text></Pressable>
+      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={t('sos.button')} style={{ backgroundColor: C.danger, borderRadius: R.pill, paddingHorizontal: SP.lg, minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: C.onDanger, fontWeight: '800' }}>{t('sos.button')}</Text></Pressable>
       <AppModal visible={open} onClose={close}>
         <Screen title={t('sos.title')} onBack={close} footer={<Btn kind="ghost" title={t('common.close')} onPress={close} />}>
           <Text style={[S.body, { marginVertical: SP.md }]}>{t('sos.body')}</Text>

@@ -15,6 +15,7 @@ import { SosButton } from '../sos';
 import { ActiveTrip } from './activeTrip';
 import { Earnings } from './earnings';
 import { OfferCard } from './offer';
+import { QuestsCard } from './r2Quests';
 
 const GPS_STALE_MS = 45_000;
 
@@ -63,7 +64,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
     <Screen title={t('drv.mode')} onBack={leave} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />}
       onRefresh={async () => { reload(); active.reload(); offers.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
-      <View style={S.row}><Chip text={t('drv.mode')} on={tab === 'work'} onPress={() => setTab('work')} /><Chip text={t('drv.earnings')} on={tab === 'earn'} onPress={() => setTab('earn')} /></View>
+      <View style={S.row}><Chip text={t('drv.mode')} on={tab === 'work'} onPress={() => setTab('work')} /><Chip text={t('drv.earnings')} on={tab === 'earn'} onPress={() => setTab('earn')} /><LinkBtn title={t('cl.title.about')} onPress={() => nav.push('claims')} /></View>
       {tab === 'earn' ? <Earnings /> : <>
         <Card>
           <View style={S.between}><View style={{ flex: 1, paddingRight: SP.sm }}><Text style={S.h2}>{isOnline ? t('drv.online') : t('drv.offline')}</Text><Text style={S.muted}>★ {Number(status.profile.rating_avg).toFixed(1)} · {status.profile.completed_count} {t('drv.trips')}</Text></View>
@@ -73,6 +74,9 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
             {absOk ? <Chip text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => flip('abasare')} /> : null}</View></View> : null}
           {!rideOk && !absOk ? <Banner kind="bad" text={blockedText()} /> : null}
         </Card>
+        {rideOk || absOk ? <Btn testID="r1-feedback-open" kind="ghost" title={t('r1.fb.open')} onPress={() => nav.push('r1feedback')} /> : null}
+        {rideOk || absOk ? <QuestsCard onOpen={() => nav.push('quests')} /> : null}
+        {isOnline && rideOk ? <Btn testID="r2-heat-open" kind="ghost" title={t('r2.heat.entry')} onPress={() => nav.push('heatmap')} /> : null}
         {loc.perm === 'blocked' || loc.perm === 'denied' ? <PermissionCard title={t('perm.loc.title')} body={t('perm.loc.driver')} actionLabel={loc.perm === 'blocked' ? t('perm.settings') : t('loc.allow')} onAction={loc.perm === 'blocked' ? loc.openSettings : () => void loc.request()} /> : null}
         {loc.perm === 'off' ? <PermissionCard title={t('perm.gps.title')} body={t('perm.gps.body')} actionLabel={t('perm.settings')} onAction={loc.openSettings} /> : null}
         {tr.bgDenied ? <Banner text={t('drv.bg.denied')} action={<Btn kind="ghost" title={t('perm.settings')} onPress={loc.openSettings} />} /> : null}

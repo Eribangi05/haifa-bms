@@ -13,18 +13,30 @@ import { DriverHome } from './src/screens/driver';
 import { DriverTracker } from './src/lib/driverTracking';
 import { InsetsGate } from './src/ui/insets';
 import { Cars } from './src/screens/cars';
+import { CreditScreen } from './src/screens/r3/credit';
+import { ClaimsList, ClaimNew, ClaimDetail } from './src/screens/r3/claims';
+import { R1Settings } from './src/screens/r1Settings';
+import { R1Rate } from './src/screens/r1Rate';
+import { R1MyDrivers } from './src/screens/r1Drivers';
+import { R1Feedback } from './src/screens/r1Feedback';
+import { AppLock } from './src/ui/AppLock';
+import { Schedules } from './src/screens/r2Schedules';
+import { Quests } from './src/screens/driver/r2Quests';
+import { Heatmap } from './src/screens/driver/r2Heatmap';
 import { Spinner, Toast } from './src/ui/components';
 import { ErrorBoundary } from './src/ui/ErrorBoundary';
 import { installErrorReporting } from './src/lib/report';
 import { initNotifications, listenForTaps, registerPush, routeFor } from './src/lib/push';
 import './src/lib/bgLocation';   // registers the driver location task at startup (native Android only; inert elsewhere)
 import { C } from './src/ui/theme';
+import { appearance, useAppearance } from './src/lib/appearance';
 import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import { parseCode, savePending, takePending, type ParsedCode } from './src/lib/codes';
 import { kv } from './src/lib/storage';
 
 initNotifications();
+void appearance.load();
 
 /** Wires error reporting, push registration and notification taps to the app context. Renders nothing. */
 function Bridges() {
@@ -64,9 +76,10 @@ let handledInitial: string | null = null;
 
 function Router() {
   const { ready, nav, toast } = useApp();
+  const ap = useAppearance();
   const route = nav.stack[nav.stack.length - 1];
   let screen: React.ReactNode;
-  if (!ready || route.name === 'boot') screen = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
+  if (!ready || !ap.loaded || route.name === 'boot') screen = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
   else switch (route.name) {
     case 'welcome': screen = <Welcome />; break;
     case 'phone': screen = <Phone />; break;
@@ -79,11 +92,22 @@ function Router() {
     case 'profile': screen = <Profile />; break;
     case 'support': screen = <Support params={route.params} />; break;
     case 'cars': screen = <Cars />; break;
+    case 'credit': screen = <CreditScreen />; break;
+    case 'claims': screen = <ClaimsList params={route.params} />; break;
+    case 'claimNew': screen = <ClaimNew params={route.params} />; break;
+    case 'claimDetail': screen = <ClaimDetail key={route.params?.id} params={route.params} />; break;
+    case 'r1settings': screen = <R1Settings />; break;
+    case 'r1rate': screen = <R1Rate key={route.params?.id} params={route.params} />; break;
+    case 'r1drivers': screen = <R1MyDrivers />; break;
+    case 'r1feedback': screen = <R1Feedback />; break;
+    case 'schedules': screen = <Schedules />; break;
+    case 'quests': screen = <Quests />; break;
+    case 'heatmap': screen = <Heatmap />; break;
     case 'driverHome': screen = <DriverHome />; break;
     default: screen = <Home />;
   }
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View key={ap.version} style={{ flex: 1, backgroundColor: C.bg }}>
       {screen}
       <Toast text={toast} />
     </View>
@@ -95,12 +119,14 @@ function Guarded() {
   return <ErrorBoundary onReset={() => nav.reset(me ? 'home' : 'welcome')}><Router /></ErrorBoundary>;
 }
 
+function ThemedStatusBar() { const ap = useAppearance(); return <StatusBar style={ap.resolved === 'dark' ? 'light' : 'dark'} />; }
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <InsetsGate>
-        <StatusBar style="dark" />
-        <AppProvider><Bridges /><DriverTracker /><Guarded /></AppProvider>
+        <ThemedStatusBar />
+        <AppProvider><Bridges /><DriverTracker /><Guarded /><AppLock /></AppProvider>
       </InsetsGate>
     </SafeAreaProvider>
   );

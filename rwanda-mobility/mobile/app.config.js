@@ -12,7 +12,7 @@ module.exports = () => ({
     version: '0.5.2',
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'light',   // light only: expo-system-ui applies it to the Android system bars so their icons stay dark on our light screens
+    userInterfaceStyle: 'automatic',   // follows the system; the in-app Settings can force light/dark (system bars follow the resolved theme)
     backgroundColor: '#F3F6FB',
     splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#FFFFFF' },
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
@@ -50,6 +50,7 @@ module.exports = () => ({
     },
     plugins: [
       'expo-secure-store',
+      ['expo-local-authentication', { faceIDPermission: 'Abasare uses Face ID to unlock the app.' }],
       ['expo-location', { locationWhenInUsePermission: 'Abasare uses your location to set your pickup and match you with nearby drivers.', isAndroidForegroundServiceEnabled: true, isAndroidBackgroundLocationEnabled: false }],
       ['expo-image-picker', { cameraPermission: 'Used to photograph your driver documents.', photosPermission: 'Used to attach your driver documents.' }],
       ['expo-camera', { cameraPermission: 'Abasare uses the camera only to scan QR codes for your pickup point.', recordAudioAndroid: false }],

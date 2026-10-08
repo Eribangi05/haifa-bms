@@ -17,6 +17,8 @@ export type ClientOpts = {
   baseUrl: string; tokens: TokenStore; deviceId: string | (() => string); lang: () => string;
   fetchImpl?: typeof fetch; sleep?: (ms: number) => Promise<void>; random?: () => number;
   timeoutMs?: number; maxRetries?: number; onAuthLost?: () => void;
+  /** Low-data mode: when it returns true every request carries `x-lite: 1` and GETs use ETag / If-None-Match (a 304 re-uses the cached body). Read per request, so the switch applies immediately. */
+  lowData?: () => boolean;
 };
 export type ReqOpts = { body?: unknown; idempotencyKey?: string; retry?: boolean; auth?: boolean; timeoutMs?: number; form?: FormData; maxRetries?: number };
 
@@ -30,6 +32,8 @@ export function createClient(o: ClientOpts) {
   const maxRetries = o.maxRetries ?? 3;
   type Refreshed = 'ok' | 'lost' | 'offline';
   let refreshing: Promise<Refreshed> | null = null;
+  const etags = new Map<string, { etag: string; json: any }>();   // low-data only; bounded, dropped on sign-out
+  const ETAG_MAX = 60;
 
   /** 'ok' = new tokens stored; 'lost' = the server rejected the refresh token (signed out); 'offline' = could not reach the server (tokens kept). */
   async function refreshOnce(): Promise<Refreshed> {
@@ -57,9 +61,17 @@ export function createClient(o: ClientOpts) {
       if (ro.body !== undefined) headers['content-type'] = 'application/json';
       if (token) headers.authorization = 'Bearer ' + token;
       if (ro.idempotencyKey) headers['idempotency-key'] = ro.idempotencyKey;
+      const lite = !!o.lowData?.();
+      const ckey = lite && method === 'GET' ? (token ? token.slice(-12) : '-') + '|' + path : null;
+      if (lite) headers['x-lite'] = '1';
+      const cached = ckey ? etags.get(ckey) : undefined;
+      if (cached) headers['if-none-match'] = cached.etag;
       const r = await f(o.baseUrl + '/api/v1' + path, { method, headers, body: ro.form ?? (ro.body !== undefined ? JSON.stringify(ro.body) : undefined), signal: ctl.signal });
+      if (r.status === 304 && cached) return { status: 200, json: cached.json };
       let json: any = null;
       try { json = await r.json(); } catch { /* empty body */ }
+      const tag = ckey && r.status === 200 ? (r as any).headers?.get?.('etag') : null;
+      if (ckey) { if (tag) { if (etags.size >= ETAG_MAX) etags.delete(etags.keys().next().value as string); etags.set(ckey, { etag: tag, json }); } else if (r.status === 200) etags.delete(ckey); }
       return { status: r.status, json };
     } finally { clearTimeout(timer); }
   }
@@ -91,7 +103,7 @@ export function createClient(o: ClientOpts) {
     }
   }
   return {
-    request, refresh: doRefresh, get: <T = any>(p: string, ro: ReqOpts = {}) => request<T>('GET', p, ro),
+    request, refresh: doRefresh, clearCache: () => etags.clear(), get: <T = any>(p: string, ro: ReqOpts = {}) => request<T>('GET', p, ro),
     post: <T = any>(p: string, body?: unknown, ro: ReqOpts = {}) => request<T>('POST', p, { ...ro, body: body ?? (ro.form ? undefined : {}) }),
     patch: <T = any>(p: string, body?: unknown) => request<T>('PATCH', p, { body: body ?? {} }),
     del: <T = any>(p: string) => request<T>('DELETE', p),

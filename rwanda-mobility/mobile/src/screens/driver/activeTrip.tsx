@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { label } from '../../lib/i18n';
 import type { Booking } from '../../lib/types';
@@ -7,9 +7,10 @@ import { Banner, Btn, Card, Field, Money, Pill, Text } from '../../ui/components
 import { MapBox } from '../../ui/MapView';
 import { C, S } from '../../ui/theme';
 import { HandoverForm } from './handover';
+import { R1NavButtons } from '../r1Nav';
+import { GuestContact } from './r2GuestContact';
 
 type LL = { lat: number; lng: number };
-const openMaps = (lat: number, lng: number) => Linking.openURL(`geo:${lat},${lng}?q=${lat},${lng}`).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`)).catch(() => {});
 
 /** The driver's current job: every step is one large button; state always comes back from the server (`reload` in `finally`). */
 export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; pos: LL | null; reload: () => void; mapHeight: number }) {
@@ -34,6 +35,7 @@ export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; po
     <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
       <View style={S.between}><Text style={S.h2}>{trip.ref}</Text><Pill text={label(lang, 'bs', st)} tone="warn" /></View>
       <Text style={S.body}>{t('drv.passenger')}: {trip.passenger?.first_name}</Text>
+      {trip.guest?.first_name ? <GuestContact trip={trip} /> : null}
       {trip.estimated_driver_net != null ? <Text style={S.muted}>{t('drv.earn')}: {trip.estimated_driver_net} RWF</Text> : null}
       {ab ? <View style={{ backgroundColor: C.warnBg, borderRadius: 10, padding: 10, marginVertical: 6 }}>
         <Text style={S.muted}>{t('ab.job.car')} · {hourly ? `${t('ab.trip.hourly')} ${ab.hours} ${t('ab.h')}` : t('ab.trip.home')}</Text>
@@ -45,7 +47,7 @@ export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; po
       <MapBox center={pos ?? trip.pickup} markers={[{ ...trip.pickup, color: '#0077B0', label: 'P' }, { ...trip.destination, color: '#C0392B', label: 'D' }, ...(pos ? [{ ...pos, color: '#1A5FB4', label: '' }] : [])]} height={mapHeight} zoom={14} />
       <View style={{ height: 10 }} />
       {['DRIVER_ASSIGNED', 'DRIVER_ARRIVING'].includes(st) ? <View style={{ gap: 8 }}>
-        <Btn kind="ghost" title={t('drv.navigate')} onPress={() => void openMaps(trip.pickup.lat, trip.pickup.lng)} />
+        <R1NavButtons trip={trip as never} which="pickup" />
         {st === 'DRIVER_ASSIGNED' ? <Btn title={t('drv.enroute')} onPress={() => act('en-route')} loading={busy} big /> : null}
         <Btn title={t('drv.arrived')} onPress={() => act('arrived')} loading={busy} big />
         {cancelling ? <View style={{ gap: 6 }}><Text style={S.muted}>{t('drv.cancel.why')}</Text>
@@ -58,7 +60,7 @@ export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; po
         <Btn title={t('drv.start')} onPress={startTrip} loading={busy} disabled={pin.length !== 4} big />
         <Btn kind="ghost" title={t('drv.noshow')} onPress={() => act('no-show')} /></View> : null}
       {st === 'IN_PROGRESS' && ab && !dropH ? <HandoverForm trip={trip} phase="dropoff" reload={reload} /> : null}
-      {st === 'IN_PROGRESS' && (!ab || dropH) ? <View style={{ gap: 8 }}>{hourly ? null : <Btn kind="ghost" title={t('drv.navigate.dest')} onPress={() => void openMaps(trip.destination.lat, trip.destination.lng)} />}<Btn title={t('drv.complete')} onPress={() => act('complete')} loading={busy} big /></View> : null}
+      {st === 'IN_PROGRESS' && (!ab || dropH) ? <View style={{ gap: 8 }}>{hourly ? null : <R1NavButtons trip={trip as never} which="destination" />}<Btn title={t('drv.complete')} onPress={() => act('complete')} loading={busy} big /></View> : null}
       {['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(st) && ab ? <Btn kind="gold" title={t('ab.job.ridehome')} onPress={rideHome} loading={busy} /> : null}
       {['COMPLETED', 'PAYMENT_PENDING'].includes(st) ? <View style={{ gap: 8 }}>
         <Money n={trip.final_fare} style={{ fontSize: 30, fontWeight: '800', color: C.primary }} />

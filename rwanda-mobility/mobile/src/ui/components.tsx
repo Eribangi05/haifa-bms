@@ -1,14 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Text as RNText, TextInput, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text as RNText, TextInput, useWindowDimensions, View } from 'react-native';
 import type { StyleProp, TextInputProps, TextProps, TextStyle, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, FS, MAX_W, R, S, SHADOW, SP } from './theme';
 import { LANGS, type Lang } from '../lib/i18n';
 import { useApp } from '../lib/app';
 import type { Tone } from '../lib/trip';
+import { useAppearance } from '../lib/appearance';
+import { LARGE_TEXT_FACTOR, fontCap } from '../lib/palette';
 
 /** Text that respects the user's font-size setting but caps it so layouts and CTAs never clip (React 19 ignores Text.defaultProps, so this wrapper does it). */
-export function Text(p: TextProps) { return <RNText maxFontSizeMultiplier={1.4} {...p} />; }
+export function Text(p: TextProps) {
+  const { largeText } = useAppearance();
+  if (!largeText) return <RNText maxFontSizeMultiplier={fontCap(false)} {...p} />;
+  // Large-text mode: we scale the font ourselves and lower the OS cap so the total never exceeds 1.4x.
+  const st = StyleSheet.flatten(p.style) ?? {};
+  const scaled = { ...st, fontSize: Math.round((st.fontSize ?? 14) * LARGE_TEXT_FACTOR), ...(st.lineHeight ? { lineHeight: Math.round(st.lineHeight * LARGE_TEXT_FACTOR) } : {}) };
+  return <RNText maxFontSizeMultiplier={fontCap(true)} {...p} style={scaled} />;
+}
 
 /** True when the OS asks for reduced motion (animations become instant). */
 export function useReduceMotion() {
@@ -121,7 +130,7 @@ export function Stepper({ at }: { at: number }) {
         {steps.map((_, i) => (
           <React.Fragment key={i}>
             <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: i <= at ? C.primary : C.line }}>
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{i < at ? '✓' : i + 1}</Text>
+              <Text style={{ color: C.onPrimary, fontSize: 12, fontWeight: '800' }}>{i < at ? '✓' : i + 1}</Text>
             </View>
             {i < steps.length - 1 ? <View style={{ flex: 1, height: 3, backgroundColor: i < at ? C.primary : C.line }} /> : null}
           </React.Fragment>
@@ -150,7 +159,7 @@ export function Btn({ title, onPress, kind = 'primary', disabled, loading, style
   title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'gold'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; big?: boolean; testID?: string;
 }) {
   const bg = kind === 'primary' ? C.primary : kind === 'danger' ? C.danger : kind === 'gold' ? C.gold : 'transparent';
-  const fg = kind === 'ghost' ? C.primary : kind === 'gold' ? C.ink : '#fff';
+  const fg = kind === 'ghost' ? C.primary : kind === 'gold' ? C.onGold : kind === 'danger' ? C.onDanger : C.onPrimary;
   const sc = useRef(new Animated.Value(1)).current; const reduce = useReduceMotion();
   const to = (v: number) => { if (reduce) { sc.setValue(1); return; } Animated.spring(sc, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 0 }).start(); };
   return (
@@ -167,11 +176,12 @@ export function Btn({ title, onPress, kind = 'primary', disabled, loading, style
 
 type FieldProps = TextInputProps & { label?: string; inputRef?: React.Ref<TextInput>; error?: string };
 export function Field({ label, inputRef, error, ...p }: FieldProps) {
+  const { largeText } = useAppearance();
   return (
     <View style={{ marginBottom: SP.sm + 2 }}>
       {label ? <Text style={[S.muted, { marginBottom: 4 }]}>{label}</Text> : null}
-      <TextInput ref={inputRef} maxFontSizeMultiplier={1.4} placeholderTextColor="#6B7A8F" accessibilityLabel={label ?? p.accessibilityLabel} {...p}
-        style={[S.input, error ? { borderColor: C.danger } : null, p.multiline ? { minHeight: 90, textAlignVertical: 'top' } : null, p.style]} />
+      <TextInput ref={inputRef} maxFontSizeMultiplier={fontCap(largeText)} placeholderTextColor={C.placeholder} accessibilityLabel={label ?? p.accessibilityLabel} {...p}
+        style={[S.input, error ? { borderColor: C.danger } : null, largeText ? { fontSize: 16 * LARGE_TEXT_FACTOR } : null, p.multiline ? { minHeight: 90, textAlignVertical: 'top' } : null, p.style]} />
       {error ? <Text accessibilityLiveRegion="polite" style={{ color: C.danger, fontSize: FS.sm, marginTop: 4 }}>{error}</Text> : null}
     </View>
   );
@@ -193,7 +203,7 @@ export const LinkBtn = ({ title, onPress, label, color = C.primary, style }: { t
 );
 
 export const Chip = ({ text, onPress, on, glyph }: { text: string; onPress: () => void; on?: boolean; glyph?: string }) => (
-  <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: !!on }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : '#fff', marginRight: SP.sm, marginBottom: SP.sm, maxWidth: '100%' }}>
+  <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: !!on }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : C.card, marginRight: SP.sm, marginBottom: SP.sm, maxWidth: '100%' }}>
     {glyph ? <Text accessible={false} style={{ marginRight: 6 }}>{glyph}</Text> : null}
     <Text style={{ color: on ? C.primary : C.ink, fontWeight: on ? '700' : '500', flexShrink: 1 }}>{text}</Text>
   </Pressable>
@@ -281,10 +291,10 @@ export function Toast({ text }: { text: string | null }) {
 
 /** Remote image whose signed URL changes on every poll: keeps one URL for ~4 minutes so it does not reload (flicker) every few seconds. */
 export function RemoteImage({ url, style, label, size }: { url: string; style?: StyleProp<ViewStyle>; label?: string; size?: { width: number; height: number; radius?: number } }) {
-  const cur = useRef<{ key: string; url: string; at: number } | null>(null); const [failed, setFailed] = React.useState(false);
+  const cur = useRef<{ key: string; url: string; at: number } | null>(null); const [failed, setFailed] = React.useState(false); const { lowData } = useAppearance();
   const key = url.split('?')[0]; const now = Date.now();
   if (!cur.current || cur.current.key !== key || now - cur.current.at > 240000) cur.current = { key, url, at: now };
   const dim = { width: size?.width ?? 72, height: size?.height ?? 72, borderRadius: size?.radius ?? 36, backgroundColor: C.line };
-  if (failed) return <View style={[dim, { alignItems: 'center', justifyContent: 'center' }, style]}><Text accessible={false}>👤</Text></View>;
+  if (failed || lowData) return <View accessibilityLabel={label} style={[dim, { alignItems: 'center', justifyContent: 'center' }, style]}><Text accessible={false}>👤</Text></View>;
   return <Image source={{ uri: cur.current.url }} onError={() => setFailed(true)} accessibilityLabel={label} style={[dim, style as object]} />;
 }

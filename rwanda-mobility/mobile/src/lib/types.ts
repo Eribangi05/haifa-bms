@@ -5,10 +5,11 @@ export type SavedPlace = Place & { id: string; label: 'home' | 'work' | 'school'
 export type Svc = 'ride' | 'abasare';
 export type Venue = Pt & { note?: string; code?: string };
 
-export type FareLine = { label_en: string; label_rw?: string; label_fr?: string; amount: number };
-export type Fare = { total: number; discount?: number; lines: FareLine[] };
+export type FareLine = { code?: string; label_en: string; label_rw?: string; label_fr?: string; amount: number };
+export type Fare = { subtotal?: number; tax?: number; total: number; discount?: number; lines: FareLine[] };
 export type FareOption = {
   service_id: string; kind: 'ride' | 'abasare'; available: boolean; reason?: string; quote_id?: string; capacity?: number; fare?: Fare;
+  fixed_price?: boolean; fixed_route?: { id: string; name_en: string; name_rw?: string; name_fr?: string };
   name_en: string; name_rw?: string; name_fr?: string; pickup_eta_s?: number | null; route_source?: string; promo?: { discount?: number } | null;
 };
 export type Estimate = { options: FareOption[]; alternatives: unknown[] };
@@ -25,8 +26,9 @@ export type Booking = {
   estimated_fare: number | null; final_fare: number | null; payment_method: string; payer_type?: string; scheduled_for?: string | null;
   requested_at: string; completed_at?: string | null; cancel_fee?: number | null; distance_m?: number; duration_s?: number;
   started_at?: string | null; passenger?: { first_name: string }; estimated_driver_net?: number | null;
+  guest?: { name?: string; phone_masked?: string; language?: string; purged?: boolean; first_name?: string; can_contact?: boolean };
   driver?: DriverView; vehicle?: { make?: string; model?: string; color?: string; plate: string; type?: string };
-  driver_location?: { lat: number; lng: number; at?: string }; trip_pin?: string; payment?: PaymentView; abasare?: AbasareView;
+  driver_location?: { lat: number; lng: number; at?: string }; trip_pin?: string; wallet?: { mode: 'full' | 'partial'; reserved: number; applied: number } | null; deposit?: import('./money3').DepositView | null; awaiting_deposit?: boolean; channel?: string; payment?: PaymentView; abasare?: AbasareView;
 };
 export type Receipt = { receipt_no: string; issued_at: string; status: string; currency: string; total: number | null; route: { from?: string; to?: string; distance_m?: number; duration_s?: number }; fare?: Fare; payment: { method: string; status: string; reference?: string; paid_at?: string } | null; driver?: { name: string; plate?: string } | null };
 export type ChatMessage = { id: string; sender_id: string; body: string; created_at?: string };

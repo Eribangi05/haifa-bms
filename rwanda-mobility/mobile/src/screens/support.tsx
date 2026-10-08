@@ -6,6 +6,7 @@ import type { Faq, SupportCase } from '../lib/types';
 import { Banner, Btn, Card, Chip, Field, Pill, Screen, SectionTitle, Text, useFormFocus } from '../ui/components';
 import { C, S } from '../ui/theme';
 import { SosButton } from './sos';
+import { UssdCard } from './r3/ussd';
 
 const CATS = ['booking', 'payment', 'refund', 'driver_complaint', 'lost_item', 'safety', 'fare_dispute', 'other'] as const;
 
@@ -21,6 +22,7 @@ export function Support({ params }: { params?: { booking_id?: string } }) {
   return (
     <Screen title={t('support.title')} onBack={() => nav.pop()} right={<SosButton bookingId={params?.booking_id} />}
       footer={<Btn testID="cta" title={t('common.send')} disabled={!valid} loading={busy} onPress={send} />}>
+      <UssdCard />
       <SectionTitle text={t('support.faq')} />
       {faq.map((q) => (
         <Pressable key={q.id} accessibilityRole="button" accessibilityState={{ expanded: open === q.id }} onPress={() => setOpen(open === q.id ? null : q.id)}>

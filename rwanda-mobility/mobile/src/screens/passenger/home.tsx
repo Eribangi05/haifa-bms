@@ -11,6 +11,7 @@ import { MapBox } from '../../ui/MapView';
 import { C, S, SP } from '../../ui/theme';
 import { HowItWorks, PromoBanner, RecentTrips, SavedShortcuts, ServiceCards, StatusChip } from './homeParts';
 import { usePlaces } from './usePlaces';
+import { CreditChip } from '../r3/credit';
 
 let resumedOnce = false;   // auto-open the active trip only once per app launch (resume after the app was killed)
 
@@ -22,6 +23,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
   const [q, setQ] = useState(''); const [results, setResults] = useState<Place[]>([]); const [searching, setSearching] = useState(false);
   const [mapOk, setMapOk] = useState(true); const [consent, setConsent] = useState<boolean | null>(null); const [skipped, setSkipped] = useState(false); const [when, setWhen] = useState<string | null>(null);
   const [svc, setSvcState] = useState<Svc>('ride'); const [cars, setCars] = useState<CustomerCar[]>([]); const [carId, setCarId] = useState<string | null>(null);
+  const [forOther, setForOther] = useState(false);
   const [hire, setHire] = useState<'p2p' | 'hourly'>('p2p'); const [hours, setHours] = useState(2);
   const [trips, setTrips] = useState<Booking[]>([]); const [refCode, setRefCode] = useState<string | undefined>();
   const setSvc = (v: Svc) => { setSvcState(v); void kv.set('rm_svc', v); };
@@ -77,7 +79,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
   const go = () => {
     if (!ready || !pickup) return;
     if (svc === 'abasare') nav.push('options', { pickup, request_code: reqCode ?? undefined, dest: hire === 'p2p' ? dest : undefined, note, scheduled_for: when ?? undefined, abasare: { customer_vehicle_id: carId, hours: hire === 'hourly' ? hours : undefined } });
-    else nav.push('options', { pickup, request_code: reqCode ?? undefined, dest, note, scheduled_for: when ?? undefined });
+    else nav.push('options', { pickup, request_code: reqCode ?? undefined, dest, note, scheduled_for: when ?? undefined, guest: forOther || undefined });
   };
   const resetPickupSource = () => { fromCode.current = false; setReqCode(null); };
 
@@ -97,6 +99,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
       onRefresh={async () => { active.reload(); await Promise.all([client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}), new Promise((r) => setTimeout(r, 500))]); }}
       footer={<Btn testID="cta" big title={t('home.seeprices')} onPress={go} disabled={!ready} />}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
+      <CreditChip />
       {activeB ? (
         <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
           <View style={S.between}><View style={{ flex: 1, paddingRight: SP.sm }}><Text style={S.h2}>{t('home.active')}</Text><Text style={S.muted}>{activeB.ref}</Text><View style={{ marginTop: 4 }}><StatusChip status={activeB.status} /></View></View><Btn title={t('home.resume')} onPress={() => nav.push('track', { id: activeB.id })} /></View>
@@ -137,6 +140,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
         {needsDest && dest && !places.saved.some((p) => p.name === dest.name) ? <View style={[S.wrap, { marginTop: SP.sm }]}><Chip glyph="🏠" text={`${t('prof.places.saveHere')} ${t('prof.places.home')}`} onPress={() => saveDest('home')} /><Chip glyph="💼" text={`${t('prof.places.saveHere')} ${t('prof.places.work')}`} onPress={() => saveDest('work')} /></View> : null}
       </Card>
 
+      {svc === 'ride' ? <View style={S.wrap}><Chip glyph="👥" text={t('r2.guest.home')} on={forOther} onPress={() => setForOther(!forOther)} /></View> : null}
       <SectionTitle text={t('opt.when')} />
       <View style={S.wrap}>
         <Chip text={t('home.now')} on={!when} onPress={() => setWhen(null)} />
@@ -148,7 +152,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
         <RecentTrips trips={trips} onAgain={pickDest} />
         {places.popular.length ? <><SectionTitle text={t('home.popular')} /><View style={S.wrap}>{places.popular.map((p) => <Chip key={p.id ?? p.name} text={p.name} onPress={() => pickDest(p)} />)}</View></> : null}
       </> : null}
-      <View style={{ height: 8 }} /><Btn kind="ghost" title={t('home.history')} onPress={() => nav.push('history')} />
+      <View style={{ height: 8 }} /><Btn kind="ghost" title={t('home.history')} onPress={() => nav.push('history')} /><View style={{ height: 8 }} /><Btn testID="r2-sch-open" kind="ghost" title={t('r2.sch.title')} onPress={() => nav.push('schedules')} />
     </Screen>
   );
 }

@@ -9,6 +9,11 @@ import type { Booking, ChatMessage, HandoverRec, Receipt } from '../../lib/types
 import { AppModal } from '../../ui/AppModal';
 import { Banner, Btn, Card, EmptyState, Field, IconBadge, Money, Pill, RemoteImage, Screen, Text } from '../../ui/components';
 import { C, R, S, SP } from '../../ui/theme';
+import { R1Badges } from '../r1Badges';
+import { R1DriverPrefs } from '../r1Drivers';
+import { kv } from '../../lib/storage';
+import { ratedKey } from '../../lib/r1';
+import { PaidLines } from '../r3/receiptLines';
 
 export const Stars = ({ v, set }: { v: number; set: (n: number) => void }) => {
   const { t } = useApp();
@@ -33,6 +38,7 @@ export function DriverCard({ b }: { b: Booking }) {
           {b.abasare ? <View style={{ marginTop: 4 }}><Pill text={b.abasare.mode === 'hourly' ? `${t('ab.trip.hourly')} · ${b.abasare.hours} ${t('ab.h')}` : t('ab.trip.home')} tone="warn" /></View> : <Text style={S.body} numberOfLines={1}>{[b.vehicle?.color, b.vehicle?.make, b.vehicle?.model].filter(Boolean).join(' ')}</Text>}
         </View>
       </View>
+      <R1Badges badges={(d as { badges?: import('../../lib/r1').Badge[] }).badges} />
       {b.abasare ? <Text style={[S.muted, { marginTop: SP.sm }]}>{t('ab.trip.yourcar')}</Text> : null}
       {plate ? <View accessibilityLabel={`${t('trip.plate')} ${plate}`} accessible style={{ backgroundColor: C.warnBg, borderRadius: R.sm, paddingVertical: 8, paddingHorizontal: 14, alignSelf: 'flex-start', marginTop: SP.sm }}><Text style={{ fontSize: 24, fontWeight: '800', letterSpacing: 3 }}>{plate}</Text></View> : null}
       {b.abasare && d.abasare?.return_mode ? <Text style={[S.muted, { marginTop: 6 }]}>{t('ab.trip.returns')}</Text> : null}
@@ -84,6 +90,7 @@ export function PayCard({ b, reload }: { b: Booking; reload: () => void }) {
   return (
     <Card>
       <Text style={S.muted}>{t('trip.fare.final')}</Text><Money n={b.final_fare} style={[S.h1, { color: C.primary, fontSize: 34 }]} />
+      <PaidLines b={b} />
       {momo ? <>
         {ui === 'pending' ? <Banner text={t('trip.pay.waiting')} /> : null}
         {ui === 'slow' ? <Banner kind="bad" text={t('trip.pay.slow')} action={<Btn kind="ghost" title={t('trip.pay.check')} onPress={() => { pay.reload(); reload(); }} />} /> : null}
@@ -103,15 +110,16 @@ export function PayCard({ b, reload }: { b: Booking; reload: () => void }) {
 
 /** Payment confirmed (by the server): receipt with fare lines, then rating. Ratings go through the outbox so they survive being offline. */
 export function Done({ b }: { b: Booking }) {
-  const { t, lang, outbox, nav, client } = useApp(); const [score, setScore] = useState(0); const [comment, setComment] = useState(''); const [sent, setSent] = useState(false);
+  const { t, lang, nav, client } = useApp(); const [sent, setSent] = useState(false);
+  useEffect(() => { kv.get(ratedKey(b.id)).then((v) => setSent(v === '1')).catch(() => {}); }, [b.id]);
   const [receipt, setReceipt] = useState<Receipt | null>(null); const [showReceipt, setShowReceipt] = useState(false);
   useEffect(() => { client.get<Receipt>(`/bookings/${b.id}/receipt`).then(setReceipt).catch(() => {}); }, [client, b.id]);
-  const send = async () => { await outbox.enqueue({ id: 'rate-' + b.id, kind: 'rating', path: `/bookings/${b.id}/ratings`, body: { score, comment: comment.trim() || undefined }, key: 'rate-' + b.id + '-passenger', treatConflictAsDone: true }); void outbox.flush(); setSent(true); };
   return (
     <Card>
       <View style={[S.row, { gap: SP.sm }]}><IconBadge glyph="✓" bg={C.okBg} size={36} /><Pill text={t('trip.pay.done')} /></View>
       <Money n={b.final_fare} style={[S.h1, { marginVertical: 6, fontSize: 34 }]} />
-      {receipt ? <Text style={S.muted}>{t('trip.receipt')} {receipt.receipt_no} · {label(lang, 'pm', receipt.payment?.method)}</Text> : null}
+      <PaidLines b={b} />
+      {receipt ? <Text style={S.muted}>{t('trip.receipt')} {receipt.receipt_no} · {receipt.payment?.method === 'wallet' ? t('cr.method.wallet') : label(lang, 'pm', receipt.payment?.method)}</Text> : null}
       {receipt ? <Pressable onPress={() => setShowReceipt(!showReceipt)} accessibilityRole="button" accessibilityState={{ expanded: showReceipt }} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: C.primary, fontWeight: '700' }}>{showReceipt ? t('trip.receipt.hide') : t('trip.receipt.view')}</Text></Pressable> : null}
       {receipt && showReceipt ? (
         <View style={{ backgroundColor: C.bg, borderRadius: R.sm, padding: SP.md, marginBottom: SP.sm }}>
@@ -121,9 +129,11 @@ export function Done({ b }: { b: Booking }) {
           {receipt.payment?.paid_at ? <Text style={[S.muted, { marginTop: 4 }]}>{t('trip.receipt.paid')}: {fmtDateTime(receipt.payment.paid_at)}</Text> : null}
         </View>) : null}
       {sent ? <Text style={[S.h2, { textAlign: 'center', marginVertical: 12 }]}>{t('trip.rate.thanks')}</Text> : <>
-        <Text style={[S.h2, { textAlign: 'center', marginTop: 12 }]}>{t('trip.rate')}</Text><Stars v={score} set={setScore} />
-        <Field value={comment} onChangeText={setComment} placeholder={t('trip.rate.comment')} multiline maxLength={400} /><Btn title={t('trip.rate.send')} onPress={send} disabled={!score} /></>}
+        <Text style={[S.h2, { textAlign: 'center', marginTop: 12 }]}>{t('trip.rate')}</Text><Stars v={0} set={(n) => nav.push('r1rate', { id: b.id, score: n })} />
+        <Btn testID="rate-open" kind="ghost" title={t('r1.rate.stars.cta')} onPress={() => nav.push('r1rate', { id: b.id })} /></>}
+      <R1DriverPrefs b={b} />
       <View style={{ height: 8 }} /><Btn title={t('trip.rebook')} onPress={() => nav.reset('home')} /><View style={{ height: 8 }} />
+      <Btn testID="report-claim" kind="ghost" title={t('cl.report')} onPress={() => nav.push('claimNew', { booking_id: b.id, ref: b.ref })} /><View style={{ height: 8 }} />
       <Btn kind="ghost" title={t('trip.problem')} onPress={() => nav.push('support', { booking_id: b.id })} />
     </Card>
   );
@@ -142,8 +152,8 @@ export function ChatModal({ id, visible, onClose }: { id: string; visible: boole
         <ScrollView ref={scroll} contentContainerStyle={{ padding: SP.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled" onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
           {!list.length ? <EmptyState glyph="💬" title={t('chat.empty.title')} body={t('chat.empty')} /> : null}
           {list.map((m) => { const mine = m.sender_id === me?.id; return (
-            <View key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', backgroundColor: mine ? C.primary : '#fff', borderRadius: R.md, padding: SP.md - 2, marginBottom: 6, maxWidth: '82%', borderWidth: mine ? 0 : 1, borderColor: C.line }}>
-              <Text style={{ color: mine ? '#fff' : C.ink }}>{m.body}</Text>{m.created_at ? <Text style={{ color: mine ? '#CFE8F5' : C.muted, fontSize: 11, marginTop: 2, textAlign: 'right' }}>{fmtTime(m.created_at)}</Text> : null}
+            <View key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', backgroundColor: mine ? C.primary : C.card, borderRadius: R.md, padding: SP.md - 2, marginBottom: 6, maxWidth: '82%', borderWidth: mine ? 0 : 1, borderColor: C.line }}>
+              <Text style={{ color: mine ? C.onPrimary : C.ink }}>{m.body}</Text>{m.created_at ? <Text style={{ color: mine ? C.onPrimary : C.muted, fontSize: 11, marginTop: 2, textAlign: 'right' }}>{fmtTime(m.created_at)}</Text> : null}
             </View>); })}
         </ScrollView>
       </Screen>

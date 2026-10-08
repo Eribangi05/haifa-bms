@@ -5,6 +5,8 @@ import type { Client } from './net';
 import { kv } from './storage';
 import { translate, type Lang } from './i18n';
 import { showAlert } from '../ui/dialog';
+import { safetyRoute } from './r1';
+import { claimRoute } from './money3';
 
 const supported = Platform.OS === 'android' || Platform.OS === 'ios';
 const TOKEN_KEY = 'rm_push_token';
@@ -34,6 +36,7 @@ export async function registerPush(client: Client, lang: Lang, isDriver: boolean
     if (!Device.isDevice) { console.warn('[push] skipped: not a physical device'); return null; }
     if (Platform.OS === 'android') {
       await N.setNotificationChannelAsync('default', { name: translate(lang, 'push.channel.default'), importance: N.AndroidImportance.HIGH });
+      await N.setNotificationChannelAsync('trips', { name: translate(lang, 'push.channel.default'), importance: N.AndroidImportance.MAX, vibrationPattern: [0, 300, 200, 300] });   // the server tags trip/safety pushes with channelId 'trips'
       if (isDriver) await N.setNotificationChannelAsync('offers', { name: translate(lang, 'push.channel.offers'), importance: N.AndroidImportance.HIGH, vibrationPattern: [0, 250, 250, 250], sound: 'default' });
     }
     let perm = await N.getPermissionsAsync();
@@ -62,6 +65,8 @@ export async function unregisterPush(client: Client): Promise<void> {
 /** Where a notification tap should go. Data: { booking_id?, audience?: 'driver'|'passenger', type? }. */
 export function routeFor(data: any, isDriver: boolean): PushTarget | null {
   if (!data || typeof data !== 'object') return null;
+  const safety = safetyRoute(data); if (safety && !isDriver) return safety;   // "Are you OK?": straight to the live trip, which shows the prompt
+  const claim = claimRoute(data); if (claim) return claim;   // round 3: claim_* notifications open the claim
   const id = typeof data.booking_id === 'string' ? data.booking_id : null;
   const driverMsg = data.audience === 'driver' || data.type === 'offer' || data.type === 'driver_offer';
   if (driverMsg && isDriver) return { name: 'driverHome' };

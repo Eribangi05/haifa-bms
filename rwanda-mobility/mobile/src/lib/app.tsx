@@ -8,6 +8,7 @@ import { stopBgLocation, setBgClient } from './bgLocation';
 import { unregisterPush } from './push';
 import { Lang, TKey, isLang, translate } from './i18n';
 import { errorText } from './errors';
+import { appearance, useAppearance } from './appearance';
 
 export type Route = { name: string; params?: any };
 export type Me = { id: string; phone: string; display_name?: string | null; email?: string | null; preferred_language: string; roles: string[]; referral_code?: string; notif_prefs?: Record<string, boolean> };
@@ -49,7 +50,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backs = useRef<(() => boolean)[]>([]); const lastBack = useRef(0);
 
-  const client = useMemo(() => { const c = createClient({ baseUrl: API_URL, tokens: tokenStore, deviceId: () => deviceRef.current, lang: () => langRef.current, onAuthLost: () => authLost.current() }); setBgClient(c); return c; }, []);
+  const client = useMemo(() => { const c = createClient({ baseUrl: API_URL, tokens: tokenStore, deviceId: () => deviceRef.current, lang: () => langRef.current, onAuthLost: () => authLost.current(), lowData: () => appearance.isLowData() }); setBgClient(c); return c; }, []);
   const outbox = useMemo(() => createOutbox(kv, client), [client]);
   const t = useCallback((k: TKey, v?: Record<string, string | number>) => translate(lang, k, v), [lang]);
   const say = useCallback((m: string) => { if (toastTimer.current) clearTimeout(toastTimer.current); setToast(m); toastTimer.current = setTimeout(() => setToast(null), 3500); }, []);
@@ -98,7 +99,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await stopBgLocation(); await unregisterPush(client);
     try { await client.post('/auth/logout', undefined, { timeoutMs: 5000 }); } catch { /* ignore */ }
-    await tokenStore.set(null); await kv.del('rm_me'); await outbox.clear();   // never let a queued request of this user run as the next user
+    client.clearCache(); await tokenStore.set(null); await kv.del('rm_me'); await outbox.clear();   // never let a queued request of this user run as the next user
     setMe(null); setModeState('passenger'); setStack([{ name: 'welcome' }]);
   }, [client, outbox]);
   // Refresh token rejected (revoked / expired session): drop to the welcome screen and say why.
@@ -150,6 +151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 export function usePoll<T>(fn: () => Promise<T>, ms: number, deps: unknown[] = [], enabled = true) {
   const [data, setData] = useState<T | null>(null); const [error, setError] = useState<ApiError | null>(null); const [loaded, setLoaded] = useState(false);
   const fnRef = useRef(fn); fnRef.current = fn;
+  if (useAppearance().lowData) ms = ms * 2.5;   // low-data mode: poll less often
   const [tick, setTick] = useState(0);
   const [fg, setFg] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
   useEffect(() => { const s = AppState.addEventListener('change', (st) => setFg(st === 'active')); return () => s.remove(); }, []);

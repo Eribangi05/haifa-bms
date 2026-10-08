@@ -7,6 +7,7 @@ import { statusGlyph, statusTone } from '../lib/trip';
 import type { Booking } from '../lib/types';
 import { Banner, Btn, Card, EmptyState, IconBadge, Money, Pill, Screen, SkeletonCard, Text } from '../ui/components';
 import { C, S, SP } from '../ui/theme';
+import { HistoryExtras } from './r3/receiptLines';
 
 /** Trips grouped by day (Today / Yesterday / date), each with a status icon and chip. Pull down to refresh. */
 export function History() {
@@ -31,8 +32,9 @@ export function History() {
                     <IconBadge glyph={statusGlyph(b.status)} bg={tone === 'bad' ? C.dangerBg : tone === 'ok' ? C.okBg : C.warnBg} size={40} />
                     <View style={{ flex: 1 }}>
                       <Text style={S.bold} numberOfLines={2}>{b.pickup.name ?? '…'} → {b.destination.name ?? '…'}</Text>
-                      <Text style={S.muted}>{fmtTime(b.requested_at)} · {b.ref}</Text>
+                      <Text style={S.muted}>{fmtTime(b.requested_at)} · {b.ref}{b.guest?.name && !b.guest.purged ? ` · ${t('r2.guest.hist', { name: b.guest.name })}` : ''}</Text>
                       <View style={{ marginTop: SP.xs + 2 }}><Pill tone={tone} text={label(lang, 'bs', b.status)} /></View>
+                      <HistoryExtras b={b} />
                     </View>
                     <Money n={b.final_fare ?? b.estimated_fare} style={{ fontWeight: '700', color: C.ink }} />
                   </View>
