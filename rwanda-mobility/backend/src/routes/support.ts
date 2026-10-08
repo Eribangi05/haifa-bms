@@ -17,27 +17,16 @@ const PRIORITY: Record<string, [string, number, boolean]> = {   // priority, SLA
   lost_item: ['normal', 24, false], booking: ['normal', 24, false], appeal: ['normal', 72, false], account: ['normal', 48, false], other: ['low', 72, false],
 };
 
-export const FAQ = [
-  { id: 'cancel', q_en: 'How do I cancel a ride?', a_en: 'Open your active trip and tap Cancel. Cancelling soon after a driver is assigned is free.',
-    q_rw: 'Nahagarika nte urugendo?', a_rw: 'Fungura urugendo rwawe urimo hanyuma ukande "Guhagarika". Guhagarika mu gihe gito nyuma yo guhabwa umushoferi nta kiguzi bisaba.',
-    q_fr: 'Comment annuler une course ?', a_fr: 'Ouvrez votre course en cours et appuyez sur Annuler. L\'annulation peu de temps après l\'attribution d\'un chauffeur est gratuite.' },
-  { id: 'pin', q_en: 'What is the trip PIN?', a_en: 'A 4-digit code shown only to you. Give it to your driver to start the trip after checking their plate.',
-    q_rw: 'PIN y\'urugendo ni iki?', a_rw: 'Ni kode y\'imibare 4 igaragara kuri wowe wenyine. Yihe umushoferi kugira ngo urugendo rutangire, nyuma yo kugenzura plaque y\'imodoka ye.',
-    q_fr: 'Qu\'est-ce que le code PIN de la course ?', a_fr: 'C\'est un code à 4 chiffres visible uniquement par vous. Donnez-le à votre chauffeur pour démarrer la course, après avoir vérifié sa plaque.' },
-  { id: 'pay', q_en: 'How can I pay?', a_en: 'Pay cash to the driver or with MTN Mobile Money. Payment is confirmed by the provider, not by a screenshot.',
-    q_rw: 'Nishyura nte?', a_rw: 'Ushobora kwishyura mu ntoki umushoferi cyangwa ukoresheje MTN Mobile Money. Kwishyura byemezwa na MTN, ntibyemezwa n\'ifoto y\'ubutumwa.',
-    q_fr: 'Comment puis-je payer ?', a_fr: 'Payez en espèces au chauffeur ou avec MTN Mobile Money. Le paiement est confirmé par l\'opérateur, et non par une capture d\'écran.' },
-  { id: 'lost', q_en: 'I left something in the vehicle', a_en: 'Open the trip in History and tap Report a problem > Lost item.',
-    q_rw: 'Nibagiwe ikintu mu modoka', a_rw: 'Fungura urugendo mu mateka y\'ingendo, ukande "Gutanga ikibazo" hanyuma uhitemo "Ikintu cyatakaye".',
-    q_fr: 'J\'ai oublié un objet dans le véhicule', a_fr: 'Ouvrez la course dans l\'Historique, puis appuyez sur Signaler un problème > Objet perdu.' },
-  { id: 'sos', q_en: 'What if I feel unsafe?', a_en: 'Use the SOS button. We record your trip and location and alert our team. Also call 112 (police) or 912 (ambulance).',
-    q_rw: 'Nakora iki niba numva ntatekanye?', a_rw: 'Kanda buto ya SOS. Duhita twandika urugendo n\'aho uri, tukamenyesha itsinda ryacu. Hamagara kandi 112 (Polisi) cyangwa 912 (ambulance).',
-    q_fr: 'Que faire si je ne me sens pas en sécurité ?', a_fr: 'Utilisez le bouton SOS. Nous enregistrons votre course et votre position et alertons notre équipe. Appelez aussi le 112 (police) ou le 912 (ambulance).' },
-];
+/** Priority / deadline / sensitivity per category: edited in the console (table support_categories); these constants are only the fallback if the table is unreadable. */
+async function categoryRule(category: string): Promise<[string, number, boolean]> {
+  const r = await q1<any>('select priority, sla_hours, sensitive from support_categories where category=$1', [category]).catch(() => undefined);
+  return r ? [r.priority, r.sla_hours, r.sensitive] : PRIORITY[category];
+}
 
 export async function supportRoutes(app: FastifyInstance) {
   const pre = { preHandler: anyAuth };
-  app.get('/support/faq', async () => ({ faq: FAQ }));
+  // Help centre entries are edited in the console (table faq_entries); only published ones reach the app.
+  app.get('/support/faq', async () => ({ faq: await q('select id, q_en, a_en, q_rw, a_rw, q_fr, a_fr from faq_entries where published order by sort, id') }));
 
   app.post('/support/cases', { ...pre, config: routeLimit('CASE_RATE_MAX', 10) }, async (req) => {
     const b = parse(z.object({ category: z.enum(Object.keys(PRIORITY) as [string, ...string[]]), subject: z.string().min(3).max(140), body: z.string().min(3).max(2000), booking_id: z.string().uuid().optional() }), req.body);
@@ -45,7 +34,7 @@ export async function supportRoutes(app: FastifyInstance) {
       const own = await q1('select 1 from bookings where id=$1 and (passenger_id=$2 or driver_id=$2)', [b.booking_id, req.auth!.id]);
       if (!own) throw notFound('booking');
     }
-    const [prio, sla, sens] = PRIORITY[b.category];
+    const [prio, sla, sens] = await categoryRule(b.category);
     return tx(async (c) => {
       const cs = (await q<any>(`insert into support_cases(ref, booking_id, reporter_id, category, priority, subject, sensitive, sla_due_at)
         values ($1,$2,$3,$4,$5,$6,$7, now() + make_interval(hours => $8)) returning id, ref, status, priority, sla_due_at`, [refOf('CS'), b.booking_id ?? null, req.auth!.id, b.category, prio, b.subject, sens, sla], c))[0];

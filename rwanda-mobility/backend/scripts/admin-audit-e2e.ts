@@ -18,9 +18,9 @@ const bad = (m: string) => { failed++; problems.push(m); console.log('FAIL', m);
 const TAB_NEEDS: Record<string, string[]> = {
   Overview: ['analytics.view'], 'Live map': ['bookings.view_all'], Bookings: ['bookings.view_all'], Drivers: ['drivers.view'], Abasare: ['drivers.view'], Passengers: ['users.view'],
   Support: ['support.handle'], Safety: ['safety.respond'], 'Trust and safety': ['safety.respond', 'drivers.view'], Pricing: ['pricing.manage', 'pricing.approve'], Services: ['pricing.manage'], Promotions: ['promotions.manage'],
-  'Request codes': ['codes.view'], Finance: ['finance.view'], 'Business & fleets': ['corporate.manage'], Privacy: ['privacy.handle'], Settings: ['settings.manage'], 'Audit log': ['audit.view'], Staff: ['users.manage'],
+  'Request codes': ['codes.view'], Finance: ['finance.view'], 'Business & fleets': ['corporate.manage'], Privacy: ['privacy.handle'], Settings: ['settings.manage'], 'Audit log': ['audit.view'], Staff: ['users.manage', 'roles.manage'], 'Places and zones': ['places.manage', 'zones.manage'], 'Content and rules': ['faq.manage', 'requirements.manage', 'support.configure', 'settings.manage'], 'Feature flags': ['settings.manage'], 'USSD channel': ['ussd.view'], 'Demand map': ['analytics.view'], Claims: ['claims.view'], 'Credit & loyalty': ['wallet.view'], 'Fixed-price routes': ['pricing.manage', 'pricing.approve'], 'Driver quests': ['growth.manage'], Campaigns: ['growth.manage'], 'Venue partners': ['partners.manage'], 'Your venue': ['partner.portal'],
 };
-const hasPerm = (role: string, needs: string[]) => { const p = ROLE_PERMISSIONS[role] ?? []; return p.includes('*') || needs.some((n) => p.includes(n)); };
+const hasPerm = (role: string, needs: string[], tabName = '') => { if (tabName === 'Your venue') return role === 'partner_manager'; const p = ROLE_PERMISSIONS[role] ?? []; return p.includes('*') || needs.some((n) => p.includes(n)); };
 
 async function login(page: Page, email: string, secret: string) {
   await page.goto(ORIGIN + '/admin/'); await page.getByPlaceholder('Email').fill(email); await page.getByPlaceholder('Password').fill(pw);
@@ -40,7 +40,7 @@ try {
       await login(page, email, u.totpSecret); await page.waitForTimeout(500);
       if (errs.length) { bad(`${role}@${vp.width}: script errors while loading the console: ${errs.join('; ')}`); errs.length = 0; }
       const tabs = await navNames(page);
-      const expected = Object.keys(TAB_NEEDS).filter((t) => hasPerm(role, TAB_NEEDS[t]));
+      const expected = Object.keys(TAB_NEEDS).filter((t) => hasPerm(role, TAB_NEEDS[t], t));
       const missing = expected.filter((t) => !tabs.includes(t)), extra = tabs.filter((t) => !expected.includes(t));
       if (missing.length) bad(`${role}@${vp.width}: tabs missing for permitted role: ${missing.join(', ')}`);
       if (extra.length) bad(`${role}@${vp.width}: tabs shown without permission: ${extra.join(', ')}`);

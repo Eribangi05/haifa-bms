@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { effectivePermissions, isStaff } from '../rbac.js';
 import { parse, lat, lng } from '../util/validate.js';
 import { normalizePhone } from '../util/phone.js';
 import { anyAuth, actorOf, routeLimit } from '../guards.js';
@@ -25,7 +26,7 @@ export async function meRoutes(app: FastifyInstance) {
 
   app.get('/users/me', pre, async (req) => {
     const u = await q1<any>('select id, phone, email, display_name, preferred_language, notif_prefs, referral_code, status, (photo_key is not null) as has_photo, created_at from users where id=$1', [req.auth!.id]);
-    return { ...u, roles: req.auth!.roles };
+    return { ...u, roles: req.auth!.roles, ...(isStaff(req.auth!.roles) ? { permissions: effectivePermissions(req.auth!.roles) } : {}) };
   });
 
   app.patch('/users/me', pre, async (req) => {

@@ -13,7 +13,7 @@ import { requestPayout } from '../services/finance.js';
 import { audit } from '../services/audit.js';
 import { pickLang } from '../services/errmsg.js';
 
-const KNOWN_DOCS = ['national_id', 'driving_licence', 'profile_photo', 'vehicle_registration', 'insurance', 'transport_permit', 'inspection', 'ownership_authorisation', 'police_clearance'];
+import { KNOWN_DOCS } from '../services/docTypes.js';
 
 export async function driverRoutes(app: FastifyInstance) {
   const drv = { preHandler: requireRole('driver') };

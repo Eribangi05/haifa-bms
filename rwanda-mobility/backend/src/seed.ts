@@ -1,5 +1,5 @@
 import { pool, q, q1 } from './db.js';
-import { ROLE_PERMISSIONS } from './rbac.js';
+import { ROLE_PERMISSIONS, STAFF_ROLES } from './rbac.js';
 import { migrate } from './migrate.js';
 import { config } from './config.js';
 import { hashPassword, encrypt, newTotpSecret, totpUri } from './util/crypto.js';
@@ -166,8 +166,12 @@ export async function seedCore() {
   for (const [c, n, t] of LEDGER) await q('insert into ledger_accounts values ($1,$2,$3) on conflict do nothing', [c, n, t]);
   for (const [k, e, d] of FLAGS) await q('insert into feature_flags(key,enabled,description) values ($1,$2,$3) on conflict do nothing', [k, e, d]);
   for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
-    await q('insert into roles(name) values ($1) on conflict do nothing', [role]);
-    for (const p of perms) await q('insert into role_permissions values ($1,$2) on conflict do nothing', [role, p]);
+    await q('insert into roles(name, builtin, is_staff) values ($1, true, $2) on conflict do nothing', [role, STAFF_ROLES.includes(role)]);
+    // Rows mirror the code defaults for roles nobody has customised (informational: the code defaults apply anyway). A customised role is never overwritten.
+    if (!(await q1('select 1 from roles where name=$1 and customized', [role]))) {
+      await q('delete from role_permissions where role=$1', [role]);
+      for (const p of perms) await q('insert into role_permissions values ($1,$2) on conflict do nothing', [role, p]);
+    }
   }
   await q(`insert into promotions(code,kind,value,max_discount,min_fare,per_user_limit,first_ride_only,budget)
            values ('WELCOME','percent',20,1500,1500,1,true,500000) on conflict do nothing`);

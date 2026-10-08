@@ -252,6 +252,10 @@
 | POST | `/admin/commissions/:id/approve` |
 | GET | `/admin/dashboard` |
 | GET | `/admin/deposits` |
+| GET | `/admin/document-requirements` |
+| POST | `/admin/document-requirements` |
+| DELETE | `/admin/document-requirements/:id` |
+| PATCH | `/admin/document-requirements/:id` |
 | POST | `/admin/documents/:id/review` |
 | GET | `/admin/drivers` |
 | GET | `/admin/drivers/:id` |
@@ -260,11 +264,17 @@
 | POST | `/admin/drivers/:id/decision` |
 | POST | `/admin/drivers/:id/start-review` |
 | POST | `/admin/drivers/:id/training` |
+| GET | `/admin/faq` |
+| POST | `/admin/faq` |
+| DELETE | `/admin/faq/:id` |
+| PATCH | `/admin/faq/:id` |
+| POST | `/admin/faq/order` |
 | GET | `/admin/fixed-routes` |
 | POST | `/admin/fixed-routes` |
 | PATCH | `/admin/fixed-routes/:id` |
 | POST | `/admin/fixed-routes/:id/approve` |
 | POST | `/admin/fixed-routes/:id/reject` |
+| GET | `/admin/flags` |
 | PUT | `/admin/flags/:key` |
 | POST | `/admin/fleets/:id/decision` |
 | GET | `/admin/heatmap` |
@@ -280,6 +290,11 @@
 | POST | `/admin/partners/:id/invite` |
 | POST | `/admin/partners/:id/invoice` |
 | GET | `/admin/partners/:id/statement` |
+| GET | `/admin/permissions` |
+| GET | `/admin/places` |
+| POST | `/admin/places` |
+| PATCH | `/admin/places/:id` |
+| POST | `/admin/places/import` |
 | GET | `/admin/pricing` |
 | POST | `/admin/pricing` |
 | POST | `/admin/pricing/:id/approve` |
@@ -295,6 +310,11 @@
 | PATCH | `/admin/quests/:id` |
 | GET | `/admin/quests/:id/awards` |
 | GET | `/admin/ride-schedules` |
+| GET | `/admin/roles` |
+| POST | `/admin/roles` |
+| DELETE | `/admin/roles/:name` |
+| PATCH | `/admin/roles/:name` |
+| POST | `/admin/roles/:name/reset` |
 | POST | `/admin/safety-blocks` |
 | GET | `/admin/safety/alerts` |
 | POST | `/admin/safety/alerts/:id/resolve` |
@@ -310,14 +330,27 @@
 | DELETE | `/admin/settings/:key` |
 | PUT | `/admin/settings/:key` |
 | GET | `/admin/staff` |
+| GET | `/admin/staff/:id` |
+| PATCH | `/admin/staff/:id` |
+| GET | `/admin/staff/:id/activity` |
+| POST | `/admin/staff/:id/anonymise` |
+| POST | `/admin/staff/:id/remove` |
+| POST | `/admin/staff/:id/reset` |
+| DELETE | `/admin/staff/:id/sessions/:sid` |
 | POST | `/admin/staff/:id/sessions/revoke` |
+| POST | `/admin/staff/:id/status` |
 | GET | `/admin/staff/invites` |
 | POST | `/admin/staff/invites` |
 | DELETE | `/admin/staff/invites/:id` |
+| POST | `/admin/staff/invites/:id/regenerate` |
+| GET | `/admin/support-categories` |
+| PATCH | `/admin/support-categories/:category` |
 | GET | `/admin/support/cases` |
 | GET | `/admin/support/cases/:id` |
 | POST | `/admin/support/cases/:id/update` |
 | GET | `/admin/system/health` |
+| GET | `/admin/templates` |
+| DELETE | `/admin/templates/:key/:lang` |
 | PUT | `/admin/templates/:key/:lang` |
 | GET | `/admin/trust/favourites` |
 | GET | `/admin/trust/tags` |
@@ -335,6 +368,7 @@
 | GET | `/admin/wallet/reconciliation` |
 | GET | `/admin/zones` |
 | PUT | `/admin/zones/:id` |
+| POST | `/admin/zones/:id/active` |
 
 ## Health
 

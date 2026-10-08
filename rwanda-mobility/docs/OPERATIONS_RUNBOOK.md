@@ -111,6 +111,19 @@ The role you pass is **added** (existing roles stay). Then Staff -> *Revoke sess
 
 **First super admin**: set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (12+ characters) before the first start; the secret is logged once (`FIRST SUPER ADMIN CREATED`). It never overwrites an existing admin. Remove the password afterwards.
 
+## 4a. Staff lifecycle (console: Staff tab)
+
+All of this is in the console under **Staff** (needs `users.manage`, which only a super admin holds by default). Every action asks for a reason where it is destructive and is written to the audit log.
+
+- **Add**: Staff > Invite staff member. Pick a role (built-in or custom). Send the one-time link (valid 48 h) to the person only. They choose their password and scan their own authenticator QR; you never see either. Lost link: Pending invitations > New link (the old link dies).
+- **Change role**: open the person > Change roles. A person may hold several roles. They are signed out and sign in with exactly the new access. Changes to a role's permissions (Roles and permissions tab) apply on the holder's next click.
+- **Edit name or email**: open the person > Edit. Changing the email signs them out everywhere. You cannot change your own roles, status or email, or remove yourself: ask another administrator.
+- **Disable / enable**: temporary. Disabling ends all sessions at once.
+- **Remove**: open the person > Remove from staff (reason required). Sessions, password and two-factor are deleted, the person disappears from the default list (Status filter > Removed shows them), audit history stays, and the stored email is renamed `...#removed-xxxx` so the same address can be invited again. **Anonymise personal data** (removed people only) replaces name and email permanently; audit rows are append-only and stay.
+- **Recover access**: open the person > **Send password reset** (they still have their authenticator), **Reset two-factor** (lost phone, they still know the password; open sessions end immediately) or **Full reset** (lost both). You get a single-use link; the person completes it on their own device and the new authenticator key is shown only to them. Never paste a link into a shared channel.
+- **Break-glass**: if no super admin can sign in, use `ADMIN_MFA_RESET_EMAIL` / `ADMIN_MFA_RESET_TOKEN` (section 4) on the server.
+- **Safeguards** (enforced by the API): the last active super admin cannot be removed, disabled or demoted (also under concurrent requests); only a super admin can create, change, disable, remove or reset a super admin or edit built-in roles; nobody can give a role (or permission) wider than their own access or manage someone with wider access.
+
 ## 5. Deploying and rolling back
 
 Every start applies pending SQL migrations (`schema_migrations`) and re-runs the idempotent catalogue seed, so a deploy is one step. Migrations so far are additive (new tables, columns and indexes): the previous version of the code keeps working on the new schema, which is what makes a code-only rollback safe. **Before any deploy that contains a new migration, take a backup.** A migration that drops or rewrites data cannot be undone by rolling back the code: restore from the backup instead.

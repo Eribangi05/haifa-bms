@@ -421,14 +421,15 @@ test('E-03 seed consistency: every enabled service has an active price, a zone l
   }
 });
 
-test('E-04 every permission a route demands exists in rbac.ts; only super_admin holds the three admin-only ones', async () => {
+test('E-04 every permission a route demands is in the permission catalogue; only super_admin holds the admin-only ones', async () => {
   const { readdirSync, readFileSync } = await import('node:fs');
   const { ROLE_PERMISSIONS } = await import('../src/rbac.ts');
-  const known = new Set(Object.values(ROLE_PERMISSIONS).flat());
+  const { PERMISSION_KEYS } = await import('../src/permissions.ts');
   const used = new Set<string>();
-  for (const f of readdirSync('src/routes')) for (const m of readFileSync(`src/routes/${f}`, 'utf8').matchAll(/(?:requirePerm|can\([^,]+,)\s*\(?\s*'([a-z_.]+)'/g)) used.add(m[1]);
-  const adminOnly = new Set(['audit.view', 'settings.manage', 'users.manage']);
-  for (const p of used) assert.ok(known.has(p) || adminOnly.has(p), `unknown permission ${p}`);
+  for (const f of readdirSync('src/routes')) for (const m of readFileSync(`src/routes/${f}`, 'utf8').matchAll(/(?:requirePerm|requireAnyPerm|can\([^,]+,)\s*\(?\s*'([a-z_.]+)'(?:\s*,\s*'([a-z_.]+)')?/g)) { used.add(m[1]); if (m[2]) used.add(m[2]); }
+  for (const p of used) assert.ok(PERMISSION_KEYS.has(p), `permission ${p} is demanded by a route but missing from src/permissions.ts`);
+  for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) for (const p of perms) assert.ok(p === '*' || PERMISSION_KEYS.has(p), `${role} holds ${p}, which is not in the catalogue`);
+  const adminOnly = new Set(['audit.view', 'settings.manage', 'users.manage', 'roles.manage', 'requirements.manage', 'support.configure']);
   for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) if (role !== 'super_admin') for (const p of adminOnly) assert.ok(!perms.includes(p), `${role} must not hold ${p}`);
 });
 

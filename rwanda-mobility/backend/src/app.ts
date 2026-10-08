@@ -32,6 +32,9 @@ import { growthRoutes } from './routes/growth.js';
 import { growthAdminRoutes } from './routes/growthAdmin.js';
 import { partnerRoutes } from './routes/partners.js';
 import { staffInviteRoutes } from './routes/staffInvites.js';
+import { adminStaffRoutes } from './routes/adminStaff.js';
+import { adminRoleRoutes } from './routes/adminRoles.js';
+import { adminConfigRoutes } from './routes/adminConfig.js';
 import { requestCodeRoutes, requestCodeLandingRoutes } from './routes/requestCodes.js';
 import { diagnosticsRoutes } from './routes/diagnostics.js';
 import { moneyRoutes } from './routes/money.js';
@@ -126,7 +129,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await api.register(authRoutes); await api.register(meRoutes); await api.register(catalogRoutes);
     await api.register(bookingRoutes); await api.register(driverRoutes); await api.register(paymentRoutes);
     await api.register(supportRoutes); await api.register(businessRoutes);
-    await api.register(abasareRoutes); await api.register(staffInviteRoutes); await api.register(diagnosticsRoutes); await api.register(requestCodeRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes);
+    await api.register(abasareRoutes); await api.register(staffInviteRoutes); await api.register(adminStaffRoutes); await api.register(adminRoleRoutes); await api.register(adminConfigRoutes); await api.register(diagnosticsRoutes); await api.register(requestCodeRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes);
     await api.register(moneyRoutes); await api.register(claimRoutes); await api.register(ussdAdminRoutes);   // round 3: credit/loyalty/deposit, claims, USSD admin views
     await api.register(safetyRoutes); await api.register(trustRoutes);   // round 1: safety checks / live share, tips / tags / favourites / badges
     await api.register(growthRoutes); await api.register(growthAdminRoutes); await api.register(partnerRoutes);   // round 2: guest rides, schedules, quests, heat map, campaigns, partners

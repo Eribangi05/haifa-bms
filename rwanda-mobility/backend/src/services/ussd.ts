@@ -43,7 +43,7 @@ const end = (message: string): UssdOut => ({ message, end: true });
 
 async function placesFor(userId: string, lang: ULang, exclude?: Item | null): Promise<Item[]> {
   const saved = await q<any>('select name, lat, lng from saved_places where user_id=$1 order by created_at limit 3', [userId]);
-  const pop = await q<any>('select id, name_en, name_rw, name_fr, lat, lng from places order by designated_pickup desc, name_en limit 12');
+  const pop = await q<any>('select id, name_en, name_rw, name_fr, lat, lng from places where active order by designated_pickup desc, name_en limit 12');
   const out: Item[] = saved.map((s) => ({ name: cut(s.name, 16), lat: s.lat, lng: s.lng }));
   for (const p of pop) {
     const nm = (lang === 'rw' ? p.name_rw : lang === 'fr' ? p.name_fr : null) || p.name_en;

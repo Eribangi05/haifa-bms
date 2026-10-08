@@ -168,7 +168,7 @@ test('reconciliation flags matches, missing, mismatched and duplicate lines; lat
   const a = await trip(p, d, 'mtn_momo'); const b = await trip(p, d, 'mtn_momo');
   const pa = await t.db.q1<any>("select reference, amount from payments where booking_id=$1", [a.id]);
   const pb = await t.db.q1<any>("select reference, amount from payments where booking_id=$1", [b.id]);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' }); // reconciliation days are Kigali days
   const rec = await t.api('POST', '/admin/finance/reconcile', { token: fo.token, body: { provider: 'mtn_momo', run_date: today, rows: [
     { reference: pa.reference, amount: pa.amount, status: 'SUCCESS' },
     { reference: pb.reference, amount: pb.amount - 100, status: 'SUCCESS' },

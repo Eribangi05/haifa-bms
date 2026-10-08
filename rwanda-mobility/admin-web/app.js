@@ -9,9 +9,10 @@ const TABS = [
   ['finance', 'Finance', ['finance.view'], 'Money'], ['wallet', 'Credit & loyalty', ['wallet.view'], 'Money'], ['claims', 'Claims', ['claims.view'], 'People and support'], ['ussd', 'USSD channel', ['ussd.view'], 'Operations'],
   ['pricing', 'Pricing', ['pricing.manage', 'pricing.approve'], 'Business'], ['services', 'Services', ['pricing.manage'], 'Business'], ['promos', 'Promotions', ['promotions.manage'], 'Business'],
   ['codes', 'Request codes', ['codes.view'], 'Business'], ['fixedroutes', 'Fixed-price routes', ['pricing.manage', 'pricing.approve'], 'Business'], ['quests', 'Driver quests', ['growth.manage'], 'Business'], ['campaigns', 'Campaigns', ['growth.manage'], 'Business'], ['demand', 'Demand map', ['analytics.view'], 'Operations'], ['partners', 'Venue partners', ['partners.manage'], 'Business'], ['partner', 'Your venue', ['partner.portal'], 'Partner'], ['business', 'Business & fleets', ['corporate.manage', 'fleet.manage'], 'Business'],
-  ['settings', 'Settings', ['settings.manage'], 'Administration'], ['audit', 'Audit log', ['audit.view'], 'Administration'], ['staff', 'Staff', ['users.manage'], 'Administration'],
+  ['settings', 'Settings', ['settings.manage'], 'Administration'], ['audit', 'Audit log', ['audit.view'], 'Administration'], ['staff', 'Staff', ['users.manage', 'roles.manage'], 'Administration'],
+  ['places', 'Places and zones', ['places.manage', 'zones.manage'], 'Administration'], ['content', 'Content and rules', ['faq.manage', 'requirements.manage', 'support.configure', 'settings.manage'], 'Administration'], ['flags', 'Feature flags', ['settings.manage'], 'Administration'],
 ];
-const visibleTabs = () => TABS.filter(([, , need]) => can(...need));
+const visibleTabs = () => TABS.filter(([k, , need]) => (k === 'partner' ? S.roles.includes('partner_manager') : can(...need)));   // the venue portal is for venue managers only, even a super admin has no venue
 
 // ---------------- theme (auto follows the OS; the toggle overrides and is remembered) ----------------
 const effectiveTheme = () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -40,6 +41,7 @@ async function render() {
   const root = $('#app');
   const m = /^#activate=(.+)$/.exec(location.hash); if (m && !S.access) { root.replaceChildren(); return activationView(root, m[1]); }
   if (!S.access) { root.replaceChildren(); return loginView(root); }
+  if (S.access && !S.perms.length && !S.roles.includes('super_admin')) await syncAccess(true);   // a session from before permissions came from the server
   const tabs = visibleTabs();
   if (!tabs.length) { root.replaceChildren(h('main', { class: 'loginpage' }, h('div', { class: 'card login' }, h('h1', {}, 'No access'), h('p', {}, 'Your account has no operations role. Ask a super admin to assign one.'), h('button', { class: 'b wide', onclick: logout }, 'Sign out')))); return; }
   const wanted = tabFromHash();
@@ -59,6 +61,7 @@ async function loadView() {
   const box = h('div', { class: 'page' });
   view.classList.add('loading'); view.replaceChildren(loading(), box);
   let after;
+  if (await syncAccess()) { $('#shell')?.remove(); return render(); }   // roles or permissions changed on the server: rebuild the menu
   try { await catalog(); if (!V[S.tab]) throw new Error('This page failed to load its code. Reload the page; if it persists, tell an engineer.'); after = await V[S.tab](box, S.state || {}); }
   catch (e) { if (my !== S.nav) return; view.classList.remove('loading'); view.replaceChildren(errorPanel(e, () => loadView())); return; }
   if (my !== S.nav) return;

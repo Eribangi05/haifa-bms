@@ -16,8 +16,9 @@ import { SETTING_META, SETTING_GROUPS, metaFor, validateSetting } from '../servi
 import { computeFare, activeRule, type Rule } from '../services/pricing.js';
 import { signFileToken } from '../util/crypto.js';
 import { notify } from '../services/notify.js';
+import { DEFAULT_TEMPLATES } from '../services/i18n.js';
 import { exportUserData, executeDeletion } from '../services/privacy.js';
-import { ROLE_PERMISSIONS, STAFF_ROLES, can, isStaff } from '../rbac.js';
+import { staffRoleNames, can, isStaff } from '../rbac.js';
 import { config } from '../config.js';
 
 const timeWindow = z.object({ label: z.string().trim().min(1).max(40), days: z.array(z.number().int().min(0).max(6)).max(7).default([]), start_hour: z.number().int().min(0).max(23), end_hour: z.number().int().min(1).max(24), percent: z.number().int().min(-50).max(100) })
@@ -152,9 +153,10 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ status: z.enum(['active', 'restricted', 'deactivated']), reason: z.string().min(5).max(300) }), req.body);
     const before = await q1<any>('select status from users where id=$1', [id]); if (!before) throw notFound('user');
+    if (before.status === 'removed') throw conflict('removed', 'This staff account was removed and cannot be changed here');
     // Support leads may restrict customers, never colleagues: locking a staff account (or your own) is a super-admin decision.
     if (id === req.auth!.id) throw forbidden('You cannot change your own account status');
-    const isStaffTarget = await q1('select 1 from user_roles where user_id=$1 and role = any($2)', [id, STAFF_ROLES]);
+    const isStaffTarget = await q1('select 1 from user_roles where user_id=$1 and role = any($2)', [id, staffRoleNames()]);
     if (isStaffTarget && !req.auth!.roles.includes('super_admin')) throw forbidden('Only a super admin can change a staff account');
     await q('update users set status=$2 where id=$1', [id, b.status]);
     if (b.status !== 'active') await q('update sessions set revoked_at=now() where user_id=$1 and revoked_at is null', [id]);
@@ -318,15 +320,6 @@ export async function adminRoutes(app: FastifyInstance) {
     await audit(actorOf(req), 'service.zone_changed', 'service', id, { zone, enabled: before?.enabled ?? false }, { zone, enabled: b.enabled });
     return { ok: true };
   });
-  app.get('/admin/zones', { preHandler: requirePerm('pricing.manage') }, async () => ({ zones: await q('select * from service_zones') }));
-  app.put('/admin/zones/:id', { preHandler: requirePerm('pricing.manage') }, async (req) => {
-    const { id } = parse(z.object({ id: z.string().regex(/^[a-z0-9_-]{2,30}$/) }), req.params);
-    const b = parse(z.object({ name: z.string().min(2).max(60), polygon: z.array(z.tuple([z.number(), z.number()])).min(4), active: z.boolean().default(true) }), req.body);
-    const ring = b.polygon; if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) throw badRequest('polygon_not_closed');
-    await q('insert into service_zones(id,name,polygon,active) values ($1,$2,$3,$4) on conflict (id) do update set name=excluded.name, polygon=excluded.polygon, active=excluded.active', [id, b.name, JSON.stringify(ring), b.active]);
-    await audit(actorOf(req), 'zone.upserted', 'zone', id, undefined, { name: b.name, points: ring.length });
-    return { ok: true };
-  });
   app.get('/admin/promotions', { preHandler: requirePerm('promotions.manage') }, async () => ({ promotions: await q('select * from promotions order by created_at desc limit 100') }));
   app.post('/admin/promotions', { preHandler: requirePerm('promotions.manage') }, async (req) => {
     const b = parse(z.object({ code: z.string().min(3).max(20).regex(/^[A-Za-z0-9_-]+$/), kind: z.enum(['percent', 'fixed']), value: z.number().int().positive(), max_discount: z.number().int().positive().optional(), min_fare: z.number().int().min(0).default(0),
@@ -474,7 +467,7 @@ export async function adminRoutes(app: FastifyInstance) {
   });
   app.put('/admin/flags/:key', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const { key } = parse(z.object({ key: z.string() }), req.params);
-    const b = parse(z.object({ enabled: z.boolean() }), req.body);
+    const b = parse(z.object({ enabled: z.boolean(), reason: z.string().trim().min(5).max(300).optional() }), req.body);
     const before = await q1<any>('select enabled from feature_flags where key=$1', [key]); if (!before) throw notFound('flag');
     if (b.enabled && ['pricing.surge', 'pricing.negotiated', 'payments.wallet'].includes(key) && !req.auth!.roles.includes('super_admin')) throw forbidden('Only a super admin can enable this regulated feature');
     await q('update feature_flags set enabled=$2, updated_by=$3, updated_at=now() where key=$1', [key, b.enabled, req.auth!.id]);
@@ -484,6 +477,10 @@ export async function adminRoutes(app: FastifyInstance) {
     const p = parse(z.object({ key: z.string(), lang: z.enum(['rw', 'en', 'fr', 'sw']) }), req.params);
     const b = parse(z.object({ title: z.string().min(1).max(100), body: z.string().min(1).max(500) }), req.body);
     if (/\{\{\s*(password|secret|token|key)\s*\}\}/i.test(b.body)) throw badRequest('forbidden_placeholder', 'Templates must never carry credentials');
+    const def = DEFAULT_TEMPLATES[p.key];
+    if (!def) throw badRequest('unknown_template', 'Unknown message. Pick one from the list of built-in messages.');
+    const allowed = new Set(Object.values(def).flatMap((t) => [...(t.title + ' ' + t.body).matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1])));
+    for (const m of (b.title + ' ' + b.body).matchAll(/\{\{\s*(\w+)\s*\}\}/g)) if (!allowed.has(m[1])) throw badRequest('unknown_placeholder', `{{${m[1]}}} is not available in this message. Available: ${[...allowed].map((x) => '{{' + x + '}}').join(', ') || 'none'}`);
     await q('insert into notification_templates(key,lang,title,body) values ($1,$2,$3,$4) on conflict (key,lang) do update set title=excluded.title, body=excluded.body', [p.key, p.lang, b.title, b.body]);
     await audit(actorOf(req), 'template.changed', 'template', `${p.key}:${p.lang}`, undefined, b); return { ok: true };
   });
@@ -491,15 +488,6 @@ export async function adminRoutes(app: FastifyInstance) {
     const b = parse(z.object({ entity_type: z.string().optional(), entity_id: z.string().optional(), actor_id: z.string().uuid().optional(), action: z.string().optional(), limit: z.coerce.number().int().min(1).max(500).default(100) }), req.query);
     return { logs: await q(`select a.*, u.display_name actor_name from audit_logs a left join users u on u.id=a.actor_id where ($1::text is null or a.entity_type=$1) and ($2::text is null or a.entity_id=$2) and ($3::uuid is null or a.actor_id=$3) and ($4::text is null or a.action like $4) order by a.id desc limit $5`, [b.entity_type ?? null, b.entity_id ?? null, b.actor_id ?? null, b.action ? `${b.action}%` : null, b.limit]) };
   });
-  app.get('/admin/staff', { preHandler: requirePerm('users.manage') }, async () => ({
-    staff: await q(`select u.id, u.email, u.display_name, u.status, array(select role from user_roles r where r.user_id=u.id) roles from users u where exists (select 1 from user_roles r where r.user_id=u.id and r.role = any($1))`, [STAFF_ROLES]),
-    roles: Object.fromEntries(Object.entries(ROLE_PERMISSIONS).filter(([r]) => STAFF_ROLES.includes(r))),
-  }));
-  app.post('/admin/staff/:id/sessions/revoke', { preHandler: requirePerm('users.manage') }, async (req) => {
-    const { id } = parse(idp, req.params);
-    await q('update sessions set revoked_at=now() where user_id=$1 and revoked_at is null', [id]); await audit(actorOf(req), 'staff.sessions_revoked', 'user', id); return { ok: true };
-  });
-
   app.get('/admin/integration-status', { preHandler: requirePerm('settings.manage') }, async () => ({
     integrations: [
       { name: 'SMS / OTP delivery', status: config.smsProvider === 'console' ? 'SIMULATED (console log only)' : 'IMPLEMENTED (generic HTTP gateway; verify with your aggregator)' },

@@ -39,7 +39,7 @@ export async function catalogRoutes(app: FastifyInstance) {
   });
   app.get('/places/popular', async (req) => {
     const { lang } = parse(z.object({ lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);
-    const r = await q<any>('select id, name_en, name_rw, name_fr, kind, lat, lng, designated_pickup from places order by designated_pickup desc, name_en');
+    const r = await q<any>('select id, name_en, name_rw, name_fr, kind, lat, lng, designated_pickup from places where active order by designated_pickup desc, name_en');
     return { places: r.map((p) => ({ id: p.id, name: (lang === 'rw' ? p.name_rw : lang === 'fr' ? p.name_fr : null) || p.name_en, kind: p.kind, lat: p.lat, lng: p.lng, designated_pickup: p.designated_pickup })) };
   });
   app.get('/coverage', async () => ({ zones: await q('select id, name, polygon from service_zones where active') }));

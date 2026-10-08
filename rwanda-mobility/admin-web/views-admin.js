@@ -192,51 +192,48 @@ V.audit = async (el, state = {}) => {
     }, 'No audit entries match.', { csv: 'audit-log', search: true }));
 };
 
-// =============================================================== STAFF
-V.staff = async (el) => {
-  const d = await api('GET', '/admin/staff'); d.invites = (await api('GET', '/admin/staff/invites')).invites;
-  const me = myId();
-  el.append(h('h1', {}, 'Staff and roles'), note('Two-factor authentication is mandatory. New staff are invited by a one-time link: they choose their own password and scan their own authenticator QR code. You never see their secret.'),
-    table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Roles', f: (s) => s.roles.map((r) => pill(r, '')), s: (s) => s.roles.join(), csv: (s) => s.roles.join(' ') }, { h: 'Status', f: (s) => pill(s.status), s: (s) => s.status, csv: (s) => s.status },
-      { h: '', f: (s) => h('span', { class: 'row' }, h('button', { class: 'b sec', onclick: async () => { const a = await ask(`Sign ${s.display_name || s.email} out everywhere?`, { danger: true, confirmText: 'Sign out everywhere' }); if (a) act(() => api('POST', `/admin/staff/${s.id}/sessions/revoke`)); } }, 'Revoke sessions'),
-        s.id !== me && h('button', { class: 'b ' + (s.status === 'active' ? 'red' : 'sec'), onclick: async () => {
-          const on = s.status !== 'active'; const a = await ask(on ? `Re-enable ${s.display_name || s.email}?` : `Disable ${s.display_name || s.email}?`, { reason: true, danger: !on, confirmText: on ? 'Enable' : 'Disable', message: on ? null : 'They can no longer sign in. Use Revoke sessions to end any open session immediately.' });
-          if (a) act(async () => { await api('POST', `/admin/users/${s.id}/status`, { status: on ? 'active' : 'deactivated', reason: a.reason }); if (!on) await api('POST', `/admin/staff/${s.id}/sessions/revoke`); }, () => go('staff')); } }, s.status === 'active' ? 'Disable' : 'Enable')) }], d.staff, null, 'No staff.', { csv: 'staff' }),
-    h('div', { class: 'row' }, h('button', { class: 'b', onclick: async () => {
-      const a = await ask('Invite a staff member', { confirmText: 'Create invitation', fields: [{ name: 'name', label: 'Full name', required: true, maxlength: 80 }, { name: 'email', label: 'Email', type: 'email', required: true }, { name: 'role', label: 'Role', type: 'select', options: Object.keys(d.roles).map((r) => ({ value: r, label: human(r) })), help: 'See "Role permissions" below for what each role can do.' }] });
-      if (a) { delete a.reason; try { const r = await api('POST', '/admin/staff/invites', a); showInvite(r, a.email); } catch (e) { toast(e.message, true); } } } }, 'Invite staff member')),
-    h('h2', {}, 'Pending invitations'), inviteTable(d.invites, () => go('staff')),
-    h('h2', {}, 'Role permissions'), table([{ h: 'Role', f: (x) => human(x.r), s: (x) => x.r }, { h: 'Permissions', f: (x) => h('span', { class: 'chips' }, x.p.map((p) => h('code', { class: 'chip' }, p))), csv: (x) => x.p.join(' ') }], Object.entries(d.roles).map(([r, p]) => ({ r, p })), null, '', { sort: false }));
-};
-function showInvite(r, email) {
-  const link = h('input', { readonly: true, value: r.invite_url, 'aria-label': 'Invitation link', style: 'width:100%;margin:6px 0' }); let dlg;
-  dlg = openDialog('Invitation created', h('div', {}, h('p', {}, 'Send this link ONLY to ' + email + ' (it works once and expires ' + when(r.expires_at) + '). They will set their own password and scan their own authenticator QR code. You will not see their secret.'), link,
-    h('div', { class: 'row end' }, h('button', { class: 'b', onclick: async () => { try { await navigator.clipboard.writeText(r.invite_url); toast('Link copied'); } catch { link.select(); toast('Select and copy the link'); } } }, 'Copy link'), h('button', { class: 'b sec', onclick: () => { dlg.close(); go('staff'); } }, 'Close'))), { width: 560, key: 'invite' });
-  link.select();
+// =============================================================== STAFF (the Staff tab itself lives in views-staff.js)
+function showInvite(r, email, after) {
+  showLink(r.invite_url, r.expires_at, email, 'Invitation created', after);
 }
-function inviteTable(rows, reload) {
-  if (!rows.length) return h('div', { class: 'empty' }, 'No pending invitations.');
-  return table([{ h: 'Name', k: 'display_name' }, { h: 'Email', k: 'email' }, { h: 'Role', f: (x) => human(x.role), s: (x) => x.role }, dateCol('Expires', 'expires_at'),
-    { h: '', f: (x) => h('button', { class: 'b sec', onclick: async () => { const a = await ask('Revoke invitation for ' + x.email + '?', { danger: true, confirmText: 'Revoke' }); if (a) act(() => api('DELETE', '/admin/staff/invites/' + x.id), reload); } }, 'Revoke') }], rows, null, '', { sort: false });
-}
-// ---- invitee: activate account (public page opened from the invite link) ----
+// ---- the person's side: activate an account, or complete a password / two-factor / full reset (public page opened from a one-time link) ----
 async function activationView(root, token) {
   const pub = async (m, p, body) => { let r; try { r = await fetch(API + p, { method: m, headers: { 'content-type': 'application/json' }, body: m === 'POST' ? JSON.stringify(body || {}) : undefined }); } catch { throw new Error('Cannot reach the server. Check your connection.'); } const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error?.message || 'Request failed'); return j; };
   const card = h('div', { class: 'card login' }); root.append(h('main', { class: 'loginpage' }, card));
-  let info; try { info = await pub('GET', '/staff-invite/' + token); } catch (e) { card.append(h('h1', {}, 'Invitation'), h('div', { class: 'alert bad' }, e.message + '. Ask your administrator for a new invitation.')); return; }
+  let info; try { info = await pub('GET', '/staff-invite/' + token); } catch (e) { card.append(h('h1', {}, 'Link not valid'), h('div', { class: 'alert bad' }, e.message + '. Ask your administrator for a new link.')); return; }
+  const kind = info.purpose || 'invite';
   const err = h('div', { class: 'err', role: 'alert' });
-  const step1 = () => { card.replaceChildren(h('h1', {}, 'Welcome, ' + info.name), h('p', {}, 'You were invited as ' + info.role.replace(/_/g, ' ') + ' (' + info.email + '). Next you will set up two-factor authentication on your own phone.'), err,
-    h('button', { class: 'b wide', onclick: begin }, 'Start setup')); };
-  const begin = async () => { err.textContent = ''; try { const b = await pub('POST', '/staff-invite/' + token + '/begin'); step2(b); } catch (e) { err.textContent = e.message; } };
-  const step2 = (b) => {
-    const pw = h('input', { type: 'password', placeholder: 'Choose a password (12+ characters)', 'aria-label': 'Password', autocomplete: 'new-password' }), pw2 = h('input', { type: 'password', placeholder: 'Repeat the password', 'aria-label': 'Repeat password', autocomplete: 'new-password' }), code = h('input', { placeholder: '6-digit code from the app', 'aria-label': 'Authenticator code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' });
+  const pwFields = () => [h('input', { type: 'password', placeholder: (kind === 'password_reset' ? 'Choose a NEW password' : 'Choose a password') + ' (12+ characters)', 'aria-label': 'Password', autocomplete: 'new-password' }), h('input', { type: 'password', placeholder: 'Repeat the password', 'aria-label': 'Repeat password', autocomplete: 'new-password' })];
+  const codeField = (ph = '6-digit code from the app') => h('input', { placeholder: ph, 'aria-label': 'Authenticator code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' });
+  const finish = (title, text) => { history.replaceState(null, '', location.pathname); card.replaceChildren(h('h1', {}, title), h('p', {}, text), h('button', { class: 'b wide', onclick: () => render() }, 'Go to sign in')); };
+  const checkPw = (pw, pw2) => { if (pw.value.length < 12) return 'The password needs at least 12 characters.'; if (pw.value !== pw2.value) return 'The passwords do not match.'; return ''; };
+  const checkCode = (code) => (/^\d{6}$/.test(code.value.trim()) ? '' : 'Enter the 6-digit code from your authenticator app.');
+  const run = async (body, title, text) => { try { await pub('POST', '/staff-invite/' + token + '/activate', body); finish(title, text); } catch (e) { err.textContent = e.message; } };
+
+  if (kind === 'password_reset') {   // new password, confirmed with the CURRENT authenticator code; no new authenticator
+    const [pw, pw2] = pwFields(), code = codeField('Current 6-digit code from your authenticator app');
+    card.replaceChildren(h('h1', {}, 'Reset your password'), h('p', {}, 'Hello ' + info.name + '. Choose a new password for ' + info.email + '. Confirm it with the code your authenticator app shows right now.'), pw, pw2, code, err,
+      h('button', { class: 'b wide', onclick: () => { err.textContent = checkPw(pw, pw2) || checkCode(code); if (!err.textContent) run({ password: pw.value, code: code.value.trim() }, 'Password changed', 'Sign in with your email, your new password and the code from your authenticator app. You were signed out everywhere.'); } }, 'Change my password'));
+    return;
+  }
+  const begin = async () => { err.textContent = ''; try { step2(await pub('POST', '/staff-invite/' + token + '/begin')); } catch (e) { err.textContent = e.message; } };
+  const intro = {
+    invite: ['Welcome, ' + info.name, 'You were invited as ' + info.role.replace(/_/g, ' ') + ' (' + info.email + '). Next you will set up two-factor authentication on your own phone.'],
+    mfa_reset: ['Replace your authenticator', 'Hello ' + info.name + '. You will scan a NEW QR code on your own phone and confirm with your current password. Your old authenticator stops working when you finish.'],
+    full_reset: ['Reset your sign-in', 'Hello ' + info.name + '. You will choose a new password and scan a NEW QR code on your own phone. Your old password and authenticator stop working when you finish.'],
+  }[kind];
+  card.replaceChildren(h('h1', {}, intro[0]), h('p', {}, intro[1]), err, h('button', { class: 'b wide', onclick: begin }, 'Start setup'));
+  function step2(b) {
     const qr = h('img', { alt: 'Authenticator QR code', src: 'data:image/svg+xml;utf8,' + encodeURIComponent(b.qr_svg), style: 'width:220px;height:220px;display:block;margin:8px auto;background:#fff' });
+    const [pw, pw2] = kind === 'mfa_reset' ? [h('input', { type: 'password', placeholder: 'Your current password', 'aria-label': 'Current password', autocomplete: 'current-password' }), null] : pwFields();
+    const code = codeField();
     card.replaceChildren(h('h1', {}, 'Set up your authenticator'), h('p', {}, '1. Open Google Authenticator or Microsoft Authenticator on your phone and scan this QR code.'), qr,
       h('details', {}, h('summary', {}, 'Cannot scan? Enter the key by hand'), h('code', { style: 'word-break:break-all;display:block;margin:6px 0' }, b.secret)),
-      h('p', {}, '2. Choose your password and type the 6-digit code shown in the app.'), pw, pw2, code, err,
-      h('button', { class: 'b wide', onclick: async () => {
-        err.textContent = ''; if (pw.value.length < 12) { err.textContent = 'The password needs at least 12 characters.'; return; } if (pw.value !== pw2.value) { err.textContent = 'The passwords do not match.'; return; } if (!/^\d{6}$/.test(code.value.trim())) { err.textContent = 'Enter the 6-digit code from your authenticator app.'; return; }
-        try { await pub('POST', '/staff-invite/' + token + '/activate', { password: pw.value, code: code.value.trim() }); history.replaceState(null, '', location.pathname); card.replaceChildren(h('h1', {}, 'All set'), h('p', {}, 'Your account is active. Sign in with your email, your password and the code from your authenticator app.'), h('button', { class: 'b wide', onclick: () => render() }, 'Go to sign in')); } catch (e) { err.textContent = e.message; } } }, 'Activate my account'));
-  };
-  step1();
+      h('p', {}, kind === 'mfa_reset' ? '2. Type your current password and the 6-digit code shown in the app.' : '2. Choose your password and type the 6-digit code shown in the app.'), pw, pw2, code, err,
+      h('button', { class: 'b wide', onclick: () => {
+        err.textContent = kind === 'mfa_reset' ? (pw.value ? '' : 'Enter your current password.') : checkPw(pw, pw2); if (!err.textContent) err.textContent = checkCode(code); if (err.textContent) return;
+        const body = kind === 'mfa_reset' ? { current_password: pw.value, code: code.value.trim() } : { password: pw.value, code: code.value.trim() };
+        run(body, kind === 'invite' ? 'All set' : 'All set', kind === 'invite' ? 'Your account is active. Sign in with your email, your password and the code from your authenticator app.' : 'Your sign-in is updated and you were signed out everywhere. Sign in with your email, your password and the code from your NEW authenticator.');
+      } }, kind === 'invite' ? 'Activate my account' : 'Finish'));
+  }
 }

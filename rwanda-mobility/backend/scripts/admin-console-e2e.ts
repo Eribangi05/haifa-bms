@@ -110,13 +110,16 @@ try {
   await A.getByPlaceholder('Full name').fill('X'); await A.getByPlaceholder('Email').last().fill('not-an-email'); await A.getByRole('button', { name: 'Create invitation' }).click();
   check('invite dialog validates e-mail and stays open', (await A.locator('dialog[open]').count()) === 1 && await A.getByText('Enter a valid email address').isVisible());
   await A.keyboard.press('Escape');
-  await A.locator('#view .tsearch').first().fill(staff.support_agent.email);
-  const row = A.locator('tr', { hasText: staff.support_agent.email }); await row.getByRole('button', { name: 'Disable' }).click();
-  await A.getByPlaceholder(/Reason/).fill('e2e disable check'); await A.locator('dialog').getByRole('button', { name: 'Disable' }).click(); await A.waitForTimeout(800);
+  const findStaff = async (email: string) => { await A.getByPlaceholder('Search name or email').fill(email); await A.getByRole('button', { name: 'Filter', exact: true }).click(); await A.waitForTimeout(600); };
+  await findStaff(staff.support_agent.email);
+  await A.locator('tr', { hasText: staff.support_agent.email }).first().click(); await A.locator('dialog[open]').waitFor();
+  await A.locator('dialog').getByRole('button', { name: 'Disable', exact: true }).click();
+  await A.getByPlaceholder(/Reason/).fill('e2e disable check'); await A.locator('dialog').last().getByRole('button', { name: 'Disable', exact: true }).click(); await A.waitForTimeout(900);
   const dis = await apiLogin('support_agent'); check('disabled staff cannot sign in', dis.status >= 400, String(dis.status));
-  await A.locator('#view .tsearch').first().fill(staff.support_agent.email);
-  await A.locator('tr', { hasText: staff.support_agent.email }).getByRole('button', { name: 'Enable' }).click();
-  await A.getByPlaceholder(/Reason/).fill('e2e enable check'); await A.locator('dialog').getByRole('button', { name: 'Enable' }).click(); await A.waitForTimeout(800);
+  await findStaff(staff.support_agent.email);
+  await A.locator('tr', { hasText: staff.support_agent.email }).first().click(); await A.locator('dialog[open]').waitFor();
+  await A.locator('dialog').getByRole('button', { name: 'Enable', exact: true }).click();
+  await A.getByPlaceholder(/Reason/).fill('e2e enable check'); await A.locator('dialog').last().getByRole('button', { name: 'Enable', exact: true }).click(); await A.waitForTimeout(900);
   check('re-enabled staff can sign in again', (await apiLogin('support_agent')).status === 200);
 
   // dark mode + persistence
@@ -156,11 +159,11 @@ try {
     check('phone: no sideways page scroll', (await P.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 2); await shot(P, 'phone-bookings');
     await c.close(); }
 
-  // the permission mirror in core.js must equal backend/src/rbac.ts
+  // the console no longer carries a copy of the role table: the server sends each caller's effective permissions at sign-in
   const src = readFileSync(new URL('../../admin-web/core.js', import.meta.url), 'utf8');
-  const mirror = JSON.parse(/\/\*rbac-mirror\*\/ (\{.*\}) \/\*end-rbac-mirror\*\//.exec(src)![1]);
-  const { ROLE_PERMISSIONS } = await import('../src/rbac.ts');
-  check('admin-web permission mirror equals backend rbac.ts', JSON.stringify(mirror) === JSON.stringify(ROLE_PERMISSIONS));
+  check('core.js has no static permission mirror', !src.includes('rbac-mirror'));
+  const { ROLE_PERMISSIONS, effectivePermissions } = await import('../src/rbac.ts');
+  for (const r of ['dispatcher', 'support_agent', 'finance_officer', 'super_admin']) { const lg = (await apiLogin(r)).json; check(`sign-in permissions for ${r} equal the server's`, JSON.stringify(lg.permissions) === JSON.stringify(effectivePermissions([r])) && ROLE_PERMISSIONS[r] !== undefined); }
 } catch (e: any) { failed++; console.log('FAIL script error:', e.message.split('\n').slice(0, 3).join(' | ')); }
 await br.close(); await pool.end();
 console.log(failed ? `\n${failed} problem(s)` : '\nall admin console checks passed');

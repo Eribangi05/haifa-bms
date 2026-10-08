@@ -6,9 +6,10 @@ import { AppError, badRequest, forbidden, tooMany, unauthorized } from '../error
 import { sms } from '../providers/sms.js';
 import { render, DEFAULT_TEMPLATES } from './i18n.js';
 import { audit } from './audit.js';
-import { STAFF_ROLES } from '../rbac.js';
+import { effectivePermissions, isStaff } from '../rbac.js';
+import { ensureRbac } from './rolesStore.js';
 
-export type Tokens = { access_token: string; refresh_token: string; expires_in: number; session_id: string; roles: string[]; user: any };
+export type Tokens = { access_token: string; refresh_token: string; expires_in: number; session_id: string; roles: string[]; permissions: string[]; user: any };
 type Sign = (payload: { sub: string; sid: string; roles: string[] }, ttlS: number) => string;
 export type Device = { id?: string; name?: string; ip?: string };
 
@@ -84,13 +85,14 @@ async function rolesOf(userId: string): Promise<string[]> {
 
 export async function issueSession(userId: string, dev: Device, sign: Sign, privileged: boolean): Promise<Tokens> {
   const roles = await rolesOf(userId);
+  await ensureRbac();
   const refresh = randomToken(40);
   const ttlMs = privileged ? STAFF_SESSION_HOURS * 3600e3 : REFRESH_TTL_DAYS * 86400e3;
   const s = await q1<{ id: string }>(
     `insert into sessions(user_id, refresh_hash, device_id, device_name, ip, privileged, expires_at) values ($1,$2,$3,$4,$5,$6,$7) returning id`,
     [userId, sha256(refresh), dev.id ?? null, dev.name ?? null, dev.ip ?? null, privileged, new Date(Date.now() + ttlMs)]);
   const user = await q1<any>('select id, phone, email, display_name, preferred_language, status from users where id=$1', [userId]);
-  return { access_token: sign({ sub: userId, sid: s!.id, roles }, ACCESS_TTL), refresh_token: refresh, expires_in: ACCESS_TTL, session_id: s!.id, roles, user };
+  return { access_token: sign({ sub: userId, sid: s!.id, roles }, ACCESS_TTL), refresh_token: refresh, expires_in: ACCESS_TTL, session_id: s!.id, roles, permissions: isStaff(roles) ? effectivePermissions(roles) : [], user };
 }
 
 export async function refresh(token: string, dev: Device, sign: Sign): Promise<Tokens> {
@@ -104,7 +106,7 @@ export async function refresh(token: string, dev: Device, sign: Sign): Promise<T
   }
   if (new Date(s.expires_at) < new Date()) throw unauthorized('session expired');
   const u = await q1<any>('select status from users where id=$1', [s.user_id]);
-  if (!u || ['deactivated', 'deleted', 'restricted'].includes(u.status)) throw forbidden('Account is not active');
+  if (!u || ['deactivated', 'deleted', 'restricted', 'removed'].includes(u.status)) throw forbidden('Account is not active');
   // Rotation is single-use even under a race: of two parallel refreshes with the same token only one may win.
   const won = await q('update sessions set revoked_at=now() where id=$1 and revoked_at is null returning id', [s.id]);
   if (!won.length) throw unauthorized('session revoked');
@@ -117,7 +119,8 @@ export async function staffLogin(email: string, password: string, totp: string, 
   if (u?.locked_until && new Date(u.locked_until) > new Date()) throw new AppError(423, 'locked', 'Account temporarily locked');
   const ok = await verifyPassword(password, u?.password_hash ?? null);
   const roles = u ? await rolesOf(u.id) : [];
-  const staff = roles.some((r) => STAFF_ROLES.includes(r));
+  await ensureRbac();
+  const staff = isStaff(roles);
   const mfaOk = !!(u && ok && staff && u.mfa_enabled && u.mfa_secret_enc && verifyTotp(decrypt(u.mfa_secret_enc), totp));
   if (!u || !ok || !staff || !mfaOk || u.status !== 'active') {
     if (u) {
@@ -132,10 +135,12 @@ export async function staffLogin(email: string, password: string, totp: string, 
   return issueSession(u.id, dev, sign, true);
 }
 
-export async function sessionValid(sid: string, userId: string): Promise<boolean> {
-  const s = await q1<{ revoked_at: Date | null; expires_at: Date; status: string }>(
-    'select s.revoked_at, s.expires_at, u.status from sessions s join users u on u.id=s.user_id where s.id=$1 and s.user_id=$2', [sid, userId]);
-  if (!s || s.revoked_at || s.expires_at < new Date() || s.status !== 'active') return false;
+/** The live session check for every authenticated request. Returns the user's roles as stored NOW (not as they were when the token was issued), so a role change applies at once. */
+export async function sessionInfo(sid: string, userId: string): Promise<{ roles: string[] } | null> {
+  const s = await q1<{ revoked_at: Date | null; expires_at: Date; status: string; roles: string[] }>(
+    'select s.revoked_at, s.expires_at, u.status, array(select role from user_roles r where r.user_id=u.id) roles from sessions s join users u on u.id=s.user_id where s.id=$1 and s.user_id=$2', [sid, userId]);
+  if (!s || s.revoked_at || s.expires_at < new Date() || s.status !== 'active') return null;
   await q('update sessions set last_used_at=now() where id=$1 and last_used_at < now() - interval \'1 minute\'', [sid]);
-  return true;
+  return { roles: s.roles };
 }
+export async function sessionValid(sid: string, userId: string): Promise<boolean> { return !!(await sessionInfo(sid, userId)); }

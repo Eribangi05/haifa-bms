@@ -58,6 +58,7 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `CONSENT_RATE_MAX`, `PRIVACY_RATE_MAX` | no | `30`, `10` | Per-user per-minute caps on consent changes and privacy requests. |
 | `ORG_RATE_MAX`, `MEMBER_RATE_MAX` | no | `5`, `30` | Per-user per-minute caps on creating companies/fleets and on adding members/inviting drivers. |
 | `PUBLIC_CODE_RATE_MAX` | no | `60` | Per-IP per-minute cap on the public request-code lookup and landing page (`/request-codes/:code`, `/r/:code`). |
+| `RBAC_CACHE_MS` | no | `15000` | How long (ms) a server keeps the role-to-permission map in memory. Role changes refresh the changing server at once; other servers follow within this time. |
 | `INVITE_RATE_MAX` | no | `15` | Per-minute cap on the public staff-invite activation endpoints. |
 | `CLIENT_ERR_MAX_PER_HOUR` | no | `5000` | Global cap on stored client error reports per hour (protects the table from a crash loop). |
 | `QUIET` | no | | `1` silences logs (tests). |

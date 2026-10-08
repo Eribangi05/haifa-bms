@@ -2,7 +2,8 @@ import '@fastify/multipart';
 import '@fastify/jwt';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { forbidden, unauthorized } from './errors.js';
-import { sessionValid } from './services/auth.js';
+import { sessionInfo } from './services/auth.js';
+import { ensureRbac } from './services/rolesStore.js';
 import { can, isStaff } from './rbac.js';
 
 export type AuthUser = { id: string; roles: string[]; sid: string };
@@ -11,8 +12,10 @@ declare module 'fastify' { interface FastifyRequest { auth?: AuthUser } }
 export async function authenticate(req: FastifyRequest, _reply: FastifyReply) {
   let p: any;
   try { p = await req.jwtVerify(); } catch { throw unauthorized(); }
-  if (!(await sessionValid(p.sid, p.sub))) throw unauthorized('session ended');
-  req.auth = { id: p.sub, roles: p.roles ?? [], sid: p.sid };
+  const info = await sessionInfo(p.sid, p.sub);
+  if (!info) throw unauthorized('session ended');
+  await ensureRbac();   // role -> permission map from the database (short cache, invalidated on every change)
+  req.auth = { id: p.sub, roles: info.roles, sid: p.sid };   // roles are re-read from the database, never trusted from the token
 }
 export const requireRole = (...roles: string[]) => async (req: FastifyRequest, reply: FastifyReply) => {
   await authenticate(req, reply);
@@ -21,6 +24,11 @@ export const requireRole = (...roles: string[]) => async (req: FastifyRequest, r
 export const requirePerm = (perm: string) => async (req: FastifyRequest, reply: FastifyReply) => {
   await authenticate(req, reply);
   if (!isStaff(req.auth!.roles) || !can(req.auth!.roles, perm)) throw forbidden(`missing permission ${perm}`);
+};
+/** Passes when the caller holds ANY of the listed permissions. */
+export const requireAnyPerm = (...perms: string[]) => async (req: FastifyRequest, reply: FastifyReply) => {
+  await authenticate(req, reply);
+  if (!isStaff(req.auth!.roles) || !perms.some((p) => can(req.auth!.roles, p))) throw forbidden(`missing permission ${perms.join(' or ')}`);
 };
 export const anyAuth = authenticate;
 export const actorOf = (req: FastifyRequest) => ({ id: req.auth!.id, role: req.auth!.roles[0], ip: req.ip });

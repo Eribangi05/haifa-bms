@@ -31,6 +31,10 @@ The exact permission list per role is in [`PERMISSION_MATRIX.md`](PERMISSION_MAT
 * **Leaver or lost laptop**: Staff -> *Revoke sessions* signs them out everywhere at once; *Disable* (with a reason) blocks sign-in until you press *Enable*.
 * **Lost phone / authenticator**: this needs an engineer (there is no self-service reset on purpose): see the "Reset a staff member's authenticator" section of [`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md).
 
+## Help centre, deadlines and wording (admin-editable)
+
+Under **Content and rules**: the help-centre FAQ (each entry needs English, Kinyarwanda and French before it can be published), the response deadline, priority and sensitivity per support category (safety stays urgent/high, sensitive, within 24 h; changes apply to new cases), driver document rules, and notification wording. See `docs/ADMIN_FLEXIBILITY.md`.
+
 ## Daily routine
 
 1. **Morning**: Overview -> read *Needs attention* (drivers waiting for verification, refunds awaiting approval, support cases past SLA, open safety incidents, disputed trips, requests with no driver found); each card opens the page that fixes it. Finance -> Reconciliation -> *Payment exceptions* and *Cash outstanding for more than 1 hour*.

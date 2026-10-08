@@ -11,7 +11,7 @@ const pref = {    // per-browser convenience (theme, table page size)
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
 };
-const S = { access: store.get('rm_a'), refresh: store.get('rm_r'), roles: JSON.parse(store.get('rm_roles') || '[]'), tab: 'dashboard', state: {}, dirty: new Set(), nav: 0, notice: '' };
+const S = { access: store.get('rm_a'), refresh: store.get('rm_r'), roles: JSON.parse(store.get('rm_roles') || '[]'), perms: JSON.parse(store.get('rm_perms') || '[]'), permsAt: 0, tab: 'dashboard', state: {}, dirty: new Set(), nav: 0, notice: '' };
 const $ = (s, r = document) => r.querySelector(s);
 
 // append/replaceChildren ignore null, undefined and false (so `cond && node` and `cond ? node : null` are safe) and accept nested arrays.
@@ -66,17 +66,29 @@ function statusCls(s) {
 const pill = (t, cls) => h('span', { class: 'pill ' + (cls ?? statusCls(t)) }, human(t));
 
 // ---------------- permissions ----------------
-// Mirror of backend/src/rbac.ts ROLE_PERMISSIONS (the API always re-checks; this only decides what to SHOW). scripts/admin-audit-e2e.ts fails if the two drift.
-const ROLE_PERMISSIONS = /*rbac-mirror*/ {"super_admin":["*"],"dispatcher":["bookings.view_all","bookings.dispatch","drivers.view","analytics.view","safety.respond"],"support_agent":["bookings.view_all","support.handle","drivers.view","users.view","wallet.view","claims.view","claims.handle"],"support_lead":["bookings.view_all","support.handle","support.sensitive","safety.respond","drivers.view","users.view","users.restrict","privacy.handle","finance.refund.request","finance.waive_fee","diagnostics.view","codes.view","codes.manage","wallet.view","claims.view","claims.handle","claims.decide","ussd.view"],"driver_verifier":["drivers.review","drivers.view","drivers.docs"],"finance_officer":["finance.view","finance.refund.request","finance.payout.review","finance.reconcile","finance.waive_fee","analytics.view","drivers.view","wallet.view","wallet.adjust","claims.view"],"finance_approver":["finance.view","finance.refund.approve","finance.payout.approve","finance.payout.review","pricing.approve","analytics.view","wallet.view","wallet.adjust.approve","claims.view","claims.settle.approve"],"business_manager":["analytics.view","pricing.manage","promotions.manage","corporate.manage","fleet.manage","drivers.view","bookings.view_all","codes.view","codes.manage","growth.manage","partners.manage","wallet.view","ussd.view"],"analyst":["analytics.view","diagnostics.view","codes.view","ussd.view"],"partner_manager":["partner.portal"],"passenger":[],"driver":[],"fleet_manager":[],"corporate_admin":[],"corporate_booker":[]} /*end-rbac-mirror*/;
-const heldPerms = () => new Set(S.roles.flatMap((r) => ROLE_PERMISSIONS[r] || []));
-/** can('bookings.dispatch') or, for older call sites, can('business_manager'): true for super_admin, a held role, or a held permission. */
-const can = (...need) => S.roles.includes('super_admin') || need.some((n) => S.roles.includes(n) || heldPerms().has(n));
+// The server decides what a role may do: sign-in, token refresh and GET /users/me return the caller's effective permissions (S.perms; '*' = everything).
+// There is deliberately no copy of the role table here, so the console can never drift from the API (which re-checks every request anyway).
+const heldPerms = () => new Set(S.perms);
+/** can('bookings.dispatch') or, for older call sites, can('business_manager'): true for a super admin, a held role name, or a held permission. */
+const can = (...need) => S.roles.includes('super_admin') || S.perms.includes('*') || need.some((n) => S.roles.includes(n) || heldPerms().has(n));
+/** Re-reads roles and permissions from the server (at most every 20 s unless forced). Returns true when they changed, so the shell can rebuild its menu. */
+async function syncAccess(force = false) {
+  if (!S.access || (!force && Date.now() - S.permsAt < 20000)) return false;
+  S.permsAt = Date.now();
+  try {
+    const me = await api('GET', '/users/me');
+    const roles = me.roles || [], perms = me.permissions || [];
+    const changed = JSON.stringify(roles) !== JSON.stringify(S.roles) || JSON.stringify(perms) !== JSON.stringify(S.perms);
+    S.roles = roles; S.perms = perms; store.set('rm_roles', JSON.stringify(roles)); store.set('rm_perms', JSON.stringify(perms));
+    return changed;
+  } catch { return false; }
+}
 const myId = () => { try { return JSON.parse(atob(S.access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub; } catch { return null; } };
 
 // ---------------- API ----------------
 class ApiError extends Error { constructor(msg, status, code) { super(msg); this.status = status; this.code = code; } }
 let refreshing = null;
-function save(t) { S.access = t.access_token; S.refresh = t.refresh_token; S.roles = t.roles || S.roles; store.set('rm_a', S.access); store.set('rm_r', S.refresh); store.set('rm_roles', JSON.stringify(S.roles)); }
+function save(t) { S.access = t.access_token; S.refresh = t.refresh_token; S.roles = t.roles || S.roles; S.perms = t.permissions || S.perms; S.permsAt = Date.now(); store.set('rm_perms', JSON.stringify(S.perms)); store.set('rm_a', S.access); store.set('rm_r', S.refresh); store.set('rm_roles', JSON.stringify(S.roles)); }
 function doRefresh() {
   if (!S.refresh) return Promise.resolve(false);
   refreshing ||= (async () => {
@@ -90,7 +102,7 @@ function doRefresh() {
 /** Ends the session and shows the sign-in page with an explanation (never a blank page). */
 function expireSession(msg = 'Your session has expired. Please sign in again.') {
   if (!S.access && !S.refresh) return;
-  store.clear(); S.access = S.refresh = null; S.roles = []; S.notice = msg; render();
+  store.clear(); S.access = S.refresh = null; S.roles = []; S.perms = []; S.notice = msg; render();
 }
 async function api(method, path, body, retry = true) {
   let r;
@@ -108,7 +120,7 @@ async function api(method, path, body, retry = true) {
   }
   return data;
 }
-function logout() { if (S.access) fetch(API + '/auth/logout', { method: 'POST', headers: { authorization: 'Bearer ' + S.access } }).catch(() => {}); store.clear(); S.access = S.refresh = null; S.roles = []; S.notice = ''; render(); }
+function logout() { if (S.access) fetch(API + '/auth/logout', { method: 'POST', headers: { authorization: 'Bearer ' + S.access } }).catch(() => {}); store.clear(); S.access = S.refresh = null; S.roles = []; S.perms = []; S.notice = ''; render(); }
 
 // ---------------- feedback ----------------
 function toast(msg, bad) {

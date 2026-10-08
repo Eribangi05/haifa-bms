@@ -411,10 +411,8 @@ V.settings = async (el, state = {}) => {
   el.append(h('h1', {}, 'Settings'),
     d.settings['pricing.self_approval'] && h('div', { class: 'banner danger' }, h('b', {}, 'Self-approval is ON. '), 'Price and commission changes can be approved by the person who proposed them. Turn it off below when you have a second approver.'),
     h('div', { class: 'row' }, filter), sections,
-    h('h2', {}, 'Feature flags'), table([{ h: 'Flag', k: 'key' }, { h: 'Description', k: 'description' }, { h: 'Enabled', f: (f) => h('button', { class: 'b ' + (f.enabled ? '' : 'sec'), onclick: async () => { const a = await ask((f.enabled ? 'Disable ' : 'Enable ') + f.key + '?', { reason: true }); if (a) act(() => api('PUT', '/admin/flags/' + f.key, { enabled: !f.enabled }), () => go('settings')); } }, f.enabled ? 'ON' : 'off') }], d.flags),
-    h('h2', {}, 'Integration status'), table([{ h: 'Integration', k: 'name' }, { h: 'Status', k: 'status' }], ints.integrations),
-    h('h2', {}, 'Notification templates (overrides)'), table([{ h: 'Key', k: 'key' }, { h: 'Lang', k: 'lang' }, { h: 'Title', k: 'title' }, { h: 'Body', k: 'body' }], d.templates, null, 'No overrides: the built-in wording is used.'),
-    h('button', { class: 'b', onclick: async () => { const a = await ask('Override template', { fields: [{ name: 'key', label: 'template key e.g. booking_confirmed' }, { name: 'lang', label: 'lang', type: 'select', options: ['rw', 'en', 'fr', 'sw'] }, { name: 'title', label: 'Title' }, { name: 'body', label: 'Body with {{placeholders}}' }] }); if (a) { delete a.reason; act(() => api('PUT', `/admin/templates/${a.key}/${a.lang}`, { title: a.title, body: a.body }), () => go('settings')); } } }, 'Edit template'));
+    h('div', { class: 'banner' }, 'Feature flags have their own page (Feature flags), and notification wording is edited under Content and rules.'),
+    h('h2', {}, 'Integration status'), table([{ h: 'Integration', k: 'name' }, { h: 'Status', k: 'status' }], ints.integrations));
   rerender();
 };
 

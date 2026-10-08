@@ -149,3 +149,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toast{background:var(--card);border:1px solid var(--line);padding:10px 14px;border-radius:10px;box-shadow:0 4px 14px #0003}
 
 button[aria-disabled="true"]{opacity:.55;cursor:progress}
+/* staff, roles and configuration editors */
+.rolelist{display:flex;flex-direction:column;gap:6px;margin:8px 0}.rolepick,.permpick{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer}.rolepick input,.permpick input{margin-top:3px;flex:none}
+.permgroups{display:flex;flex-direction:column;gap:8px;margin:8px 0;max-height:46vh;overflow:auto;padding-right:4px}.permgroup{border:1px solid var(--line);border-radius:10px;padding:6px 10px}.permgroup>summary{cursor:pointer;padding:4px 0}.permgroup .permpick{margin:4px 0}
+.permpick .hint{color:var(--mut)}.permpick code{font-size:.8em}
+.mappick{height:300px;border:1px solid var(--line);border-radius:10px;margin:8px 0}.coordrow{display:flex;gap:8px;flex-wrap:wrap}.coordrow input{flex:1;min-width:120px}
+.faqlang{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0}.faqlang textarea{width:100%}
+.row .grow{flex:1}
