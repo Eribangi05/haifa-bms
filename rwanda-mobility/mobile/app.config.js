@@ -9,7 +9,7 @@ module.exports = () => ({
     name: 'Abasare',
     slug: 'abasare',
     scheme: 'abasare',
-    version: '0.5.2',
+    version: '0.6.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',   // follows the system; the in-app Settings can force light/dark (system bars follow the resolved theme)
@@ -18,7 +18,7 @@ module.exports = () => ({
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
     android: {
       package: 'rw.abasare.app',
-      versionCode: 7,
+      versionCode: 8,
       adaptiveIcon: {
         backgroundColor: '#FFFFFF',
         foregroundImage: './assets/android-icon-foreground.png',

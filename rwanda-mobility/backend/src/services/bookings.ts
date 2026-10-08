@@ -336,7 +336,7 @@ export async function bookingView(b: BookingRow, as: Perspective) {
               v.make, v.model, v.color, v.plate, v.vehicle_type
        from driver_profiles dp join users u on u.id=dp.user_id left join vehicles v on v.id=$2 where dp.user_id=$1`, [b.driver_id, b.vehicle_id]);
     if (as === 'passenger' || as === 'staff' || as === 'corporate') {
-      out.driver = { name: d.display_name, rating: Number(d.rating_avg), rating_count: d.rating_count, has_photo: !!d.photo_key, trips: d.completed_count,
+      out.driver = { ...(as === 'passenger' ? { id: b.driver_id } : {}), name: d.display_name, rating: Number(d.rating_avg), rating_count: d.rating_count, has_photo: !!d.photo_key, trips: d.completed_count,
         photo_url: d.photo_key ? `/api/v1/files/${d.photo_key}?token=${signFileToken(d.photo_key, 300)}` : null };   // identity check before handing over keys / boarding
       if (b.customer_vehicle_id) out.driver.abasare = { years_experience: d.abasare_skills?.years_experience ?? null, return_mode: d.abasare_skills?.return_mode ?? null, licence_since: d.abasare_skills?.licence_since ?? null };
       else out.vehicle = { make: d.make, model: d.model, color: d.color, plate: d.plate, type: d.vehicle_type };

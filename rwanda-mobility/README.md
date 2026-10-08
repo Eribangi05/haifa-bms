@@ -72,6 +72,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 
 | Doc | Purpose |
 |---|---|
+| [`docs/ADMIN_FLEXIBILITY.md`](docs/ADMIN_FLEXIBILITY.md) | Staff lifecycle, editable roles and permissions, places, zones, help centre and other admin-editable configuration, with safeguards. |
 | [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md) | Daily checks, backups and restore, secret rotation, staff accounts and MFA reset, rollback, payment and SOS incidents, monitoring. For the engineer on call. |
 | [`docs/SUPPORT_OPERATIONS_GUIDE.md`](docs/SUPPORT_OPERATIONS_GUIDE.md) | For support, dispatch, verification and finance staff: roles, daily routine, common cases, how to change prices. |
 | [`docs/EMERGENCY_RESPONSE_PLAYBOOK.md`](docs/EMERGENCY_RESPONSE_PLAYBOOK.md) | What to do when an SOS arrives. |
@@ -122,3 +123,6 @@ Complete the checklists in [`docs/LAUNCH_CHECKLIST.md`](docs/LAUNCH_CHECKLIST.md
 - [docs/FEATURE_ROUND2.md](docs/FEATURE_ROUND2.md): growth features: guest rides, recurring rides, fixed routes, quests, campaigns, partners
 - [docs/FEATURE_ROUND3.md](docs/FEATURE_ROUND3.md): credit and loyalty, Abasare deposit, claims, USSD
 - [docs/USSD.md](docs/USSD.md): what the telecom/aggregator must configure for USSD booking
+- [docs/MOBILE_ROUND1.md](docs/MOBILE_ROUND1.md): build notes for the trust, safety and appearance screens
+- [docs/MOBILE_ROUND2.md](docs/MOBILE_ROUND2.md): build notes for the growth screens (guest rides, recurring rides, quests, demand map)
+- [docs/MOBILE_ROUND3.md](docs/MOBILE_ROUND3.md): build notes for the credit, deposit and claims screens

@@ -59,7 +59,7 @@ for (const [w, h] of VIEWPORTS) for (const inset of INSETS) {
   { const { ctx, page } = await mk(pax.tok);
     await page.goto(WEB + q); await page.getByText('Where to?').first().waitFor({ timeout: 20000 }); await check(page, 'home', { expectBack: false, expectFooter: true });
     await page.getByText('Isoko rya Kimironko', { exact: true }).or(page.getByRole('radio').nth(5)).first().click({ timeout: 3000 }).catch(() => {});
-    await page.getByText('Profile', { exact: true }).first().click(); await page.getByText('Emergency contacts').first().waitFor(); await check(page, 'profile', { expectBack: true });
+    await page.getByText('Profile', { exact: true }).first().click(); await page.getByText('Trusted contacts', { exact: true }).first().waitFor(); await check(page, 'profile', { expectBack: true });
     await page.getByLabel('Back').first().click(); await page.getByText('Help', { exact: true }).first().click(); await page.getByText('Contact support').first().waitFor(); await check(page, 'support', { expectBack: true, expectFooter: true });
     await page.getByLabel('Back').first().click(); await page.getByText('My trips', { exact: true }).first().click(); await page.getByLabel('Back').first().waitFor(); await check(page, 'history', { expectBack: true });
     await page.getByLabel('Back').first().click(); await page.getByText('Scan a code').first().click(); await page.getByPlaceholder('Code, e.g. K7M2QX').waitFor(); await check(page, 'scan', { expectBack: true, expectFooter: true });

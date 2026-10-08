@@ -11,3 +11,4 @@ Status (code written, tsc clean, unit tests green; e2e not yet run):
 - [ ] e2e/r1-e2e.mjs, regression runs, docs rows.
 
 Backend gap found: passenger booking view has NO driver id (`driver.id`), so favourite/block buttons on a finished trip are hidden unless the server adds it (code reads driver.id / driver.driver_id / driver_id). Push data carries `template_key` (+ref), not booking_id: routing uses template_key and Track falls back to the active booking.
+- ALL DONE: r1 (rw+fr), app, driver, abasare, scan, i18n, responsive, layout, r2, r3 e2e exit 0 on one stack (rm_e2e_m1:8101/8111); tsc clean; npm test green. Docs rows added.
