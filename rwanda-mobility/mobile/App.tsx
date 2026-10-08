@@ -1,15 +1,19 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/lib/app';
 import { Welcome, Phone, Otp } from './src/screens/auth';
 import { Scan } from './src/screens/scan';
 import { Home, Options, Track } from './src/screens/passenger';
-import { History, Profile, Support } from './src/screens/shared';
+import { History } from './src/screens/history';
+import { Profile } from './src/screens/profile';
+import { Support } from './src/screens/support';
 import { DriverHome } from './src/screens/driver';
+import { DriverTracker } from './src/lib/driverTracking';
+import { InsetsGate } from './src/ui/insets';
 import { Cars } from './src/screens/cars';
-import { Spinner } from './src/ui/components';
+import { Spinner, Toast } from './src/ui/components';
 import { ErrorBoundary } from './src/ui/ErrorBoundary';
 import { installErrorReporting } from './src/lib/report';
 import { initNotifications, listenForTaps, registerPush, routeFor } from './src/lib/push';
@@ -19,9 +23,6 @@ import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import { parseCode, savePending, takePending, type ParsedCode } from './src/lib/codes';
 import { kv } from './src/lib/storage';
-
-// Respect the user's font-size setting but cap it so layouts do not break (accessibility vs. layout).
-(Text as any).defaultProps = { ...((Text as any).defaultProps ?? {}), maxFontSizeMultiplier: 1.4 };
 
 initNotifications();
 
@@ -65,7 +66,7 @@ function Router() {
   const { ready, nav, toast } = useApp();
   const route = nav.stack[nav.stack.length - 1];
   let screen: React.ReactNode;
-  if (!ready || route.name === 'boot') screen = <Spinner />;
+  if (!ready || route.name === 'boot') screen = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
   else switch (route.name) {
     case 'welcome': screen = <Welcome />; break;
     case 'phone': screen = <Phone />; break;
@@ -84,7 +85,7 @@ function Router() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {screen}
-      {toast ? <View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, bottom: 36, backgroundColor: '#14281D', borderRadius: 12, padding: 12 }}><Text style={{ color: '#fff' }}>{toast}</Text></View> : null}
+      <Toast text={toast} />
     </View>
   );
 }
@@ -97,8 +98,10 @@ function Guarded() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <AppProvider><Bridges /><Guarded /></AppProvider>
+      <InsetsGate>
+        <StatusBar style="dark" />
+        <AppProvider><Bridges /><DriverTracker /><Guarded /></AppProvider>
+      </InsetsGate>
     </SafeAreaProvider>
   );
 }

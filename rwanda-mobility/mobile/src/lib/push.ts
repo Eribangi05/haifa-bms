@@ -79,3 +79,9 @@ export function listenForTaps(onTarget: (data: any) => void): () => void {
     return () => sub.remove();
   } catch { return () => {}; }
 }
+
+/** Notification permission as the OS reports it, so the UI can offer "Open settings" when it was refused. */
+export async function getPushPermission(): Promise<'granted' | 'denied' | 'undetermined' | 'unsupported'> {
+  if (!supported) return 'unsupported';
+  try { const p = await require('expo-notifications').getPermissionsAsync(); return p.status === 'granted' ? 'granted' : p.status === 'denied' ? 'denied' : 'undetermined'; } catch { return 'unsupported'; }
+}

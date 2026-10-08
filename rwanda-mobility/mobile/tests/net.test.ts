@@ -95,3 +95,35 @@ test('uuid and backoff helpers', () => {
   assert.notEqual(uuid(), uuid());
   assert.ok(backoffMs(0, () => 0.5) < backoffMs(3, () => 0.5)); assert.ok(backoffMs(20, () => 1) <= 8000);
 });
+
+test('timeouts carry the timeout code; refresh failing offline surfaces as a network error, not "signed out"', async () => {
+  const f = (_u: string, init: any) => new Promise((_r, rej) => init.signal.addEventListener('abort', () => rej(Object.assign(new Error('x'), { name: 'AbortError' }))));
+  const { c } = mk(f, undefined, { timeoutMs: 20, maxRetries: 0 });
+  await assert.rejects(() => c.get('/slow'), (e: any) => e.isTimeout && e.isNetwork);
+  const offline = async (url: string) => { if (url.endsWith('/auth/refresh')) throw new TypeError('offline'); return res(401, {}); };
+  const b = mk(offline);
+  await assert.rejects(() => b.c.get('/x'), (e: any) => e.isNetwork && e.status === 0);
+});
+
+test('per-request maxRetries overrides the client default', async () => {
+  let n = 0; const { c } = mk(async () => { n++; throw new TypeError('x'); });
+  await assert.rejects(() => c.get('/x', { maxRetries: 0 })); assert.equal(n, 1);
+});
+
+test('outbox: an item enqueued while a flush is waiting on the network is not lost', async () => {
+  const kv = mem(); let release!: () => void; const gate = new Promise<void>((r) => { release = r; }); const sent: string[] = [];
+  const f = async (_u: string, init: any) => { sent.push(init.headers['idempotency-key']); if (sent.length === 1) await gate; return res(200, { ok: true }); };
+  const { c } = mk(f, undefined, { maxRetries: 0 }); const box = createOutbox(kv, c);
+  await box.enqueue({ id: 'a', kind: 'x', path: '/a', body: {}, key: 'key-aaaaaaaa' });
+  const fl = box.flush();
+  await new Promise((r) => setTimeout(r, 10));
+  await box.enqueue({ id: 'b', kind: 'x', path: '/b', body: {}, key: 'key-bbbbbbbb' });   // lands mid-flush
+  release(); await fl;
+  assert.deepEqual(sent, ['key-aaaaaaaa', 'key-bbbbbbbb']); assert.equal((await box.list()).length, 0);
+});
+
+test('outbox: 401 keeps the item (user is signed out, not rejected); clear() empties the queue', async () => {
+  const kv = mem(); const { c } = mk(async (u: string) => (u.endsWith('/auth/refresh') ? res(401, {}) : res(401, {})), undefined, { maxRetries: 0 }); const box = createOutbox(kv, c);
+  await box.enqueue({ id: 'a', kind: 'x', path: '/a', body: {}, key: 'key-aaaaaaaa' }); await box.flush();
+  assert.equal((await box.list()).length, 1); await box.clear(); assert.equal((await box.list()).length, 0);
+});

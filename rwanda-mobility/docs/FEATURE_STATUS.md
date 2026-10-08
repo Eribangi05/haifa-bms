@@ -2,7 +2,7 @@
 
 Labels (assigned by evidence, not intent):
 
-* **TESTED** - implemented and exercised by automated tests that pass: `backend` 154 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities; the count is of `test(...)` cases in `backend/tests`); `mobile` 28 unit tests (network layer, formatting, trip logic, request-code parsing); six browser end-to-end scripts in `mobile/e2e` (passenger, driver, Abasare, languages, responsive layouts, venue QR) that drive the real React Native screens against a live backend; and four browser scripts for the operations console in `backend/scripts` (see the Admin rows).
+* **TESTED** - implemented and exercised by automated tests that pass: `backend` 154 integration/unit tests against real PostgreSQL (including a fuzz-style smoke sweep of every route with six identities; the count is of `test(...)` cases in `backend/tests`); `mobile` 29 unit tests (network layer and outbox, formatting/dates, trip and payment state logic, error mapping, request-code parsing); seven browser end-to-end scripts in `mobile/e2e` (passenger, driver, Abasare, languages, responsive layouts, venue QR, layout/insets/back across 6 phone sizes) that drive the real React Native screens against a live backend; and four browser scripts for the operations console in `backend/scripts` (see the Admin rows).
 * **IMPLEMENTED** - code exists and type-checks (and the Android bundle compiles) but has **no automated or on-device test**.
 * **SIMULATED** - works against a local stand-in, not the real external system.
 * **PENDING INTEGRATION** - needs third-party credentials/approval or a build-out not done here.
@@ -34,7 +34,7 @@ Labels (assigned by evidence, not intent):
 | Corporate booking of Abasare under company policy; scheduled Abasare; document-expiry removal from dispatch | TESTED |
 | Moto "ride home" for the driver | TESTED (API: driver books Moto from the drop-off) / IMPLEMENTED (one-tap button) |
 | Console: applications queue, approval, handover evidence in booking detail, pricing fields | IMPLEMENTED (API TESTED; not exercised in a browser) |
-| Mobile screens (owner and driver) | TESTED in browser e2e (web build); **not run on a device** |
+| Mobile screens (owner and driver) | TESTED in browser e2e (web build, incl. simulated notch/gesture-bar insets); **not run on a device** (see `AUDIT_MOBILE.md`) |
 | Pay-before-trip, auto-dispatched return Moto, insurance integration, damage-claim workflow | NOT BUILT (roadmap) |
 | Tariffs, night window, commission | PLACEHOLDERS, confirm with the client |
 | Insurance/licensing/liability rules | PENDING legal input (see `ABASARE.md` section 6) |
@@ -122,7 +122,7 @@ Labels (assigned by evidence, not intent):
 | | Settings page: grouped, labelled, units/ranges, default + reset-to-default, last change from audit, legacy keys under Advanced | TESTED (API) + browser e2e |
 | | Services screen: enable per zone, rename (rw/fr/en), seats | TESTED (API); screen rendered in browser e2e |
 | | Live map (self-hosted Leaflet, OpenStreetMap tiles, 5 s refresh that stops when you leave the page, driver and booking tables under the map, notice when tiles are blocked) | TESTED in browser (`admin-console-e2e.ts`: renders, tile failure notice); **driver and booking markers were not exercised with live traffic** (no driver was online during the run) |
-| Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android) | IMPLEMENTED (type-checked, APK built; **not run on a device**) |
+| Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android); audited: safe-area insets and visible Back on every screen, permission recovery, localised errors, offline start, driver location kept alive across screens | IMPLEMENTED (type-checked; web build e2e; **not run on a device**) |
 | | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e) |
 | | Network layer: retry/backoff, idempotency keys, single-flight refresh, persistent outbox | TESTED |
 | | iOS | NOT BUILT/UNTESTED (code is shared; no iOS build produced) |

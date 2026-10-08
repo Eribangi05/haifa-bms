@@ -10,7 +10,8 @@ Expo ships breaking changes each SDK (this project: SDK 57, React Native 0.86). 
 - `src/lib/net.ts`: platform-free API client (timeouts, backoff, single-flight token refresh, idempotency keys, persistent outbox). Unit-tested in `tests/net.test.ts` with plain Node: **keep it free of React Native imports**.
 - `src/lib/app.tsx`: context (session, language, connectivity, outbox flushing), `usePoll` (back-off polling), `useAsync`.
 - `src/lib/i18n.ts` + `src/lib/locales/{en,rw,fr}.ts`: `en` is the source; `rw` and `fr` are typed `Record<keyof en, string>` so a missing string is a compile error. Add a language by adding a locale file and registering it in `DICTS`/`LANGS`. **One language per session, never mixed**: server codes (statuses, document types, payment methods, eligibility reasons) go through `label(lang, prefix, code)`; server fields come as `name_rw/name_fr/name_en` and are read with `pick(lang, obj, 'name')`; the backend localises error messages by the `accept-language` header.
-- `src/screens/*`: `auth`, `passenger`, `driver`, `shared`. `src/ui/*`: components, theme, `MapBox` (native WebView) and `MapView.web.tsx` (iframe) sharing `mapHtml.ts`.
+- `src/screens/*`: `auth`, `scan`, `cars`, `history`, `profile`, `support`, `sos`, `passenger/` (`home`, `homeParts`, `options`, `track`, `tripParts`, `usePlaces`), `driver/` (`index`, `onboarding`, `docRow`, `working`, `offer`, `activeTrip`, `handover`, `earnings`). `src/ui/*`: components (screen shell, controls, cards), theme tokens (`C`, `SP`, `R`, `FS`, `SHADOW`), `insets` (web inset simulation), `AppModal`, `MapBox` (native WebView) and `MapView.web.tsx` (iframe) sharing `mapHtml.ts`.
+- `src/lib/`: `net` (API client + outbox, platform-free), `app` (context, `usePoll`, `useAsync`, `useBackHandler`), `hooks` (`useLocate`, `useTrip`), `driverTracking` (driver location that outlives screens), pure and unit-tested helpers `format`, `trip`, `errors`, `codes`; shared API types in `types.ts`.
 - `src/lib/codes.ts`: platform-free request-code parser / public lookup / pending-code memory (unit-tested in `tests/codes.test.ts`).
 - `e2e/`: Playwright scripts (app, driver, abasare, i18n, responsive, scan) against a running backend.
 
@@ -20,14 +21,25 @@ Expo ships breaking changes each SDK (this project: SDK 57, React Native 0.86). 
 3. Tokens live in SecureStore (native); AsyncStorage holds non-sensitive UI state only.
 4. Safety actions (SOS) look different from normal actions and never claim an agency was contacted.
 5. Driver screens: large targets, minimal typing while moving, and "use only when stopped" reminder.
-6. User-visible text goes through `t()` (never hard-code English, even for banners or accessibility labels); Kinyarwanda strings need to fit (test on a 360 px wide screen).
+6. Any error shown to a user goes through `errMsg(e)` / `errorText` (localised); never `e.message` of a network error.
+7. `useAsync().run` ignores a call made while another is running: do not nest `run` inside `run`.
+8. User-visible text goes through `t()` (never hard-code English, even for banners or accessibility labels); Kinyarwanda strings need to fit (test on a 360 px wide screen).
 
 ## Commands
 ```bash
 npx tsc --noEmit            # typecheck (run before every commit)
-npm test                    # network-layer unit tests (node --test)
+npm test                    # unit tests (node --test tests/*.test.ts): net, codes, format, trip, errors
 npx expo start --android    # dev (needs a dev build; uses native modules)
 npx expo export --platform android --output-dir /tmp/x   # verify the bundle compiles
 npm run web:export && node e2e/app-e2e.mjs /tmp/shots    # UI e2e (see docs/SETUP_AND_DEPLOYMENT.md)
 ```
+
+## Rules for every new screen (display and navigation on many phones)
+1. Build it on `Screen` (`ui/components.tsx`); never a bare `View` + `Header` + `ScrollView`. `Screen` applies all four safe-area insets, the header (with top inset), the footer (`max(inset.bottom, 12)` + gap), `KeyboardAvoidingView`, pull-to-refresh and the 640 px tablet cap. Modals use `AppModal` (own `SafeAreaProvider`, translucent bars) + `Screen`.
+2. Put the primary action in `footer` with `testID="cta"` so it is sticky above the gesture bar; floating controls and toasts must add `useSafeAreaInsets()` too.
+3. Every non-root screen passes `onBack`; the header shows a labelled Back (44 px). In-screen steps/sheets register `useBackHandler` so the Android back closes them first. Only a full-screen camera may need an extra bottom Back button.
+4. No fixed pixel heights for maps/hero blocks: use `useProportionalHeight(frac, min, max)`. Two-column grids must stack below ~340 px. Use `Text` from `ui/components` (font scale capped at 1.4; React 19 ignores `Text.defaultProps`).
+5. Forms: `keyboardType`, `returnKeyType`, `useFormFocus` for next-field focus, validation messages via `Field error`, max lengths.
+6. Test with `node e2e/layout-e2e.mjs /tmp/shots`; web can simulate insets with `?insets=top:44,bottom:48,left:0,right:0`.
+
 Release APK: see `../docs/ANDROID_BUILD.md`.

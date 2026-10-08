@@ -1,17 +1,17 @@
 import React from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useApp } from '../lib/app';
-import { Banner, Btn } from './components';
+import { Banner, Btn, Text } from './components';
 import { C, S } from './theme';
 
 /** Native QR scanner (expo-camera). The web build uses QrCamera.web.tsx, which renders nothing. */
 export const cameraSupported = true;
-export function QrCamera({ onData }: { onData: (data: string) => void }) {
+export function QrCamera({ onData, height = 320 }: { onData: (data: string) => void; height?: number }) {
   const { t } = useApp();
   const [perm, ask] = useCameraPermissions();
   const [torch, setTorch] = React.useState(false);
-  if (!perm) return <View style={{ height: 280 }} />;
+  if (!perm) return <View style={{ height: Math.min(height, 280) }} />;
   if (!perm.granted) return (
     <View style={{ marginBottom: 12 }}>
       <Banner text={`${t('scan.perm.title')}. ${t('scan.perm.body')}`} />
@@ -19,7 +19,7 @@ export function QrCamera({ onData }: { onData: (data: string) => void }) {
     </View>
   );
   return (
-    <View style={{ height: 320, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000', marginBottom: 12 }}>
+    <View style={{ height, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000', marginBottom: 12 }}>
       <CameraView style={{ flex: 1 }} facing="back" enableTorch={torch} accessibilityLabel={t('scan.a11y')}
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }} onBarcodeScanned={(r) => onData(r.data)} />
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>

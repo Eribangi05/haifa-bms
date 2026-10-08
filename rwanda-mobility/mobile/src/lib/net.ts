@@ -10,6 +10,7 @@ export class ApiError extends Error {
   status: number; code: string; details: unknown;
   constructor(status: number, code: string, message: string, details?: unknown) { super(message); this.status = status; this.code = code; this.details = details; }
   get isNetwork() { return this.status === 0; }
+  get isTimeout() { return this.code === 'timeout'; }
 }
 
 export type ClientOpts = {
@@ -17,7 +18,7 @@ export type ClientOpts = {
   fetchImpl?: typeof fetch; sleep?: (ms: number) => Promise<void>; random?: () => number;
   timeoutMs?: number; maxRetries?: number; onAuthLost?: () => void;
 };
-export type ReqOpts = { body?: unknown; idempotencyKey?: string; retry?: boolean; auth?: boolean; timeoutMs?: number; form?: FormData };
+export type ReqOpts = { body?: unknown; idempotencyKey?: string; retry?: boolean; auth?: boolean; timeoutMs?: number; form?: FormData; maxRetries?: number };
 
 const RETRY_STATUS = new Set([502, 503, 504]);
 export const backoffMs = (attempt: number, rnd = Math.random) => Math.min(8000, 400 * 2 ** attempt) * (0.5 + rnd() / 2);
@@ -27,23 +28,26 @@ export function createClient(o: ClientOpts) {
   const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const rnd = o.random ?? Math.random;
   const maxRetries = o.maxRetries ?? 3;
-  let refreshing: Promise<boolean> | null = null;
+  type Refreshed = 'ok' | 'lost' | 'offline';
+  let refreshing: Promise<Refreshed> | null = null;
 
-  async function doRefresh(): Promise<boolean> {
+  /** 'ok' = new tokens stored; 'lost' = the server rejected the refresh token (signed out); 'offline' = could not reach the server (tokens kept). */
+  async function refreshOnce(): Promise<Refreshed> {
     if (refreshing) return refreshing;           // single flight: parallel 401s trigger one refresh
-    refreshing = (async () => {
+    refreshing = (async (): Promise<Refreshed> => {
       const t = await o.tokens.get();
-      if (!t) return false;
+      if (!t) return 'lost';
       try {
         const r = await f(o.baseUrl + '/api/v1/auth/refresh', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refresh_token: t.refresh_token }) });
-        if (!r.ok) { if (r.status === 401 || r.status === 403) { await o.tokens.set(null); o.onAuthLost?.(); } return false; }
+        if (!r.ok) { if (r.status === 401 || r.status === 403) { await o.tokens.set(null); o.onAuthLost?.(); return 'lost'; } return 'offline'; }   // 5xx: keep the session, retry later
         const j: any = await r.json();
         await o.tokens.set({ access_token: j.access_token, refresh_token: j.refresh_token });
-        return true;
-      } catch { return false; }                  // offline: keep the tokens, try again later
+        return 'ok';
+      } catch { return 'offline'; }              // offline: keep the tokens, try again later
     })().finally(() => { refreshing = null; });
     return refreshing;
   }
+  const doRefresh = async () => (await refreshOnce()) === 'ok';
 
   async function once(method: string, path: string, ro: ReqOpts, token: string | null): Promise<{ status: number; json: any }> {
     const ctl = new AbortController();
@@ -62,6 +66,7 @@ export function createClient(o: ClientOpts) {
 
   async function request<T = any>(method: string, path: string, ro: ReqOpts = {}): Promise<T> {
     const safeToRetry = method === 'GET' || ro.retry === true || !!ro.idempotencyKey;
+    const retries = ro.maxRetries ?? maxRetries;
     let refreshed = false;
     for (let attempt = 0; ; attempt++) {
       let res: { status: number; json: any };
@@ -69,22 +74,24 @@ export function createClient(o: ClientOpts) {
         const t = ro.auth === false ? null : (await o.tokens.get())?.access_token ?? null;
         res = await once(method, path, ro, t);
       } catch (e: any) {
-        if (safeToRetry && attempt < maxRetries) { await sleep(backoffMs(attempt, rnd)); continue; }
-        throw new ApiError(0, 'network', e?.name === 'AbortError' ? 'Request timed out' : 'No connection');
+        if (safeToRetry && attempt < retries) { await sleep(backoffMs(attempt, rnd)); continue; }
+        throw e?.name === 'AbortError' ? new ApiError(0, 'timeout', 'Request timed out') : new ApiError(0, 'network', 'No connection');
       }
       if (res.status === 401 && ro.auth !== false && !refreshed) {
         refreshed = true;
-        if (await doRefresh()) continue;
+        const r = await refreshOnce();
+        if (r === 'ok') continue;
+        if (r === 'offline') throw new ApiError(0, 'network', 'No connection');   // not signed out: just cannot reach the server right now
         throw new ApiError(401, 'unauthorized', res.json?.error?.message ?? 'Signed out');
       }
-      if (RETRY_STATUS.has(res.status) && safeToRetry && attempt < maxRetries) { await sleep(backoffMs(attempt, rnd)); continue; }
+      if (RETRY_STATUS.has(res.status) && safeToRetry && attempt < retries) { await sleep(backoffMs(attempt, rnd)); continue; }
       if (res.status >= 200 && res.status < 300) return res.json as T;
       const e = res.json?.error;
       throw new ApiError(res.status, e?.code ?? 'error', e?.message ?? `Request failed (${res.status})`, e?.details);
     }
   }
   return {
-    request, refresh: doRefresh, get: <T = any>(p: string) => request<T>('GET', p),
+    request, refresh: doRefresh, get: <T = any>(p: string, ro: ReqOpts = {}) => request<T>('GET', p, ro),
     post: <T = any>(p: string, body?: unknown, ro: ReqOpts = {}) => request<T>('POST', p, { ...ro, body: body ?? (ro.form ? undefined : {}) }),
     patch: <T = any>(p: string, body?: unknown) => request<T>('PATCH', p, { body: body ?? {} }),
     del: <T = any>(p: string) => request<T>('DELETE', p),
@@ -100,34 +107,39 @@ export function createOutbox(kv: KV, client: Client, now: () => number = Date.no
   let flushing: Promise<void> | null = null;
   const listeners = new Set<() => void>();
   const load = async (): Promise<OutboxItem[]> => { try { return JSON.parse((await kv.get(OUTBOX_KEY)) ?? '[]'); } catch { return []; } };
-  const save = async (items: OutboxItem[]) => { await kv.set(OUTBOX_KEY, JSON.stringify(items)); listeners.forEach((l) => l()); };
+  // Every read-modify-write goes through one queue, so an enqueue that lands while a flush is awaiting the network can never be overwritten by the flush.
+  let chain: Promise<unknown> = Promise.resolve();
+  const mutate = <T,>(fn: (items: OutboxItem[]) => T | Promise<T>): Promise<T> => {
+    const run = chain.then(async () => { const items = await load(); const out = await fn(items); await kv.set(OUTBOX_KEY, JSON.stringify(items)); listeners.forEach((l) => l()); return out; });
+    chain = run.catch(() => undefined); return run;
+  };
 
   async function enqueue(item: Omit<OutboxItem, 'createdAt' | 'attempts'>) {
-    const items = await load();
-    if (items.some((i) => i.id === item.id)) return;       // enqueue is idempotent
-    items.push({ ...item, createdAt: now(), attempts: 0 }); await save(items);
+    await mutate((items) => { if (!items.some((i) => i.id === item.id)) items.push({ ...item, createdAt: now(), attempts: 0 }); });   // enqueue is idempotent
   }
-  /** Sends queued items in order. Network failure keeps them; a definitive server answer (2xx, 4xx) removes them. */
+  const drop = (id: string) => mutate((items) => { const i = items.findIndex((x) => x.id === id); if (i >= 0) items.splice(i, 1); });
+  /** Sends queued items in order. Network failure, 5xx and 401 (signed out) keep them; any other definitive server answer (2xx, 4xx) removes them. Items queued while flushing are picked up in the same run. */
   function flush(onResult?: (item: OutboxItem, result: { ok: boolean; data?: any; error?: ApiError }) => void): Promise<void> {
     if (flushing) return flushing;
     flushing = (async () => {
-      let items = await load();
-      for (const it of [...items]) {
+      const tried = new Set<string>();
+      for (;;) {
+        const it = (await load()).find((x) => !tried.has(x.id)); if (!it) break;
+        tried.add(it.id);
         try {
           const data = await client.request('POST', it.path, { body: it.body, idempotencyKey: it.key });
-          items = items.filter((x) => x.id !== it.id); await save(items); onResult?.(it, { ok: true, data });
+          await drop(it.id); onResult?.(it, { ok: true, data });
         } catch (e: any) {
           const err = e as ApiError;
-          if (err.isNetwork || err.status >= 500) { it.attempts++; it.error = err.message; await save(items); break; }          // stop; retry later, keep order
+          if (err.isNetwork || err.status >= 500 || err.status === 401) { await mutate((items) => { const x = items.find((y) => y.id === it.id); if (x) { x.attempts++; x.error = err.message; } }); break; }          // stop; retry later, keep order
           const done = !!it.treatConflictAsDone && err.status === 409;
-          items = items.filter((x) => x.id !== it.id); await save(items); onResult?.(it, { ok: done, error: err });
+          await drop(it.id); onResult?.(it, { ok: done, error: err });
         }
       }
     })().finally(() => { flushing = null; });
     return flushing;
   }
-  return { enqueue, flush, list: load, onChange: (l: () => void) => { listeners.add(l); return () => listeners.delete(l); },
-    remove: async (id: string) => save((await load()).filter((i) => i.id !== id)) };
+  return { enqueue, flush, list: load, onChange: (l: () => void) => { listeners.add(l); return () => listeners.delete(l); }, remove: drop, clear: () => mutate((items) => { items.length = 0; }) };
 }
 export type Outbox = ReturnType<typeof createOutbox>;
 

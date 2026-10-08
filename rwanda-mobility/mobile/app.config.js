@@ -12,7 +12,8 @@ module.exports = () => ({
     version: '0.5.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'light',
+    userInterfaceStyle: 'light',   // light only: expo-system-ui applies it to the Android system bars so their icons stay dark on our light screens
+    backgroundColor: '#F3F6FB',
     splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#FFFFFF' },
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
     android: {
