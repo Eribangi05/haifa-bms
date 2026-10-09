@@ -47,7 +47,7 @@ export const growthFr: Record<keyof typeof growthEn, string> = {
   'r2.sch.pause': 'Mettre en pause',
   'r2.sch.resume': 'Reprendre',
   'r2.sch.skip': 'Sauter la prochaine course',
-  'r2.sch.end': 'Terminer le plan',
+  'r2.sch.end': 'Arrêter la récurrence',
   'r2.sch.end.confirm': 'Terminer cette course récurrente ? Les courses déjà réservées restent réservées.',
   'r2.sch.skip.done': 'Prochaine course sautée',
   'r2.sch.skip.cancelled': 'Prochaine course sautée et sa réservation annulée sans frais',
