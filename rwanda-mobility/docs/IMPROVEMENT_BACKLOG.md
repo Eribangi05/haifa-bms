@@ -63,3 +63,8 @@ Checked by: 311 backend tests, 79 mobile unit tests, browser tests of the rider 
 * Road routing with turn restrictions and time-of-day speeds (the router uses free-flow speed per road class).
 * An automatic first check of driver documents (photo quality, expiry reading).
 * A hosted map CDN once traffic grows (the map file is served by the API today).
+
+## Added in 0.9.1
+
+* Loud repeating request chime with vibration for drivers, chat ping for both sides, push channels with custom sounds (needs push credentials to work in the background).
+* About 19,000 villages, cells, towns and the 30 districts searchable; pickup named "Near {place}".

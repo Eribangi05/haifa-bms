@@ -43,6 +43,8 @@ The offline cache for screens (trips, credit, earnings, driver status, landmarks
 * Data: © OpenStreetMap contributors, ODbL. Tile design: © OpenMapTiles, CC-BY. Both credits are shown on the map. Fonts: Noto Sans (SIL OFL). MapLibre GL: BSD-3 (`backend/map/lib/LICENSE-maplibre.txt`).
 * Cost: the file is served from the API (Render). 45 MB of storage, and bandwidth only for the pieces riders open. For heavy traffic put `rwanda.pmtiles` and `lib/` on a CDN or object storage and set `EXPO_PUBLIC_MAP_BASE` to its address.
 
+* Villages, cells, towns and the 30 districts (`backend/map/localities.json`, built by `scripts/map/localities.py` from the owner-supplied CSV of Rwanda administrative places): the owner confirms it is an open, community-contributed dataset that is free to use. It adds about 19,000 names to search and names the rider's pickup ("Near {place}", `GET /places/reverse`). It has no categories and is ranked below OpenStreetMap places. Keep the source's credit line here if it asks for one.
+
 ## Refreshing the data
 
 `scripts/map/build.sh` downloads the latest Rwanda extract and rebuilds `rwanda.pmtiles` (needs Java 17+, about 8 GB RAM, 5 minutes). Do this every few months. Street and building detail improves as OpenStreetMap volunteers edit (openstreetmap.org); this is the only way to correct a missing street or place.

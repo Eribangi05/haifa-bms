@@ -190,3 +190,13 @@ Labels (assigned by evidence, not intent):
 | Offline map of Kigali and saved copies of screens | TESTED in a browser (199 map pieces saved; map drew with the map file blocked; Trips tab showed the saved copy); not tested on Android |
 | Compiled production server (`node dist/server.js`) | TESTED locally (health, console, map, ready); the Docker image build runs in CI |
 
+
+## Request notification sounds (0.9.1)
+
+* **TESTED**: the in-app alert logic (rings on a new request, stops on accept/reject/empty list/background; unit tests), the push message mapping (request → channel `offers_v2` with `offer.wav`, chat → `messages_v1` with `ping.wav`; backend test SOUND-01), and a browser end-to-end check that the app asks for the request sound when an offer arrives.
+* **PENDING on a real phone**: hearing it (a browser test cannot hear audio), and ringing while the app is closed, which needs Firebase/Expo push credentials. An Android channel's sound is fixed when the channel is first created, which is why the channel is named `offers_v2`: on a phone with the app already installed the new channel is created at first launch of this version.
+* Riders and drivers can turn request and chat sounds off in Settings > Appearance > Sounds; there is a test button.
+
+## Village and district search (0.9.1)
+
+* **TESTED**: `localities.json` search and `GET /places/reverse` (backend test MAP-04), "Near {place}" pickup naming wired in the passenger home screen (type-checked; not field-checked in the countryside).

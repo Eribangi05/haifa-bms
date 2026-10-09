@@ -64,7 +64,7 @@ await step('offer appears with earnings; accept', async () => {
   const e = await call('POST', '/fares/estimate', { t: passenger.t, body: { pickup: { lat: -1.954, lng: 30.0927 }, dest: { lat: -1.9496, lng: 30.1262 }, service_id: 'moto' } });
   const q = e.j.options[0]; if (!q.quote_id) throw new Error('moto not available: ' + JSON.stringify(q.reason));
   const b = await call('POST', '/bookings', { t: passenger.t, h: { 'idempotency-key': 'drv-e2e-' + Date.now() }, body: { quote_id: q.quote_id, payment_method: 'cash', pickup_name: 'KCC', dest_name: 'Kimironko' } }); bid = b.j.booking.id;
-  await page.getByText('You earn').waitFor({ timeout: 20000 }); await shot('7-offer'); await page.getByText('Accept', { exact: true }).click();
+  await page.getByText('You earn').waitFor({ timeout: 20000 }); if (!(await page.evaluate(() => (globalThis.__abasareSounds ?? []).some((e) => (e.k ?? e.kind ?? e) === 'offer' || JSON.stringify(e).includes('offer')))))  throw new Error('no offer sound was started'); await shot('7-offer'); await page.getByText('Accept', { exact: true }).click();
   await page.getByText('I am on my way', { exact: true }).waitFor({ timeout: 20000 });
 });
 await step('en route -> arrived (needs real GPS within 500 m) ', async () => { await page.getByText('I am on my way', { exact: true }).click(); await page.waitForTimeout(800); await page.getByText('I have arrived', { exact: true }).click(); await page.getByText('Enter passenger PIN').waitFor({ timeout: 20000 }); await shot('8-arrived'); });
