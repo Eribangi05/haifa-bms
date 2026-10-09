@@ -1,6 +1,6 @@
 # Entity-relationship overview
 
-> **Generated** from the migrated PostgreSQL schema by `docs/tools/gen-erd.mjs` (66 tables, 106 foreign keys, migrations 001 to 008). Do not edit by hand: change a migration, run it, then regenerate:
+> **Generated** from the migrated PostgreSQL schema by `docs/tools/gen-erd.mjs` (97 tables, 181 foreign keys, migrations 001 to 017). Do not edit by hand: change a migration, run it, then regenerate:
 > `DATABASE_URL=postgres://rm:rm@localhost:5432/rwanda_mobility node docs/tools/gen-erd.mjs`
 
 Full DDL with checks, partial unique indexes and triggers lives in [`backend/migrations/`](../backend/migrations). One diagram per module showing each table's columns and its outgoing foreign keys; a table from another module appears as a bare box where a key crosses modules. Columns are marked `PK` / `FK`. The table index lists how many columns are nullable.
@@ -17,6 +17,15 @@ Full DDL with checks, partial unique indexes and triggers lives in [`backend/mig
 | 006 | `006_request_codes.sql` | Request codes (venue QR codes) and `bookings.request_code_id` |
 | 007 | `007_pricing_flex.sql` | Pricing time windows (`pricing_rules.time_multipliers`), promotion audiences (`segment`, `segment_phones`) |
 | 008 | `008_audit_hardening.sql` | Audit follow-ups: indexes on hot paths, case-insensitive unique e-mail |
+| 009 | `009_safety_sharing.sql` |  |
+| 010 | `010_trust_tips.sql` |  |
+| 011 | `011_guest_schedules_fixed_routes.sql` |  |
+| 012 | `012_quests_campaigns.sql` |  |
+| 013 | `013_partners.sql` |  |
+| 014 | `014_credit_loyalty_deposit.sql` |  |
+| 015 | `015_claims.sql` |  |
+| 016 | `016_ussd.sql` |  |
+| 017 | `017_admin_flexibility.sql` |  |
 
 ## Identity and privacy
 
@@ -30,8 +39,14 @@ erDiagram
   users ||--o{ push_tokens : "user_id"
   roles ||--o{ role_permissions : "role"
   users ||--o{ sessions : "user_id"
+  users |o--o{ sms_opt_outs : "created_by"
   users |o--o{ staff_invites : "invited_by"
+  partners |o--o{ staff_invites : "partner_id"
+  users |o--o{ staff_invites : "user_id"
+  roles ||--o{ user_roles : "role"
   users ||--o{ user_roles : "user_id"
+  users |o--o{ ussd_phones : "user_id"
+  bookings |o--o{ ussd_sessions : "booking_id"
   users {
     uuid id PK
     text phone
@@ -51,6 +66,9 @@ erDiagram
     timestamptz locked_until
     timestamptz created_at
     timestamptz updated_at
+    boolean auto_share
+    timestamptz removed_at
+    timestamptz anonymised_at
   }
   user_roles {
     uuid user_id PK
@@ -59,6 +77,14 @@ erDiagram
   roles {
     text name PK
     text description
+    text label
+    boolean builtin
+    boolean is_staff
+    boolean customized
+    uuid created_by
+    timestamptz created_at
+    timestamptz updated_at
+    uuid updated_by
   }
   role_permissions {
     text role PK
@@ -120,6 +146,9 @@ erDiagram
     timestamptz used_at
     timestamptz revoked_at
     timestamptz created_at
+    uuid partner_id FK
+    text purpose
+    uuid user_id FK
   }
   push_tokens {
     uuid id PK
@@ -138,6 +167,37 @@ erDiagram
     timestamptz created_at
     timestamptz checked_at
   }
+  sms_opt_outs {
+    text phone PK
+    text source
+    uuid created_by FK
+    timestamptz created_at
+  }
+  ussd_phones {
+    text phone PK
+    text language
+    timestamptz terms_accepted_at
+    uuid user_id FK
+    timestamptz last_seen_at
+    timestamptz created_at
+  }
+  ussd_sessions {
+    text session_id PK
+    text phone
+    text provider
+    text service_code
+    text step
+    jsonb state
+    text language
+    text last_text
+    text last_response
+    integer screens
+    text outcome
+    uuid booking_id FK
+    timestamptz expires_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
 ```
 
 ## Rider
@@ -145,7 +205,33 @@ erDiagram
 ```mermaid
 erDiagram
   users ||--o{ emergency_contacts : "user_id"
+  bookings ||--o{ guest_messages : "booking_id"
+  users ||--o{ loyalty_accounts : "user_id"
+  bookings |o--o{ loyalty_events : "booking_id"
+  users ||--o{ loyalty_events : "user_id"
+  users ||--o{ passenger_driver_prefs : "driver_id"
+  users ||--o{ passenger_driver_prefs : "passenger_id"
+  bookings |o--o{ ride_schedule_runs : "booking_id"
+  ride_schedules ||--o{ ride_schedule_runs : "schedule_id"
+  customer_vehicles |o--o{ ride_schedules : "customer_vehicle_id"
+  service_categories ||--o{ ride_schedules : "service_id"
+  users ||--o{ ride_schedules : "user_id"
   users ||--o{ saved_places : "user_id"
+  bookings ||--o{ tips : "booking_id"
+  users ||--o{ tips : "driver_id"
+  users ||--o{ tips : "passenger_id"
+  payments |o--o{ tips : "payment_id"
+  bookings ||--o{ trip_contact_notices : "booking_id"
+  emergency_contacts ||--o{ trip_contact_notices : "contact_id"
+  users |o--o{ wallet_adjustments : "decided_by"
+  users ||--o{ wallet_adjustments : "requested_by"
+  users ||--o{ wallet_adjustments : "user_id"
+  bookings ||--o{ wallet_holds : "booking_id"
+  users ||--o{ wallet_holds : "user_id"
+  users ||--o{ wallet_lots : "user_id"
+  bookings |o--o{ wallet_txns : "booking_id"
+  users |o--o{ wallet_txns : "created_by"
+  users ||--o{ wallet_txns : "user_id"
   saved_places {
     uuid id PK
     uuid user_id FK
@@ -162,6 +248,151 @@ erDiagram
     text name
     text phone
     timestamptz created_at
+    boolean notify_on_trip
+    text lang
+  }
+  passenger_driver_prefs {
+    uuid passenger_id PK
+    uuid driver_id PK
+    text kind
+    timestamptz created_at
+  }
+  tips {
+    uuid id PK
+    uuid booking_id FK
+    uuid passenger_id FK
+    uuid driver_id FK
+    integer amount
+    text method
+    uuid payment_id FK
+    timestamptz created_at
+  }
+  trip_contact_notices {
+    uuid booking_id PK
+    uuid contact_id PK
+    text kind PK
+    timestamptz created_at
+  }
+  guest_messages {
+    uuid id PK
+    uuid booking_id FK
+    text kind
+    text dedupe_key
+    text lang
+    text body
+    text status
+    integer attempts
+    text error
+    timestamptz next_attempt_at
+    timestamptz created_at
+    timestamptz sent_at
+  }
+  ride_schedules {
+    uuid id PK
+    uuid user_id FK
+    text label
+    text service_id FK
+    uuid customer_vehicle_id FK
+    integer hours
+    boolean owner_attested
+    float8 pickup_lat
+    float8 pickup_lng
+    text pickup_name
+    float8 dest_lat
+    float8 dest_lng
+    text dest_name
+    int2[] days_of_week
+    text local_time
+    date start_date
+    date end_date
+    text status
+    date[] skip_dates
+    text payment_method
+    integer expected_total
+    timestamptz expected_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ride_schedule_runs {
+    uuid id PK
+    uuid schedule_id FK
+    date occurrence_date
+    timestamptz scheduled_for
+    text status
+    uuid booking_id FK
+    integer quoted_total
+    text detail
+    integer attempts
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  loyalty_accounts {
+    uuid user_id PK
+    integer points
+    integer lifetime_points
+    text tier
+    timestamptz updated_at
+  }
+  loyalty_events {
+    bigint id PK
+    uuid user_id FK
+    text kind
+    integer points
+    uuid booking_id FK
+    text memo
+    text idem_key
+    timestamptz created_at
+  }
+  wallet_lots {
+    uuid id PK
+    uuid user_id FK
+    integer amount
+    integer remaining
+    text source
+    timestamptz expires_at
+    timestamptz reminded_at
+    timestamptz created_at
+  }
+  wallet_holds {
+    uuid id PK
+    uuid booking_id FK
+    uuid user_id FK
+    integer amount
+    integer remaining
+    jsonb allocations
+    text status
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  wallet_txns {
+    bigint id PK
+    uuid user_id FK
+    text kind
+    text source
+    integer available_delta
+    integer held_delta
+    integer available_after
+    integer held_after
+    uuid booking_id FK
+    text ref_type
+    text ref_id
+    text memo
+    text idem_key
+    uuid ledger_txn_id
+    uuid created_by FK
+    timestamptz created_at
+  }
+  wallet_adjustments {
+    uuid id PK
+    uuid user_id FK
+    integer amount
+    text source
+    text reason
+    text status
+    uuid requested_by FK
+    uuid decided_by FK
+    timestamptz created_at
+    timestamptz decided_at
   }
 ```
 
@@ -214,6 +445,8 @@ erDiagram
     jsonb polygon
     boolean active
     jsonb config
+    timestamptz updated_at
+    uuid updated_by
   }
   zone_services {
     text zone_id PK
@@ -230,6 +463,9 @@ erDiagram
     text zone_id FK
     boolean designated_pickup
     text name_fr
+    boolean active
+    timestamptz updated_at
+    uuid updated_by
   }
   pricing_rules {
     uuid id PK
@@ -356,11 +592,17 @@ erDiagram
 
 ```mermaid
 erDiagram
+  driver_profiles ||--o{ driver_badge_grants : "driver_id"
+  users |o--o{ driver_badge_grants : "granted_by"
+  users |o--o{ driver_badge_grants : "revoked_by"
   driver_profiles ||--o{ driver_documents : "driver_id"
   users |o--o{ driver_documents : "reviewer_id"
   fleets |o--o{ driver_profiles : "fleet_id"
   users ||--o{ driver_profiles : "user_id"
   service_zones |o--o{ driver_profiles : "zone_id"
+  driver_profiles ||--o{ driver_quest_awards : "driver_id"
+  driver_quests ||--o{ driver_quest_awards : "quest_id"
+  users |o--o{ driver_quests : "created_by"
   driver_profiles ||--o{ driver_status_history : "driver_id"
   driver_profiles ||--o{ vehicles : "driver_id"
   fleets |o--o{ vehicles : "fleet_id"
@@ -457,6 +699,50 @@ erDiagram
     timestamptz recorded_at
     timestamptz received_at
   }
+  driver_badge_grants {
+    uuid id PK
+    uuid driver_id FK
+    text badge
+    text reason
+    uuid granted_by FK
+    timestamptz granted_at
+    timestamptz revoked_at
+    uuid revoked_by FK
+    text revoke_reason
+  }
+  driver_quests {
+    uuid id PK
+    text title_en
+    text title_rw
+    text title_fr
+    text desc_en
+    text desc_rw
+    text desc_fr
+    text kind
+    integer target
+    text quest_window
+    integer reward
+    text[] service_ids
+    date starts_on
+    date ends_on
+    integer budget_cap
+    integer spent
+    boolean active
+    boolean placeholder
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  driver_quest_awards {
+    uuid id PK
+    uuid quest_id FK
+    uuid driver_id FK
+    text period_key
+    integer amount
+    integer progress
+    uuid txn_id
+    timestamptz created_at
+  }
 ```
 
 ## Abasare (own-car hire)
@@ -465,7 +751,21 @@ erDiagram
 erDiagram
   bookings ||--o{ abasare_handovers : "booking_id"
   users ||--o{ abasare_handovers : "submitted_by"
+  bookings ||--o{ booking_deposits : "booking_id"
+  users ||--o{ booking_deposits : "user_id"
+  users |o--o{ claim_events : "author_id"
+  claims ||--o{ claim_events : "claim_id"
+  claims ||--o{ claim_evidence : "claim_id"
+  users |o--o{ claim_evidence : "uploaded_by"
+  users |o--o{ claims : "assigned_to"
+  bookings ||--o{ claims : "booking_id"
+  users |o--o{ claims : "decided_by"
+  users ||--o{ claims : "filed_by"
+  users |o--o{ claims : "respondent_id"
+  users |o--o{ claims : "settlement_approved_by"
+  users |o--o{ claims : "settlement_requested_by"
   users ||--o{ customer_vehicles : "owner_id"
+  booking_deposits ||--o{ deposit_attempts : "deposit_id"
   bookings ||--o{ handover_photos : "booking_id"
   users ||--o{ handover_photos : "uploaded_by"
   customer_vehicles {
@@ -505,13 +805,106 @@ erDiagram
     uuid uploaded_by FK
     timestamptz created_at
   }
+  booking_deposits {
+    uuid id PK
+    uuid booking_id FK
+    uuid user_id FK
+    integer percent
+    integer amount
+    text status
+    integer held
+    integer applied
+    integer refunded
+    integer retained
+    timestamptz expires_at
+    timestamptz paid_at
+    text paid_with
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  deposit_attempts {
+    uuid id PK
+    uuid deposit_id FK
+    text reference
+    text method
+    text status
+    text msisdn_masked
+    text provider_reference
+    text failure_reason
+    integer amount
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  claims {
+    uuid id PK
+    text ref
+    uuid booking_id FK
+    text claim_type
+    uuid filed_by FK
+    text filer_role
+    uuid respondent_id FK
+    text respondent_role
+    text description
+    integer claimed_amount
+    text status
+    uuid assigned_to FK
+    timestamptz sla_due_at
+    timestamptz info_due_at
+    timestamptz reply_due_at
+    timestamptz replied_at
+    integer decision_amount
+    text decision_reason
+    uuid decided_by FK
+    timestamptz decided_at
+    text settlement_kind
+    text settlement_status
+    integer settlement_amount
+    uuid settlement_requested_by FK
+    uuid settlement_approved_by FK
+    text settlement_reference
+    timestamptz settled_at
+    timestamptz closed_at
+    text policy_ref
+    text insurer_claim_ref
+    text insurer_status
+    timestamptz sla_warned_at
+    timestamptz reply_reminded_at
+    timestamptz info_reminded_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  claim_events {
+    bigint id PK
+    uuid claim_id FK
+    uuid author_id FK
+    text author_role
+    text kind
+    text visibility
+    text body
+    jsonb meta
+    timestamptz created_at
+  }
+  claim_evidence {
+    uuid id PK
+    uuid claim_id FK
+    uuid uploaded_by FK
+    text source
+    text handover_phase
+    text file_key
+    text caption
+    timestamptz created_at
+  }
 ```
 
 ## Fleets and business accounts
 
 ```mermaid
 erDiagram
+  campaigns ||--o{ campaign_recipients : "campaign_id"
+  users ||--o{ campaign_recipients : "user_id"
+  users |o--o{ campaigns : "created_by"
   users |o--o{ corporate_accounts : "created_by"
+  partners |o--o{ corporate_accounts : "partner_id"
   corporate_accounts ||--o{ corporate_invoices : "corporate_id"
   corporate_accounts ||--o{ corporate_members : "corporate_id"
   users ||--o{ corporate_members : "user_id"
@@ -519,6 +912,10 @@ erDiagram
   fleets ||--o{ fleet_members : "fleet_id"
   users ||--o{ fleet_members : "user_id"
   users ||--o{ fleets : "owner_user_id"
+  partners ||--o{ partner_users : "partner_id"
+  users ||--o{ partner_users : "user_id"
+  corporate_accounts |o--o{ partners : "corporate_id"
+  users |o--o{ partners : "created_by"
   fleets {
     uuid id PK
     text name
@@ -550,6 +947,7 @@ erDiagram
     jsonb policy
     uuid created_by FK
     timestamptz created_at
+    uuid partner_id FK
   }
   corporate_members {
     uuid corporate_id PK
@@ -569,6 +967,53 @@ erDiagram
     text status
     timestamptz created_at
   }
+  partners {
+    uuid id PK
+    text name
+    text contact_name
+    text contact_phone
+    text contact_email
+    text status
+    jsonb billing_terms
+    uuid corporate_id FK
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  partner_users {
+    uuid user_id PK
+    uuid partner_id FK
+    timestamptz created_at
+  }
+  campaigns {
+    uuid id PK
+    text name
+    text channel
+    jsonb segment
+    text title_rw
+    text title_fr
+    text title_en
+    text msg_rw
+    text msg_fr
+    text msg_en
+    timestamptz scheduled_at
+    text status
+    jsonb stats
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+    timestamptz started_at
+    timestamptz finished_at
+  }
+  campaign_recipients {
+    bigint id PK
+    uuid campaign_id FK
+    uuid user_id FK
+    text lang
+    text status
+    timestamptz created_at
+    timestamptz sent_at
+  }
 ```
 
 ## Bookings and dispatch
@@ -579,6 +1024,7 @@ erDiagram
   corporate_accounts |o--o{ bookings : "corporate_id"
   customer_vehicles |o--o{ bookings : "customer_vehicle_id"
   driver_profiles |o--o{ bookings : "driver_id"
+  partners |o--o{ bookings : "partner_id"
   users ||--o{ bookings : "passenger_id"
   users |o--o{ bookings : "pin_override_by"
   fare_quotes ||--o{ bookings : "quote_id"
@@ -588,15 +1034,23 @@ erDiagram
   service_zones ||--o{ bookings : "zone_id"
   bookings ||--o{ dispatch_offers : "booking_id"
   driver_profiles ||--o{ dispatch_offers : "driver_id"
+  users |o--o{ fixed_routes : "approved_by"
+  users |o--o{ fixed_routes : "created_by"
+  places |o--o{ fixed_routes : "from_place_id"
+  users |o--o{ fixed_routes : "proposed_by"
+  service_categories ||--o{ fixed_routes : "service_id"
+  places |o--o{ fixed_routes : "to_place_id"
   bookings ||--o{ ratings : "booking_id"
   users ||--o{ ratings : "reviewee_id"
   users ||--o{ ratings : "reviewer_id"
+  partners |o--o{ request_codes : "partner_id"
   users |o--o{ safety_blocks : "created_by"
   users ||--o{ safety_blocks : "driver_id"
   users ||--o{ safety_blocks : "passenger_id"
   bookings ||--o{ trip_messages : "booking_id"
   users ||--o{ trip_messages : "sender_id"
   bookings ||--o{ trip_shares : "booking_id"
+  emergency_contacts |o--o{ trip_shares : "contact_id"
   users ||--o{ trip_shares : "created_by"
   bookings {
     uuid id PK
@@ -655,6 +1109,21 @@ erDiagram
     timestamptz owner_attested_at
     integer overtime_blocks
     uuid request_code_id FK
+    boolean safety_checks
+    boolean auto_share
+    timestamptz safety_checked_at
+    boolean prefer_favourite
+    text guest_name
+    text guest_phone
+    text guest_lang
+    timestamptz guest_purged_at
+    uuid partner_id FK
+    boolean partner_billed
+    text wallet_mode
+    integer wallet_reserved
+    integer wallet_applied
+    integer deposit_applied
+    text channel
   }
   booking_events {
     bigint id PK
@@ -691,6 +1160,9 @@ erDiagram
     timestamptz revoked_at
     uuid created_by FK
     timestamptz created_at
+    uuid contact_id FK
+    boolean hide_destination
+    boolean auto
   }
   trip_messages {
     bigint id PK
@@ -730,6 +1202,36 @@ erDiagram
     timestamptz expires_at
     integer scans
     uuid created_by
+    timestamptz created_at
+    timestamptz updated_at
+    uuid partner_id FK
+    boolean bill_to_partner
+  }
+  fixed_routes {
+    uuid id PK
+    text name_en
+    text name_rw
+    text name_fr
+    uuid from_place_id FK
+    float8 from_lat
+    float8 from_lng
+    integer from_radius_m
+    uuid to_place_id FK
+    float8 to_lat
+    float8 to_lng
+    integer to_radius_m
+    text service_id FK
+    integer price
+    boolean bidirectional
+    boolean active
+    timestamptz valid_from
+    timestamptz valid_to
+    boolean placeholder
+    jsonb pending
+    uuid proposed_by FK
+    timestamptz proposed_at
+    uuid approved_by FK
+    uuid created_by FK
     timestamptz created_at
     timestamptz updated_at
   }
@@ -778,6 +1280,7 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
     timestamptz completed_at
+    text kind
   }
   payment_provider_events {
     bigint id PK
@@ -840,6 +1343,7 @@ erDiagram
     text note
     timestamptz requested_at
     timestamptz paid_at
+    text idempotency_key
   }
   refunds {
     uuid id PK
@@ -853,6 +1357,7 @@ erDiagram
     uuid approved_by FK
     timestamptz created_at
     timestamptz processed_at
+    boolean as_credit
   }
   passenger_debts {
     uuid id PK
@@ -896,6 +1401,12 @@ erDiagram
 erDiagram
   users |o--o{ case_events : "author_id"
   support_cases ||--o{ case_events : "case_id"
+  bookings ||--o{ safety_alerts : "booking_id"
+  support_cases |o--o{ safety_alerts : "case_id"
+  users |o--o{ safety_alerts : "driver_id"
+  safety_incidents |o--o{ safety_alerts : "incident_id"
+  users ||--o{ safety_alerts : "passenger_id"
+  users |o--o{ safety_alerts : "resolved_by"
   users |o--o{ safety_incidents : "acknowledged_by"
   bookings |o--o{ safety_incidents : "booking_id"
   users ||--o{ safety_incidents : "reporter_id"
@@ -944,6 +1455,52 @@ erDiagram
     text resolution
     timestamptz created_at
   }
+  safety_alerts {
+    uuid id PK
+    text ref
+    uuid booking_id FK
+    uuid passenger_id FK
+    uuid driver_id FK
+    text kind
+    text status
+    text answer
+    jsonb detail
+    float8 lat
+    float8 lng
+    timestamptz asked_at
+    timestamptz respond_by
+    timestamptz responded_at
+    timestamptz escalated_at
+    text escalation_reason
+    uuid incident_id FK
+    uuid case_id FK
+    uuid resolved_by FK
+    timestamptz resolved_at
+    text resolution
+    timestamptz created_at
+  }
+  support_categories {
+    text category PK
+    text priority
+    integer sla_hours
+    boolean sensitive
+    uuid updated_by
+    timestamptz updated_at
+  }
+  faq_entries {
+    text id PK
+    text q_en
+    text a_en
+    text q_rw
+    text a_rw
+    text q_fr
+    text a_fr
+    integer sort
+    boolean published
+    uuid updated_by
+    timestamptz updated_at
+    timestamptz created_at
+  }
 ```
 
 ## Platform
@@ -968,6 +1525,8 @@ erDiagram
     timestamptz read_at
     timestamptz created_at
     timestamptz sent_at
+    timestamptz next_attempt_at
+    text to_phone
   }
   notification_templates {
     text key PK
@@ -1024,40 +1583,58 @@ erDiagram
 |---|---|---|---|---|
 | `abasare_handovers` | Abasare (own-car hire) | 002 | 12 | 6 nullable |
 | `audit_logs` | Platform | 001 | 10 | 7 nullable |
+| `booking_deposits` | Abasare (own-car hire) | 014 | 15 | 2 nullable |
 | `booking_events` | Bookings and dispatch | 001 | 10 | 5 nullable |
-| `bookings` | Bookings and dispatch | 001 | 56 | altered in 002, 006; 32 nullable |
+| `bookings` | Bookings and dispatch | 001 | 71 | altered in 002, 006, 009, 010, 011, 013, 014, 016; 39 nullable |
+| `campaign_recipients` | Fleets and business accounts | 012 | 7 | 1 nullable |
+| `campaigns` | Fleets and business accounts | 012 | 18 | 4 nullable |
 | `case_events` | Support and safety | 001 | 8 | 3 nullable |
+| `claim_events` | Abasare (own-car hire) | 015 | 9 | 2 nullable |
+| `claim_evidence` | Abasare (own-car hire) | 015 | 8 | 3 nullable |
+| `claims` | Abasare (own-car hire) | 015 | 36 | 22 nullable |
 | `client_errors` | Platform | 004 | 9 | 6 nullable |
 | `commission_rules` | Catalogue and pricing | 001 | 15 | 10 nullable |
 | `consents` | Identity and privacy | 001 | 6 |  |
-| `corporate_accounts` | Fleets and business accounts | 001 | 10 | 3 nullable |
+| `corporate_accounts` | Fleets and business accounts | 001 | 11 | altered in 013; 4 nullable |
 | `corporate_invoices` | Fleets and business accounts | 001 | 8 |  |
 | `corporate_members` | Fleets and business accounts | 001 | 6 | 2 nullable |
 | `customer_vehicles` | Abasare (own-car hire) | 002 | 13 | 5 nullable |
+| `deposit_attempts` | Abasare (own-car hire) | 014 | 11 | 3 nullable |
 | `dispatch_offers` | Bookings and dispatch | 001 | 13 | 5 nullable |
 | `document_requirements` | Drivers and vehicles | 001 | 5 |  |
+| `driver_badge_grants` | Drivers and vehicles | 010 | 9 | 4 nullable |
 | `driver_documents` | Drivers and vehicles | 001 | 14 | 5 nullable |
 | `driver_earnings` | Money | 001 | 16 | 2 nullable |
 | `driver_locations` | Drivers and vehicles | 001 | 9 | 3 nullable |
 | `driver_profiles` | Drivers and vehicles | 001 | 33 | altered in 002; 19 nullable |
+| `driver_quest_awards` | Drivers and vehicles | 012 | 8 | 1 nullable |
+| `driver_quests` | Drivers and vehicles | 012 | 21 | 5 nullable |
 | `driver_status_history` | Drivers and vehicles | 001 | 7 | 3 nullable |
-| `emergency_contacts` | Rider | 001 | 5 |  |
+| `emergency_contacts` | Rider | 001 | 7 | altered in 009 |
+| `faq_entries` | Support and safety | 017 | 12 | 1 nullable |
 | `fare_quotes` | Catalogue and pricing | 001 | 21 | altered in 002; 3 nullable |
 | `feature_flags` | Platform | 001 | 5 | 2 nullable |
+| `fixed_routes` | Bookings and dispatch | 011 | 26 | 9 nullable |
 | `fleet_invites` | Fleets and business accounts | 001 | 5 |  |
 | `fleet_members` | Fleets and business accounts | 001 | 3 |  |
 | `fleets` | Fleets and business accounts | 001 | 6 |  |
+| `guest_messages` | Rider | 011 | 12 | 4 nullable |
 | `handover_photos` | Abasare (own-car hire) | 002 | 6 |  |
 | `ledger_accounts` | Money | 001 | 3 |  |
 | `ledger_entries` | Money | 001 | 11 | 4 nullable |
+| `loyalty_accounts` | Rider | 014 | 5 |  |
+| `loyalty_events` | Rider | 014 | 8 | 3 nullable |
 | `notification_templates` | Platform | 001 | 4 |  |
-| `notifications` | Platform | 001 | 15 | 6 nullable |
+| `notifications` | Platform | 001 | 17 | altered in 008, 009; 8 nullable |
 | `otp_challenges` | Identity and privacy | 001 | 10 | 3 nullable |
+| `partner_users` | Fleets and business accounts | 013 | 3 |  |
+| `partners` | Fleets and business accounts | 013 | 11 | 5 nullable |
 | `passenger_debts` | Money | 004 | 13 | 6 nullable |
+| `passenger_driver_prefs` | Rider | 010 | 4 |  |
 | `payment_provider_events` | Money | 001 | 8 | 2 nullable |
-| `payments` | Money | 001 | 18 | 7 nullable |
-| `payouts` | Money | 001 | 14 | 7 nullable |
-| `places` | Catalogue and pricing | 001 | 9 | altered in 003; 3 nullable |
+| `payments` | Money | 001 | 19 | altered in 010; 7 nullable |
+| `payouts` | Money | 001 | 15 | altered in 008; 8 nullable |
+| `places` | Catalogue and pricing | 001 | 12 | altered in 003, 017; 4 nullable |
 | `pricing_rules` | Catalogue and pricing | 001 | 39 | altered in 002, 007; 10 nullable |
 | `privacy_requests` | Identity and privacy | 001 | 9 | 3 nullable |
 | `promotion_redemptions` | Catalogue and pricing | 001 | 6 |  |
@@ -1068,25 +1645,38 @@ erDiagram
 | `reconciliation_items` | Money | 001 | 9 | 5 nullable |
 | `reconciliation_runs` | Money | 001 | 6 | 1 nullable |
 | `referrals` | Catalogue and pricing | 001 | 5 |  |
-| `refunds` | Money | 001 | 11 | 2 nullable |
-| `request_codes` | Bookings and dispatch | 006 | 15 | 5 nullable |
+| `refunds` | Money | 001 | 12 | altered in 014; 2 nullable |
+| `request_codes` | Bookings and dispatch | 006 | 17 | altered in 013; 6 nullable |
+| `ride_schedule_runs` | Rider | 011 | 11 | 3 nullable |
+| `ride_schedules` | Rider | 011 | 24 | 8 nullable |
 | `role_permissions` | Identity and privacy | 001 | 2 |  |
-| `roles` | Identity and privacy | 001 | 2 | 1 nullable |
+| `roles` | Identity and privacy | 001 | 10 | altered in 017; 4 nullable |
+| `safety_alerts` | Support and safety | 009 | 22 | 12 nullable |
 | `safety_blocks` | Bookings and dispatch | 001 | 5 | 2 nullable |
 | `safety_incidents` | Support and safety | 001 | 13 | 7 nullable |
 | `saved_places` | Rider | 001 | 8 | 1 nullable |
 | `schema_migrations` | Platform | 001 | 2 | 1 nullable |
 | `service_categories` | Catalogue and pricing | 001 | 17 | altered in 002, 003; 5 nullable |
-| `service_zones` | Catalogue and pricing | 001 | 5 |  |
+| `service_zones` | Catalogue and pricing | 001 | 7 | altered in 017; 1 nullable |
 | `sessions` | Identity and privacy | 001 | 11 | 4 nullable |
-| `staff_invites` | Identity and privacy | 005 | 11 | 4 nullable |
+| `sms_opt_outs` | Identity and privacy | 009 | 4 | 1 nullable |
+| `staff_invites` | Identity and privacy | 005 | 14 | altered in 013, 017; 6 nullable |
 | `support_cases` | Support and safety | 001 | 15 | 4 nullable |
+| `support_categories` | Support and safety | 017 | 6 | 1 nullable |
 | `system_settings` | Platform | 001 | 5 | 2 nullable |
+| `tips` | Rider | 010 | 8 | 1 nullable |
+| `trip_contact_notices` | Rider | 009 | 4 |  |
 | `trip_messages` | Bookings and dispatch | 001 | 5 |  |
-| `trip_shares` | Bookings and dispatch | 001 | 7 | 1 nullable |
-| `user_roles` | Identity and privacy | 001 | 2 |  |
-| `users` | Identity and privacy | 001 | 18 | 9 nullable |
+| `trip_shares` | Bookings and dispatch | 001 | 10 | altered in 009; 2 nullable |
+| `user_roles` | Identity and privacy | 001 | 2 | altered in 013 |
+| `users` | Identity and privacy | 001 | 21 | altered in 009, 017; 11 nullable |
+| `ussd_phones` | Identity and privacy | 016 | 6 | 3 nullable |
+| `ussd_sessions` | Identity and privacy | 016 | 15 | 6 nullable |
 | `vehicles` | Drivers and vehicles | 001 | 13 | 5 nullable |
+| `wallet_adjustments` | Rider | 014 | 10 | 2 nullable |
+| `wallet_holds` | Rider | 014 | 9 |  |
+| `wallet_lots` | Rider | 014 | 8 | 2 nullable |
+| `wallet_txns` | Rider | 014 | 16 | 8 nullable |
 | `zone_services` | Catalogue and pricing | 001 | 3 |  |
 
 ## Unique and partial unique indexes (business rules the database enforces)
@@ -1094,31 +1684,48 @@ erDiagram
 | Table | Index | Definition |
 |---|---|---|
 | `abasare_handovers` | `abasare_handovers_booking_id_phase_key` | `abasare_handovers USING btree (booking_id, phase)` |
+| `booking_deposits` | `booking_deposits_booking_id_key` | `booking_deposits USING btree (booking_id)` |
 | `bookings` | `bookings_passenger_id_idempotency_key_key` | `bookings USING btree (passenger_id, idempotency_key)` |
 | `bookings` | `bookings_ref_key` | `bookings USING btree (ref)` |
 | `bookings` | `one_active_trip_per_driver` | `bookings USING btree (driver_id) WHERE ((driver_id IS NOT NULL) AND (status = ANY (ARRAY['DRIVER_ASSIGNED'::text, 'DRIVER_ARRIVING'::text, 'DRIVER_ARRIVED'::text, 'AWAITING_PASSENGER_VERIFICATION'::text, 'IN_PROGRESS'::text])))` |
 | `bookings` | `one_active_trip_per_vehicle` | `bookings USING btree (vehicle_id) WHERE ((vehicle_id IS NOT NULL) AND (status = ANY (ARRAY['DRIVER_ASSIGNED'::text, 'DRIVER_ARRIVING'::text, 'DRIVER_ARRIVED'::text, 'AWAITING_PASSENGER_VERIFICATION'::text, 'IN_PROGRESS'::text])))` |
 | `bookings` | `one_open_request_per_passenger` | `bookings USING btree (passenger_id) WHERE ((payer_type = 'passenger'::text) AND (scheduled_for IS NULL) AND (status = ANY (ARRAY['REQUESTED'::text, 'SEARCHING_DRIVER'::text, 'DRIVER_ASSIGNED'::text, 'DRIVER_ARRIVING'::text, 'DRIVER_ARRIVED'::text, 'AWAITING_PASSENGER_VERIFICATION'::text, 'IN_PROGRESS'::text])))` |
+| `campaign_recipients` | `campaign_recipients_campaign_id_user_id_key` | `campaign_recipients USING btree (campaign_id, user_id)` |
+| `claim_evidence` | `claim_evidence_once` | `claim_evidence USING btree (claim_id, file_key)` |
+| `claims` | `claims_one_open` | `claims USING btree (booking_id, filed_by, claim_type) WHERE (status = ANY (ARRAY['submitted'::text, 'under_review'::text, 'info_requested'::text]))` |
+| `claims` | `claims_ref_key` | `claims USING btree (ref)` |
 | `corporate_invoices` | `corporate_invoices_corporate_id_period_start_period_end_key` | `corporate_invoices USING btree (corporate_id, period_start, period_end)` |
 | `customer_vehicles` | `customer_vehicles_owner_id_plate_key` | `customer_vehicles USING btree (owner_id, plate)` |
+| `deposit_attempts` | `deposit_attempts_reference_key` | `deposit_attempts USING btree (reference)` |
 | `dispatch_offers` | `dispatch_offers_booking_id_driver_id_key` | `dispatch_offers USING btree (booking_id, driver_id)` |
 | `document_requirements` | `document_requirements_vehicle_type_doc_type_key` | `document_requirements USING btree (vehicle_type, doc_type)` |
+| `driver_badge_grants` | `driver_badge_grants_active` | `driver_badge_grants USING btree (driver_id, badge) WHERE (revoked_at IS NULL)` |
 | `driver_earnings` | `driver_earnings_booking_id_key` | `driver_earnings USING btree (booking_id)` |
+| `driver_quest_awards` | `driver_quest_awards_quest_id_driver_id_period_key_key` | `driver_quest_awards USING btree (quest_id, driver_id, period_key)` |
 | `fleet_invites` | `fleet_invites_fleet_id_phone_key` | `fleet_invites USING btree (fleet_id, phone)` |
+| `guest_messages` | `guest_messages_booking_id_dedupe_key_key` | `guest_messages USING btree (booking_id, dedupe_key)` |
+| `loyalty_events` | `loyalty_earn_once` | `loyalty_events USING btree (booking_id) WHERE ((kind = 'earn'::text) AND (booking_id IS NOT NULL))` |
+| `loyalty_events` | `loyalty_idem` | `loyalty_events USING btree (user_id, idem_key) WHERE (idem_key IS NOT NULL)` |
+| `partners` | `partners_name_uniq` | `partners USING btree (lower(name))` |
 | `passenger_debts` | `passenger_debts_booking_id_key` | `passenger_debts USING btree (booking_id)` |
 | `payment_provider_events` | `payment_provider_events_event_key_key` | `payment_provider_events USING btree (event_key)` |
-| `payments` | `one_live_payment_per_booking` | `payments USING btree (booking_id) WHERE (status = ANY (ARRAY['INITIATED'::text, 'PENDING'::text, 'SUCCESS'::text]))` |
+| `payments` | `one_live_fare_payment_per_booking` | `payments USING btree (booking_id) WHERE ((kind = 'fare'::text) AND (status = ANY (ARRAY['INITIATED'::text, 'PENDING'::text, 'SUCCESS'::text])))` |
+| `payments` | `one_live_tip_payment_per_booking` | `payments USING btree (booking_id) WHERE ((kind = 'tip'::text) AND (status = ANY (ARRAY['INITIATED'::text, 'PENDING'::text, 'SUCCESS'::text])))` |
 | `payments` | `payments_reference_key` | `payments USING btree (reference)` |
+| `payouts` | `payouts_idempotency` | `payouts USING btree (owner_user_id, idempotency_key) WHERE (idempotency_key IS NOT NULL)` |
 | `promotion_redemptions` | `promotion_redemptions_booking_id_key` | `promotion_redemptions USING btree (booking_id)` |
 | `promotions` | `promotions_code_key` | `promotions USING btree (code)` |
 | `push_tokens` | `push_tokens_token_key` | `push_tokens USING btree (token)` |
 | `ratings` | `ratings_booking_id_reviewer_id_key` | `ratings USING btree (booking_id, reviewer_id)` |
 | `referrals` | `referrals_referee_id_key` | `referrals USING btree (referee_id)` |
 | `request_codes` | `request_codes_code_key` | `request_codes USING btree (code)` |
+| `ride_schedule_runs` | `ride_schedule_runs_schedule_id_occurrence_date_key` | `ride_schedule_runs USING btree (schedule_id, occurrence_date)` |
+| `safety_alerts` | `safety_alerts_ref_key` | `safety_alerts USING btree (ref)` |
 | `safety_incidents` | `safety_incidents_ref_key` | `safety_incidents USING btree (ref)` |
 | `sessions` | `sessions_refresh_hash_key` | `sessions USING btree (refresh_hash)` |
 | `staff_invites` | `staff_invites_token_hash_key` | `staff_invites USING btree (token_hash)` |
 | `support_cases` | `support_cases_ref_key` | `support_cases USING btree (ref)` |
+| `tips` | `tips_booking_id_key` | `tips USING btree (booking_id)` |
 | `trip_shares` | `trip_shares_token_hash_key` | `trip_shares USING btree (token_hash)` |
 | `users` | `users_email_key` | `users USING btree (email)` |
 | `users` | `users_email_lower_uniq` | `users USING btree (lower(email)) WHERE (email IS NOT NULL)` |
@@ -1126,6 +1733,8 @@ erDiagram
 | `users` | `users_referral_code_key` | `users USING btree (referral_code)` |
 | `vehicles` | `one_active_vehicle_per_driver` | `vehicles USING btree (driver_id) WHERE (status = 'approved'::text)` |
 | `vehicles` | `vehicles_plate_key` | `vehicles USING btree (plate)` |
+| `wallet_holds` | `wallet_holds_booking_id_key` | `wallet_holds USING btree (booking_id)` |
+| `wallet_txns` | `wallet_txns_idem` | `wallet_txns USING btree (user_id, idem_key) WHERE (idem_key IS NOT NULL)` |
 
 ## Triggers
 
