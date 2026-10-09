@@ -4,11 +4,9 @@
 FROM node:22-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
-# Install exactly what package-lock.json pins. tsx is a devDependency but the server is started with it, so it is added at the locked version.
+# Install exactly what package-lock.json pins (tsx is a runtime dependency: the server is started with it).
 COPY backend/package.json backend/package-lock.json ./backend/
-RUN cd backend && npm ci --omit=dev \
- && npm i --no-save --no-audit --no-fund "tsx@$(node -p "require('./package-lock.json').packages['node_modules/tsx'].version")" \
- && npm cache clean --force
+RUN cd backend && npm ci --omit=dev && npm cache clean --force
 COPY backend ./backend
 COPY admin-web ./admin-web
 # Documents and evidence are written to STORAGE_DIR: mount a persistent volume there (see deploy/docker-compose.yml). The node user must own it.
