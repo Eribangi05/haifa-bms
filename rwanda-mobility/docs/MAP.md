@@ -13,6 +13,10 @@ Abasare draws its own map of Rwanda. There is no map API key and no per-use fee.
 
 The phone downloads only the pieces it shows (range requests), not the 45 MB file.
 
+## Place search
+
+`backend/map/places.json` (about 340 KB, 5,000 named places) is built from the same OpenStreetMap extract by `scripts/map/places.py`. `GET /places/search?q=...&lang=...&lat=...&lng=...` returns the curated places first, then matches from this index (accent-insensitive, word-start matching, nearest first when the rider's pickup is sent). It needs no external service. Rebuilt together with the map by `scripts/map/build.sh` (needs `pip install osmium`).
+
 ## Fallbacks
 
 1. If the vector map cannot start the page falls back to the public OpenStreetMap picture tiles (pilot use only, see the tile usage policy).

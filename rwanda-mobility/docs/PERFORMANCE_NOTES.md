@@ -50,3 +50,15 @@ Each virtual user signs in once (OTP request + verify), then loops `GET /health`
 1. Cache `/config` and per-request `getSetting` reads for a few seconds.
 2. Measure booking creation and driver location updates (`POST /drivers/me/location`) with 500 to 2,000 simulated drivers; add `EXPLAIN ANALYZE` for the nearby-driver query.
 3. Run the API with several processes behind a load balancer and move the jobs to a single worker (see `src/jobs.ts`); verify connection-pool sizing (`max: 20` per process).
+
+
+## Addendum: place search and the map (measured on the same kind of 4 vCPU development VM, 20 connections, 8 s per path)
+
+| Path | Requests per second | p50 | p99 |
+|---|---|---|---|
+| `GET /health` | ~4,900 | 3 ms | 11 ms |
+| `GET /places/popular` | ~3,800 | 4 ms | 12 ms |
+| `GET /places/search` (offline index, with pickup bias) | ~630 | 30 ms | 55 ms |
+| `GET /places/search` (by name, cached) | ~1,080 | 17 ms | 33 ms |
+
+A person typing produces a few searches per second, so one API process serves hundreds of people searching at once. Reproduce with `node scripts/loadtest.mjs` (see the header of that script). Backup restore was exercised with `scripts/restore-test.sh`.

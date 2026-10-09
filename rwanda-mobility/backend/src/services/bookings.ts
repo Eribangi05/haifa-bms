@@ -42,6 +42,9 @@ export async function zoneFor(p: LatLng): Promise<{ id: string; name: string } |
   return zones.find((z) => pointInPolygon(p, z.polygon)) ?? null;
 }
 
+/** Bounding box around the pickup (degrees), so the database discards far-away drivers before the exact haversine check. */
+const bbox = (c: LatLng, radiusM: number) => { const dLat = radiusM / 111_320 * 1.02, dLng = dLat / Math.max(0.2, Math.cos(c.lat * Math.PI / 180)); return [c.lat - dLat, c.lat + dLat, c.lng - dLng, c.lng + dLng]; };
+
 export async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number, passengerId?: string) {
   const rows = await q<any>(
     `select dp.last_lat, dp.last_lng, v.vehicle_type from driver_profiles dp
@@ -50,8 +53,9 @@ export async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, 
      where dp.status='APPROVED' and dp.is_online and 'ride' = any(dp.accepting) and dp.last_seen_at > now() - make_interval(secs => $1)
        and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
        and ($6::uuid is null or not exists (select 1 from passenger_driver_prefs pp where pp.passenger_id=$6 and pp.driver_id=dp.user_id and pp.kind='blocked')) and v.vehicle_type = any($3) and v.capacity >= $4 and (not $5 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}
+       and dp.last_lat between $7 and $8 and dp.last_lng between $9 and $10
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
-    [heartbeatS, zoneId, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, passengerId ?? null]);
+    [heartbeatS, zoneId, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, passengerId ?? null, ...bbox(pickup, radiusM)]);
   const near = rows.filter((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup) <= radiusM);
   return near.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup));
 }
@@ -62,8 +66,9 @@ async function nearbyAbasare(cv: any, zoneId: string, pickup: LatLng, radiusM: n
      where dp.status='APPROVED' and dp.abasare_status='approved' and 'abasare' = any(dp.accepting) and dp.is_online
        and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
        and ($5::uuid is null or not exists (select 1 from passenger_driver_prefs pp where pp.passenger_id=$5 and pp.driver_id=dp.user_id and pp.kind='blocked')) and (dp.abasare_skills->'classes') ? $3 and (dp.abasare_skills->'transmissions') ? $4 and ${DOCS_OK_SQL('dp', "'abasare'")}
+       and dp.last_lat between $6 and $7 and dp.last_lng between $8 and $9
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
-    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission, passengerId ?? null]);
+    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission, passengerId ?? null, ...bbox(pickup, radiusM)]);
   return rows.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup)).filter((d) => d <= radiusM);
 }
 async function abasareSupply(cv: any): Promise<number> {

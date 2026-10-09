@@ -58,7 +58,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
     const term = q.trim(); if (term.length < 2) { setResults([]); setSearching(false); return; }
     let live = true; setSearching(true);
     const id = setTimeout(() => {
-      client.get(`/places/search?q=${encodeURIComponent(term)}&lang=${lang}`).then((r) => live && setResults(r.places)).catch(() => live && setResults(places.popular.filter((p) => p.name.toLowerCase().includes(term.toLowerCase())))).finally(() => live && setSearching(false));
+      client.get(`/places/search?q=${encodeURIComponent(term)}&lang=${lang}${pickup ? `&lat=${pickup.lat.toFixed(4)}&lng=${pickup.lng.toFixed(4)}` : ''}`).then((r) => live && setResults(r.places)).catch(() => live && setResults(places.popular.filter((p) => p.name.toLowerCase().includes(term.toLowerCase())))).finally(() => live && setSearching(false));
     }, 350);
     return () => { live = false; clearTimeout(id); };
   }, [q, client, lang, places.popular]);

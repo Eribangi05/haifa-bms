@@ -129,7 +129,7 @@ export async function driverRoutes(app: FastifyInstance) {
     return { online: b.online, accepting: acc, permission: await Dr.driverPermission(req.auth!.id), abasare: await Dr.abasarePermission(req.auth!.id) };
   });
   app.post('/drivers/me/location', drv, async (req) => {
-    const b = parse(z.object({ lat, lng, accuracy: z.number().min(0).optional(), speed: z.number().min(0).optional(), recorded_at: z.string().datetime().optional() }), req.body);
+    const b = parse(z.object({ lat, lng, mocked: z.boolean().optional(), accuracy: z.number().min(0).optional(), speed: z.number().min(0).optional(), recorded_at: z.string().datetime().optional() }), req.body);
     return Dr.updateLocation(req.auth!.id, b);
   });
   app.patch('/drivers/me/payout-account', drv, async (req) => {

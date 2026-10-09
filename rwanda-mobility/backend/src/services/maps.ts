@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { haversineM, type LatLng } from '../util/geo.js';
 import { q } from '../db.js';
+import { searchIndex } from './placeIndex.js';
 
 export type Route = { distance_m: number; duration_s: number; source: 'osrm' | 'estimate' };
 const SPEED_KMH: Record<string, number> = { moto: 28, car: 24, minivan: 22, pickup: 22, truck: 20 };
@@ -30,11 +31,15 @@ export async function route(a: LatLng, b: LatLng, vehicle = 'car'): Promise<Rout
 /** ETA for dispatch (straight line * road factor; OSRM matrix is a drop-in upgrade). */
 export const etaS = (from: LatLng, to: LatLng, vehicle = 'car') => estimateRoute(from, to, vehicle).duration_s;
 
-export type PlaceHit = { id?: string; name: string; lat: number; lng: number; kind: string; source: 'local' | 'nominatim' };
-export async function searchPlaces(text: string, lang: 'rw' | 'fr' | 'en'): Promise<PlaceHit[]> {
+export type PlaceHit = { id?: string; name: string; lat: number; lng: number; kind: string; source: 'local' | 'nominatim' | 'osm' };
+export async function searchPlaces(text: string, lang: 'rw' | 'fr' | 'en', near?: LatLng): Promise<PlaceHit[]> {
   const like = `%${text.replace(/[%_]/g, '')}%`;
   const rows = await q<any>(`select id, name_en, name_rw, name_fr, kind, lat, lng from places where active and (name_en ilike $1 or name_rw ilike $1 or name_fr ilike $1) order by designated_pickup desc, name_en limit 8`, [like]);
   const out: PlaceHit[] = rows.map((r) => ({ id: r.id, name: (lang === 'rw' ? r.name_rw : lang === 'fr' ? r.name_fr : null) || r.name_en, lat: r.lat, lng: r.lng, kind: r.kind, source: 'local' }));
+  for (const h of searchIndex(text, lang, near, 10)) {          // offline OpenStreetMap index: skip what the curated list already has nearby
+    if (out.length >= 10) break;
+    if (!out.some((o) => o.name.toLowerCase() === h.name.toLowerCase() || haversineM(o, h) < 60)) out.push(h);
+  }
   if (config.mapProvider === 'osrm' && out.length < 5) {
     try {
       const u = `${config.nominatimUrl}/search?format=json&limit=5&countrycodes=rw&q=${encodeURIComponent(text)}`;

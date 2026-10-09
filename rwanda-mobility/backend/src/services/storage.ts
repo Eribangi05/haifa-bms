@@ -4,8 +4,11 @@ import { randomUUID } from 'node:crypto';
 import { config } from '../config.js';
 import { badRequest, notFound } from '../errors.js';
 import { scanFile, sniffMime } from './scan.js';
+import { q, q1 } from '../db.js';
 
-/** Private local-disk storage. Production should swap this for an S3-compatible private bucket with the same interface. */
+/** Private file storage. STORAGE_DRIVER=disk (default): local disk, mode 0600. STORAGE_DRIVER=db: PostgreSQL table `stored_files`, so uploads survive redeploys where the host has
+ *  no persistent disk (free plan). A real production deployment should use an S3-compatible private bucket with the same interface. */
+const useDb = () => config.storageDriver === 'db';
 const root = () => resolve(config.storageDir);
 
 export { sniffMime } from './scan.js';
@@ -19,6 +22,7 @@ export async function saveFile(buf: Buffer, folder: 'docs' | 'evidence' | 'photo
     throw badRequest('unsupported_file', 'File content does not match its declared type');
   await scanFile(buf, mime);                                  // pluggable: strict validation + optional ClamAV; throws to reject
   const key = `${folder}/${randomUUID()}.${mime === 'application/pdf' ? 'pdf' : mime === 'image/png' ? 'png' : 'jpg'}`;
+  if (useDb()) { await q('insert into stored_files(key,data,mime,size) values ($1,$2,$3,$4)', [key, buf, mime, buf.length]); return { key, mime, size: buf.length }; }
   await mkdir(join(root(), folder), { recursive: true });
   await writeFile(join(root(), key), buf, { mode: 0o600 });
   return { key, mime, size: buf.length };
@@ -26,11 +30,13 @@ export async function saveFile(buf: Buffer, folder: 'docs' | 'evidence' | 'photo
 
 export async function readFileByKey(key: string): Promise<Buffer> {
   if (!/^(docs|evidence|photos)\/[0-9a-f-]{36}\.(jpg|png|pdf)$/.test(key)) throw badRequest('bad_key');   // blocks path traversal
+  if (useDb()) { const r = await q1<{ data: Buffer }>('select data from stored_files where key=$1', [key]); if (r) return r.data; }     // falls through to disk for files saved before the switch
   try { return await readFile(join(root(), key)); }
   catch (e: any) { if (e.code === 'ENOENT') throw notFound('file'); throw e; }       // a purged or never-written file is a 404, not a 500
 }
 
 export async function deleteFileByKey(key: string): Promise<void> {
   if (!/^(docs|evidence|photos)\/[0-9a-f-]{36}\.(jpg|png|pdf)$/.test(key)) return;
+  if (useDb()) await q('delete from stored_files where key=$1', [key]);
   await rm(join(root(), key), { force: true });
 }

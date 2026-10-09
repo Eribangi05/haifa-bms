@@ -34,8 +34,8 @@ export async function catalogRoutes(app: FastifyInstance) {
   }));
 
   app.get('/places/search', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
-    const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);
-    return { places: await searchPlaces(b.q, b.lang) };
+    const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'fr', 'en']).default('en'), lat: z.coerce.number().min(-3).max(0).optional(), lng: z.coerce.number().min(28).max(32).optional() }), req.query);
+    return { places: await searchPlaces(b.q, b.lang, b.lat != null && b.lng != null ? { lat: b.lat, lng: b.lng } : undefined) };
   });
   app.get('/places/popular', async (req) => {
     const { lang } = parse(z.object({ lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);

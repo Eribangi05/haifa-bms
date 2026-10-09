@@ -34,7 +34,7 @@ export function DriverTracker() {
         const s = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 15 }, (l) => {
           set({ pos: { lat: l.coords.latitude, lng: l.coords.longitude }, lastFixAt: Date.now() });
           if (bgOn.current) return;   // the background task is already posting
-          client.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false }).catch((e) => { if (e instanceof ApiError && e.status === 403) set({ forbiddenAt: Date.now() }); });
+          client.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, mocked: (l as any).mocked === true ? true : undefined, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false }).catch((e) => { if (e instanceof ApiError && e.status === 403) set({ forbiddenAt: Date.now() }); });
         });
         if (cancelled) s.remove(); else sub.current = s;
       } catch { /* location unavailable: the driver home shows a "no GPS" banner */ }

@@ -139,15 +139,20 @@ export async function setOnline(driverId: string, online: boolean, accepting?: s
   await q('update driver_profiles set is_online=true, last_seen_at=now(), accepting=$2 where user_id=$1', [driverId, allowed]);
 }
 
-export type LocationIn = { lat: number; lng: number; accuracy?: number; speed?: number; recorded_at?: string; booking_id?: string };
+export type LocationIn = { lat: number; lng: number; mocked?: boolean; accuracy?: number; speed?: number; recorded_at?: string; booking_id?: string };
 /** Heartbeat + location. Rejects stale/out-of-order/implausible points; stores trail only during an active trip. */
 export async function updateLocation(driverId: string, p: LocationIn) {
   const maxKmh = await getSetting('tracking.max_speed_kmh');
   const now = Date.now();
   const rec = p.recorded_at ? new Date(p.recorded_at).getTime() : now;
   if (Number.isNaN(rec) || rec > now + 60_000) throw badRequest('bad_timestamp');
-  const prev = await q1<any>('select last_lat, last_lng, last_location_at, is_online from driver_profiles where user_id=$1', [driverId]);
+  const prev = await q1<any>('select last_lat, last_lng, last_location_at, is_online, mock_location_at from driver_profiles where user_id=$1', [driverId]);
   if (!prev) throw notFound('driver');
+  if (p.mocked) {      // the phone says this position comes from a fake-GPS app: never use it for dispatch, fares or trip tracks
+    if (!prev.mock_location_at || now - new Date(prev.mock_location_at).getTime() > 10 * 60_000) await audit({ id: driverId, role: 'driver' }, 'driver.mock_location', 'driver', driverId);
+    await q('update driver_profiles set mock_location_at=now() where user_id=$1', [driverId]);
+    return { accepted: false, reason: 'mock_location' };
+  }
   if (prev.last_location_at && rec < new Date(prev.last_location_at).getTime()) return { accepted: false, reason: 'out_of_order' };
   if (prev.last_lat != null && prev.last_location_at) {
     const dt = (rec - new Date(prev.last_location_at).getTime()) / 1000;

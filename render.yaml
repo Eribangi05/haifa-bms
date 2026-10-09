@@ -5,8 +5,8 @@
 # After the FIRST deploy (the service URL is not known before):
 #   1. set PUBLIC_BASE_URL to the service URL (https://<service>.onrender.com) and make MOMO_CALLBACK_URL = PUBLIC_BASE_URL + /api/v1/webhooks/payments/mtn_momo
 #   2. read the first super admin's authenticator secret once in the service logs (search "FIRST SUPER ADMIN CREATED"), then delete BOOTSTRAP_ADMIN_PASSWORD
-# STAGING LIMITS to know about: the free web service sleeps when idle; uploaded documents live on the container disk and are LOST on every
-# deploy/restart (add a paid plan and a persistent disk mounted at /data, STORAGE_DIR=/data/storage, before any real driver uploads documents);
+# STAGING LIMITS to know about: the free web service sleeps when idle; uploaded documents are kept in the Postgres database (STORAGE_DRIVER=db) so
+# redeploys do not lose them (the free database still expires after 30 days; move to a paid plan with a disk or a bucket before real driver documents);
 # the free Postgres expires after 30 days. For production use the docker-compose stack (deploy/) or paid plans with a disk and PITR backups.
 databases:
   - name: abasare-db
@@ -27,6 +27,7 @@ services:
     envVars:
       - { key: DATABASE_URL, fromDatabase: { name: abasare-db, property: connectionString } }
       - { key: NODE_ENV, value: production }
+      - { key: STORAGE_DRIVER, value: db }       # uploads in Postgres: survive redeploys on the free plan (files <= 5 MB)
       - { key: APP_ENV, value: staging }         # allows OTP_DEV_ECHO and the simulator without startup warnings. NEVER on production
       - { key: OTP_DEV_ECHO, value: "true" }     # STAGING ONLY: shows the OTP in the app because no SMS gateway is connected yet
       - { key: MOMO_MODE, value: sandbox }       # MTN sandbox (fake money, EUR only). Set back to simulator to go fully local-simulated

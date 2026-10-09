@@ -45,6 +45,7 @@ export const config = {
   osrmUrl: env.OSRM_URL ?? 'https://router.project-osrm.org',
   nominatimUrl: env.NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org',
   storageDir: env.STORAGE_DIR ?? './storage',
+  storageDriver: (env.STORAGE_DRIVER === 'db' ? 'db' : 'disk') as 'disk' | 'db',
   // Recovery: set both, redeploy, read the new secret in the logs once. Runs again only when the token value changes.
   adminMfaResetEmail: env.ADMIN_MFA_RESET_EMAIL ?? '',
   adminMfaResetToken: env.ADMIN_MFA_RESET_TOKEN ?? '',
@@ -84,7 +85,7 @@ export const SETTING_DEFAULTS = {
   'dispatch.max_rounds': 4,
   'dispatch.group_size': 1,                 // 1 = sequential offers, N = small-group broadcast
   'dispatch.strategy': 'eta',               // eta | nearest
-  'dispatch.heartbeat_max_age_s': 60,
+  'dispatch.heartbeat_max_age_s': 90,
   'dispatch.base_radius_km': 3,
   'dispatch.radius_step_km': 2,
   'dispatch.max_radius_km': 12,

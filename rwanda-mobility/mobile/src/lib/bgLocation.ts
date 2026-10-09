@@ -40,7 +40,7 @@ if (bgSupported) {
       const now = Date.now(); if (now - lastPost < MIN_GAP_MS) return; lastPost = now;
       try {
         const c = await getClient();
-        await c.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false, timeoutMs: 8000 });
+        await c.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, mocked: (l as any).mocked === true ? true : undefined, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false, timeoutMs: 8000 });
       } catch (e) { if (e instanceof ApiError && (e.status === 401 || e.status === 403)) void stopBgLocation(); /* network errors: next fix will retry */ }
     });
   } catch { /* task manager unavailable (e.g. Expo Go): foreground tracking only */ }
