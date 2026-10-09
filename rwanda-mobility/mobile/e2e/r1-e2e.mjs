@@ -209,7 +209,7 @@ for (const lang of LANGS) {
     const bg = () => pp.getByTestId('header').evaluate((e) => getComputedStyle(e).backgroundColor);
     const light = await bg(); await pp.screenshot({ path: `${OUT}/r1-${lang}-settings-light.png` });
     await pp.getByRole('radio', { name: t('r1.set.theme.dark') }).click(); await pp.getByText(t('r1.set.theme'), { exact: true }).waitFor();
-    const dark = await bg(); if (light === dark || dark !== 'rgb(21, 31, 51)') throw new Error(`header bg ${light} -> ${dark}`);
+    const dark = await bg(); if (light === dark || dark !== 'rgb(15, 53, 84)') throw new Error(`header bg ${light} -> ${dark}`);
     await pp.screenshot({ path: `${OUT}/r1-${lang}-settings-dark.png` });
     await pp.goto(WEB); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 }); await pp.screenshot({ path: `${OUT}/r1-${lang}-home-dark.png` });   // persisted across reload
     await pp.getByTestId('tab-account').click(); await pp.getByTestId('open-settings').click();
