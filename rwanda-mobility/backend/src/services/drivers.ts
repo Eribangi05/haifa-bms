@@ -3,6 +3,7 @@ import { q, q1, tx, pool, type Db } from '../db.js';
 import { AppError, badRequest, conflict, notFound } from '../errors.js';
 import { notify } from './notify.js';
 import { audit, type Actor } from './audit.js';
+import { encode as ghEncode } from '../util/geohash.js';
 import { getSetting } from './settings.js';
 import { haversineM } from '../util/geo.js';
 
@@ -159,7 +160,8 @@ export async function updateLocation(driverId: string, p: LocationIn) {
     const dist = haversineM({ lat: prev.last_lat, lng: prev.last_lng }, p);
     if (dt > 0 && dist / dt > (maxKmh * 1000) / 3600 && dist > 200) return { accepted: false, reason: 'implausible_jump' };
   }
-  await q('update driver_profiles set last_lat=$2, last_lng=$3, last_location_at=to_timestamp($4/1000.0), last_seen_at=now() where user_id=$1', [driverId, p.lat, p.lng, rec]);
+  const g6 = ghEncode(p.lat, p.lng, 6);
+  await q('update driver_profiles set last_lat=$2, last_lng=$3, last_location_at=to_timestamp($4/1000.0), last_seen_at=now(), gh6=$5, gh5=$6, gh4=$7 where user_id=$1', [driverId, p.lat, p.lng, rec, g6, g6.slice(0, 5), g6.slice(0, 4)]);
   const trip = await q1<any>("select id from bookings where driver_id=$1 and status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS')", [driverId]);
   if (trip) await q('insert into driver_locations(driver_id,booking_id,lat,lng,accuracy,speed,recorded_at) values ($1,$2,$3,$4,$5,$6,to_timestamp($7/1000.0))',
     [driverId, trip.id, p.lat, p.lng, p.accuracy ?? null, p.speed ?? null, rec]);

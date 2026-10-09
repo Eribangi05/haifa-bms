@@ -273,7 +273,7 @@ export async function adminConfigRoutes(app: FastifyInstance) {
   const settingsPre = { preHandler: requirePerm('settings.manage') };
   app.get('/admin/flags', settingsPre, async () => ({
     regulated: ['pricing.surge', 'pricing.negotiated', 'payments.wallet'],
-    flags: await q(`select f.key, f.enabled, f.description, f.updated_at, u.display_name updated_by_name,
+    flags: await q(`select f.key, f.enabled, f.rollout_pct, f.disabled_message, f.client_visible, f.description, f.updated_at, u.display_name updated_by_name,
       (select a.after->>'reason' from audit_logs a where a.entity_type='flag' and a.entity_id=f.key order by a.id desc limit 1) last_reason from feature_flags f left join users u on u.id=f.updated_by order by f.key`),
   }));
   app.get('/admin/templates', settingsPre, async () => {

@@ -28,6 +28,8 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `MOMO_CALLBACK_TOKEN` | prod | dev value | Shared secret appended to the callback URL as `?token=`. The handler *also* re-queries MTN, so a leaked token cannot fake a payment. |
 | `MAP_PROVIDER` | no | `haversine` | `haversine` (estimate only) or `osrm` (uses `OSRM_URL` + `NOMINATIM_URL`; public demo servers are for evaluation only). |
 | `OSRM_URL`, `NOMINATIM_URL` | if osrm | public demo servers | Self-host or use a commercial provider for production. |
+| `SUPPORT_PHONE` | no | `+250786880880` | Support number the apps show and dial for SOS and help. |
+| `SUPPORT_NAME` | no | `Jean Paul INGABIRE` | Name shown with the support number. |
 | `STORAGE_DRIVER` | no | `disk` | `db` keeps uploads in PostgreSQL (`stored_files`) so they survive redeploys on a host without a persistent disk (free plan). Files are limited to 5 MB each. |
 | `STORAGE_DIR` | no | `./storage` | Private directory for documents/evidence (mode 0600). Replace with an S3-compatible private bucket in production. |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | first run | `admin@rwandamobility.local` / (empty) | Server start (and `npm run seed`) the first `super_admin` when none exists and the password is >= 12 chars, and prints its TOTP secret **once** in the logs (search `FIRST SUPER ADMIN CREATED`). It never touches an existing admin. Remove the password afterwards. (The default e-mail is a leftover of the old project name: always set your own.) |

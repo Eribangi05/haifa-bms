@@ -6,7 +6,9 @@ import { q, q1 } from '../db.js';
 import * as B from '../services/bookings.js';
 import * as P from '../services/payments.js';
 import * as D from '../services/dispatch.js';
-import { badRequest } from '../errors.js';
+import { badRequest, conflict, notFound } from '../errors.js';
+import { flagFor } from '../services/settings.js';
+import { turnByTurn } from '../services/navigation.js';
 import { can } from '../rbac.js';
 import { pickLang, reqLang } from '../services/errmsg.js';
 import { isLite, liteBooking, liteOffers, sendConditional } from '../services/lowdata.js';
@@ -100,11 +102,16 @@ export async function bookingRoutes(app: FastifyInstance) {
     return B.createShare(req.auth!.id, id, b.ttl_minutes, b.hide_destination);
   });
   app.delete('/bookings/:id/share', { preHandler: anyAuth }, async (req) => { const { id } = parse(idp, req.params); await B.revokeShares(req.auth!.id, id); return { ok: true }; });
-  app.get('/bookings/:id/messages', { preHandler: anyAuth }, async (req) => { const { id } = parse(idp, req.params); return { messages: await B.listMessages(req.auth!.id, id) }; });
+  app.get('/bookings/:id/messages', { preHandler: anyAuth }, async (req) => { const { id } = parse(idp, req.params); const { after } = parse(z.object({ after: z.coerce.number().int().min(0).default(0) }), req.query); return { messages: await B.listMessages(req.auth!.id, id, after) }; });
   app.post('/bookings/:id/messages', { config: routeLimit('CHAT_RATE_MAX', 30), preHandler: anyAuth }, async (req) => {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ body: z.string().min(1).max(500) }), req.body);
     await B.postMessage(req.auth!.id, id, b.body); return { ok: true };
+  });
+  app.post('/bookings/:id/share-phone', { config: routeLimit('CHAT_RATE_MAX', 30), preHandler: anyAuth }, async (req) => {
+    const { id } = parse(idp, req.params);
+    const b = parse(z.object({ share: z.boolean() }), req.body);
+    return B.sharePhone(req.auth!.id, id, b.share);
   });
 
   // passenger payment
@@ -124,6 +131,18 @@ export async function bookingRoutes(app: FastifyInstance) {
     const out = { offers: isLite(req) ? liteOffers(rows) : rows };
     if (sendConditional(req, reply, out, isLite(req) ? 'lite' : 'full').notModified) return reply.send();
     return out;
+  });
+  // Turn-by-turn route for the driver (own road graph). Optional lat/lng = the phone's current position; otherwise the last position the server has.
+  app.get('/bookings/:id/navigation', { ...drv, config: routeLimit('NAV_RATE_MAX', 40) }, async (req) => {
+    const { id } = parse(idp, req.params);
+    const qy = parse(z.object({ lat: z.coerce.number().min(-3).max(0).optional(), lng: z.coerce.number().min(28).max(32).optional() }), req.query);
+    if (!(await flagFor('navigation.enabled', req.auth!.id))) throw conflict('navigation_unavailable', 'Navigation is switched off');
+    const b = await q1<any>("select * from bookings where id=$1 and driver_id=$2 and status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS')", [id, req.auth!.id]);
+    if (!b) throw notFound('booking');
+    const d = await q1<any>("select dp.last_lat, dp.last_lng, (select vehicle_type from vehicles where driver_id=dp.user_id and status='approved' limit 1) vt from driver_profiles dp where dp.user_id=$1", [req.auth!.id]);
+    const from = qy.lat != null && qy.lng != null ? { lat: qy.lat, lng: qy.lng } : d?.last_lat != null ? { lat: d.last_lat, lng: d.last_lng } : null;
+    if (!from) throw conflict('location_unknown', 'Your location is not known yet');
+    return turnByTurn(b, from, d?.vt ?? 'car');
   });
   app.post('/bookings/:id/accept', drv, async (req) => { const { id } = parse(idp, req.params); return B.bookingView(await D.acceptOffer(req.auth!.id, id), 'driver'); });
   app.post('/bookings/:id/reject', drv, async (req) => {

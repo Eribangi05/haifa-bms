@@ -1,15 +1,17 @@
 import { SETTING_DEFAULTS } from '../config.js';
 import { GROWTH_META } from './growthSettings.js';
 import { MONEY_META } from './moneySettings.js';
+import { TRUST_META } from './trustSettings.js';
 
 export type SettingType = 'int' | 'bool' | 'enum' | 'int_list' | 'str_list';
 export type SettingMeta = { label: string; desc: string; group: string; type?: SettingType; unit?: string; min?: number; max?: number; options?: string[]; superAdminOnly?: boolean };
 
-export const SETTING_GROUPS = ['Pricing & approvals', 'Dispatch', 'Bookings & cancellations', 'Payments & payouts', 'Drivers & Abasare', 'Security & OTP', 'Privacy & retention', 'Safety & tracking', 'Credit & loyalty', 'Claims', 'USSD', 'Advanced'] as const;
+export const SETTING_GROUPS = ['Pricing & approvals', 'Dispatch', 'Bookings & cancellations', 'Payments & payouts', 'Drivers & Abasare', 'Security & OTP', 'Privacy & retention', 'Safety & tracking', 'Credit & loyalty', 'Claims', 'USSD', 'Fraud & alerts', 'Referrals', 'Advanced'] as const;
 
 /** Human metadata for every key in SETTING_DEFAULTS. The admin UI is data-driven from this; keys without an entry fall under "Advanced". */
 export const SETTING_META: Record<keyof typeof SETTING_DEFAULTS, SettingMeta> = {
   ...MONEY_META,
+  ...TRUST_META,
   ...GROWTH_META,
   'pricing.self_approval': { group: 'Pricing & approvals', label: 'Allow self-approval of price changes', desc: 'Off (recommended): a second person must approve every fare or commission change. On: the proposer may approve their own change (for very small teams). Every self-approval is flagged in the audit log.', type: 'bool', superAdminOnly: true },
   'dispatch.offer_timeout_s': { group: 'Dispatch', label: 'Driver offer timeout', desc: 'How long a driver has to accept a trip offer before it moves to the next driver.', unit: 'seconds', min: 5, max: 120 },

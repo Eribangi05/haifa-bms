@@ -38,7 +38,7 @@ export async function notify(userId: string, key: string, params: Record<string,
   }
 }
 /** Time-critical events worth a push: driver offers, driver assigned/arrived, Abasare handover, payment, SOS. */
-export const PUSH_EVENTS = new Set(['offer', 'driver_assigned', 'abasare_assigned', 'driver_arrived', 'handover_submitted', 'handover_issue', 'payment_success', 'payment_failed', 'sos_ack', 'safety_check_deviation', 'safety_check_stop', 'safety_escalated', 'tip_received']);
+export const PUSH_EVENTS = new Set(['chat_message', 'referral_rewarded', 'vehicle_approved', 'vehicle_rejected', 'offer', 'driver_assigned', 'abasare_assigned', 'driver_arrived', 'handover_submitted', 'handover_issue', 'payment_success', 'payment_failed', 'sos_ack', 'safety_check_deviation', 'safety_check_stop', 'safety_escalated', 'tip_received']);
 export const SMS_EVENTS = new Set(['driver_assigned', 'driver_arrived', 'payment_failed', 'no_driver', 'sos_ack', 'safety_check_deviation', 'safety_check_stop', 'safety_escalated', 'doc_expiry']);
 const redact = (p: Record<string, unknown>) => { const c = { ...p }; delete c.code; return c; };
 

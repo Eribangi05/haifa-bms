@@ -12,6 +12,7 @@ import { claimsSweep } from './services/claims.js';
 import { purgeUssdSessions } from './services/ussd.js';
 import { registerGrowthJobs, growthRetention } from './services/growthJobs.js';
 import { runSafetyChecks } from './services/safety.js';
+import { fraudSweep } from './services/fraud.js';
 
 /** Last-run bookkeeping for every job, exposed through /ready and the system-health endpoint. */
 type JobState = { runs: number; failures: number; last_start: number | null; last_ok: number | null; last_error: string | null; running: boolean; every_ms: number };
@@ -73,6 +74,7 @@ export function startJobs(log: (m: string) => void = console.log) {
   every('sms', 5_000, () => flushSms());
   every('deposits', 20_000, depositSweep);          // round 3: Abasare deposits (verify, time out, expire)
   every('credit', 10 * 60_000, creditSweep);        // credit expiry and reminders
+  every('fraud_alerts', 5 * 60_000, fraudSweep);    // bursts of fraud signals / failed payments raise a staff alert
   every('claims', 5 * 60_000, claimsSweep);         // claim SLA warnings, reminders, auto-close
   every('push', 3_000, () => flushPush());
   every('push-receipts', 60_000, () => checkPushReceipts());

@@ -2,8 +2,9 @@ import { config } from '../config.js';
 import { haversineM, type LatLng } from '../util/geo.js';
 import { q } from '../db.js';
 import { searchIndex } from './placeIndex.js';
+import { routeOnRoads } from './roadGraph.js';
 
-export type Route = { distance_m: number; duration_s: number; source: 'osrm' | 'estimate' };
+export type Route = { distance_m: number; duration_s: number; source: 'roads' | 'osrm' | 'estimate' };
 const SPEED_KMH: Record<string, number> = { moto: 28, car: 24, minivan: 22, pickup: 22, truck: 20 };
 const ROAD_FACTOR = 1.5;    // measured: OSRM road distance / straight line averaged 1.51 over 5 Kigali routes (scripts/map-eval.ts). Recalibrate with real trips.
 
@@ -14,6 +15,10 @@ export function estimateRoute(a: LatLng, b: LatLng, vehicle = 'car'): Route {
 
 /** Route with OSRM when configured; falls back to a clearly labelled estimate if the provider is down. */
 export async function route(a: LatLng, b: LatLng, vehicle = 'car'): Promise<Route> {
+  if (config.mapProvider === 'roads') {      // own road graph (backend/map/roads.bin.gz): real road distance and time, no external service
+    const r = routeOnRoads(a, b, vehicle);
+    if (r) return { distance_m: r.distance_m, duration_s: r.duration_s, source: 'roads' };
+  }
   if (config.mapProvider === 'osrm') {
     try {
       const url = `${config.osrmUrl}/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;

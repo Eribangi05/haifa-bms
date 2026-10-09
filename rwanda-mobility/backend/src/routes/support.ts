@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { config } from '../config.js';
+import { raiseAlert } from '../services/alerts.js';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
 import { anyAuth, routeLimit } from '../guards.js';
@@ -100,10 +102,13 @@ export async function supportRoutes(app: FastifyInstance) {
     });
     // Best-effort alert to configured escalation contacts. We only report what actually happened.
     let alerted = 0;
-    for (const phone of (await getSetting('safety.escalation_contacts')) as string[]) {
+    const contacts = [...new Set([...((await getSetting('safety.escalation_contacts')) as string[]), config.supportPhone])];   // the owner's support number always hears about an SOS
+    for (const phone of contacts) {
       try { await sms.send(phone, `SOS ${inc.ref}: user needs help${loc.lat != null ? ` near ${loc.lat.toFixed(5)},${loc.lng!.toFixed(5)}` : ''}. Open the safety console.`); alerted++; } catch { /* reported below */ }
     }
     await notify(req.auth!.id, 'sos_ack', { ref: inc.ref }, { critical: true });
+    await raiseAlert({ kind: 'sos', severity: 'critical', title: `SOS ${inc.ref}${loc.lat != null ? ' (location known)' : ''}`, detail: { incident: inc.ref, booking_id: b.booking_id ?? null, lat: loc.lat, lng: loc.lng }, actorId: req.auth!.id, dedupe: `sos:${inc.ref}` });
+    const mapLink = loc.lat != null ? ` https://www.openstreetmap.org/?mlat=${loc.lat}&mlon=${loc.lng}#map=17/${loc.lat}/${loc.lng}` : '';
     return {
       incident: inc.ref, recorded: true, location_recorded: loc.lat != null,
       escalation_sms_sent_to_contacts: alerted, human_response_confirmed: false,
@@ -112,6 +117,8 @@ export async function supportRoutes(app: FastifyInstance) {
         fr: 'Votre SOS est enregistré. Personne n\'a encore confirmé vous avoir contacté. Si vous êtes en danger, appelez dès maintenant le 112 (police) ou le 912 (ambulance).',
         rw: 'SOS yawe yanditswe. Nta muntu uremeza ko yakuvugishije. Niba uri mu kaga, hamagara ubu 112 (Polisi) cyangwa 912 (ambulance).' }),
       emergency_numbers: { police: '112', ambulance: '912', traffic_police: '113' },
+      support: { name: config.supportName, phone: config.supportPhone, alerted: true },
+      share_text: `SOS ${inc.ref}: I need help.${mapLink}`,
     };
   });
 

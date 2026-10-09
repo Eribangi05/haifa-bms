@@ -11,6 +11,7 @@ export const PERMISSION_CATALOGUE: PermInfo[] = [
   { key: 'drivers.review', group: 'Operations', label: 'Approve drivers', description: 'Review documents and approve, reject or suspend driver applications.' },
   { key: 'drivers.docs', group: 'Operations', label: 'Open driver documents', description: 'Open the uploaded document images of a driver.' },
   { key: 'analytics.view', group: 'Operations', label: 'See reports', description: 'Dashboard, analytics and demand map.' },
+  { key: 'alerts.view', group: 'Operations', label: 'See staff alerts and fraud signals', description: 'Alerts about suspicious staff activity, payment failure bursts and fraud signals; acknowledge them.' },
   { key: 'diagnostics.view', group: 'Operations', label: 'See diagnostics', description: 'App error reports and technical diagnostics.' },
   { key: 'safety.respond', group: 'Operations', label: 'Respond to safety incidents', description: 'See SOS and safety incidents, update them, block a driver from a passenger.' },
   { key: 'ussd.view', group: 'Operations', label: 'See the USSD channel', description: 'View USSD sessions and usage (no personal data beyond what is needed).' },

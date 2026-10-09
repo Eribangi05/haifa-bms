@@ -467,10 +467,11 @@ export async function adminRoutes(app: FastifyInstance) {
   });
   app.put('/admin/flags/:key', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const { key } = parse(z.object({ key: z.string() }), req.params);
-    const b = parse(z.object({ enabled: z.boolean(), reason: z.string().trim().min(5).max(300).optional() }), req.body);
-    const before = await q1<any>('select enabled from feature_flags where key=$1', [key]); if (!before) throw notFound('flag');
+    const b = parse(z.object({ enabled: z.boolean(), rollout_pct: z.number().int().min(0).max(100).optional(), disabled_message: z.string().trim().max(200).nullable().optional(), client_visible: z.boolean().optional(), reason: z.string().trim().min(5).max(300).optional() }), req.body);
+    const before = await q1<any>('select enabled, rollout_pct, disabled_message, client_visible from feature_flags where key=$1', [key]); if (!before) throw notFound('flag');
     if (b.enabled && ['pricing.surge', 'pricing.negotiated', 'payments.wallet'].includes(key) && !req.auth!.roles.includes('super_admin')) throw forbidden('Only a super admin can enable this regulated feature');
-    await q('update feature_flags set enabled=$2, updated_by=$3, updated_at=now() where key=$1', [key, b.enabled, req.auth!.id]);
+    await q('update feature_flags set enabled=$2, rollout_pct=coalesce($4, rollout_pct), disabled_message=case when $5::boolean then $6 else disabled_message end, client_visible=coalesce($7, client_visible), updated_by=$3, updated_at=now() where key=$1',
+      [key, b.enabled, req.auth!.id, b.rollout_pct ?? null, b.disabled_message !== undefined, b.disabled_message ?? null, b.client_visible ?? null]);
     await audit(actorOf(req), 'flag.changed', 'flag', key, before, b); return { ok: true };
   });
   app.put('/admin/templates/:key/:lang', { preHandler: requirePerm('settings.manage') }, async (req) => {

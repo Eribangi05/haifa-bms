@@ -1,4 +1,5 @@
 import { GROWTH_DEFAULTS } from './services/growthSettings.js';
+import { TRUST_DEFAULTS } from './services/trustSettings.js';
 import { MONEY_DEFAULTS } from './services/moneySettings.js';
 
 const env = process.env;
@@ -45,6 +46,8 @@ export const config = {
   osrmUrl: env.OSRM_URL ?? 'https://router.project-osrm.org',
   nominatimUrl: env.NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org',
   storageDir: env.STORAGE_DIR ?? './storage',
+  supportPhone: env.SUPPORT_PHONE ?? '+250786880880',
+  supportName: env.SUPPORT_NAME ?? 'Jean Paul INGABIRE',
   storageDriver: (env.STORAGE_DRIVER === 'db' ? 'db' : 'disk') as 'disk' | 'db',
   // Recovery: set both, redeploy, read the new secret in the logs once. Runs again only when the token value changes.
   adminMfaResetEmail: env.ADMIN_MFA_RESET_EMAIL ?? '',
@@ -80,6 +83,7 @@ export function configProblems(c: typeof config = config, e: Record<string, stri
 /** Defaults for admin-editable settings (system_settings table overrides these). */
 export const SETTING_DEFAULTS = {
   ...MONEY_DEFAULTS,                        // round 3: credit, loyalty, deposit, claims, USSD (services/moneySettings.ts)
+  ...TRUST_DEFAULTS,                        // round 5: fraud checks, staff alerts, referrals, number privacy (services/trustSettings.ts)
   ...GROWTH_DEFAULTS,                       // growth round: guest rides, schedules, quests, heat map, campaigns, partners (services/growthSettings.ts)
   'dispatch.offer_timeout_s': 20,
   'dispatch.max_rounds': 4,

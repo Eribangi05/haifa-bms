@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { referralSummary } from '../services/referrals.js';
 import { z } from 'zod';
 import { effectivePermissions, isStaff } from '../rbac.js';
 import { parse, lat, lng } from '../util/validate.js';
@@ -110,10 +111,6 @@ export async function meRoutes(app: FastifyInstance) {
   app.post('/notifications/read', pre, async (req) => { await q("update notifications set read_at=now() where user_id=$1 and channel='in_app' and read_at is null", [req.auth!.id]); return { ok: true }; });
 
   // referral
-  app.get('/users/me/referral', pre, async (req) => {
-    const u = await q1<any>('select referral_code from users where id=$1', [req.auth!.id]);
-    const r = await q1<any>("select count(*)::int total, count(*) filter (where status='rewarded')::int rewarded from referrals where referrer_id=$1", [req.auth!.id]);
-    const vouchers = await q('select code, value, valid_to, (select count(*) from promotion_redemptions pr where pr.promotion_id=promotions.id)::int used from promotions where user_id=$1 and active', [req.auth!.id]);
-    return { code: u.referral_code, ...r, vouchers };
-  });
+  app.get('/users/me/referral', pre, async (req) => referralSummary(req.auth!.id));
 }
+

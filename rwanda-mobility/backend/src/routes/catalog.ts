@@ -5,7 +5,7 @@ import { anyAuth, routeLimit } from '../guards.js';
 import { q } from '../db.js';
 import { estimate, zoneFor } from '../services/bookings.js';
 import { searchPlaces } from '../services/maps.js';
-import { flag, getSetting } from '../services/settings.js';
+import { flag, getSetting, rolloutBucket } from '../services/settings.js';
 import { checkPromo } from '../services/promos.js';
 import { badRequest } from '../errors.js';
 import { config } from '../config.js';
@@ -36,6 +36,13 @@ export async function catalogRoutes(app: FastifyInstance) {
   app.get('/places/search', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'fr', 'en']).default('en'), lat: z.coerce.number().min(-3).max(0).optional(), lng: z.coerce.number().min(28).max(32).optional() }), req.query);
     return { places: await searchPlaces(b.q, b.lang, b.lat != null && b.lng != null ? { lat: b.lat, lng: b.lng } : undefined) };
+  });
+  // Feature switches the apps may read: on/off for this person (gradual rollout applies) plus the message to show when a feature is off. Cached by the app, so the off-switch works within a minute.
+  app.get('/config/flags', { preHandler: anyAuth }, async (req) => {
+    const rows = await q<any>('select key, enabled, rollout_pct, disabled_message from feature_flags where client_visible');
+    const out: Record<string, { on: boolean; message?: string }> = {};
+    for (const r of rows) { const on = r.enabled && (r.rollout_pct >= 100 || (r.rollout_pct > 0 && rolloutBucket(r.key, req.auth!.id) < r.rollout_pct)); out[r.key] = on ? { on } : { on, ...(r.disabled_message ? { message: r.disabled_message } : {}) }; }
+    return { flags: out, support: { name: config.supportName, phone: config.supportPhone }, server_time: new Date().toISOString() };
   });
   app.get('/places/popular', async (req) => {
     const { lang } = parse(z.object({ lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);

@@ -3,12 +3,14 @@ import type { PoolClient } from 'pg';
 import { q, q1, tx } from '../db.js';
 import { config } from '../config.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
+import { encode as ghEncode, cellsCovering, precisionFor } from '../util/geohash.js';
+import { cancelLoopCheck, promoDeviceOk } from './fraud.js';
 import { haversineM, pointInPolygon, type LatLng } from '../util/geo.js';
 import { quotableDebt, withDebt, withoutDebt, applyDebts, recordDebt } from './debts.js';
 import { computeFare, finalizeFare, activeRule, ruleById, kigaliHour, kigaliDow, overtimeBlocks, type Breakdown } from './pricing.js';
 import { route } from './maps.js';
 import { checkPromo } from './promos.js';
-import { getSetting, flag } from './settings.js';
+import { getSetting, flagFor } from './settings.js';
 import { transition, logEvent, ACTIVE_TRIP, type BookingRow, type Status } from './bookingMachine.js';
 import { startSearch } from './dispatch.js';
 import { reserveForBooking } from './credit.js';
@@ -45,7 +47,14 @@ export async function zoneFor(p: LatLng): Promise<{ id: string; name: string } |
 /** Bounding box around the pickup (degrees), so the database discards far-away drivers before the exact haversine check. */
 const bbox = (c: LatLng, radiusM: number) => { const dLat = radiusM / 111_320 * 1.02, dLng = dLat / Math.max(0.2, Math.cos(c.lat * Math.PI / 180)); return [c.lat - dLat, c.lat + dLat, c.lng - dLng, c.lng + dLng]; };
 
+/** Geohash cell filter (indexed column) so only drivers in the cells around the pickup are read at all. */
+const ghFilter = (c: LatLng, radiusM: number, n: number): { sql: string; params: unknown[] } => {
+  const p = precisionFor(radiusM);
+  return p ? { sql: `and dp.gh${p} = any($${n})`, params: [cellsCovering(c, radiusM, p)] } : { sql: '', params: [] };
+};
+
 export async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number, passengerId?: string) {
+  const gh = ghFilter(pickup, radiusM, 11);
   const rows = await q<any>(
     `select dp.last_lat, dp.last_lng, v.vehicle_type from driver_profiles dp
      join users u on u.id=dp.user_id and u.status='active'
@@ -53,22 +62,23 @@ export async function nearbyAvailable(svc: any, zoneId: string, pickup: LatLng, 
      where dp.status='APPROVED' and dp.is_online and 'ride' = any(dp.accepting) and dp.last_seen_at > now() - make_interval(secs => $1)
        and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
        and ($6::uuid is null or not exists (select 1 from passenger_driver_prefs pp where pp.passenger_id=$6 and pp.driver_id=dp.user_id and pp.kind='blocked')) and v.vehicle_type = any($3) and v.capacity >= $4 and (not $5 or v.comfort) and ${DOCS_OK_SQL('dp', 'v.vehicle_type')}
-       and dp.last_lat between $7 and $8 and dp.last_lng between $9 and $10
+       and dp.last_lat between $7 and $8 and dp.last_lng between $9 and $10 ${gh.sql}
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
-    [heartbeatS, zoneId, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, passengerId ?? null, ...bbox(pickup, radiusM)]);
+    [heartbeatS, zoneId, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, passengerId ?? null, ...bbox(pickup, radiusM), ...gh.params]);
   const near = rows.filter((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup) <= radiusM);
   return near.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup));
 }
 
 async function nearbyAbasare(cv: any, zoneId: string, pickup: LatLng, radiusM: number, heartbeatS: number, passengerId?: string): Promise<number[]> {
+  const gh = ghFilter(pickup, radiusM, 10);
   const rows = await q<any>(
     `select dp.last_lat, dp.last_lng from driver_profiles dp join users u on u.id=dp.user_id and u.status='active'
      where dp.status='APPROVED' and dp.abasare_status='approved' and 'abasare' = any(dp.accepting) and dp.is_online
        and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1) and (dp.zone_id is null or dp.zone_id=$2)
        and ($5::uuid is null or not exists (select 1 from passenger_driver_prefs pp where pp.passenger_id=$5 and pp.driver_id=dp.user_id and pp.kind='blocked')) and (dp.abasare_skills->'classes') ? $3 and (dp.abasare_skills->'transmissions') ? $4 and ${DOCS_OK_SQL('dp', "'abasare'")}
-       and dp.last_lat between $6 and $7 and dp.last_lng between $8 and $9
+       and dp.last_lat between $6 and $7 and dp.last_lng between $8 and $9 ${gh.sql}
        and not exists (select 1 from bookings x where x.driver_id=dp.user_id and x.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))`,
-    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission, passengerId ?? null, ...bbox(pickup, radiusM)]);
+    [heartbeatS, zoneId, cv.vehicle_class, cv.transmission, passengerId ?? null, ...bbox(pickup, radiusM), ...gh.params]);
   return rows.map((r) => haversineM({ lat: r.last_lat, lng: r.last_lng }, pickup)).filter((d) => d <= radiusM);
 }
 async function abasareSupply(cv: any): Promise<number> {
@@ -93,7 +103,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
   if (!pz) throw badRequest('pickup_outside_coverage', 'Pickup is outside our service area');
   const scheduled = inp.scheduled_for ? new Date(inp.scheduled_for) : null;
   if (scheduled) {
-    if (!(await flag('booking.scheduled'))) throw badRequest('scheduled_disabled', 'Scheduled rides are not enabled');
+    if (!(await flagFor('booking.scheduled', passengerId))) throw badRequest('scheduled_disabled', 'Scheduled rides are not enabled');
     const days = await getSetting('booking.max_scheduled_days');
     if (Number.isNaN(scheduled.getTime()) || scheduled.getTime() < Date.now() + 20 * 60e3 || scheduled.getTime() > Date.now() + days * 86400e3)
       throw badRequest('invalid_schedule', `Schedule between 20 minutes and ${days} days ahead`);
@@ -101,7 +111,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
   // Abasare (driver for the customer's own car) and ride services are quoted separately.
   let cv: any = null; let forcedId: string | null = inp.service_id ?? null;
   if (inp.abasare) {
-    if (!(await flag('abasare.enabled'))) throw badRequest('abasare_disabled', 'Abasare is not enabled');
+    if (!(await flagFor('abasare.enabled', passengerId))) throw badRequest('abasare_disabled', 'Abasare is not enabled');
     cv = await q1<any>('select * from customer_vehicles where id=$1 and owner_id=$2 and active', [inp.abasare.customer_vehicle_id, passengerId]);
     if (!cv) throw notFound('vehicle');
     forcedId = inp.abasare.hours != null ? 'abasare_hourly' : 'abasare';
@@ -198,6 +208,11 @@ async function requireUsableCode(raw: string) {
 }
 
 export async function createBooking(passengerId: string, inp: CreateIn) {
+  if (!(await flagFor('booking.requests', passengerId))) {      // remote off-switch: all new requests paused (maintenance); the message is the flag's own text
+    const f = await q1<{ disabled_message: string | null }>("select disabled_message from feature_flags where key='booking.requests'");
+    throw new AppError(503, 'service_paused', f?.disabled_message ?? 'New ride requests are paused for a short while');
+  }
+  await cancelLoopCheck(passengerId);
   if (inp.payment_method === 'partner') {   // charged to a venue partner through the corporate invoice engine
     const pb = await resolvePartnerBilling(passengerId, inp.request_code);
     inp = { ...inp, payment_method: 'corporate', corporate_id: pb.corporate_id, partner_id: pb.partner_id, partner_billed: true };
@@ -209,10 +224,10 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
   }
   const methods = ['cash', 'mtn_momo', 'airtel_money', 'corporate', 'wallet'];
   if (!methods.includes(inp.payment_method)) throw badRequest('payment_method_unavailable');
-  if (inp.payment_method === 'mtn_momo' && !(await flag('payments.mtn_momo'))) throw badRequest('payment_method_unavailable');
-  if (inp.payment_method === 'airtel_money' && !(await flag('payments.airtel_money'))) throw badRequest('payment_method_unavailable', 'Airtel Money is not enabled yet');
+  if (inp.payment_method === 'mtn_momo' && !(await flagFor('payments.mtn_momo', passengerId))) throw badRequest('payment_method_unavailable');
+  if (inp.payment_method === 'airtel_money' && !(await flagFor('payments.airtel_money', passengerId))) throw badRequest('payment_method_unavailable', 'Airtel Money is not enabled yet');
   if ((inp.payment_method === 'corporate') !== !!inp.corporate_id) throw badRequest('corporate_payment_mismatch', 'Corporate payment requires a business account');
-  if (inp.corporate_id && !inp.partner_billed && !(await flag('corporate.enabled'))) throw badRequest('corporate_disabled');
+  if (inp.corporate_id && !inp.partner_billed && !(await flagFor('corporate.enabled', passengerId))) throw badRequest('corporate_disabled');
 
   // Same key + same quote = a retry (return the booking). Same key for a different quote is a client bug: refuse instead of silently returning another trip.
   const replayOf = (b: BookingRow) => {
@@ -241,7 +256,7 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
       }
       const meta = quote.meta ?? {};
       if (svc.kind === 'abasare') {
-        if (!(await flag('abasare.enabled'))) throw badRequest('abasare_disabled', 'Abasare is not enabled');
+        if (!(await flagFor('abasare.enabled', passengerId))) throw badRequest('abasare_disabled', 'Abasare is not enabled');
         if (!meta.customer_vehicle_id || (inp.customer_vehicle_id && inp.customer_vehicle_id !== meta.customer_vehicle_id)) throw badRequest('vehicle_mismatch', 'This price was quoted for a different car');
         if (!inp.owner_attested) throw badRequest('attestation_required', 'Confirm that you own or may use this car and that its insurance allows another driver');
         const cvx = await q1<any>('select * from customer_vehicles where id=$1 and owner_id=$2 and active', [meta.customer_vehicle_id, passengerId], c);
@@ -279,7 +294,9 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
         const p = (await q1<any>('select id from promotions where upper(code)=upper($1)', [quote.promo_code], c))!;
         const ok = await q('update promotions set spent = spent + $2 where id=$1 and (budget is null or spent + $2 <= budget) returning id', [p.id, quote.breakdown.discount], c);
         if (!ok.length) throw conflict('promo_invalid', 'Promotion budget exhausted');
-        await q('insert into promotion_redemptions(promotion_id,user_id,booking_id,amount) values ($1,$2,$3,$4)', [p.id, passengerId, b.id, quote.breakdown.discount], c);
+        if (!(await promoDeviceOk(p.id, passengerId, c))) throw conflict('promo_invalid', 'This offer was already used on this phone');
+        const dev = await q1<{ d: string | null }>('select coalesce((select device_id from sessions where user_id=$1 and device_id is not null order by created_at desc limit 1), (select device_fingerprint from users where id=$1)) d', [passengerId], c);
+        await q('insert into promotion_redemptions(promotion_id,user_id,booking_id,amount,device_id) values ($1,$2,$3,$4,$5)', [p.id, passengerId, b.id, quote.breakdown.discount, dev?.d ?? null], c);
       }
       return b;
     });
@@ -371,6 +388,17 @@ export async function bookingView(b: BookingRow, as: Perspective) {
   }
   if (as === 'driver') delete out.fare_breakdown;
   Object.assign(out, guestViewPatch(b, as));   // ride for someone else: guest name / masked phone / driver-safe first name
+  if ((as === 'passenger' || as === 'driver') && b.driver_id) {
+    // chat state and number privacy: the other person's number is only included when they chose to share it for this trip (or masking is switched off)
+    const mask = await getSetting('privacy.mask_phones');
+    const meId = as === 'passenger' ? b.passenger_id : b.driver_id, otherId = as === 'passenger' ? b.driver_id : b.passenger_id;
+    out.unread_messages = await unreadCount(meId, b.id);
+    out.phone_sharing = { i_share: as === 'passenger' ? (b as any).passenger_shared_phone : (b as any).driver_shared_phone, they_share: as === 'passenger' ? (b as any).driver_shared_phone : (b as any).passenger_shared_phone };
+    if (ACTIVE_TRIP.includes(b.status) && (!mask || out.phone_sharing.they_share) && !(as === 'driver' && (b as any).rider_phone)) {
+      const o = await q1<{ phone: string | null }>('select phone from users where id=$1', [otherId]);
+      if (o?.phone) out.contact_phone = o.phone;
+    }
+  }
   return out;
 }
 
@@ -572,13 +600,31 @@ export async function rateBooking(userId: string, bookingId: string, score: numb
 }
 
 export async function postMessage(userId: string, bookingId: string, body: string) {
+  if (!(await flagFor('chat.enabled', userId))) throw conflict('chat_unavailable', 'Chat is switched off');
   const b = await q1<BookingRow>('select * from bookings where id=$1', [bookingId]);
   if (!b || (b.passenger_id !== userId && b.driver_id !== userId)) throw notFound('booking');
   if (!b.driver_id || !ACTIVE_TRIP.includes(b.status)) throw conflict('chat_closed', 'Chat is only available during an active trip');
   await q('insert into trip_messages(booking_id, sender_id, body) values ($1,$2,$3)', [bookingId, userId, body]);
+  const other = userId === b.passenger_id ? b.driver_id : b.passenger_id;
+  // one push per minute at most per person and trip, so a quick back-and-forth does not flood the phone
+  const recent = await q1("select 1 from notifications where user_id=$1 and template_key='chat_message' and channel='in_app' and params->>'ref'=$2 and created_at > now() - interval '60 seconds'", [other, b.ref]);
+  if (!recent) await notify(other, 'chat_message', { ref: b.ref });
 }
-export async function listMessages(userId: string, bookingId: string) {
+/** Messages of a trip (oldest first). Opening the list marks the other person's messages as read. */
+export async function listMessages(userId: string, bookingId: string, afterId = 0) {
   const b = await q1<BookingRow>('select * from bookings where id=$1', [bookingId]);
   if (!b || (b.passenger_id !== userId && b.driver_id !== userId)) throw notFound('booking');
-  return q('select id, sender_id, body, created_at from (select id, sender_id, body, created_at from trip_messages where booking_id=$1 order by id desc limit 200) m order by id', [bookingId]);
+  await q('update trip_messages set read_at=now() where booking_id=$1 and sender_id <> $2 and read_at is null', [bookingId, userId]);
+  return q('select id, sender_id, body, created_at, read_at from (select id, sender_id, body, created_at, read_at from trip_messages where booking_id=$1 and id > $2 order by id desc limit 200) m order by id', [bookingId, afterId]);
+}
+export async function unreadCount(userId: string, bookingId: string): Promise<number> {
+  return (await q1<{ n: number }>('select count(*)::int n from trip_messages where booking_id=$1 and sender_id <> $2 and read_at is null', [bookingId, userId]))!.n;
+}
+/** A rider or driver chooses to show their number to the other person for this trip only. Numbers stay hidden until then (privacy.mask_phones). */
+export async function sharePhone(userId: string, bookingId: string, share: boolean) {
+  const b = await q1<BookingRow>('select * from bookings where id=$1', [bookingId]);
+  if (!b || (b.passenger_id !== userId && b.driver_id !== userId)) throw notFound('booking');
+  if (!b.driver_id || !ACTIVE_TRIP.includes(b.status)) throw conflict('chat_closed', 'Sharing a number is only possible during an active trip');
+  await q(`update bookings set ${userId === b.passenger_id ? 'passenger_shared_phone' : 'driver_shared_phone'}=$2 where id=$1`, [bookingId, share]);
+  return { ok: true, shared: share };
 }

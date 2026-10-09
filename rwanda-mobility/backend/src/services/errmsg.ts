@@ -2,6 +2,7 @@
 // Rule: the UI must never mix languages, so for rw/fr we NEVER fall back to the English text.
 // Placeholders: {min} {max} {minutes} {years} {seconds} are filled from `details` when present.
 import { GROWTH_ERRORS, GROWTH_NOUNS } from './errmsgGrowth.js';
+import { TRUST_ERRORS } from './errmsgTrust.js';
 export type Lang = 'rw' | 'fr' | 'en';
 
 export function reqLang(header?: string): Lang {
@@ -205,6 +206,7 @@ const T: Record<string, Pair> = {
   not_ridden: ['Ushobora gushyira ku rutonde gusa umushoferi mwakoranye urugendo.', 'Vous ne pouvez ajouter qu\'un chauffeur avec qui vous avez fait une course.'],
 };
 
+Object.assign(T, TRUST_ERRORS);   // round 5: fraud checks, chat, vehicle application (services/errmsgTrust.ts)
 Object.assign(T, GROWTH_ERRORS);   // round 2: guest rides, schedules, partners, campaigns (services/errmsgGrowth.ts)
 
 const NOUNS: Record<string, Pair> = {

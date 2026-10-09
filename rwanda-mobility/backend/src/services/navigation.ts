@@ -1,4 +1,6 @@
 import { etaS } from './maps.js';
+import { routeOnRoads, graphReady } from './roadGraph.js';
+import { haversineM } from '../util/geo.js';
 
 const pt = (lat: number, lng: number, name?: string | null) => ({
   lat, lng, name: name ?? null,
@@ -29,4 +31,13 @@ export function driverEtaS(b: any, d: { last_lat?: number | null; last_lng?: num
   if (['DRIVER_ASSIGNED', 'DRIVER_ARRIVING'].includes(b.status)) return { driver_eta_s: etaS(from, { lat: b.pickup_lat, lng: b.pickup_lng }, d.vehicle_type ?? 'car'), driver_eta_target: 'pickup' };
   if (b.status === 'IN_PROGRESS' && b.hire_mode !== 'hourly') return { driver_eta_s: etaS(from, { lat: b.dest_lat, lng: b.dest_lng }, d.vehicle_type ?? 'car'), driver_eta_target: 'destination' };
   return { driver_eta_s: null, driver_eta_target: null };
+}
+
+/** Turn-by-turn route for the driver from where they are now to the current target (pickup before boarding, destination during the trip). */
+export function turnByTurn(b: any, from: { lat: number; lng: number }, vehicle = 'car') {
+  const target = b.status === 'IN_PROGRESS' ? 'destination' : 'pickup';
+  const to = target === 'destination' ? { lat: b.dest_lat, lng: b.dest_lng } : { lat: b.pickup_lat, lng: b.pickup_lng };
+  const r = routeOnRoads(from, to, vehicle);
+  if (!r) return { target, available: false as const, to, from, reason: graphReady() ? 'no_road_found' : 'no_road_data', straight_line_m: Math.round(haversineM(from, to)) };
+  return { target, available: true as const, to, from, source: 'roads' as const, distance_m: r.distance_m, duration_s: r.duration_s, geometry: r.geometry, steps: r.steps };
 }

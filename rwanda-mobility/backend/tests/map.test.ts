@@ -74,3 +74,28 @@ test('MAP-04 /places/search merges curated places with the offline OSM index and
   const bad = await t.api('GET', '/places/search?q=hospital&lat=99&lng=30', { token: p.token });
   assert.equal(bad.status, 400, 'out-of-range coordinates are rejected');
 });
+
+test('GEO-01 geohash cells cover the search circle and nearby lookup uses the indexed cells', async () => {
+  const { encode, cellsCovering, precisionFor } = await import('../src/util/geohash.ts');
+  assert.equal(encode(-1.9441, 30.0619, 6).length, 6);
+  assert.equal(encode(57.64911, 10.40744, 11), 'u4pruydqqvj', 'standard geohash test vector');
+  assert.equal(precisionFor(3000), 5); assert.equal(precisionFor(500), 6); assert.equal(precisionFor(12500), 4); assert.equal(precisionFor(30000), null);
+  const c = { lat: -1.9441, lng: 30.0619 };
+  for (const [dx, dy] of [[0, 0], [2900, 0], [-2900, 2900], [0, -2900], [2000, 2000]]) {      // points inside a 3 km circle always land in a covered cell
+    const pt = { lat: c.lat + dy / 111_320, lng: c.lng + dx / 111_320 };
+    assert.ok(cellsCovering(c, 3000, 5).includes(encode(pt.lat, pt.lng, 5)), `covered ${dx},${dy}`);
+  }
+  assert.ok(cellsCovering(c, 3000, 5).length <= 9);
+});
+
+test('GEO-02 a driver is found near the pickup through the geohash filter and not when far away', async () => {
+  const { nearbyAvailable } = await import('../src/services/bookings.ts');
+  const d = await t.driver({ at: { lat: -1.9441, lng: 30.0619 } });
+  const row = await t.db.q1<any>('select gh4, gh5, gh6 from driver_profiles where user_id=$1', [d.id]);
+  assert.equal(row.gh6.length, 6); assert.equal(row.gh5, row.gh6.slice(0, 5)); assert.equal(row.gh4, row.gh6.slice(0, 4));
+  const svc = (await t.db.q1<any>("select * from service_categories where id='moto'"))!;
+  const near = await nearbyAvailable(svc, 'kigali', { lat: -1.9460, lng: 30.0640 }, 3000, 600);
+  assert.ok(near.length >= 1, 'found within 3 km');
+  const far = await nearbyAvailable(svc, 'kigali', { lat: -1.60, lng: 30.40 }, 3000, 600);
+  assert.equal(far.length, 0);
+});

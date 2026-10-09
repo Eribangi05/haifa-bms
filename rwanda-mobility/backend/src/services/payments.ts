@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { rewardReferral } from './referrals.js';
 import { q, q1, tx } from '../db.js';
 import { AppError, badRequest, conflict, notFound } from '../errors.js';
 import { providerFor, newReference, type ProviderStatus } from '../providers/payment.js';
@@ -87,18 +88,7 @@ export async function settleBookingPayment(c: PoolClient, bookingId: string, pay
   await transition(c, b.id, 'PAYMENT_COMPLETED', { id: null, role: 'system' }, { meta: { payment_id: pay.id, method: pay.method } });
   // referral: reward both sides after the referee's first paid trip
   await awardTripPoints(c, { id: b.id, passenger_id: b.passenger_id, final_fare: b.final_fare });
-  const ref = await q1<any>("select * from referrals where referee_id=$1 and status='pending' for update", [b.passenger_id], c);
-  const refCredit = ref ? await getSetting('referral.reward_credit') : 0;
-  if (ref && refCredit > 0) {
-    for (const uid of [ref.referrer_id, ref.referee_id]) await grantCredit(c, uid, refCredit, 'referral', { refType: 'referral', refId: ref.id, idemKey: `ref:${ref.id}:${uid}`, memo: 'Referral reward' });
-    await q("update referrals set status='rewarded' where id=$1", [ref.id], c);
-  } else if (ref) {
-    for (const [uid, tag] of [[ref.referrer_id, 'A'], [ref.referee_id, 'B']]) {
-      await q(`insert into promotions(code, kind, value, min_fare, per_user_limit, usage_limit, user_id, valid_to, budget)
-               values ($1,'fixed',1000,1500,1,1,$2, now() + interval '60 days', 1000)`, [`REF-${ref.id.replace(/-/g, '').slice(0, 8).toUpperCase()}${tag}`, uid], c);
-    }
-    await q("update referrals set status='rewarded' where id=$1", [ref.id], c);
-  }
+  await rewardReferral(c, { id: b.id, passenger_id: b.passenger_id });
 }
 
 // ---------- cash ----------

@@ -105,6 +105,10 @@ const FLAGS: [string, boolean, string][] = [
   ['pricing.negotiated', false, 'Passenger-proposed fares (check legality)'],
   ['pricing.surge', false, 'Demand-based pricing (disabled until approved)'],
   ['booking.scheduled', true, 'Scheduled rides'],
+  ['booking.requests', true, 'New ride requests (turn off to pause every new request, e.g. for maintenance; riders see the message)'],
+  ['chat.enabled', true, 'In-app chat between rider and driver during a trip'],
+  ['navigation.enabled', true, 'Turn-by-turn navigation view for drivers'],
+  ['referral.rewards', true, 'Referral rewards screen and credit'],
   ['corporate.enabled', true, 'Corporate accounts'],
   ['fleet.enabled', true, 'Fleet operator portal'],
   ['promotions.enabled', true, 'Promotions and referrals'],
@@ -165,6 +169,8 @@ export async function seedCore() {
   for (const [en, fr] of Object.entries(PLACE_FR)) await q('update places set name_fr=$2 where name_en=$1 and name_fr is null', [en, fr]);
   for (const [c, n, t] of LEDGER) await q('insert into ledger_accounts values ($1,$2,$3) on conflict do nothing', [c, n, t]);
   for (const [k, e, d] of FLAGS) await q('insert into feature_flags(key,enabled,description) values ($1,$2,$3) on conflict do nothing', [k, e, d]);
+  // flags the apps read through GET /config/flags (the rest stay server-side)
+  await q("update feature_flags set client_visible=true where key = any($1) and client_visible=false and updated_by is null", [['booking.requests', 'chat.enabled', 'navigation.enabled', 'referral.rewards', 'abasare.enabled', 'booking.scheduled', 'corporate.enabled', 'promotions.enabled']]);
   for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
     await q('insert into roles(name, builtin, is_staff) values ($1, true, $2) on conflict do nothing', [role, STAFF_ROLES.includes(role)]);
     // Rows mirror the code defaults for roles nobody has customised (informational: the code defaults apply anyway). A customised role is never overwritten.

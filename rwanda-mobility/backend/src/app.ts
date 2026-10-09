@@ -26,6 +26,8 @@ import { adminRoutes } from './routes/admin.js';
 import { adminFinanceRoutes } from './routes/adminFinance.js';
 import { safetyRoutes } from './routes/safety.js';
 import { trustRoutes } from './routes/trust.js';
+import { opsRoutes } from './routes/ops.js';
+import { driverGrowthRoutes } from './routes/driverGrowth.js';
 import compress from '@fastify/compress';
 import { abasareRoutes } from './routes/abasare.js';
 import { growthRoutes } from './routes/growth.js';
@@ -129,7 +131,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await api.register(authRoutes); await api.register(meRoutes); await api.register(catalogRoutes);
     await api.register(bookingRoutes); await api.register(driverRoutes); await api.register(paymentRoutes);
     await api.register(supportRoutes); await api.register(businessRoutes);
-    await api.register(abasareRoutes); await api.register(staffInviteRoutes); await api.register(adminStaffRoutes); await api.register(adminRoleRoutes); await api.register(adminConfigRoutes); await api.register(diagnosticsRoutes); await api.register(requestCodeRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes);
+    await api.register(abasareRoutes); await api.register(staffInviteRoutes); await api.register(adminStaffRoutes); await api.register(adminRoleRoutes); await api.register(adminConfigRoutes); await api.register(diagnosticsRoutes); await api.register(requestCodeRoutes); await api.register(adminRoutes); await api.register(adminFinanceRoutes); await api.register(opsRoutes); await api.register(driverGrowthRoutes);
     await api.register(moneyRoutes); await api.register(claimRoutes); await api.register(ussdAdminRoutes);   // round 3: credit/loyalty/deposit, claims, USSD admin views
     await api.register(safetyRoutes); await api.register(trustRoutes);   // round 1: safety checks / live share, tips / tags / favourites / badges
     await api.register(growthRoutes); await api.register(growthAdminRoutes); await api.register(partnerRoutes);   // round 2: guest rides, schedules, quests, heat map, campaigns, partners

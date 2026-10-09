@@ -3,6 +3,7 @@
 // Rule: a user only ever sees ONE language. Every template must exist in every language in SUPPORTED_LANGS.
 import { MONEY_TEMPLATES, MONEY_LABELS } from './moneyTemplates.js';
 import { GROWTH_TEMPLATES } from './i18nGrowth.js';
+import { TRUST_TEMPLATES } from './trustTemplates.js';
 export const SUPPORTED_LANGS = ['rw', 'fr', 'en'] as const;
 export type Lang = (typeof SUPPORTED_LANGS)[number];
 type Tpl = { title: string; body: string };
@@ -151,6 +152,7 @@ export const DEFAULT_TEMPLATES: Record<string, Record<Lang, Tpl>> = {
   },
 };
 
+Object.assign(DEFAULT_TEMPLATES, TRUST_TEMPLATES);   // round 5: referrals, chat, vehicle application (services/trustTemplates.ts)
 Object.assign(DEFAULT_TEMPLATES, MONEY_TEMPLATES);   // round 3: credit, deposit, claims, USSD (services/moneyTemplates.ts)
 
 // Enumerated values that appear inside templates ({{status}}, {{doc}}, {{phase}}) are translated per language,

@@ -110,6 +110,7 @@ export async function boot(dbName = 'rwanda_mobility_test') {
 
   /** Test isolation: take every driver offline and close open bookings, keep users/ledger. */
   const reset = async () => {
+    await db.q("insert into system_settings(key,value) values ('fraud.cancel_loop_count','1000') on conflict (key) do update set value=excluded.value");   // tests cancel many times on purpose; R5-03 turns the rule on again
     await db.q("update dispatch_offers set status='cancelled' where status='pending'");
     await db.q("update bookings set status='CANCELLED_BY_SYSTEM' where status in ('REQUESTED','SEARCHING_DRIVER','SCHEDULED','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS')");
     await db.q('update driver_profiles set is_online=false');

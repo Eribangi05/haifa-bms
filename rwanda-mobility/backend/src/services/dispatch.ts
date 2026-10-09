@@ -4,6 +4,7 @@ import { q, q1, tx } from '../db.js';
 import { conflict, notFound, AppError } from '../errors.js';
 import { getSetting } from './settings.js';
 import { haversineM } from '../util/geo.js';
+import { cellsCovering, precisionFor } from '../util/geohash.js';
 import { etaS } from './maps.js';
 import { transition, logEvent, type BookingRow } from './bookingMachine.js';
 import { DOCS_OK_SQL, driverPermission, abasarePermission } from './drivers.js';
@@ -21,6 +22,10 @@ type Cand = { user_id: string; last_lat: number; last_lng: number; vehicle_id: s
  * the second saw all drivers locked and found none. Only the drivers actually offered are locked: see `claimDriver`.)
  */
 export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, heartbeatS: number): Promise<Cand[]> {
+  // Only drivers in the geohash cells around the pickup (within the largest search radius) are read: an indexed lookup instead of every online driver in the zone.
+  const maxM = (await getSetting('dispatch.max_radius_km')) * 1000 + 500, gp = precisionFor(maxM);
+  const ghSql = (n: number) => (gp ? `and dp.gh${gp} = any($${n})` : '');
+  const ghParam = gp ? [cellsCovering({ lat: b.pickup_lat, lng: b.pickup_lng }, maxM, gp)] : [];
   if (svc.kind === 'abasare') {
     // The driver drives the CUSTOMER's car: match on skills (vehicle class + transmission), not on a driver vehicle.
     const cv = await q1<any>('select vehicle_class, transmission from customer_vehicles where id=$1', [b.customer_vehicle_id], c);
@@ -39,8 +44,8 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
          and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $5)
          and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $6)
          and not exists (select 1 from passenger_driver_prefs pp where pp.driver_id = dp.user_id and pp.passenger_id = $6 and pp.kind = 'blocked')
-         and dp.last_lat is not null`,
-      [heartbeatS, b.zone_id, cv.vehicle_class, cv.transmission, b.id, b.passenger_id], c);
+         and dp.last_lat is not null ${ghSql(7)}`,
+      [heartbeatS, b.zone_id, cv.vehicle_class, cv.transmission, b.id, b.passenger_id, ...ghParam], c);
   }
   return q<Cand>(
     `select dp.user_id, dp.last_lat, dp.last_lng, dp.fleet_id, v.id vehicle_id, v.vehicle_type, dp.accepted_count, dp.rejected_count, dp.offers_count, dp.last_trip_at
@@ -57,8 +62,8 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
        and not exists (select 1 from dispatch_offers o where o.driver_id = dp.user_id and o.booking_id = $6)
        and not exists (select 1 from safety_blocks sb where sb.driver_id = dp.user_id and sb.passenger_id = $7)
        and not exists (select 1 from passenger_driver_prefs pp where pp.driver_id = dp.user_id and pp.passenger_id = $7 and pp.kind = 'blocked')
-       and dp.last_lat is not null`,
-    [heartbeatS, b.zone_id, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, b.id, b.passenger_id], c);
+       and dp.last_lat is not null ${ghSql(8)}`,
+    [heartbeatS, b.zone_id, svc.vehicle_types, svc.min_capacity, svc.requires_comfort, b.id, b.passenger_id, ...ghParam], c);
 }
 
 /**
