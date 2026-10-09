@@ -2,7 +2,8 @@
 // - Cleartext HTTP is OFF unless EXPO_PUBLIC_ALLOW_CLEARTEXT=1 (local dev, emulator, e2e). Production builds are https only.
 // - Push notifications need an EAS project id: set EAS_PROJECT_ID (or run `eas init` and paste the id below). Without it the app skips push registration silently.
 const allowCleartext = process.env.EXPO_PUBLIC_ALLOW_CLEARTEXT === '1';
-const easProjectId = process.env.EAS_PROJECT_ID || undefined;
+// The Expo (EAS) project @eribangi/abasare. The id is an identifier, not a secret; EAS_PROJECT_ID overrides it for another Expo account.
+const easProjectId = process.env.EAS_PROJECT_ID || '62701030-5161-497c-b3cb-2afae39c9030';
 
 module.exports = () => ({
   expo: {
