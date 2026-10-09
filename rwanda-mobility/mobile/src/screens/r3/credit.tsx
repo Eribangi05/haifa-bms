@@ -5,7 +5,7 @@ import { ApiError, uuid } from '../../lib/net';
 import { fmtDate, fmtTime, groupByDay } from '../../lib/format';
 import { creditForPoints, entryAmount, entryInfo, entryIsMove, redeemChoices, signedRwf, tierProgress, TIER_GLYPH, validRedeem, type LoyaltyView, type WalletEntry, type WalletView } from '../../lib/money3';
 import type { TKey } from '../../lib/i18n';
-import { Banner, Btn, Card, Chip, EmptyState, IconBadge, Money, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
+import { Banner, Btn, Card, Chip, EmptyState, Glyph, IconBadge, Money, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
 import { showAlert } from '../../ui/dialog';
 import { C, FS, R, S, SP } from '../../ui/theme';
 
@@ -24,7 +24,7 @@ export function CreditChip() {
   return (
     <Pressable testID="credit-chip" onPress={() => nav.push('credit')} accessibilityRole="button" accessibilityLabel={t('cr.chip.a11y', { n: Math.round(wallet.available).toLocaleString('en-US') })}
       style={{ alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.goldBg, borderColor: C.gold, borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 14, marginBottom: SP.md }}>
-      <Text accessible={false}>💳</Text><Text style={{ color: C.ink, fontWeight: '700' }}>{t('cr.chip')}</Text><Money n={wallet.available} style={{ color: C.primaryDark, fontWeight: '800' }} />
+      <Glyph g="💳" size={26} /><Text style={{ color: C.ink, fontWeight: '700' }}>{t('cr.chip')}</Text><Money n={wallet.available} style={{ color: C.primaryDark, fontWeight: '800' }} />
     </Pressable>
   );
 }

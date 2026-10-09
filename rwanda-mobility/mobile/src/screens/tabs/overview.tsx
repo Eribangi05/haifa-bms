@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Image, Linking, Pressable, View } from 'react-native';
 import { useApp } from '../../lib/app';
 import { fmtRwf } from '../../lib/format';
 import { dayPart, tripStats } from '../../lib/stats';
 import { useTripFeed } from '../../lib/tripFeed';
 import type { Booking, Place, Pt } from '../../lib/types';
-import { Banner, Btn, Card, Chip, FadeIn, IconBadge, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
+import { APP_NAME } from '../../config';
+import { Banner, Btn, Card, Chip, FadeIn, LangSwitch, Glyph, IconBadge, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
 import { Hero, QuickAction, QuickGrid, StatRow, StatTile } from '../../ui/dash';
 import { C, FS, R, S, SP } from '../../ui/theme';
 import { usePlaces } from '../passenger/usePlaces';
@@ -24,18 +25,21 @@ export function Overview({ active, onBook, refCode }: { active: Booking | null; 
   const call = (n: string) => { void Linking.openURL(`tel:${n}`).catch(() => {}); };
   const recent: Booking[] = (feed.trips ?? []).slice(0, 3);
   return (
-    <Screen onRefresh={async () => { feed.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
+    <Screen title={APP_NAME} right={<LangSwitch />} onRefresh={async () => { feed.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
       <FadeIn>
-        <Hero testID="ov-hero">
-          <Text style={{ color: C.onPrimary, opacity: 0.9, fontSize: FS.md }}>{t(`ov.greet.${dayPart()}` as 'ov.greet.morning')}{name ? `,` : ''}</Text>
-          {name ? <Text accessibilityRole="header" style={{ color: C.onPrimary, fontSize: FS.hero - 6, fontWeight: '800', marginBottom: 2 }}>{name}</Text> : null}
-          <Text style={{ color: C.onPrimary, opacity: 0.9, marginBottom: SP.md }}>{t('ov.hero.sub')}</Text>
+        <Hero testID="ov-hero" art={require('../../../assets/icons/hero_art.png')}>
+          <View style={[S.row, { gap: SP.sm }]}>
+            <Image accessibilityElementsHidden source={require('../../../assets/icons/sun.png')} resizeMode="contain" style={{ width: 44, height: 44 }} />
+            <Text style={{ color: C.onPrimary, opacity: 0.95, fontSize: FS.lg - 1 }}>{t(`ov.greet.${dayPart()}` as 'ov.greet.morning')}{name ? ',' : ''}</Text>
+          </View>
+          {name ? <Text accessibilityRole="header" style={{ color: C.onPrimary, fontSize: FS.hero - 2, fontWeight: '800', marginBottom: 2 }}>{name}</Text> : null}
+          <Text style={{ color: C.onPrimary, opacity: 0.95, marginBottom: SP.md, fontSize: FS.md + 1 }}>{t('ov.hero.sub')}</Text>
           <Pressable testID="ov-where" onPress={() => onBook()} accessibilityRole="button" accessibilityLabel={`${t('ov.where')}. ${t('ov.where.hint')}`}
-            style={({ pressed }) => ({ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: C.card, borderRadius: R.md, paddingHorizontal: SP.md, opacity: pressed ? 0.85 : 1 })}>
-            <Text accessible={false} style={{ fontSize: 20 }}>🔍</Text>
+            style={({ pressed }) => ({ minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: C.card, borderRadius: R.lg, paddingHorizontal: SP.md, opacity: pressed ? 0.85 : 1 })}>
+            <Glyph g="🔍" size={36} />
             <View style={{ flex: 1 }}><Text style={{ color: C.ink, fontWeight: '800', fontSize: FS.lg - 1 }}>{t('ov.where')}</Text><Text style={S.muted} numberOfLines={1}>{t('ov.where.hint')}</Text></View>
-            <Text accessible={false} style={{ color: C.primary, fontSize: 24 }}>›</Text>
+            <Text accessible={false} style={{ color: C.primary, fontSize: 26 }}>›</Text>
           </Pressable>
         </Hero>
       </FadeIn>
@@ -73,7 +77,7 @@ export function Overview({ active, onBook, refCode }: { active: Booking | null; 
         <Text style={[S.muted, { marginBottom: SP.md }]}>{t('ov.stats.note')}</Text>
       </>}
 
-      <PromoBanner code={refCode} onOpen={() => setTab('account')} />
+      <PromoBanner code={refCode} onOpen={() => nav.push('invite')} />
 
       <SectionTitle text={t('ov.safety.title')} />
       <Card style={{ borderLeftWidth: 4, borderLeftColor: C.danger }}>

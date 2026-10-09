@@ -24,8 +24,8 @@ export function PassengerShell({ params }: { params?: { venue?: Venue; svc?: Svc
   const keys = ['home', 'book', 'trips', 'wallet', 'account'];
   const cur = keys.includes(tab) ? tab : 'home';
   const tabs: TabDef[] = [
-    { key: 'home', glyph: '🏠', label: t('tab.home') }, { key: 'book', glyph: '🗺️', label: t('tab.book'), badge: !!active && cur !== 'book' },
-    { key: 'trips', glyph: '🧾', label: t('tab.trips') }, { key: 'wallet', glyph: '💳', label: t('tab.wallet') }, { key: 'account', glyph: '👤', label: t('tab.account') },
+    { key: 'home', icon: 'tab_home', label: t('tab.home') }, { key: 'book', icon: 'tab_book', label: t('tab.book'), badge: !!active && cur !== 'book' },
+    { key: 'trips', icon: 'tab_trips', label: t('tab.trips') }, { key: 'wallet', icon: 'tab_wallet', label: t('tab.wallet') }, { key: 'account', icon: 'tab_account', label: t('tab.account') },
   ];
   const book = (dest?: Place | Pt, svc?: Svc) => { setIntent({ dest, svc, n: Date.now() }); setTab('book'); };
   return (
@@ -55,8 +55,8 @@ export function DriverShell() {
   const { t, tab, setTab } = useApp();
   const keys = ['home', 'trips', 'earn', 'car', 'account']; const cur = keys.includes(tab) ? tab : 'home';
   const tabs: TabDef[] = [
-    { key: 'home', glyph: '🚦', label: t('tab.drv.work') }, { key: 'trips', glyph: '🧾', label: t('tab.trips') }, { key: 'earn', glyph: '💰', label: t('tab.drv.earn') },
-    { key: 'car', glyph: '🚗', label: t('tab.drv.car') }, { key: 'account', glyph: '👤', label: t('tab.account') },
+    { key: 'home', icon: 'tab_jobs', label: t('tab.drv.work') }, { key: 'trips', icon: 'tab_trips', label: t('tab.trips') }, { key: 'earn', icon: 'tab_earn', label: t('tab.drv.earn') },
+    { key: 'car', icon: 'tab_profile', label: t('tab.drv.car') }, { key: 'account', icon: 'tab_account', label: t('tab.account') },
   ];
   return (
     <TripFeedProvider role="driver">

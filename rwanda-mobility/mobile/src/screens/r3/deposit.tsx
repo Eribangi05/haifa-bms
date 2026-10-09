@@ -7,7 +7,7 @@ import { depositMinutesLeft, depositUi, type DepositView } from '../../lib/money
 import { PAY_SLOW_MS } from '../../lib/trip';
 import type { Booking } from '../../lib/types';
 import type { TKey } from '../../lib/i18n';
-import { Banner, Btn, Card, Field, Money, Pill, Text } from '../../ui/components';
+import { Banner, Btn, Card, Field, Glyph, Money, Pill, Text } from '../../ui/components';
 import { showAlert } from '../../ui/dialog';
 import { C, S, SP } from '../../ui/theme';
 import { useWallet } from './credit';
@@ -53,7 +53,7 @@ export function DepositCard({ b, reload }: { b: Booking; reload: () => void }) {
 
   if (ui === 'ask' || ui === 'pending' || ui === 'failed') return (
     <Card style={{ borderColor: C.gold, borderWidth: 2 } as never}>
-      <View style={S.between}><Text accessibilityRole="header" style={S.h2}>🔐 {t('dp.title')}</Text><Pill tone="warn" text={t(`dp.st.${d.status}` as TKey)} /></View>
+      <View style={S.between}><View style={[S.row, { gap: SP.sm, flexShrink: 1 }]}><Glyph g="🔐" size={28} /><Text accessibilityRole="header" style={S.h2}>{t('dp.title')}</Text></View><Pill tone="warn" text={t(`dp.st.${d.status}` as TKey)} /></View>
       <Text style={[S.body, { marginTop: SP.sm }]}>{t('dp.body', { n: d.amount.toLocaleString('en-US'), p: d.percent })}</Text>
       <View style={[S.between, { marginVertical: SP.sm }]}><Text style={S.muted}>{t('dp.amount')}</Text><Money n={d.amount} style={{ fontSize: 24, fontWeight: '800', color: C.primary }} /></View>
       <Banner kind="ok" text={t('dp.wait')} />

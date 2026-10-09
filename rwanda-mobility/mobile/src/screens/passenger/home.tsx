@@ -98,7 +98,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   return (
     <Screen
       title={t('book.title')}
-      right={<LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />}
+      right={<LinkBtn title={t('home.help')} color={C.onHeader} onPress={() => nav.push('support')} />}
       onRefresh={async () => { active.reload(); await Promise.all([client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}), new Promise((r) => setTimeout(r, 500))]); }}
       footer={<Btn testID="cta" big title={t('home.seeprices')} onPress={go} disabled={!ready} />}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}

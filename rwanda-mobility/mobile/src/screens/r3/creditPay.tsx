@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useApp } from '../../lib/app';
 import { creditBookingFields, splitCredit } from '../../lib/money3';
 import { label } from '../../lib/i18n';
-import { Card, Chip, Field, Money, Text } from '../../ui/components';
+import { Card, Chip, Field, Glyph, Money, Text } from '../../ui/components';
 import { C, R, S, SP } from '../../ui/theme';
 import { useWallet } from './credit';
 
@@ -24,7 +24,7 @@ export function useCreditChoice(fare: number | null | undefined, method: string,
       <Pressable testID="use-credit" onPress={() => avail > 0 && setUse(!use)} accessibilityRole="checkbox" accessibilityState={{ checked: use, disabled: avail <= 0 }} accessibilityLabel={`${t('cr.use')}. ${avail > 0 ? t('cr.use.avail', { n: Math.round(avail).toLocaleString('en-US') }) : t('cr.use.none')}`}
         style={[S.row, { gap: SP.md, minHeight: 48, opacity: avail > 0 ? 1 : 0.6 }]}>
         <Text accessible={false} style={{ fontSize: 24 }}>{use ? '☑' : '☐'}</Text>
-        <View style={{ flex: 1 }}><Text style={S.bold}>💳 {t('cr.use')}</Text><Text style={S.muted}>{avail > 0 ? t('cr.use.avail', { n: Math.round(avail).toLocaleString('en-US') }) : t('cr.use.none')}</Text></View>
+        <View style={{ flex: 1 }}><View style={[S.row, { gap: SP.sm }]}><Glyph g="💳" size={24} /><Text style={S.bold}>{t('cr.use')}</Text></View><Text style={S.muted}>{avail > 0 ? t('cr.use.avail', { n: Math.round(avail).toLocaleString('en-US') }) : t('cr.use.none')}</Text></View>
       </Pressable>
       {use && avail > 0 ? <>
         <View style={[S.wrap, { marginTop: SP.sm }]}><Chip text={t('cr.use.all')} on={!part} onPress={() => { setPart(false); setAmt(''); }} /><Chip text={t('cr.use.part')} on={part} onPress={() => setPart(true)} /></View>

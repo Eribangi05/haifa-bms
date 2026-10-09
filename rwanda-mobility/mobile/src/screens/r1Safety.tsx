@@ -3,7 +3,7 @@ import { Linking, View } from 'react-native';
 import { useApp, useAsync, useBackHandler, usePoll } from '../lib/app';
 import { etaRemaining, fmtCountdown, safetyPending, safetySecondsLeft, shouldResyncEta, type SafetyOpen } from '../lib/r1';
 import { AppModal } from '../ui/AppModal';
-import { Banner, Btn, Card, LinkBtn, Screen, Text, useReduceMotion } from '../ui/components';
+import { Banner, Btn, Card, Glyph, LinkBtn, Screen, Text, useReduceMotion } from '../ui/components';
 import { C, FS, S, SP } from '../ui/theme';
 
 type Phase = 'none' | 'prompt' | 'ok' | 'help' | 'missed';
@@ -47,7 +47,7 @@ export function R1SafetyLayer({ id, active, openHint }: { id: string; active: bo
             <Btn testID="sc-help" big kind="danger" title={t('r1.sc.help')} onPress={() => answer('help')} loading={busy} />
           </>}>
           <View style={{ alignItems: 'center', paddingVertical: SP.lg }}>
-            <Text accessible={false} style={{ fontSize: 64 }}>🛟</Text>
+            <Glyph g="🛟" size={72} />
             <Text accessibilityRole="header" style={[S.h1, { textAlign: 'center', marginTop: SP.sm }]}>{t('r1.sc.title')}</Text>
             <Text style={[S.body, { textAlign: 'center', marginTop: SP.sm }]}>{t(bodyKey)}</Text>
             <Text style={[S.muted, { textAlign: 'center', marginTop: SP.sm, fontSize: FS.md - 1 }]}>{t('r1.sc.ask')}</Text>

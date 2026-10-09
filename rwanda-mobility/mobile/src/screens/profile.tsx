@@ -58,7 +58,7 @@ export function Profile() {
 
       <R1TrustedContacts />
 
-      {ref ? <Card><Text style={S.h2}>{t('prof.referral')}</Text><Text style={S.muted}>{t('prof.referral.code')}</Text><Text selectable style={{ fontSize: 28, fontWeight: '800', letterSpacing: 3, color: C.primary }}>{ref.code}</Text><Text style={S.muted}>{ref.rewarded}/{ref.total}</Text></Card> : null}
+      {ref ? <Card><Text style={S.h2}>{t('prof.referral')}</Text><Text style={S.muted}>{t('prof.referral.code')}</Text><Text selectable style={{ fontSize: 28, fontWeight: '800', letterSpacing: 3, color: C.primary }}>{ref.code}</Text><Text style={S.muted}>{ref.rewarded}/{ref.total}</Text><View style={{ height: SP.sm }} /><Btn testID="prof-invite" kind="ghost" title={t('acc.invite')} onPress={() => nav.push('invite')} /></Card> : null}
       {biz.length ? <Card><Text style={S.h2}>{t('prof.business')}</Text>{biz.map((b) => <View key={b.id} style={{ marginTop: 6 }}><Text style={S.body}>{b.legal_name} · {label(lang, 'role', b.role)}</Text>{b.status !== 'active' ? <Pill tone="warn" text={t('biz.pending')} /> : <Pill text={t('biz.active')} />}</View>)}</Card> : null}
       <View style={{ height: 10 }} />
       <Card><Text style={S.h2}>{t('prof.privacy')}</Text><Btn kind="ghost" title={t('prof.export')} onPress={() => priv('access')} /><View style={{ height: 8 }} /><Btn kind="ghost" title={t('prof.delete')} onPress={() => showAlert(t('prof.delete'), t('prof.delete.confirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.confirm'), style: 'destructive', onPress: () => priv('deletion') }])} /></Card>

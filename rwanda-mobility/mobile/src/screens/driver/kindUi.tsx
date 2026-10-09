@@ -2,7 +2,8 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useApp } from '../../lib/app';
 import type { DriverKind } from '../../lib/driverKind';
-import { Card, IconBadge, Pill, Text } from '../../ui/components';
+import { Card, Glyph, IconBadge, Pill, Text } from '../../ui/components';
+import { emojiList } from '../../ui/icons';
 import { Hero } from '../../ui/dash';
 import { C, FS, R, S, SP } from '../../ui/theme';
 
@@ -14,7 +15,7 @@ export function CategoryCard({ kind, jobs, onGuide, testID = 'kind-card' }: { ki
   return (
     <Hero testID={testID}>
       <View style={[S.row, { gap: SP.md }]}>
-        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ minWidth: 64, height: 64, paddingHorizontal: 8, borderRadius: 32, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 28 }}>{KIND_GLYPH[kind]}</Text></View>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ minWidth: 64, height: 64, paddingHorizontal: 8, borderRadius: 32, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}><View style={{ flexDirection: 'row' }}>{emojiList(KIND_GLYPH[kind]).map((g, i) => <Glyph key={i} g={g} size={kind === 'both' ? 28 : 44} />)}</View></View>
         <View style={{ flex: 1 }}>
           <Text style={{ color: C.onPrimary, opacity: 0.85, fontSize: FS.sm }}>{t('pf.cat')}</Text>
           <Text testID={`${testID}-label`} accessibilityRole="header" style={{ color: C.onPrimary, fontSize: FS.lg + 2, fontWeight: '800' }}>{t(`dk.${kind}` as 'dk.own')}</Text>
@@ -22,7 +23,7 @@ export function CategoryCard({ kind, jobs, onGuide, testID = 'kind-card' }: { ki
       </View>
       <Text style={{ color: C.onPrimary, opacity: 0.92, marginTop: SP.sm }}>{t(`dk.${kind}.sub` as 'dk.own.sub')}</Text>
       {jobs && jobs.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.xs + 2, marginTop: SP.sm }}>
-        {jobs.map((j) => <View key={j} testID={`job-${j}`} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.card, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 5 }}><Text accessible={false} style={{ marginRight: 5 }}>{j === 'ride' ? '🛵' : '🧑‍✈️'}</Text><Text style={{ fontSize: 12, fontWeight: '700', color: C.ink }}>{t(`dk.job.${j}` as 'dk.job.ride')}</Text></View>)}
+        {jobs.map((j) => <View key={j} testID={`job-${j}`} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.card, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 5 }}><View style={{ marginRight: 5 }}><Glyph g={j === 'ride' ? '🛵' : '🧑‍✈️'} size={18} /></View><Text style={{ fontSize: 12, fontWeight: '700', color: C.ink }}>{t(`dk.job.${j}` as 'dk.job.ride')}</Text></View>)}
       </View> : null}
       {onGuide ? <Pressable testID="kind-guide" onPress={onGuide} accessibilityRole="button" accessibilityLabel={t('dk.guide')} style={{ marginTop: SP.md, minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' }}><Text style={{ color: C.gold, fontWeight: '800' }}>{t('dk.guide')} ›</Text></Pressable> : null}
     </Hero>

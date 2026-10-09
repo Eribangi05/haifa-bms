@@ -62,7 +62,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
   const flip = (id: 'ride' | 'abasare') => setAccepting((a) => (a.includes(id) ? (a.length > 1 ? a.filter((x) => x !== id) : a) : [...a, id]));
 
   return (
-    <Screen title={t('drv.mode')} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />}
+    <Screen title={t('drv.mode')} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} color={C.onHeader} onPress={() => nav.push('support')} />}
       onRefresh={async () => { reload(); active.reload(); offers.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
       <>

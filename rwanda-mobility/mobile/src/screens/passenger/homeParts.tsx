@@ -6,7 +6,7 @@ import { label } from '../../lib/i18n';
 import { fmtTime } from '../../lib/format';
 import { statusGlyph, statusTone } from '../../lib/trip';
 import type { Booking, Place, Pt, SavedPlace, Svc } from '../../lib/types';
-import { Btn, Card, Chip, FadeIn, IconBadge, Money, Pill, SectionTitle, Text } from '../../ui/components';
+import { Btn, Card, Chip, FadeIn, Glyph, IconBadge, Money, Pill, SectionTitle, Text } from '../../ui/components';
 import { C, R, S, SHADOW, SP } from '../../ui/theme';
 
 /** Ride / Abasare service cards (radio group) plus the QR scan shortcut. Two columns on normal phones, stacked below 340 px. */
@@ -23,7 +23,7 @@ export function ServiceCards({ svc, setSvc, abasareOn, onScan }: { svc: Svc; set
     <View style={{ marginBottom: SP.md }}>
       {abasareOn ? <View style={{ flexDirection: narrow ? 'column' : 'row', gap: SP.sm }}>{card('ride', '🛵', t('ab.tab.ride'), t('home.svc.ride'), C.primary)}{card('abasare', '🧑‍✈️', t('ab.tab.abasare'), t('ab.tagline'), C.gold)}</View> : null}
       <Pressable onPress={onScan} accessibilityRole="button" accessibilityLabel={`${t('scan.title')}`} style={[S.row, { marginTop: SP.sm, minHeight: 48, gap: SP.sm, paddingHorizontal: SP.md, borderRadius: R.md, backgroundColor: C.skyBg }]}>
-        <Text accessible={false} style={{ fontSize: 20 }}>▦</Text><Text style={{ color: C.primaryDark, fontWeight: '700', flex: 1 }}>{t('scan.title')}</Text><Text accessible={false} style={{ color: C.primaryDark }}>›</Text>
+        <Glyph g="▦" size={30} /><Text style={{ color: C.primaryDark, fontWeight: '700', flex: 1 }}>{t('scan.title')}</Text><Text accessible={false} style={{ color: C.primaryDark }}>›</Text>
       </Pressable>
     </View>
   );

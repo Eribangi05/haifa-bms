@@ -5,6 +5,7 @@ export const LIGHT = {
   bg: '#F3F6FB', card: '#FFFFFF', ink: '#0F1B3D', muted: '#5A6685', line: '#DAE1EF',
   danger: '#C0392B', dangerBg: '#FDECEA', warn: '#8A6500', warnBg: '#FFF4CC', okBg: '#EDF8F3',
   goldBg: '#FFFBEA', skyBg: '#EDF7FC', toast: '#14281D', onPrimary: '#FFFFFF', onDanger: '#FFFFFF', onGold: '#0F1B3D', placeholder: '#6B7A8F', mapBg: '#E7EEE9',
+  header: '#0069A8', onHeader: '#FFFFFF',   // brand header bar (sky blue, darkened for white text)
 };
 export type Palette = typeof LIGHT;
 export const DARK: Palette = {
@@ -12,6 +13,7 @@ export const DARK: Palette = {
   bg: '#0B1220', card: '#151F33', ink: '#EAF0FA', muted: '#A7B4CF', line: '#2C3A58',
   danger: '#FF8F80', dangerBg: '#3B1E1C', warn: '#F2CB5A', warnBg: '#3A3114', okBg: '#12301F',
   goldBg: '#2E2911', skyBg: '#10293A', toast: '#223A2C', onPrimary: '#06202F', onDanger: '#2B0B07', onGold: '#0F1B3D', placeholder: '#8B9AB8', mapBg: '#1B2638',
+  header: '#0F3554', onHeader: '#EAF0FA',
 };
 export type ThemePref = 'system' | 'light' | 'dark';
 export const isThemePref = (x: unknown): x is ThemePref => x === 'system' || x === 'light' || x === 'dark';
@@ -30,7 +32,7 @@ export function contrast(a: string, b: string): number {
 /** Text/background pairs the UI really uses; every one must reach 4.5:1 in both palettes. */
 export const TEXT_PAIRS: [keyof Palette, keyof Palette][] = [
   ['ink', 'bg'], ['ink', 'card'], ['muted', 'bg'], ['muted', 'card'], ['primary', 'card'], ['primary', 'bg'], ['primaryDark', 'okBg'], ['primary', 'okBg'], ['primary', 'skyBg'],
-  ['onPrimary', 'primary'], ['onDanger', 'danger'], ['danger', 'card'], ['danger', 'dangerBg'], ['warn', 'warnBg'], ['warn', 'card'], ['ink', 'warnBg'], ['ink', 'okBg'], ['ink', 'goldBg'], ['onGold', 'gold'], ['ink', 'skyBg'],
+  ['onPrimary', 'primary'], ['onDanger', 'danger'], ['danger', 'card'], ['danger', 'dangerBg'], ['warn', 'warnBg'], ['warn', 'card'], ['ink', 'warnBg'], ['ink', 'okBg'], ['ink', 'goldBg'], ['onGold', 'gold'], ['ink', 'skyBg'], ['onHeader', 'header'],
 ];
 
 export const LARGE_TEXT_FACTOR = 1.25;

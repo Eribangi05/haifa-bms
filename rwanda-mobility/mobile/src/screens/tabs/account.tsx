@@ -50,23 +50,23 @@ export function AccountTab() {
       <View style={{ height: SP.md }} />
 
       {!driverMode ? <MenuGroup title={t('acc.g.rides')}>
-        <MenuRow testID="open-mydrivers" glyph="⭐" title={t('r1.md.title')} sub={t('r1.md.open')} onPress={() => nav.push('r1drivers')} />
-        <MenuRow testID="open-schedules" glyph="⏰" title={t('r2.sch.title')} onPress={() => nav.push('schedules')} />
-        <MenuRow testID="open-cars" glyph="🚗" title={t('ab.cars.title')} sub={t('ab.home.sub')} onPress={() => nav.push('cars')} last />
+        <MenuRow testID="open-mydrivers" glyph="icon:drivers" title={t('r1.md.title')} sub={t('r1.md.open')} onPress={() => nav.push('r1drivers')} />
+        <MenuRow testID="open-schedules" glyph="icon:recurring" title={t('r2.sch.title')} onPress={() => nav.push('schedules')} />
+        <MenuRow testID="open-cars" glyph="icon:cars" title={t('ab.cars.title')} sub={t('ab.home.sub')} onPress={() => nav.push('cars')} last />
       </MenuGroup> : null}
 
       <MenuGroup title={t('acc.g.money')}>
-        {!driverMode ? <MenuRow testID="open-credit" glyph="💳" title={t('cr.title')} sub={t('wal.credit.sub')} onPress={() => nav.push('credit')} /> : null}
-        <MenuRow testID="open-claims" glyph="🛟" title={driverMode ? t('cl.title.about') : t('cl.title')} sub={t('cl.entry.sub')} onPress={() => nav.push('claims')} last />
+        {!driverMode ? <MenuRow testID="open-credit" glyph="icon:credit" title={t('cr.title')} sub={t('wal.credit.sub')} onPress={() => nav.push('credit')} /> : null}
+        <MenuRow testID="open-claims" glyph="icon:claims" title={driverMode ? t('cl.title.about') : t('cl.title')} sub={t('cl.entry.sub')} onPress={() => nav.push('claims')} last />
       </MenuGroup>
 
       <MenuGroup title={t('acc.g.app')}>
-        <MenuRow testID="open-settings" glyph="⚙️" title={t('r1.set.title')} sub={t('r1.set.open')} onPress={() => nav.push('r1settings')} />
-        <MenuRow testID="open-invite" glyph="🎁" title={t('acc.invite')} sub={t('acc.invite.sub')} onPress={() => nav.push('profile')} last />
+        <MenuRow testID="open-settings" glyph="icon:settings" title={t('r1.set.title')} sub={t('r1.set.open')} onPress={() => nav.push('r1settings')} />
+        <MenuRow testID="open-invite" glyph="icon:invite" title={t('acc.invite')} sub={t('acc.invite.sub')} onPress={() => nav.push('invite')} last />
       </MenuGroup>
 
       <MenuGroup title={t('acc.g.help')}>
-        <MenuRow testID="open-help" glyph="💬" title={t('acc.help')} sub={t('acc.help.sub')} onPress={() => nav.push('support')} last />
+        <MenuRow testID="open-help" glyph="icon:help" title={t('acc.help')} sub={t('acc.help.sub')} onPress={() => nav.push('support')} last />
       </MenuGroup>
       <UssdCard />
 

@@ -8,6 +8,7 @@ import { useApp } from '../lib/app';
 import type { Tone } from '../lib/trip';
 import { useAppearance } from '../lib/appearance';
 import { LARGE_TEXT_FACTOR, fontCap } from '../lib/palette';
+import { iconFor } from './icons';
 
 /** Text that respects the user's font-size setting but caps it so layouts and CTAs never clip (React 19 ignores Text.defaultProps, so this wrapper does it). */
 export function Text(p: TextProps) {
@@ -43,28 +44,38 @@ export function FlagStripe({ height = 6 }: { height?: number }) {
   return <View style={{ height, flexDirection: 'column' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={{ flex: 2, backgroundColor: C.sky }} /><View style={{ flex: 1, backgroundColor: C.gold }} /><View style={{ flex: 1, backgroundColor: C.green }} /></View>;
 }
 
-/** Top bar: applies the top inset itself, shows an obvious labelled back control (top-left, 44 px) and a title that may wrap to two lines. */
+/** Brand mark: the logo artwork on a white rounded chip (used in headers and on the welcome screen). */
+export function BrandMark({ height = 36 }: { height?: number }) {
+  const w = Math.round(height * 1.2);
+  return <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: w, height, borderRadius: Math.round(height * 0.3), backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}><Image source={require('../../assets/brand/mark.png')} resizeMode="contain" style={{ width: w - 4, height: height - 4 }} /></View>;
+}
+
+/**
+ * Top bar in the brand colour. Root screens (no back) show the logo chip and the app name in front of the title; other screens show a labelled white
+ * back control (top-left, 44 px) and a title that may wrap to two lines. A sun-yellow line closes the bar. The top inset is part of the bar.
+ */
 export function Header({ title, onBack, right }: { title?: string; onBack?: () => void; right?: React.ReactNode }) {
   const { t } = useApp(); const insets = useSafeAreaInsets(); const { width } = useWindowDimensions();
   const cap = width > MAX_W ? { width: MAX_W, alignSelf: 'center' as const } : null;
   return (
-    <View testID="header" style={{ backgroundColor: C.card, paddingTop: insets.top, ...SHADOW.card }}>
+    <View testID="header" style={{ backgroundColor: C.header, paddingTop: insets.top, ...SHADOW.card }}>
       <View style={cap}>
         {onBack ? (
           <View style={[S.between, { paddingHorizontal: SP.sm, minHeight: 48 }]}>
             <Pressable testID="back" onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={8} style={({ pressed }) => ({ minHeight: 44, minWidth: 44, flexDirection: 'row', alignItems: 'center', paddingRight: SP.md, opacity: pressed ? 0.6 : 1 })}>
-              <Text accessible={false} style={{ fontSize: 30, lineHeight: 34, color: C.primary, marginTop: -3, width: 28, textAlign: 'center' }}>{'‹'}</Text>
-              <Text accessible={false} numberOfLines={1} style={{ color: C.primary, fontWeight: '700', fontSize: FS.md, flexShrink: 1 }}>{t('common.back')}</Text>
+              <Text accessible={false} style={{ fontSize: 30, lineHeight: 34, color: C.onHeader, marginTop: -3, width: 28, textAlign: 'center' }}>{'‹'}</Text>
+              <Text accessible={false} numberOfLines={1} style={{ color: C.onHeader, fontWeight: '700', fontSize: FS.md, flexShrink: 1 }}>{t('common.back')}</Text>
             </Pressable>
             <View style={[S.row, { flexShrink: 0 }]}>{right}</View>
           </View>
         ) : null}
-        <View style={[S.row, { flexWrap: 'wrap', paddingHorizontal: SP.lg, paddingTop: onBack ? 0 : SP.sm, paddingBottom: SP.md, minHeight: onBack ? 0 : 52 }]}>
-          {title ? <Text accessibilityRole="header" numberOfLines={2} style={[S.h2, { flexGrow: 1, flexShrink: 1, minWidth: 120, fontSize: onBack ? FS.xl - 2 : FS.lg + 2 }]}>{title}</Text> : <View style={{ flex: 1 }} />}
+        <View style={[S.row, { flexWrap: 'wrap', paddingHorizontal: SP.lg, paddingTop: onBack ? 0 : SP.sm, paddingBottom: SP.md, minHeight: onBack ? 0 : 56, gap: SP.sm }]}>
+          {onBack ? null : <BrandMark height={34} />}
+          {title ? <Text accessibilityRole="header" numberOfLines={2} style={[S.h2, { color: C.onHeader, flexGrow: 1, flexShrink: 1, minWidth: 120, fontSize: onBack ? FS.xl - 2 : FS.lg + 2 }]}>{title}</Text> : <View style={{ flex: 1 }} />}
           {onBack ? null : <View style={{ flexShrink: 0, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>{right}</View>}
         </View>
       </View>
-      <FlagStripe height={4} />
+      <View style={{ height: 3, backgroundColor: C.gold }} />
     </View>
   );
 }
@@ -85,7 +96,7 @@ export function Screen({ children, title, onBack, right, footer, scroll = true, 
   const refresh = onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } }} colors={[C.primary]} tintColor={C.primary} /> : undefined;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingLeft: insets.left, paddingRight: insets.right }}>
-      {hasHeader ? <Header title={title} onBack={onBack} right={right} /> : <><View style={{ height: insets.top }} />{stripe ? <FlagStripe height={8} /> : null}</>}
+      {hasHeader ? <Header title={title} onBack={onBack} right={right} /> : <><View style={{ height: insets.top, backgroundColor: C.header }} />{stripe ? <FlagStripe height={8} /> : null}</>}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" enabled={Platform.OS !== 'web'}>
         {scroll
           ? <ScrollView style={{ flex: 1 }} contentContainerStyle={[{ padding: SP.lg, paddingBottom: footer ? SP.lg : insets.bottom + SP.xl, flexGrow: 1 }, cap, contentStyle]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets refreshControl={refresh} ref={scrollRef}>{children}</ScrollView>
@@ -115,10 +126,19 @@ export function Skeleton({ height = 16, width = '100%', style }: { height?: numb
 }
 export const SkeletonCard = () => <View style={S.card}><Skeleton height={18} width="65%" /><Skeleton height={13} width="40%" style={{ marginTop: 10 }} /></View>;
 
-/** Round emoji badge used as a lightweight icon (no icon-font dependency). */
-export const IconBadge = ({ glyph, bg = C.okBg, size = 44 }: { glyph: string; bg?: string; size?: number }) => (
-  <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: size * 0.5 }}>{glyph}</Text></View>
-);
+/** Icon for an emoji key: the matching artwork when there is one (see ui/icons.ts), otherwise the emoji itself as text. */
+export function Glyph({ g, size = 20, style }: { g: string; size?: number; style?: StyleProp<TextStyle> }) {
+  const src = iconFor(g);
+  if (src) return <Image accessibilityElementsHidden importantForAccessibility="no" source={src} resizeMode="contain" style={{ width: size, height: size }} />;
+  return <Text accessible={false} style={[{ fontSize: size * 0.9 }, style]}>{g}</Text>;
+}
+
+/** Round badge icon. With artwork it is the artwork itself (already a disc or a tile); without, an emoji on a tinted circle. */
+export const IconBadge = ({ glyph, bg = C.okBg, size = 44 }: { glyph: string; bg?: string; size?: number }) => {
+  const src = iconFor(glyph);
+  if (src) return <Image accessibilityElementsHidden importantForAccessibility="no-hide-descendants" source={src} resizeMode="contain" style={{ width: size, height: size }} />;
+  return <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: size * 0.5 }}>{glyph}</Text></View>;
+};
 
 /** Trip progress: Request > Driver > Pickup > Trip > Done. `at` is the 0-based current step. */
 export function Stepper({ at }: { at: number }) {
@@ -156,10 +176,10 @@ export function ProgressBar({ value, label, a11y }: { value: number; label?: str
 
 // ------------------------------------------------------------------ controls
 export function Btn({ title, onPress, kind = 'primary', disabled, loading, style, big, testID }: {
-  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'gold'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; big?: boolean; testID?: string;
+  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'gold' | 'light'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; big?: boolean; testID?: string;
 }) {
-  const bg = kind === 'primary' ? C.primary : kind === 'danger' ? C.danger : kind === 'gold' ? C.gold : 'transparent';
-  const fg = kind === 'ghost' ? C.primary : kind === 'gold' ? C.onGold : kind === 'danger' ? C.onDanger : C.onPrimary;
+  const bg = kind === 'primary' ? C.primary : kind === 'danger' ? C.danger : kind === 'gold' ? C.gold : kind === 'light' ? C.card : 'transparent';
+  const fg = kind === 'ghost' || kind === 'light' ? C.primary : kind === 'gold' ? C.onGold : kind === 'danger' ? C.onDanger : C.onPrimary;
   const sc = useRef(new Animated.Value(1)).current; const reduce = useReduceMotion();
   const to = (v: number) => { if (reduce) { sc.setValue(1); return; } Animated.spring(sc, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 0 }).start(); };
   return (
@@ -204,7 +224,7 @@ export const LinkBtn = ({ title, onPress, label, color = C.primary, style }: { t
 
 export const Chip = ({ text, onPress, on, glyph }: { text: string; onPress: () => void; on?: boolean; glyph?: string }) => (
   <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: !!on }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : C.card, marginRight: SP.sm, marginBottom: SP.sm, maxWidth: '100%' }}>
-    {glyph ? <Text accessible={false} style={{ marginRight: 6 }}>{glyph}</Text> : null}
+    {glyph ? <View style={{ marginRight: 6 }}><Glyph g={glyph} size={22} /></View> : null}
     <Text style={{ color: on ? C.primary : C.ink, fontWeight: on ? '700' : '500', flexShrink: 1 }}>{text}</Text>
   </Pressable>
 );
@@ -212,6 +232,20 @@ export const Chip = ({ text, onPress, on, glyph }: { text: string; onPress: () =
 /** Language switcher: one chip per language, labelled in its own language (never translated). */
 export function LangPicker({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => void }) {
   return <View style={S.wrap} accessibilityRole="radiogroup">{LANGS.map((l) => <Chip key={l.code} text={l.label} on={lang === l.code} onPress={() => onPick(l.code)} />)}</View>;
+}
+
+/** Compact language switch for the brand bar: RW / FR / EN, the current one highlighted. */
+export function LangSwitch() {
+  const { lang, setLang } = useApp();
+  return (
+    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: R.pill, padding: 2 }}>
+      {LANGS.map((l) => { const on = l.code === lang; return (
+        <Pressable key={l.code} testID={`lang-${l.code}`} onPress={() => setLang(l.code)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={l.label} hitSlop={4}
+          style={{ minWidth: 38, minHeight: 32, alignItems: 'center', justifyContent: 'center', borderRadius: R.pill, backgroundColor: on ? C.gold : 'transparent', paddingHorizontal: 6 }}>
+          <Text accessible={false} style={{ fontSize: FS.xs + 1, fontWeight: '800', color: on ? C.onGold : C.onHeader }}>{l.code.toUpperCase()}</Text>
+        </Pressable>); })}
+    </View>
+  );
 }
 
 // ------------------------------------------------------------------ content
@@ -225,7 +259,7 @@ export function Banner({ text, kind = 'warn', action }: { text: string; kind?: '
 
 export const Pill = ({ text, tone = 'ok', glyph }: { text: string; tone?: Tone; glyph?: string }) => (
   <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: tone === 'bad' ? C.dangerBg : tone === 'warn' ? C.warnBg : C.okBg, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
-    {glyph ? <Text accessible={false} style={{ fontSize: FS.xs, marginRight: 4, color: tone === 'bad' ? C.danger : tone === 'warn' ? C.warn : C.primary }}>{glyph}</Text> : null}
+    {glyph ? (iconFor(glyph) ? <View style={{ marginRight: 4 }}><Glyph g={glyph} size={16} /></View> : <Text accessible={false} style={{ fontSize: FS.xs, marginRight: 4, color: tone === 'bad' ? C.danger : tone === 'warn' ? C.warn : C.primary }}>{glyph}</Text>) : null}
     <Text style={{ fontSize: 12, fontWeight: '600', color: tone === 'bad' ? C.danger : tone === 'warn' ? C.warn : C.primary, flexShrink: 1 }}>{text}</Text>
   </View>
 );
@@ -246,11 +280,13 @@ export function ListRow({ glyph, tint, title, subtitle, right, onPress, label }:
 export function EmptyState({ glyph, title, body, action }: { glyph: string; title: string; body?: string; action?: React.ReactNode }) {
   return (
     <View style={{ alignItems: 'center', paddingVertical: SP.xl, paddingHorizontal: SP.lg }}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: SP.lg }}>
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: glyph === '🧾' ? 170 : 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: SP.lg }}>
+        {glyph === '🧾' ? null : <>
         <View style={{ position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: C.skyBg }} />
         <View style={{ position: 'absolute', top: 6, right: 8, width: 18, height: 18, borderRadius: 9, backgroundColor: C.gold }} />
         <View style={{ position: 'absolute', bottom: 10, left: 4, width: 12, height: 12, borderRadius: 6, backgroundColor: C.green, opacity: 0.8 }} />
-        <Text style={{ fontSize: 52 }}>{glyph}</Text>
+        </>}
+        {glyph === '🧾' ? <Image accessibilityElementsHidden source={require('../../assets/icons/receipt.png')} resizeMode="contain" style={{ width: 150, height: 120 }} /> : <Glyph g={glyph} size={64} />}
       </View>
       <Text accessibilityRole="header" style={[S.h2, { textAlign: 'center' }]}>{title}</Text>
       {body ? <Text style={[S.muted, { textAlign: 'center', marginTop: 6, fontSize: FS.md - 1 }]}>{body}</Text> : null}

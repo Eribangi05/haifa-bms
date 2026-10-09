@@ -5,7 +5,7 @@ import { kv } from '../../lib/storage';
 import { fmtDate } from '../../lib/format';
 import { clampPct, newlyCompleted, questSeenKey, ringQuarters, sortQuests, timeLeft, type Quest } from '../../lib/r2';
 import { pick } from '../../lib/i18n';
-import { Banner, Btn, Card, EmptyState, Money, Pill, ProgressBar, Screen, SkeletonCard, Text, useReduceMotion } from '../../ui/components';
+import { Banner, Btn, Card, EmptyState, Glyph, Money, Pill, ProgressBar, Screen, SkeletonCard, Text, useReduceMotion } from '../../ui/components';
 import { C, FS, S, SP } from '../../ui/theme';
 
 type Award = { quest_id: string; period_key: string; amount: number; progress: number; created_at: string; title?: string };
@@ -28,7 +28,7 @@ export function Celebrate({ text }: { text: string }) {
   useEffect(() => { if (reduce) { v.setValue(1); return; } Animated.sequence([Animated.timing(v, { toValue: 1, duration: 450, easing: Easing.out(Easing.back(2)), useNativeDriver: true }), Animated.delay(900), Animated.timing(v, { toValue: 0.85, duration: 400, useNativeDriver: true })]).start(); }, [v, reduce]);
   return (
     <Animated.View testID="r2-celebrate" accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }], backgroundColor: C.goldBg, borderColor: C.gold, borderWidth: 2, borderRadius: 14, padding: SP.md, marginBottom: SP.md, flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
-      <Text accessible={false} style={{ fontSize: 34 }}>🎉</Text><Text style={[S.bold, { flex: 1 }]}>{text}</Text>
+      <Glyph g="🎉" size={40} /><Text style={[S.bold, { flex: 1 }]}>{text}</Text>
     </Animated.View>
   );
 }

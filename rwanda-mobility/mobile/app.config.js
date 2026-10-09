@@ -14,7 +14,7 @@ module.exports = () => ({
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',   // follows the system; the in-app Settings can force light/dark (system bars follow the resolved theme)
     backgroundColor: '#F3F6FB',
-    splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#FFFFFF' },
+    splash: { image: './assets/splash-icon.png', resizeMode: 'contain', backgroundColor: '#0069A8' },
     ios: { supportsTablet: false, bundleIdentifier: 'rw.abasare.app' },
     android: {
       package: 'rw.abasare.app',

@@ -26,7 +26,7 @@ export function WalletTab() {
     <Screen title={t('wal.title')} onRefresh={async () => { feed.reload(); await new Promise((r) => setTimeout(r, 600)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
       <Hero testID="wal-hero">
-        <Text style={{ color: C.onPrimary, opacity: 0.9 }}>{t('wal.credit')}</Text>
+        <View style={[S.row, { gap: SP.md }]}><IconBadge glyph="💳" size={52} /><View><Text style={{ color: C.onPrimary, opacity: 0.9 }}>{t('wal.credit')}</Text></View></View>
         <Text testID="wal-balance" style={{ color: C.onPrimary, fontSize: FS.hero, fontWeight: '800' }}>{wallet ? fmtRwf(wallet.available) : '—'} <Text style={{ fontSize: FS.lg, fontWeight: '700', color: C.onPrimary }}>RWF</Text></Text>
         {wallet && wallet.reserved > 0 ? <Text style={{ color: C.onPrimary, opacity: 0.9 }}>{t('cr.reserved', { n: fmtRwf(wallet.reserved) })}</Text> : null}
         <View style={{ height: SP.md }} /><Btn testID="wal-credit-open" kind="gold" title={t('wal.credit.open')} onPress={() => nav.push('credit')} />

@@ -4,14 +4,19 @@ import { useApp, useAsync } from '../lib/app';
 import { label, pick } from '../lib/i18n';
 import type { Faq, SupportCase } from '../lib/types';
 import { Banner, Btn, Card, Chip, Field, Pill, Screen, SectionTitle, Text, useFormFocus } from '../ui/components';
-import { C, S } from '../ui/theme';
+import { C, FS, S, SP } from '../ui/theme';
 import { SosButton } from './sos';
+import { SUPPORT } from '../config';
+import { callNumber, openSms, openWhatsApp } from '../lib/contact';
+import { Hero } from '../ui/dash';
+import { IconBadge } from '../ui/components';
 import { UssdCard } from './r3/ussd';
 
 const CATS = ['booking', 'payment', 'refund', 'driver_complaint', 'lost_item', 'safety', 'fare_dispute', 'other'] as const;
 
 export function Support({ params }: { params?: { booking_id?: string } }) {
-  const { t, lang, client, nav } = useApp(); const { busy, run } = useAsync();
+  const { t, lang, client, nav, say } = useApp(); const { busy, run } = useAsync();
+  const reach = async (ok: Promise<boolean>, app: string) => { if (!(await ok)) say(t('sup.err.open', { app, phone: SUPPORT.display })); };
   const [faq, setFaq] = useState<Faq[]>([]); const [open, setOpen] = useState<string | null>(null); const [cat, setCat] = useState<string>(params?.booking_id ? 'booking' : 'other');
   const [subject, setSubject] = useState(''); const [body, setBody] = useState(''); const [cases, setCases] = useState<SupportCase[]>([]); const [done, setDone] = useState('');
   const f = useFormFocus(2);
@@ -22,6 +27,22 @@ export function Support({ params }: { params?: { booking_id?: string } }) {
   return (
     <Screen title={t('support.title')} onBack={() => nav.pop()} right={<SosButton bookingId={params?.booking_id} />}
       footer={<Btn testID="cta" title={t('common.send')} disabled={!valid} loading={busy} onPress={send} />}>
+      <Hero testID="support-contact">
+        <View style={[S.row, { gap: SP.md }]}>
+          <IconBadge glyph="📞" size={56} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: C.onPrimary, opacity: 0.9, fontSize: FS.sm }}>{t('sup.contact.role')}</Text>
+            <Text testID="support-name" accessibilityRole="header" style={{ color: C.onPrimary, fontSize: FS.lg + 2, fontWeight: '800' }}>{SUPPORT.name}</Text>
+            <Text testID="support-phone" selectable style={{ color: C.gold, fontWeight: '800', fontSize: FS.lg }}>{SUPPORT.display}</Text>
+          </View>
+        </View>
+        <Text style={{ color: C.onPrimary, opacity: 0.92, marginVertical: SP.sm }}>{t('sup.contact.sub')}</Text>
+        <View style={{ flexDirection: 'row', gap: SP.sm }}>
+          <View style={{ flex: 1 }}><Btn testID="support-call" kind="gold" title={t('sup.call')} onPress={() => void reach(callNumber(SUPPORT.phone), t('sup.call'))} /></View>
+          <View style={{ flex: 1 }}><Btn testID="support-whatsapp" kind="light" title={t('sup.whatsapp')} onPress={() => void reach(openWhatsApp(t('sup.hello'), SUPPORT.phone), 'WhatsApp')} /></View>
+          <View style={{ flex: 1 }}><Btn testID="support-sms" kind="light" title={t('sup.sms')} onPress={() => void reach(openSms(t('sup.hello'), SUPPORT.phone), t('sup.sms'))} /></View>
+        </View>
+      </Hero>
       <UssdCard />
       <SectionTitle text={t('support.faq')} />
       {faq.map((q) => (

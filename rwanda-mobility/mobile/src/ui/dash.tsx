@@ -1,14 +1,16 @@
 import React from 'react';
-import { Pressable, View, useWindowDimensions } from 'react-native';
-import { FlagStripe, IconBadge, Text } from './components';
+import { Image, Pressable, View, useWindowDimensions } from 'react-native';
+import { FlagStripe, Glyph, IconBadge, Text } from './components';
+import { emojiList } from './icons';
 import { C, FS, R, S, SHADOW, SP } from './theme';
 
 /** Brand hero: sky-blue field with sun-yellow and green accents and the flag bands along the bottom edge. Text inside should use `onPrimary`. */
-export function Hero({ children, testID }: { children: React.ReactNode; testID?: string }) {
+export function Hero({ children, testID, art }: { children: React.ReactNode; testID?: string; art?: import('react-native').ImageSourcePropType }) {
   return (
     <View testID={testID} style={{ borderRadius: R.lg, overflow: 'hidden', backgroundColor: C.primary, marginBottom: SP.md, ...SHADOW.raised }}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={{ position: 'absolute', right: -34, top: -34, width: 130, height: 130, borderRadius: 65, backgroundColor: C.gold, opacity: 0.2 }} />
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={{ position: 'absolute', right: 40, bottom: -48, width: 100, height: 100, borderRadius: 50, backgroundColor: C.green, opacity: 0.28 }} />
+      {art ? <Image accessibilityElementsHidden source={art} resizeMode="cover" style={{ position: 'absolute', right: 0, top: 0, width: '52%', height: '58%', opacity: 0.95 }} /> : null}
       <View style={{ padding: SP.lg }}>{children}</View>
       <FlagStripe height={6} />
     </View>
@@ -52,7 +54,7 @@ export function MenuRow({ glyph, title, sub, value, onPress, testID, tint = C.sk
 }
 export const MenuGroup = ({ title, children }: { title?: string; children: React.ReactNode }) => (
   <View style={{ marginBottom: SP.md }}>
-    {title ? <Text accessibilityRole="header" style={{ fontSize: FS.sm, fontWeight: '800', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: SP.sm, marginLeft: SP.xs }}>{title}</Text> : null}
+    {title ? <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SP.sm }}><View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: C.gold, marginRight: SP.sm }} /><Text accessibilityRole="header" style={{ fontSize: FS.sm, fontWeight: '800', color: C.ink, textTransform: 'uppercase', letterSpacing: 0.6 }}>{title}</Text></View> : null}
     <View style={{ backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, paddingHorizontal: SP.md, ...SHADOW.card }}>{children}</View>
   </View>
 );
@@ -64,7 +66,7 @@ export function Illustration({ glyphs, tint = C.skyBg, height = 150, testID }: {
       <View style={{ position: 'absolute', left: -24, bottom: -30, width: 110, height: 110, borderRadius: 55, backgroundColor: C.sky, opacity: 0.22 }} />
       <View style={{ position: 'absolute', right: 26, top: -28, width: 84, height: 84, borderRadius: 42, backgroundColor: C.gold, opacity: 0.5 }} />
       <View style={{ position: 'absolute', right: -18, bottom: -22, width: 100, height: 100, borderRadius: 50, backgroundColor: C.green, opacity: 0.35 }} />
-      <Text style={{ fontSize: Math.round(height * 0.38), letterSpacing: 6 }}>{glyphs}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>{emojiList(glyphs).map((g, i) => <View key={i} style={{ marginHorizontal: -4 }}><Glyph g={g} size={Math.round(height * (emojiList(glyphs).length > 2 ? 0.46 : 0.56))} /></View>)}</View>
     </View>
   );
 }

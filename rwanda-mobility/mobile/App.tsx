@@ -8,6 +8,7 @@ import { Scan } from './src/screens/scan';
 import { Options, Track } from './src/screens/passenger';
 import { PassengerShell, DriverShell } from './src/screens/tabs/shells';
 import { DriverGuide } from './src/screens/driver/guide';
+import { Invite } from './src/screens/invite';
 import { AbasareApply } from './src/screens/driver/abasareApply';
 import { History } from './src/screens/history';
 import { Profile } from './src/screens/profile';
@@ -105,6 +106,7 @@ function Router() {
     case 'schedules': screen = <Schedules />; break;
     case 'quests': screen = <Quests />; break;
     case 'heatmap': screen = <Heatmap />; break;
+    case 'invite': screen = <Invite />; break;
     case 'driverGuide': screen = <DriverGuide params={route.params} />; break;
     case 'abasareApply': screen = <AbasareApply />; break;
     case 'driverHome': screen = <DriverShell />; break;
@@ -123,7 +125,8 @@ function Guarded() {
   return <ErrorBoundary onReset={() => nav.reset(me ? 'home' : 'welcome')}><Router /></ErrorBoundary>;
 }
 
-function ThemedStatusBar() { const ap = useAppearance(); return <StatusBar style={ap.resolved === 'dark' ? 'light' : 'dark'} />; }
+// The top bar is always the dark brand blue, so the status-bar icons are always light.
+function ThemedStatusBar() { return <StatusBar style="light" />; }
 
 export default function App() {
   return (

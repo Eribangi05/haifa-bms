@@ -3,6 +3,7 @@ import { Image, View, useWindowDimensions } from 'react-native';
 import { useApp, useAsync } from '../lib/app';
 import { Banner, Btn, FadeIn, Field, IconBadge, LangPicker, Screen, Text, useFormFocus } from '../ui/components';
 import { C, R, S, SP } from '../ui/theme';
+import { Hero } from '../ui/dash';
 import { APP_NAME } from '../config';
 import { ApiError } from '../lib/net';
 import { tokenStore } from '../lib/storage';
@@ -14,11 +15,14 @@ export function Welcome() {
   return (
     <Screen footer={<Btn testID="cta" title={t('common.continue')} onPress={() => nav.replace('phone')} big />}>
       <FadeIn>
-        <View style={{ alignItems: 'center', marginTop: SP.md, marginBottom: SP.lg, backgroundColor: C.card, borderRadius: R.xl, paddingVertical: SP.lg, paddingHorizontal: SP.lg, borderWidth: 1, borderColor: C.line }}>
-          <Image source={require('../../assets/logo.png')} accessibilityLabel={APP_NAME} style={{ width: 140, height: 140, borderRadius: 32, marginBottom: SP.md }} />
-          <Text accessibilityRole="header" style={[S.h1, { textAlign: 'center' }]}>{APP_NAME}</Text>
-          <Text style={[S.muted, { textAlign: 'center', marginTop: 6, fontSize: 15 }]}>{t('app.tagline')}</Text>
-        </View>
+        <Hero testID="welcome-hero">
+          <View style={{ alignItems: 'center' }}>
+            <Image source={require('../../assets/logo.png')} accessibilityLabel={APP_NAME} style={{ width: 150, height: 150, borderRadius: 34, marginBottom: SP.md }} />
+            <Text accessibilityRole="header" style={{ color: C.onPrimary, fontSize: 30, fontWeight: '800', letterSpacing: 1 }}>{APP_NAME}</Text>
+            <Text testID="welcome-tagline" style={{ color: C.gold, fontWeight: '800', letterSpacing: 1.5, marginTop: 2 }}>{t('brand.tagline')}</Text>
+            <Text style={{ color: C.onPrimary, opacity: 0.92, textAlign: 'center', marginTop: SP.sm, fontSize: 15 }}>{t('app.tagline')}</Text>
+          </View>
+        </Hero>
       </FadeIn>
       <FadeIn delay={120}>
         <View style={S.wrap}>
