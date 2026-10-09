@@ -4,6 +4,7 @@ import { useApp, useAsync } from '../lib/app';
 import { Banner, Btn, FadeIn, Field, IconBadge, LangPicker, Screen, Text, useFormFocus } from '../ui/components';
 import { C, R, S, SP } from '../ui/theme';
 import { Hero } from '../ui/dash';
+import { InstallHint } from '../ui/InstallHint';
 import { APP_NAME } from '../config';
 import { ApiError } from '../lib/net';
 import { tokenStore } from '../lib/storage';
@@ -14,6 +15,7 @@ export function Welcome() {
   const feats: [string, string][] = [['🛡️', t('welcome.f1')], ['💰', t('welcome.f2')], ['🆘', t('welcome.f3')], ['🚗', t('welcome.f4')]];
   return (
     <Screen footer={<Btn testID="cta" title={t('common.continue')} onPress={() => nav.replace('phone')} big />}>
+      <InstallHint />
       <FadeIn>
         <Hero testID="welcome-hero">
           <View style={{ alignItems: 'center' }}>

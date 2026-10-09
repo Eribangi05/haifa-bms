@@ -49,5 +49,11 @@ await step('support: contact card with name, number and exact call / WhatsApp / 
   await page.getByTestId('support-sms').click(); u = await last(); if (!u.startsWith('sms:+250786880880')) throw new Error('sms ' + u); await shot('4-support');
   await page.getByTestId('support-call').click(); await page.waitForTimeout(400); if (await page.getByText(/Could not open/).count()) throw new Error('call failed');
 });
+await step('iPhone Safari web app: install hint shows once, then stays dismissed', async () => {
+  const c2 = await br.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' });
+  const p2 = visibleOnly(await c2.newPage()); await p2.goto(WEB); await p2.getByTestId('install-hint').waitFor({ timeout: 25000 }); await p2.screenshot({ path: `${OUT}/brand-5-iphone-hint.png` });
+  await p2.getByTestId('install-hint-ok').click(); await p2.reload(); await p2.getByTestId('welcome-hero').waitFor({ timeout: 25000 }); if (await p2.getByTestId('install-hint').count()) throw new Error('hint came back'); await c2.close();
+  const res = await page.request.get(WEB + '/'); if (!res.ok()) throw new Error('web root');
+});
 console.log('browser page errors:', JSON.stringify(errors.filter((e) => !/tile|leaflet|unpkg|ERR_|Failed to load resource|net::|Access-Control|CORS/i.test(e))));
 await br.close(); process.exit(failed ? 1 : 0);

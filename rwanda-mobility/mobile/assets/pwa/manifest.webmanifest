@@ -1,0 +1,15 @@
+{
+  "name": "Abasare",
+  "short_name": "Abasare",
+  "description": "Safe moto and car rides across Rwanda, and a verified driver for your own car.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0069A8",
+  "theme_color": "#0069A8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

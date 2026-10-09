@@ -6,6 +6,7 @@ import { dayPart, tripStats } from '../../lib/stats';
 import { useTripFeed } from '../../lib/tripFeed';
 import type { Booking, Place, Pt } from '../../lib/types';
 import { APP_NAME } from '../../config';
+import { InstallHint } from '../../ui/InstallHint';
 import { Banner, Btn, Card, Chip, FadeIn, LangSwitch, Glyph, IconBadge, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
 import { Hero, QuickAction, QuickGrid, StatRow, StatTile } from '../../ui/dash';
 import { C, FS, R, S, SP } from '../../ui/theme';
@@ -27,6 +28,7 @@ export function Overview({ active, onBook, refCode }: { active: Booking | null; 
   return (
     <Screen title={APP_NAME} right={<LangSwitch />} onRefresh={async () => { feed.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
+      <InstallHint />
       <FadeIn>
         <Hero testID="ov-hero" art={require('../../../assets/icons/hero_art.png')}>
           <View style={[S.row, { gap: SP.sm }]}>

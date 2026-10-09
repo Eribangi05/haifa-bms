@@ -48,3 +48,20 @@ services:
       - { key: PUBLIC_BASE_URL, sync: false }                           # https://abasare-api.onrender.com (QR codes and share links are built from it)
       - { key: APP_DOWNLOAD_URL, sync: false }                          # optional: Play Store / APK link shown on the venue QR landing page
       - { key: TRUST_PROXY, value: "1" }                                # Render puts one proxy in front: client IPs for rate limits
+  # The Abasare app as a web app (installable on iPhone through Safari > Share > Add to Home Screen, and usable in any browser). Free static site.
+  # It talks to the API service above: change EXPO_PUBLIC_API_URL if your API has a different URL.
+  - type: web
+    name: abasare-app
+    runtime: static
+    plan: free
+    buildCommand: cd rwanda-mobility/mobile && npm ci && npx expo export --platform web --output-dir dist && node scripts/pwa.mjs dist
+    staticPublishPath: rwanda-mobility/mobile/dist
+    autoDeploy: true
+    buildFilter:
+      paths: [rwanda-mobility/mobile/**]
+    routes:
+      - { type: rewrite, source: /*, destination: /index.html }
+    envVars:
+      - { key: EXPO_PUBLIC_API_URL, value: "https://abasare-api.onrender.com" }
+      - { key: EXPO_PUBLIC_ALLOW_CLEARTEXT, value: "0" }
+      - { key: NODE_VERSION, value: "22" }

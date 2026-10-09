@@ -42,7 +42,7 @@ for (const f of walk(join(root, 'backend', 'src')).filter((x) => x.endsWith('.ts
 codeVars.delete('NODE_ENV'); codeVars.add('NODE_ENV');
 const docText = readFileSync(join(root, 'docs', 'ENVIRONMENT_VARIABLES.md'), 'utf8');
 const docVars = new Set([...docText.matchAll(/`([A-Z][A-Z0-9_]{2,})`/g)].map((m) => m[1]).filter((v) => !/^(EXPO_PUBLIC_|RM_)/.test(v)));
-const INFRA = new Set(['DB_PASSWORD', 'API_DOMAIN', 'EAS_PROJECT_ID', 'EXPO_PUBLIC_API_URL']);          // used by compose / mobile build, not by backend/src
+const INFRA = new Set(['DB_PASSWORD', 'API_DOMAIN', 'EAS_PROJECT_ID', 'EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_ALLOW_CLEARTEXT', 'NODE_VERSION']);   // used by compose / the mobile and web builds, not by backend/src
 for (const v of codeVars) if (!docVars.has(v)) bad(`env var ${v} is used in backend/src but not documented in docs/ENVIRONMENT_VARIABLES.md`);
 const settingKeys = /^[a-z]+\.[a-z_*]+$/;
 const keysOf = (file, re) => (existsSync(file) ? [...readFileSync(file, 'utf8').matchAll(re)].map((m) => m[1]) : []);

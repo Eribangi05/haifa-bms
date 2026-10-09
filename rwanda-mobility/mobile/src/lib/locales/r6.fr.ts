@@ -12,5 +12,6 @@ export const r6fr: Record<keyof typeof r6en, string> = {
   'inv.nocode': 'Votre code n\'est pas encore prêt. Vérifiez votre connexion et réessayez.',
   'sup.contact.title': 'Parlez-nous', 'sup.contact.role': 'Assistance Abasare', 'sup.contact.sub': 'Appelez ou écrivez pour toute question sur votre compte, une course ou un paiement.',
   'sup.call': 'Appeler', 'sup.whatsapp': 'WhatsApp', 'sup.sms': 'Message', 'sup.err.open': 'Impossible d\'ouvrir {app} sur ce téléphone. Vous pouvez composer le {phone}.',
+  'pwa.title': 'Installer Abasare sur votre iPhone', 'pwa.body': 'Dans Safari, touchez le bouton Partager, puis « Sur l\'écran d\'accueil ». Abasare s\'ouvrira ensuite comme n\'importe quelle application.', 'pwa.ok': 'Compris',
   'sup.hello': 'Bonjour l\'assistance Abasare, j\'ai besoin d\'aide pour :',
 };

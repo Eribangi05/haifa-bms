@@ -2,7 +2,16 @@
 
 **Status: prepared and checked as far as this environment allows; the installable iPhone app still has to be built with your Apple and Expo accounts.** The app is written once in React Native / Expo (TypeScript) and the same screens, navigation, translations, icons and API client run on iOS. What is missing is Apple-specific set-up, a first iOS build, and testing on real iPhones. **Nothing below has been built or run on an iPhone yet**: the build environment used so far (Linux) cannot produce iOS apps, so expect a short round of fixes after the first iPhone test.
 
-## What you need (owner)
+## Free option now: the web app on iPhone (no Apple membership)
+Until the Apple membership is paid, iPhone users can use Abasare as a **web app**, installed from Safari: open the app's web address, tap **Share**, then **Add to Home Screen**; it gets the Abasare icon and opens full screen like an app. It is the same code and the same screens as the Android app. `render.yaml` defines a free Render static site (`abasare-app`) that builds it (`npm run web:pwa` builds it by hand); the app shows a short "how to install" card on iPhone Safari.
+
+What it cannot do compared with the real iPhone app:
+* **No background location**: a driver's position is shared only while the app is open and on screen. **Drivers should use Android.** Riders are not affected.
+* **No push notifications** (they need a native app or Web Push, which is not built).
+* **QR scanning**: Safari has no built-in code detector, so riders type the code instead of scanning.
+* It is not listed in the App Store, so customers must be given the web address (share it by WhatsApp, a poster QR code, or a link on the venue page).
+
+## What you need for the real iPhone app (owner)
 | Item | Cost / effort |
 |---|---|
 | **Apple Developer Program** membership (as a person or company) | about US$99 per year; company enrolment needs a D-U-N-S number and can take days |

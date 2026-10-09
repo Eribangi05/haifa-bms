@@ -12,5 +12,6 @@ export const r6rw: Record<keyof typeof r6en, string> = {
   'inv.nocode': 'Kode yawe ntirabonetse. Reba murandasi wongere ugerageze.',
   'sup.contact.title': 'Vugana natwe', 'sup.contact.role': 'Ubufasha bwa Abasare', 'sup.contact.sub': 'Duhamagare cyangwa utwandikire ku kibazo cyose kijyanye na konti yawe, urugendo cyangwa ubwishyu.',
   'sup.call': 'Hamagara', 'sup.whatsapp': 'WhatsApp', 'sup.sms': 'Ubutumwa', 'sup.err.open': 'Ntibishobotse gufungura {app} kuri iyi telefone. Ushobora guhamagara {phone}.',
+  'pwa.title': 'Shyira Abasare kuri iPhone yawe', 'pwa.body': 'Muri Safari kanda ikimenyetso cya "Share", hanyuma uhitemo "Add to Home Screen". Abasare izajya ifunguka nk\'izindi porogaramu.', 'pwa.ok': 'Nabyumvise',
   'sup.hello': 'Muraho ubufasha bwa Abasare, nkeneye ubufasha kuri:',
 };

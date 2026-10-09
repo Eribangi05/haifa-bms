@@ -12,5 +12,6 @@ export const r6en = {
   'inv.nocode': 'Your code is not ready yet. Check your connection and try again.',
   'sup.contact.title': 'Talk to us', 'sup.contact.role': 'Abasare support', 'sup.contact.sub': 'Call or write for any question about your account, a trip or a payment.',
   'sup.call': 'Call', 'sup.whatsapp': 'WhatsApp', 'sup.sms': 'Message', 'sup.err.open': 'Could not open {app} on this phone. You can dial {phone}.',
+  'pwa.title': 'Install Abasare on your iPhone', 'pwa.body': 'In Safari tap the Share button, then "Add to Home Screen". Abasare then opens like any other app.', 'pwa.ok': 'Got it',
   'sup.hello': 'Hello Abasare support, I need help with:',
 } as const;
