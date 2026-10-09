@@ -3,6 +3,8 @@ import { OnboardingTracker } from './onboardingTracker';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { isIsoDate } from '../../lib/format';
+import { DateField } from '../../ui/Pickers';
+import { addDays, todayKigali } from '../../lib/calendar';
 import type { DriverStatus } from '../../lib/types';
 import { Banner, Btn, Card, Chip, Field, Pill, Screen, Text, useFormFocus } from '../../ui/components';
 import { C, S, SP } from '../../ui/theme';
@@ -68,7 +70,7 @@ export function Onboarding({ status, reload }: { status: DriverStatus; reload: (
           <Field {...fa(0)} label={t('drv.legalname')} value={f.legal_name} onChangeText={(x) => set('legal_name', x)} autoComplete="name" />
           <Field {...fa(1)} label={t('drv.nid')} value={f.national_id} onChangeText={(x) => set('national_id', x.replace(/[^\d\s]/g, ''))} keyboardType="number-pad" maxLength={24} error={f.national_id.length > 0 && !nidOk ? t('drv.nid.bad') : undefined} />
           <Field {...fa(2)} label={t('drv.payout')} value={f.payout} onChangeText={(x) => set('payout', x)} keyboardType="phone-pad" maxLength={16} /></> : null}
-        <Field {...fa(3)} label={t('ab.apply.licence')} value={af.licence_since} onChangeText={(x) => setAf({ ...af, licence_since: x })} placeholder="2018-03-15" maxLength={10} keyboardType="numbers-and-punctuation" error={af.licence_since.length === 10 && !licenceOk ? t('drv.date.bad') : undefined} />
+        <DateField testID="licence-since" label={t('ab.apply.licence')} value={af.licence_since} onChange={(x) => setAf({ ...af, licence_since: x })} max={todayKigali()} startAt={addDays(todayKigali(), -365 * 5)} error={af.licence_since.length === 10 && !licenceOk ? t('drv.date.bad') : undefined} />
         <Field {...fa(4)} label={t('ab.apply.exp')} value={af.years} onChangeText={(x) => setAf({ ...af, years: x.replace(/\D/g, '') })} keyboardType="number-pad" maxLength={2} />
         <Text style={S.muted}>{t('ab.apply.trans')}</Text><View style={[S.wrap, { marginVertical: 6 }]}>{(['manual', 'automatic'] as const).map((x) => <Chip key={x} text={x === 'manual' ? t('ab.car.manual') : t('ab.car.auto')} on={af.transmissions.includes(x)} onPress={() => toggleIn('transmissions', x)} />)}</View>
         <Text style={S.muted}>{t('ab.apply.classes')}</Text><View style={[S.wrap, { marginVertical: 6 }]}>{ALL_CLASSES.map((x) => <Chip key={x} text={t(('ab.cls.' + x) as 'ab.cls.car')} on={af.classes.includes(x)} onPress={() => toggleIn('classes', x)} />)}</View>

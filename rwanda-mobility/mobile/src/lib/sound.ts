@@ -1,5 +1,6 @@
 import { Platform, Vibration } from 'react-native';
 import { setAudioModeAsync, createAudioPlayer } from 'expo-audio';
+import { appearance } from './appearance';
 
 /**
  * Alert sounds. A new trip request must be heard at once, so it plays a loud, distinctive chime that REPEATS (with vibration) until the driver answers,
@@ -20,12 +21,14 @@ async function ensureMode() {
 }
 function player(kind: 'offer' | 'ping'): Player | null {
   try {
-    if (kind === 'offer') { if (!offerPlayer) { offerPlayer = createAudioPlayer(OFFER) as unknown as Player; offerPlayer.volume = 1; } return offerPlayer; }
-    if (!pingPlayer) { pingPlayer = createAudioPlayer(PING) as unknown as Player; pingPlayer.volume = 1; }
+    if (offerPlayer) offerPlayer.volume = vol(); if (pingPlayer) pingPlayer.volume = vol();      // volume chosen in Settings, applied at every play
+    if (kind === 'offer') { if (!offerPlayer) { offerPlayer = createAudioPlayer(OFFER) as unknown as Player; offerPlayer.volume = vol(); } return offerPlayer; }
+    if (!pingPlayer) { pingPlayer = createAudioPlayer(PING) as unknown as Player; pingPlayer.volume = vol(); }
     return pingPlayer;
   } catch { return null; }
 }
-const vibrate = (pattern: number[], repeat: boolean) => { try { Vibration.vibrate(pattern, repeat && Platform.OS === 'android'); } catch { /* no vibrator */ } };
+const vol = () => appearance.get().soundVolume;
+const vibrate = (pattern: number[], repeat: boolean) => { if (!appearance.get().vibrate) return; try { Vibration.vibrate(pattern, repeat && Platform.OS === 'android'); } catch { /* no vibrator */ } };
 
 /** New trip request: ring until stopOffer() (or OFFER_MAX_MS). Calling it again while ringing just keeps ringing. */
 export async function playOffer(opts: { sound?: boolean } = {}) {

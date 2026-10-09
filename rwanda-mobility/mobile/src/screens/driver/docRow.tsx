@@ -7,7 +7,9 @@ import { explainCameraDenied } from '../../lib/hooks';
 import { isIsoDate } from '../../lib/format';
 import { appendFile, photoProblem, pickPhoto, type Picked } from '../../lib/upload';
 import type { DriverDoc, Requirement } from '../../lib/types';
-import { Banner, Btn, Field, Pill, Text } from '../../ui/components';
+import { Banner, Btn, Pill, Text } from '../../ui/components';
+import { DateField } from '../../ui/Pickers';
+import { addDays, todayKigali } from '../../lib/calendar';
 import { C, S } from '../../ui/theme';
 
 /** One required document: status chip, review note, and upload (camera / gallery / PDF). Each upload is independent, so a failure never loses the others. */
@@ -42,7 +44,7 @@ export function DocRow({ req, docs, reload, editable }: { req: Requirement; docs
       </View>
       {open ? <View style={{ marginTop: 8, gap: 8 }}>
         {failed ? <Banner kind="bad" text={t('drv.upload.failed')} /> : null}
-        {req.requires_expiry ? <Field label={t('drv.expiry')} value={expiry} onChangeText={setExpiry} placeholder="2028-12-31" maxLength={10} keyboardType="numbers-and-punctuation" error={expiry.length === 10 && !expiryOk ? t('drv.expiry.bad') : undefined} /> : null}
+        {req.requires_expiry ? <DateField testID="doc-expiry" label={t('drv.expiry')} value={expiry} onChange={setExpiry} min={todayKigali()} startAt={addDays(todayKigali(), 365)} error={expiry.length === 10 && !expiryOk ? t('drv.expiry.bad') : undefined} /> : null}
         <Btn title={t('drv.photo.take')} onPress={fromCamera} loading={busy} disabled={!expiryOk} />
         <Btn kind="ghost" title={t('drv.photo.pick')} onPress={fromGallery} disabled={!expiryOk || busy} />
         <Btn kind="ghost" title={t('drv.file.pick')} onPress={fromPdf} disabled={!expiryOk || busy} />

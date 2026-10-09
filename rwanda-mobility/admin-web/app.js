@@ -18,6 +18,9 @@ const visibleTabs = () => TABS.filter(([k, , need]) => (k === 'partner' ? S.role
 const effectiveTheme = () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 function applyTheme(t) { if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
 applyTheme(pref.get('rm_theme'));
+applyDisplay();   // text size and table density, before the first render
+const landingPref = () => { const t = pref.get('rm_landing'); return TABS.some((x) => x[0] === t) ? t : null; };
+if (landingPref()) S.tab = landingPref();   // the page to open after sign-in (the sign-in step and render() fall back when this role cannot see it)
 
 // ---------------- navigation ----------------
 const unsaved = () => S.dirty.size > 0;
@@ -66,10 +69,49 @@ async function loadView() {
   catch (e) { if (my !== S.nav) return; view.classList.remove('loading'); view.replaceChildren(errorPanel(e, () => loadView())); return; }
   if (my !== S.nav) return;
   view.classList.remove('loading'); view.querySelector('.loader')?.remove();
+  scheduleDashRefresh(my);
   if (typeof after === 'function') { try { after(); } catch (e) { toast('Part of this page failed to load: ' + e.message, true); } }
   if (S.focusView) { S.focusView = false; const t = view.querySelector('h1'); if (t) { t.tabIndex = -1; t.focus({ preventScroll: true }); } }
 }
 
+
+// Dashboards can reload themselves (Display menu: off by default). Skipped while the tab is hidden, a dialog is open or a form has unsaved changes.
+let dashTimer = null;
+function scheduleDashRefresh(my) {
+  clearTimeout(dashTimer); const secs = dashSecs();
+  if (!secs || !['dashboard', 'opsdash'].includes(S.tab)) return;
+  dashTimer = setTimeout(() => { if (my !== S.nav) return; if (document.hidden || document.querySelector('dialog[open]') || unsaved()) return scheduleDashRefresh(my); void loadView(); }, secs * 1000);
+}
+
+// ---------------- Display menu (top bar): text size, table density, time format, landing page, rows per page, auto-refresh ----------------
+function displayMenu() {
+  const btn = h('button', { class: 'iconbtn aa', 'aria-label': 'Display settings', title: 'Display settings', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-controls': 'displaypanel', onclick: () => (panel.hidden ? open() : close(true)) }, 'Aa');
+  const panel = h('div', { id: 'displaypanel', class: 'dispanel', role: 'dialog', 'aria-label': 'Display settings', hidden: true });
+  const field = (label, opts, current, onSet) => {
+    const sel = h('select', { 'aria-label': label, onchange: () => onSet(sel.value) }, opts.map(([v, l]) => h('option', { value: v, selected: String(v) === String(current) }, l)));
+    return h('label', { class: 'dfield' }, h('span', { class: 'flabel' }, label), sel);
+  };
+  const set = (key, again) => (v) => { pref.set(key, v); applyDisplay(); if (again) void loadView(); scheduleDashRefresh(S.nav); };
+  const secLabel = (n) => (n === 0 ? 'Off' : n === 60 ? 'Every minute' : n > 60 ? 'Every ' + n / 60 + ' minutes' : 'Every ' + n + ' seconds');
+  function build() {
+    panel.replaceChildren(h('h2', {}, 'Display'),
+      field('Text size', [['small', 'Small'], ['normal', 'Normal'], ['large', 'Large'], ['xlarge', 'Extra large']], textSize(), set('rm_size')),
+      field('Table density', [['comfortable', 'Comfortable'], ['compact', 'Compact']], density(), set('rm_density')),
+      field('Time format', [['24', '24-hour'], ['12', '12-hour']], clock12() ? '12' : '24', set('rm_clock', true)),
+      field('Page after sign-in', [['', 'First page in my menu']].concat(visibleTabs().map((t) => [t[0], t[1]])), landingPref() || '', set('rm_landing')),
+      field('Rows per page in tables', PAGE_SIZES.map((n) => [n, n + ' rows']), pageSizePref(), set('rm_pagesize', true)),
+      field('Live map refresh', LIVE_SECS.map((n) => [n, secLabel(n)]), liveSecs(), set('rm_live_s')),
+      field('Dashboard refresh', DASH_SECS.map((n) => [n, secLabel(n)]), dashSecs(), set('rm_dash_s')),
+      h('div', { class: 'row' }, h('button', { type: 'button', class: 'b sec', onclick: () => { for (const k of ['rm_size', 'rm_density', 'rm_clock', 'rm_landing', 'rm_pagesize', 'rm_live_s', 'rm_dash_s']) pref.set(k, ''); applyDisplay(); build(); void loadView(); } }, 'Reset to defaults'), h('button', { type: 'button', class: 'b', onclick: () => close(true) }, 'Done')));
+  }
+  function open() { build(); panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); panel.querySelector('select')?.focus(); }
+  function close(refocus) { if (panel.hidden) return; panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (refocus) btn.focus(); }
+  const wrap = h('span', { class: 'dispop' }, btn, panel);
+  wrap.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { e.preventDefault(); e.stopPropagation(); close(true); } });
+  wrap.addEventListener('focusout', (e) => { if (!panel.hidden && e.relatedTarget && !wrap.contains(e.relatedTarget)) close(false); });
+  document.addEventListener('click', (e) => { if (!panel.hidden && !wrap.contains(e.target)) close(false); });
+  return wrap;
+}
 
 // Menu icons: small line drawings (24x24, drawn here, no external font). Unknown tabs get a dot.
 const IC = {
@@ -100,7 +142,7 @@ function buildShell(root, tabs) {
   const themeBtn = h('button', { class: 'iconbtn', 'aria-label': 'Switch between light and dark theme', title: 'Light / dark', onclick: () => { const t = effectiveTheme() === 'dark' ? 'light' : 'dark'; applyTheme(t); pref.set('rm_theme', t); themeBtn.textContent = t === 'dark' ? '☀' : '☾'; } }, effectiveTheme() === 'dark' ? '☀' : '☾');
   const top = h('header', { class: 'topbar' },
     h('button', { class: 'iconbtn', 'data-nav-toggle': '', 'aria-label': 'Open menu', 'aria-expanded': 'false', 'aria-controls': 'sidenav', onclick: () => { const open = nav.classList.toggle('open'); $('[data-nav-toggle]').setAttribute('aria-expanded', String(open)); } }, '☰'),
-    h('ol', { id: 'crumbs', class: 'crumbs', 'aria-label': 'Breadcrumb' }), h('span', { class: 'grow' }), langSelect(), soundToggle(), themeBtn,
+    h('ol', { id: 'crumbs', class: 'crumbs', 'aria-label': 'Breadcrumb' }), h('span', { class: 'grow' }), displayMenu(), langSelect(), soundToggle(), themeBtn,
     h('span', { class: 'avatar', 'aria-hidden': 'true' }, initials(email)), h('span', { class: 'who', title: S.roles.join(', ') }, h('b', {}, email || 'Signed in'), h('small', {}, S.roles.map(human).join(', '))));
   const scrim = h('div', { class: 'scrim', onclick: closeNav });
   document.addEventListener('keydown', (e) => { if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) { const f = document.querySelector('.navfind'); if (f) { e.preventDefault(); document.getElementById('sidenav')?.classList.add('open'); f.focus(); } } });
@@ -122,7 +164,7 @@ function loginView(root) {
     try {
       let r; try { r = await fetch(API + '/auth/staff/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: email.value.trim(), password: pw.value, totp: totp.value.trim() }) }); } catch { throw new Error('Cannot reach the server. Check your connection.'); }
       const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error?.message || 'Sign-in failed');
-      save(j); store.set('rm_email', email.value.trim()); S.notice = ''; S.tabSet = false; S.tab = 'dashboard'; S.state = {}; if (!tabFromHash()) history.replaceState(null, '', location.pathname); render();
+      save(j); store.set('rm_email', email.value.trim()); S.notice = ''; S.tabSet = false; S.tab = landingPref() || 'dashboard'; S.state = {}; if (!tabFromHash()) history.replaceState(null, '', location.pathname); render();
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Sign in'; }
   };
   root.append(h('main', { class: 'loginpage' },

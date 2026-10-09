@@ -76,3 +76,7 @@ Checked by: 311 backend tests, 79 mobile unit tests, browser tests of the rider 
 * **Routing**: weekday rush hours (07:00 to 09:00, 17:00 to 19:30 Kigali time) slow the roads inside Kigali (main roads to 60 %, small roads to 80 %): an assumption, not measured traffic. Turn restrictions from OpenStreetMap (no left turn, no U-turn, only straight on) are in the road file; Rwanda has few of them mapped (14 forbidden turns), so the effect is small today.
 * **Driver documents**: the app sends back a photo that is too small or looks blurry or dark before uploading it; the server also returns warnings and rejects an expiry date more than 20 years away (a typing mistake). Staff still decide every document.
 * **Load and restore**: both drills were run (see `docs/OPERATIONS_RUNBOOK.md`).
+
+## Added in 0.9.3
+
+* Calendar and clock pickers instead of typed dates and times (app and console); adjustable hire hours, share duration, app-lock delay and scheduled-trip notice; text size, clock format, week start, sound volume and vibration preferences; console Display menu and custom date ranges. New settings: `booking.min_schedule_lead_min`, `abasare.quick_hours`.

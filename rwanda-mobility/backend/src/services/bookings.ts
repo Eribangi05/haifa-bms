@@ -104,9 +104,9 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
   const scheduled = inp.scheduled_for ? new Date(inp.scheduled_for) : null;
   if (scheduled) {
     if (!(await flagFor('booking.scheduled', passengerId))) throw badRequest('scheduled_disabled', 'Scheduled rides are not enabled');
-    const days = await getSetting('booking.max_scheduled_days');
-    if (Number.isNaN(scheduled.getTime()) || scheduled.getTime() < Date.now() + 20 * 60e3 || scheduled.getTime() > Date.now() + days * 86400e3)
-      throw badRequest('invalid_schedule', `Schedule between 20 minutes and ${days} days ahead`);
+    const days = await getSetting('booking.max_scheduled_days'), lead = await getSetting('booking.min_schedule_lead_min');
+    if (Number.isNaN(scheduled.getTime()) || scheduled.getTime() < Date.now() + lead * 60e3 || scheduled.getTime() > Date.now() + days * 86400e3)
+      throw badRequest('invalid_schedule', `Schedule between ${lead} minutes and ${days} days ahead`);
   }
   // Abasare (driver for the customer's own car) and ride services are quoted separately.
   let cv: any = null; let forcedId: string | null = inp.service_id ?? null;

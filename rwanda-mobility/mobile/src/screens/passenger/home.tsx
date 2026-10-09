@@ -13,6 +13,8 @@ import { C, S, SP } from '../../ui/theme';
 import { HowItWorks, RecentTrips, SavedShortcuts, ServiceCards, StatusChip } from './homeParts';
 import { usePlaces } from './usePlaces';
 import { CreditChip } from '../money/credit';
+import { DateTimeField, NumberStepper } from '../../ui/Pickers';
+import { instantAllowed } from '../../lib/calendar';
 
 let resumedOnce = false;   // auto-open the active trip only once per app launch (resume after the app was killed)
 
@@ -23,6 +25,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   const [pickup, setPickup] = useState<Pt | null>(null); const [dest, setDest] = useState<Pt | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null); const [note, setNote] = useState('');
   const [q, setQ] = useState(''); const [results, setResults] = useState<Place[]>([]); const [searching, setSearching] = useState(false);
+  const [custom, setCustom] = useState(false);
   const [mapOk, setMapOk] = useState(true); const [consent, setConsent] = useState<boolean | null>(null); const [skipped, setSkipped] = useState(false); const [when, setWhen] = useState<string | null>(null);
   const [svc, setSvcState] = useState<Svc>('ride'); const [cars, setCars] = useState<CustomerCar[]>([]); const [carId, setCarId] = useState<string | null>(null);
   const [forOther, setForOther] = useState(false);
@@ -41,6 +44,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   useEffect(() => { if (!params?.svc) kv.get('rm_svc').then((v) => v === 'abasare' && setSvcState('abasare')).catch(() => {}); kv.get('rm_car').then((v) => v && setCarId(v)).catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (svc !== 'abasare') return; client.get('/users/me/cars').then((r) => { setCars(r.cars); setCarId((cur) => (r.cars.some((c: CustomerCar) => c.id === cur) ? cur : r.cars[0]?.id ?? null)); }).catch(() => {}); }, [svc, client]);
   useEffect(() => { if (carId) void kv.set('rm_car', carId).catch(() => {}); }, [carId]);
+  const lead = (cfg as { booking?: { min_schedule_lead_min?: number } } | null)?.booking?.min_schedule_lead_min ?? 20, days = (cfg as { booking?: { max_scheduled_days?: number } } | null)?.booking?.max_scheduled_days ?? 14;
   const abasareOn = !!cfg?.abasare?.enabled;
   useEffect(() => { if (!abasareOn && svc === 'abasare') setSvcState('ride'); }, [abasareOn, svc]);
 
@@ -128,7 +132,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
         {cars.length ? <View style={[S.wrap, { marginVertical: 6 }]}>{cars.map((c) => <Chip key={c.id} text={`${c.plate} · ${c.make ?? ''} ${c.model ?? ''}`.trim()} on={carId === c.id} onPress={() => setCarId(c.id)} />)}</View> : <Banner text={t('ab.nocar')} />}
         <Btn kind="ghost" title={t('ab.addcar')} onPress={() => nav.push('cars')} />
         <View style={[S.wrap, { marginTop: 10 }]}><Chip text={t('ab.mode.home')} on={hire === 'p2p'} onPress={() => setHire('p2p')} /><Chip text={t('ab.mode.hourly')} on={hire === 'hourly'} onPress={() => setHire('hourly')} /></View>
-        {hire === 'hourly' ? <><Text style={S.muted}>{t('ab.hours')}</Text><View style={[S.wrap, { marginTop: 6 }]}>{(cfg?.abasare?.packages ?? [2, 4, 8, 12]).map((h) => <Chip key={h} text={`${h} ${t('ab.h')}`} on={hours === h} onPress={() => setHours(h)} />)}</View></> : null}
+        {hire === 'hourly' ? <><Text style={S.muted}>{t('ab.hours')}</Text><View style={[S.wrap, { marginTop: 6 }]}>{(cfg?.abasare?.packages ?? [2, 4, 8, 12]).map((h) => <Chip key={h} text={`${h} ${t('ab.h')}`} on={hours === h} onPress={() => setHours(h)} />)}</View><NumberStepper testID="hire-hours" label={t('pk.hours.custom')} value={hours} onChange={setHours} min={cfg?.abasare?.min_hours ?? 2} max={cfg?.abasare?.max_hours ?? 12} unit={t('ab.h')} /></> : null}
         <Text style={[S.muted, { marginTop: 4 }]}>{t('ab.night')}</Text>
       </Card> : null}
 
@@ -151,8 +155,13 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
       <SectionTitle text={t('opt.when')} />
       <View style={S.wrap}>
         <Chip text={t('home.now')} on={!when} onPress={() => setWhen(null)} />
+        <Chip testID="when-pick" text={t('pk.datetime')} on={custom} onPress={() => { setCustom(true); if (!when) setWhen(new Date(Date.now() + (lead + 10) * 60000).toISOString()); }} />
         {[30, 60, 180].map((m) => <Chip key={m} text={`${t('opt.plus')} ${m >= 60 ? m / 60 + ' h' : m + ' ' + t('common.min')}`} on={!!when && Math.abs(new Date(when).getTime() - (Date.now() + m * 60000)) < 60000} onPress={() => setWhen(new Date(Date.now() + m * 60000 + 30000).toISOString())} />)}
       </View>
+      {custom ? <View style={{ gap: SP.sm }}>
+        <DateTimeField testID="when" value={when} onChange={setWhen} min={new Date(Date.now() + lead * 60000)} max={new Date(Date.now() + days * 86400000)} error={when && !instantAllowed(when, lead, days) ? t('pk.sched.bad') : undefined} />
+        <Text style={S.muted}>{t('pk.sched.lead', { n: lead, d: days })}</Text>
+      </View> : null}
       {needsDest && !dest ? <>
         <SavedShortcuts saved={places.saved} onPick={pickDest} />
         {places.recents.length ? <><SectionTitle text={t('home.recent')} /><View style={S.wrap}>{places.recents.map((p, i) => <Chip key={i} glyph="🕘" text={p.name ?? ''} onPress={() => pickDest(p)} />)}</View></> : null}

@@ -6,6 +6,7 @@ import { tabsFr } from './features/tabs.fr';
 import { driversFr } from './features/drivers.fr';
 import { brandFr } from './features/brand.fr';
 import { socialFr } from './features/social.fr';
+import { pickFr } from './features/pick.fr';
 // Français. Typed against English keys so a missing string is a compile error.
 const base: Record<BaseK, string> = {
   'app.tagline': 'Des trajets sûrs et simples partout au Rwanda',
@@ -283,4 +284,4 @@ const base: Record<BaseK, string> = {
   'prof.export.done': 'Nous avons reçu votre demande et vous enverrons une copie de vos données.',
   'prof.signout.confirm': 'Se déconnecter de ce téléphone ?',
 };
-export const fr: Record<K, string> = { ...base, ...trustFr, ...growthFr, ...moneyFr, ...tabsFr, ...driversFr, ...brandFr, ...socialFr };
+export const fr: Record<K, string> = { ...base, ...trustFr, ...growthFr, ...moneyFr, ...tabsFr, ...driversFr, ...brandFr, ...socialFr, ...pickFr };

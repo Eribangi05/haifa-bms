@@ -146,13 +146,14 @@ async function claimDetail(id) {
 
 // =============================================================== USSD
 V.ussd = async (el, state = {}) => {
-  const days = Number(state.days) || 30, outcome = state.outcome || '';
+  const custom = state.from ? { from: state.from } : null, outcome = state.outcome || '';
+  const days = custom ? Math.min(365, Math.max(1, Math.ceil((Date.now() - dayStart(custom.from)) / 864e5))) : Number(state.days) || 30;
   const [stt, ses] = await Promise.all([api('GET', '/admin/ussd/stats?days=' + days), api('GET', '/admin/ussd/sessions?limit=100' + (outcome ? '&outcome=' + outcome : ''))]);
   const ch = (name) => stt.channels.find((x) => x.channel === name) || { bookings: 0, completed: 0, cancelled: 0 };
-  const sel = h('select', { 'aria-label': 'Period' }, [7, 30, 90].map((d) => h('option', { value: d, selected: d === days }, 'Last ' + d + ' days')));
+  const sel = periodControl({ value: days, options: [7, 30, 90].map((d) => [d, 'Last ' + d + ' days']), range: custom, noTo: true, onQuick: (v) => go('ussd', { days: v, outcome: so.value }), onRange: (f) => go('ussd', { from: f, outcome: so.value }) });
   const so = h('select', { 'aria-label': 'Outcome' }, ['', 'booked', 'cancelled', 'help', 'declined', 'declined_fare', 'no_car', 'blocked', 'error', 'completed'].map((x) => h('option', { value: x, selected: x === outcome }, x ? human(x) : 'Any outcome')));
   el.append(h('h1', {}, 'USSD channel'), note('Riders without a smartphone book over USSD (cash only). Phone numbers are masked here. Sessions are kept for 30 days.'),
-    filterBar(sel, so, h('button', { type: 'submit', class: 'b', onclick: () => go('ussd', { days: sel.value, outcome: so.value }) }, 'Apply')),
+    filterBar(sel, so, h('button', { type: 'submit', class: 'b', onclick: () => go('ussd', custom ? { from: custom.from, outcome: so.value } : { days, outcome: so.value }) }, 'Apply')),
     h('div', { class: 'row' }, kpi('USSD sessions', nfmt(stt.sessions.total)), kpi('Booked', nfmt(stt.sessions.booked), { hint: stt.sessions.total ? Math.round((100 * stt.sessions.booked) / stt.sessions.total) + '% of sessions' : '' }), kpi('Errors', nfmt(stt.sessions.errors), { tone: stt.sessions.errors ? 'warn' : '' }),
       kpi('Screens per session', stt.sessions.avg_screens ?? '-'), kpi('USSD bookings', nfmt(ch('ussd').bookings), { hint: `${ch('ussd').completed} completed, ${ch('ussd').cancelled} cancelled` }), kpi('App bookings', nfmt(ch('app').bookings), { hint: `${ch('app').completed} completed, ${ch('app').cancelled} cancelled` })),
     h('h2', {}, 'Outcomes'), table([{ h: 'Outcome', f: (o) => human(o.outcome), s: (o) => o.outcome }, { h: 'Sessions', k: 'n', cls: 'num' }], stt.outcomes, null, 'No sessions in this period.', { sort: false }),

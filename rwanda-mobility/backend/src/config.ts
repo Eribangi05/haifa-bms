@@ -99,6 +99,8 @@ export const SETTING_DEFAULTS = {
   'booking.noshow_fee': 1000,
   'booking.quote_ttl_s': 600,
   'booking.max_scheduled_days': 14,
+  'booking.min_schedule_lead_min': 20,
+  'abasare.quick_hours': [2, 4, 8, 12],
   'payout.min_amount': 5000,
   'payout.fee': 0,
   'payout.large_threshold': 200000,

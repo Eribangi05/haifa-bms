@@ -282,7 +282,8 @@ import { tabsEn } from './features/tabs.en';
 import { driversEn } from './features/drivers.en';
 import { brandEn } from './features/brand.en';
 import { socialEn } from './features/social.en';
+import { pickEn } from './features/pick.en';
 /** Full English dictionary = base + one module per feature round (so parallel work never edits the same file). */
-export const en = { ...baseEn, ...trustEn, ...growthEn, ...moneyEn, ...tabsEn, ...driversEn, ...brandEn, ...socialEn } as const;
+export const en = { ...baseEn, ...trustEn, ...growthEn, ...moneyEn, ...tabsEn, ...driversEn, ...brandEn, ...socialEn, ...pickEn } as const;
 export type K = keyof typeof en;
 export type BaseK = keyof typeof baseEn;

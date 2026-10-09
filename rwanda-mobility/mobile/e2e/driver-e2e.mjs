@@ -1,5 +1,6 @@
 // Driver-side end-to-end test through the real React Native screens (react-native-web). See app-e2e.mjs for prerequisites.
 // Usage: node e2e/driver-e2e.mjs <screenshot-dir> <path-to-a-small.jpg>
+import { pickDate, pickTime } from './pickers.mjs';
 import { chromium } from 'playwright-core';
 import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
@@ -39,7 +40,7 @@ await step('upload every required document through the file picker', async () =>
   for (const l of labels) {
     const row = page.locator('div', { has: page.getByText(l, { exact: false }) }).filter({ has: page.getByText('Upload', { exact: true }) }).last();
     await page.getByText(l + ' *', { exact: true }).locator('xpath=ancestor::div[.//div[text()="Upload"]][1]').getByText('Upload', { exact: true }).click();
-    if (l !== 'Profile photo') await page.getByLabel('Expiry date (YYYY-MM-DD)').fill('2030-12-31');
+    if (l !== 'Profile photo') await pickDate(page, 'doc-expiry', '2030-12-31');
     const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByText('Choose from gallery', { exact: true }).click()]);
     await chooser.setFiles(JPG); await page.waitForTimeout(1500);
   }

@@ -208,3 +208,10 @@ Labels (assigned by evidence, not intent):
 ## Village and district search (0.9.1)
 
 * **TESTED**: `localities.json` search and `GET /places/reverse` (backend test MAP-04), "Near {place}" pickup naming wired in the passenger home screen (type-checked; not field-checked in the countryside).
+
+## Flexible dates, times and preferences (0.9.3)
+
+* **TESTED**: the calendar and clock pickers (pure logic: `tests/calendar.test.ts`; browser: `e2e/pickers-e2e.mjs` schedules a ride with the calendar and the clock, past and too-far days cannot be chosen, 12-hour clock and the largest text size apply); document expiry, licence date and repeat-ride dates and times use the pickers (driver and Abasare browser scripts pick dates with the calendar); shortest notice for a scheduled trip and the quick hire lengths are settings (R5-21).
+* **App**: nobody types a date or a time any more. Hire length, trip-share duration and app-lock delay can be stepped or typed in any whole number within limits; text size has four levels; the clock can be 24-hour or 12-hour; the week can start on Monday or Sunday; sound volume and vibration can be changed.
+* **Console**: native calendar and clock inputs everywhere a date or time is asked, a custom date range next to the fixed periods, and a Display menu (text size, table density, time format, landing page, rows per page, refresh intervals). The operations dashboard and USSD pages accept only "last N hours/days" from the server, so their custom range takes a start date only.
+* **Not changed on purpose**: staff-alert polling (15 s) is fixed; server limits on the Bookings and Audit row counts.

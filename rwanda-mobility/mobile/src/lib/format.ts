@@ -32,7 +32,10 @@ const kigali = (iso: string | number | Date) => new Date(new Date(iso).getTime()
 const p2 = (n: number) => String(n).padStart(2, '0');
 /** `dd/mm/yyyy` in Kigali time. Numeric on purpose: identical in every app language. */
 export const fmtDate = (iso: string | number | Date) => { const d = kigali(iso); return `${p2(d.getUTCDate())}/${p2(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`; };
-export const fmtTime = (iso: string | number | Date) => { const d = kigali(iso); return `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; };
+let timeFmt: '24h' | '12h' = '24h';
+/** Set by the appearance store: every clock time in the app follows the person's 24-hour or 12-hour choice. */
+export const setTimeFormat = (f: '24h' | '12h') => { timeFmt = f; };
+export const fmtTime = (iso: string | number | Date) => { const d = kigali(iso); const h = d.getUTCHours(), m = p2(d.getUTCMinutes()); return timeFmt === '12h' ? `${h % 12 === 0 ? 12 : h % 12}:${m} ${h < 12 ? 'AM' : 'PM'}` : `${p2(h)}:${m}`; };
 export const fmtDateTime = (iso: string | number | Date) => `${fmtDate(iso)} ${fmtTime(iso)}`;
 const dayNumber = (iso: string | number | Date) => Math.floor(kigali(iso).getTime() / 86400000);
 

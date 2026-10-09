@@ -7,17 +7,17 @@ import { LANGS, type Lang } from '../lib/i18n';
 import { useApp } from '../lib/app';
 import type { Tone } from '../lib/trip';
 import { useAppearance } from '../lib/appearance';
-import { LARGE_TEXT_FACTOR, fontCap } from '../lib/palette';
+import { fontCapFor } from '../lib/palette';
 import { ICONS, iconFor, type IconName } from './icons';
 
 /** Text that respects the user's font-size setting but caps it so layouts and CTAs never clip (React 19 ignores Text.defaultProps, so this wrapper does it). */
 export function Text(p: TextProps) {
-  const { largeText } = useAppearance();
-  if (!largeText) return <RNText maxFontSizeMultiplier={fontCap(false)} {...p} />;
-  // Large-text mode: we scale the font ourselves and lower the OS cap so the total never exceeds 1.4x.
+  const { textScale } = useAppearance();
+  if (textScale === 1) return <RNText maxFontSizeMultiplier={fontCapFor(1)} {...p} />;
+  // Text size chosen in Settings (small, large, extra large): we scale the font ourselves and lower the OS cap so the total stays bounded.
   const st = StyleSheet.flatten(p.style) ?? {};
-  const scaled = { ...st, fontSize: Math.round((st.fontSize ?? 14) * LARGE_TEXT_FACTOR), ...(st.lineHeight ? { lineHeight: Math.round(st.lineHeight * LARGE_TEXT_FACTOR) } : {}) };
-  return <RNText maxFontSizeMultiplier={fontCap(true)} {...p} style={scaled} />;
+  const scaled = { ...st, fontSize: Math.round((st.fontSize ?? 14) * textScale), ...(st.lineHeight ? { lineHeight: Math.round(st.lineHeight * textScale) } : {}) };
+  return <RNText maxFontSizeMultiplier={fontCapFor(textScale)} {...p} style={scaled} />;
 }
 
 /** True when the OS asks for reduced motion (animations become instant). */
@@ -196,12 +196,12 @@ export function Btn({ title, onPress, kind = 'primary', disabled, loading, style
 
 type FieldProps = TextInputProps & { label?: string; inputRef?: React.Ref<TextInput>; error?: string };
 export function Field({ label, inputRef, error, ...p }: FieldProps) {
-  const { largeText } = useAppearance();
+  const { textScale } = useAppearance();
   return (
     <View style={{ marginBottom: SP.sm + 2 }}>
       {label ? <Text style={[S.muted, { marginBottom: 4 }]}>{label}</Text> : null}
-      <TextInput ref={inputRef} maxFontSizeMultiplier={fontCap(largeText)} placeholderTextColor={C.placeholder} accessibilityLabel={label ?? p.accessibilityLabel} {...p}
-        style={[S.input, error ? { borderColor: C.danger } : null, largeText ? { fontSize: 16 * LARGE_TEXT_FACTOR } : null, p.multiline ? { minHeight: 90, textAlignVertical: 'top' } : null, p.style]} />
+      <TextInput ref={inputRef} maxFontSizeMultiplier={fontCapFor(textScale)} placeholderTextColor={C.placeholder} accessibilityLabel={label ?? p.accessibilityLabel} {...p}
+        style={[S.input, error ? { borderColor: C.danger } : null, textScale !== 1 ? { fontSize: 16 * textScale } : null, p.multiline ? { minHeight: 90, textAlignVertical: 'top' } : null, p.style]} />
       {error ? <Text accessibilityLiveRegion="polite" style={{ color: C.danger, fontSize: FS.sm, marginTop: 4 }}>{error}</Text> : null}
     </View>
   );

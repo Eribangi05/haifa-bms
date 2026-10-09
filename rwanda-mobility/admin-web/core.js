@@ -11,6 +11,18 @@ const pref = {    // per-browser convenience (theme, table page size)
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
 };
+// Display preferences (remembered per browser; the Display menu in the top bar changes them).
+const SIZE_SCALE = { small: 0.875, normal: 1, large: 1.125, xlarge: 1.25 };
+const PAGE_SIZES = [10, 25, 50, 100, 200], LIVE_SECS = [2, 5, 10, 15, 30, 60], DASH_SECS = [0, 30, 60, 300, 900];
+const prefOf = (key, allowed, def) => { const v = pref.get(key); return allowed.includes(v) ? v : def; };
+const prefNum = (key, allowed, def) => { const n = Number(pref.get(key)); return pref.get(key) != null && allowed.includes(n) ? n : def; };
+const textSize = () => prefOf('rm_size', Object.keys(SIZE_SCALE), 'normal');
+const density = () => prefOf('rm_density', ['comfortable', 'compact'], 'comfortable');
+const clock12 = () => pref.get('rm_clock') === '12';
+const pageSizePref = () => prefNum('rm_pagesize', PAGE_SIZES, 50);
+const liveSecs = () => prefNum('rm_live_s', LIVE_SECS, 5);
+const dashSecs = () => prefNum('rm_dash_s', DASH_SECS, 0);
+function applyDisplay() { const r = document.documentElement; r.style.setProperty('--ts', String(SIZE_SCALE[textSize()])); r.dataset.density = density(); }
 const S = { access: store.get('rm_a'), refresh: store.get('rm_r'), roles: JSON.parse(store.get('rm_roles') || '[]'), perms: JSON.parse(store.get('rm_perms') || '[]'), permsAt: 0, tab: 'dashboard', state: {}, dirty: new Set(), nav: 0, notice: '' };
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -53,12 +65,18 @@ const nfmt = (n) => (n == null || Number.isNaN(Number(n)) ? '-' : Number(n).toLo
 const MONTHS_RW = ['Mutarama', 'Gashyantare', 'Werurwe', 'Mata', 'Gicurasi', 'Kamena', 'Nyakanga', 'Kanama', 'Nzeri', 'Ukwakira', 'Ugushyingo', 'Ukuboza'];
 // Kinyarwanda month names are written here because not every browser ships the Kinyarwanda calendar data.
 function kigaliParts(d, time) {
-  const o = { timeZone: 'Africa/Kigali', day: '2-digit', month: 'numeric', year: 'numeric', ...(time ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}) };
+  const o = { timeZone: 'Africa/Kigali', day: '2-digit', month: 'numeric', year: 'numeric', ...(time ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}) };   // the 12/24-hour choice is applied below
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', o).formatToParts(new Date(d)).map((x) => [x.type, x.value]));
-  return `${p.day} ${MONTHS_RW[Number(p.month) - 1]} ${p.year}${time ? `, ${p.hour === '24' ? '00' : p.hour}:${p.minute}` : ''}`;
+  let t = ''; if (time) { let hh = p.hour === '24' ? 0 : Number(p.hour); const ap = hh >= 12 ? 'PM' : 'AM'; if (clock12()) hh = hh % 12 || 12; t = `, ${String(hh).padStart(2, '0')}:${p.minute}${clock12() ? ' ' + ap : ''}`; }
+  return `${p.day} ${MONTHS_RW[Number(p.month) - 1]} ${p.year}${t}`;
 }
 const isRw = () => typeof curLang !== 'undefined' && curLang === 'rw';
-const when = (d) => (d ? (isRw() ? kigaliParts(d, true) : new Date(d).toLocaleString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })) : '-');
+const when = (d) => (d ? (isRw() ? kigaliParts(d, true) : new Date(d).toLocaleString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: clock12() })) : '-');
+/** Time of day in Kigali, following the 12/24-hour choice (used by the live clocks). */
+const clock = (d = new Date(), secs = true) => new Date(d).toLocaleTimeString(isRw() ? 'en-GB' : LOC(), { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit', ...(secs ? { second: '2-digit' } : {}), hour12: clock12() });
+/** Today's date in Kigali as YYYY-MM-DD (what a date input and its max need). */
+const kigaliToday = () => new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 10);
+const kigaliNowLocal = () => new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 16);
 const dateOnly = (d) => (d ? (isRw() ? kigaliParts(d, false) : new Date(d).toLocaleDateString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric' })) : '-');
 const ago = (d) => { if (!d) return '-'; const s = Math.max(0, Math.round((Date.now() - new Date(d)) / 1000)); return s < 90 ? s + ' s ago' : s < 5400 ? Math.round(s / 60) + ' min ago' : s < 129600 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
 const human = (s) => String(s ?? '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
@@ -147,6 +165,7 @@ function errorPanel(e, retry) {
 
 // ---------------- dialogs ----------------
 let dlgSeq = 0;
+const PICKERS = ['date', 'time', 'datetime-local', 'month'];   // native calendar / clock pickers: the value is always ISO text (2026-10-20, 09:30, 2026-10-20T09:30, 2026-10)
 /** Detail dialog: title, close button, Esc, backdrop click. Returns { el, close }. Only one detail dialog of the same key at a time. */
 function openDialog(title, content, { width = 760, key = null } = {}) {
   if (key) document.querySelectorAll(`dialog[data-key="${key}"]`).forEach((x) => { try { x.close(); } catch { /* ignore */ } x.remove(); });
@@ -161,7 +180,7 @@ function openDialog(title, content, { width = 760, key = null } = {}) {
 }
 
 /** Confirm dialog with optional reason and validated fields.
- *  field: { name, label, type: text|email|number|date|select|textarea, value, options: [str | {value,label}], required, min, max, integer, maxlength, help, pattern, patternMsg }
+ *  field: { name, label, type: text|email|number|date|time|datetime-local|month|select|textarea, value, options: [str | {value,label}], required, min, max, integer, maxlength, help, pattern, patternMsg }
  *  Resolves to an object of values (plus reason) or null when cancelled. */
 function ask(title, { reason = false, confirmText = 'Confirm', danger = false, fields = [], message = null } = {}) {
   return new Promise((res) => {
@@ -173,7 +192,7 @@ function ask(title, { reason = false, confirmText = 'Confirm', danger = false, f
     const f = fields.map((x) => {
       const opts = (x.options || []).map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
       const el = h(x.type === 'select' ? 'select' : x.type === 'textarea' ? 'textarea' : 'input', {
-        placeholder: x.label, 'aria-label': x.label, type: x.type === 'number' ? 'number' : x.type === 'date' ? 'date' : x.type === 'email' ? 'email' : x.type === 'select' || x.type === 'textarea' ? null : 'text',
+        placeholder: x.label, 'aria-label': x.label, type: x.type === 'number' ? 'number' : PICKERS.includes(x.type) ? x.type : x.type === 'email' ? 'email' : x.type === 'select' || x.type === 'textarea' ? null : 'text',
         value: x.type === 'select' || x.type === 'textarea' ? null : x.value ?? null, maxlength: x.maxlength || null, min: x.min ?? null, max: x.max ?? null, step: x.type === 'number' ? (x.integer ? 1 : 'any') : null,
         inputmode: x.type === 'number' && x.integer ? 'numeric' : null, rows: x.type === 'textarea' ? 3 : null, style: 'width:100%',
       }, opts.map((o) => h('option', { value: o.value, selected: String(o.value) === String(x.value ?? '') }, o.label)));
@@ -189,6 +208,7 @@ function ask(title, { reason = false, confirmText = 'Confirm', danger = false, f
       const fail = (name, el, msg) => { errs[name].textContent = msg; el.setAttribute('aria-invalid', 'true'); okAll = false; first ||= el; };
       for (const x of fields) {
         const el = inputs[x.name], raw = String(el.value ?? '').trim();
+        if (PICKERS.includes(x.type) && !raw && el.validity?.badInput) { fail(x.name, el, 'Enter a complete date or time'); continue; }
         if (x.required && !raw) { fail(x.name, el, 'Required'); continue; }
         if (!raw) continue;
         if (x.type === 'number') {
@@ -197,6 +217,9 @@ function ask(title, { reason = false, confirmText = 'Confirm', danger = false, f
           else if (x.integer && !Number.isInteger(n)) fail(x.name, el, 'Enter a whole number');
           else if (x.min != null && n < x.min) fail(x.name, el, 'At least ' + nfmt(x.min));
           else if (x.max != null && n > x.max) fail(x.name, el, 'At most ' + nfmt(x.max));
+        } else if (PICKERS.includes(x.type)) {
+          if (x.min && raw < x.min) fail(x.name, el, 'Choose a later date or time');
+          else if (x.max && raw > x.max) fail(x.name, el, 'Choose an earlier date or time');
         } else if (x.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) fail(x.name, el, 'Enter a valid email address');
         else if (x.pattern && !new RegExp(x.pattern).test(raw)) fail(x.name, el, x.patternMsg || 'Invalid format');
       }
@@ -221,6 +244,35 @@ function ask(title, { reason = false, confirmText = 'Confirm', danger = false, f
   });
 }
 
+// ---------------- dates and periods ----------------
+/** Keeps two date inputs consistent: From can never be after To, neither can be after today (or after the given max). */
+function linkDates(from, to, max = null) {
+  const sync = () => { if (to) { to.min = from.value || ''; if (max) to.max = max; } from.max = (to && to.value) || max || ''; };
+  from.addEventListener('change', sync); to?.addEventListener('change', sync); sync();
+}
+/** Period selector with quick choices plus "Custom range" (From / To calendars, max today, From <= To).
+ *  { value: current quick value, options: [[value, label]], range: {from, to} | null, noTo: true when the server can only report up to now, onQuick(value), onRange(from, to) } */
+function periodControl({ value, options, range = null, noTo = false, onQuick, onRange }) {
+  const today = kigaliToday();
+  const sel = h('select', { 'aria-label': 'Period', onchange: () => { if (sel.value === 'custom') { box.hidden = false; from.focus(); } else { box.hidden = true; onQuick(Number(sel.value)); } } },
+    options.map(([v, l]) => h('option', { value: v, selected: !range && String(v) === String(value) }, l)), h('option', { value: 'custom', selected: !!range }, 'Custom range'));
+  const from = h('input', { type: 'date', 'aria-label': 'From date', max: today, value: range?.from || null }), to = noTo ? null : h('input', { type: 'date', 'aria-label': 'To date', max: today, value: range?.to || null });
+  const err = h('div', { class: 'ferr', role: 'alert' });
+  linkDates(from, to, today);
+  const apply = () => {
+    err.textContent = '';
+    if (!from.value) { err.textContent = 'Choose the From date.'; from.focus(); return; }
+    if (to && !to.value) { err.textContent = 'Choose the To date.'; to.focus(); return; }
+    if (from.value > today || (to && to.value > today)) { err.textContent = 'Dates cannot be in the future.'; return; }
+    if (to && from.value > to.value) { err.textContent = 'The From date must not be after the To date.'; return; }
+    onRange(from.value, to ? to.value : null);
+  };
+  const box = h('span', { class: 'range', hidden: !range }, h('label', {}, 'From ', from), to ? h('label', {}, 'To ', to) : h('span', { class: 'muted' }, 'until now'), h('button', { type: 'button', class: 'b sec', onclick: apply }, 'Apply range'), err);
+  return h('span', { class: 'period' }, sel, box);
+}
+/** Kigali day boundaries for a YYYY-MM-DD string. */
+const dayStart = (ymd) => new Date(ymd + 'T00:00:00+02:00'), dayEnd = (ymd) => new Date(ymd + 'T23:59:59.999+02:00');
+
 // ---------------- CSV (formula-injection safe, Excel-friendly) ----------------
 function csvCell(v) {
   let s = v == null ? '' : String(v);
@@ -240,7 +292,7 @@ function downloadCsv(name, headers, rows) {
  *  table(cols, rows, onRow, emptyText, { csv: 'file-name', search: bool, pageSize: 50, sort: false, caption }) — search appears automatically from 8 rows.
  *  Header is sticky, columns sort on click, the wrapper scrolls inside itself so the page never scrolls sideways. */
 function table(cols, rows, onRow, empty = 'Nothing here yet.', opts = {}) {
-  const pageSize = opts.pageSize || 50;
+  let pageSize = opts.pageSize || pageSizePref();
   const st = { q: '', sort: opts.sortBy ?? null, dir: opts.sortDir ?? 1, page: 0 };
   const sortable = opts.sort !== false;
   const items = rows.map((r) => {
@@ -255,6 +307,7 @@ function table(cols, rows, onRow, empty = 'Nothing here yet.', opts = {}) {
   });
   const sortVal = (it, i) => { const c = cols[i]; const v = c.s ? c.s(it.r) : c.k ? it.r[c.k] : it.tr.children[i].textContent; return v == null ? '' : v; };
   const cmp = (a, b) => (typeof a === 'number' && typeof b === 'number') ? a - b : String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+  const sizeSel = h('select', { 'aria-label': 'Rows per page', onchange: () => { pageSize = Number(sizeSel.value); pref.set('rm_pagesize', String(pageSize)); st.page = 0; draw(); sizeSel.focus(); } }, PAGE_SIZES.map((n) => h('option', { value: n, selected: n === pageSize }, n + ' rows')));
   const tbody = h('tbody'), pager = h('div', { class: 'pager' }), count = h('span', { class: 'muted' });
   const heads = cols.map((c, i) => {
     const th = h('th', { class: c.cls || null, scope: 'col' });
@@ -269,7 +322,7 @@ function table(cols, rows, onRow, empty = 'Nothing here yet.', opts = {}) {
     tbody.replaceChildren(...(slice.length ? slice.map((x) => x.tr) : [h('tr', {}, h('td', { colspan: cols.length, class: 'empty' }, items.length ? 'No rows match your search.' : empty))]));
     heads.forEach((th, i) => { th.setAttribute('aria-sort', st.sort === i ? (st.dir > 0 ? 'ascending' : 'descending') : 'none'); const a = th.querySelector('.arrow'); if (a) a.textContent = st.sort === i ? (st.dir > 0 ? ' ▲' : ' ▼') : ''; });
     count.textContent = items.length ? (list.length === items.length ? `${items.length} row${items.length === 1 ? '' : 's'}` : `${list.length} of ${items.length} rows`) : '';
-    pager.replaceChildren(...(pages > 1 ? [h('button', { class: 'b sec', disabled: st.page === 0, onclick: () => { st.page--; draw(); } }, 'Previous'), h('span', {}, `Page ${st.page + 1} of ${pages}`), h('button', { class: 'b sec', disabled: st.page >= pages - 1, onclick: () => { st.page++; draw(); } }, 'Next')] : []));
+    pager.replaceChildren(...(!opts.pageSize && items.length > PAGE_SIZES[0] ? [sizeSel] : []), ...(pages > 1 ? [h('button', { class: 'b sec', disabled: st.page === 0, onclick: () => { st.page--; draw(); } }, 'Previous'), h('span', {}, `Page ${st.page + 1} of ${pages}`), h('button', { class: 'b sec', disabled: st.page >= pages - 1, onclick: () => { st.page++; draw(); } }, 'Next')] : []));
     current = list;
   }
   let current = items;

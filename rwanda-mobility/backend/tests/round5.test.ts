@@ -252,3 +252,17 @@ test('R5-20 console pulse shows each role only what it may see; the daily digest
   assert.equal(d.status, 200); assert.equal(d.json.date, '2026-10-09'); assert.ok('trips' in d.json && 'money' in d.json && 'suspicious' in d.json);
   assert.equal((await t.api('GET', '/admin/digest', { token: sup.token })).status, 403);
 });
+
+test('R5-21 shortest notice for scheduled trips and the quick hire lengths are settings, and the app reads them from /config', async () => {
+  const admin = await t.staff('super_admin'); const p = await t.register('passenger');
+  const c0 = await t.api('GET', '/config', { token: p.token }); assert.equal(c0.status, 200);
+  assert.equal(c0.json.booking.min_schedule_lead_min, 20); assert.deepEqual(c0.json.abasare.packages, [2, 4, 8, 12]);
+  assert.equal((await t.api('PUT', '/admin/settings/booking.min_schedule_lead_min', { token: admin.token, body: { value: 90 } })).status, 200);
+  assert.equal((await t.api('PUT', '/admin/settings/abasare.quick_hours', { token: admin.token, body: { value: [3, 6, 10] } })).status, 200);
+  try {
+    const c1 = await t.api('GET', '/config', { token: p.token }); assert.equal(c1.json.booking.min_schedule_lead_min, 90); assert.deepEqual(c1.json.abasare.packages, [3, 6, 10]);
+    const soon = new Date(Date.now() + 45 * 60e3).toISOString();
+    const e = await t.api('POST', '/fares/estimate', { token: p.token, body: { pickup: { lat: -1.954, lng: 30.0927 }, dest: { lat: -1.9496, lng: 30.1262 }, service_id: 'moto', scheduled_for: soon } });
+    assert.equal(e.status, 400); assert.equal(e.json.error.code, 'invalid_schedule'); assert.match(e.json.error.message, /90 minutes/);
+  } finally { await t.api('DELETE', '/admin/settings/booking.min_schedule_lead_min', { token: admin.token }); await t.api('DELETE', '/admin/settings/abasare.quick_hours', { token: admin.token }); }
+});

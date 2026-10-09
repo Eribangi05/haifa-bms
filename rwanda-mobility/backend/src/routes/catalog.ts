@@ -23,10 +23,11 @@ export async function catalogRoutes(app: FastifyInstance) {
       { id: 'airtel_money', enabled: await flag('payments.airtel_money') },
     ],
     emergency_numbers: { police: '112', ambulance: '912', traffic_police: '113' },
-    abasare: { enabled: await flag('abasare.enabled'), packages: [2, 4, 8, 12], min_hours: 2, max_hours: 12, night: { start: 22, end: 5 }, min_photos: await getSetting('abasare.min_photos'), classes: ['car', 'suv', 'minivan', 'pickup', 'moto'], transmissions: ['manual', 'automatic'] },
+    abasare: { enabled: await flag('abasare.enabled'), packages: await getSetting('abasare.quick_hours'), min_hours: 2, max_hours: 12, night: { start: 22, end: 5 }, min_photos: await getSetting('abasare.min_photos'), classes: ['car', 'suv', 'minivan', 'pickup', 'moto'], transmissions: ['manual', 'automatic'] },
     rating_tags: tagCatalogue(),
     tips: { enabled: await getSetting('tips.enabled'), min_amount: await getSetting('tips.min_amount'), max_amount: await getSetting('tips.max_amount'), methods: ['cash_tip', 'mtn_momo'], commission: 0 },
     safety: { checks_enabled: await getSetting('safety.checks_enabled'), response_wait_min: await getSetting('safety.response_wait_min') },
+    booking: { min_schedule_lead_min: await getSetting('booking.min_schedule_lead_min'), max_scheduled_days: await getSetting('booking.max_scheduled_days') },
     features: { scheduled: await flag('booking.scheduled'), corporate: await flag('corporate.enabled'), promotions: await flag('promotions.enabled') },
   }));
 

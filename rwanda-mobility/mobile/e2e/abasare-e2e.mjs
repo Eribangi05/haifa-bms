@@ -1,6 +1,7 @@
 // Abasare end-to-end through the real screens (react-native-web): a driver applies and gets approved, an owner adds a car and books,
 // the driver checks the car in and out with photos, the owner confirms, PIN start, completion and cash. See app-e2e.mjs for prerequisites.
 // Usage: node e2e/abasare-e2e.mjs <screenshot-dir> <small.jpg>
+import { pickDate, pickTime } from './pickers.mjs';
 import { chromium } from 'playwright-core';
 import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
@@ -31,7 +32,7 @@ await step('driver signs up and opens the Abasare application', async () => {
 await step('choose Abasare, fill skills, save', async () => {
   await D.page.getByTestId('choose-abasare').click();
   await D.page.getByLabel('Full legal name').fill('Eric Umusare'); await D.page.getByLabel('National ID number').fill('1198580012345678');
-  await D.page.getByLabel('Driving licence issue date (YYYY-MM-DD)').fill('2016-04-12'); await D.page.getByLabel('Years of driving experience').fill('9');
+  await pickDate(D.page, 'licence-since', '2016-04-12'); await D.page.getByLabel('Years of driving experience').fill('9');
   await D.page.getByText('Automatic', { exact: true }).click(); await D.page.getByText('SUV', { exact: true }).click();
   await shot(D, '2-abasare-form'); await D.page.getByText('Save Abasare details', { exact: true }).click();
   await D.page.getByText('Police clearance certificate').waitFor({ timeout: 20000 }); await shot(D, '3-docs');
@@ -40,7 +41,7 @@ await step('upload the four required documents (no vehicle documents asked)', as
   const labels = ['National ID', 'Driving licence', 'Profile photo', 'Police clearance certificate'];
   for (const l of labels) {
     await D.page.getByText(l + ' *', { exact: true }).locator('xpath=ancestor::div[.//div[text()="Upload"]][1]').getByText('Upload', { exact: true }).click();
-    if (l !== 'Profile photo') await D.page.getByLabel('Expiry date (YYYY-MM-DD)').fill('2030-12-31');
+    if (l !== 'Profile photo') await pickDate(D.page, 'doc-expiry', '2030-12-31');
     await chooseFile(D.page, 'Choose from gallery');
   }
   if ((await D.page.getByText('Vehicle registration').count()) > 0) throw new Error('vehicle documents should not be required');

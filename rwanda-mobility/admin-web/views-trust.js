@@ -26,12 +26,15 @@ function hourChart(rows) {
 
 // =============================================================== OPERATIONS DASHBOARD
 V.opsdash = async (el, state = {}) => {
-  const hours = Number(state.hours) || 24;
+  // The server reports "the last N hours up to now" (1 to 744), so a custom range starts at the chosen From day and runs until now.
+  const custom = state.from ? { from: state.from } : null;
+  const wanted = custom ? Math.max(1, Math.ceil((Date.now() - dayStart(custom.from)) / 3600e3)) : Number(state.hours) || 24, hours = Math.min(744, wanted);
   const d = await api('GET', '/admin/dashboard/ops?hours=' + hours);
-  const range = h('select', { 'aria-label': 'Period', onchange: () => go('opsdash', { hours: Number(range.value) }) }, [[6, 'Last 6 hours'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days'], [720, 'Last 30 days']].map(([v, l]) => h('option', { value: v, selected: v === hours }, l)));
+  const range = periodControl({ value: hours, options: [[6, 'Last 6 hours'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days'], [720, 'Last 30 days']], range: custom, noTo: true, onQuick: (v) => go('opsdash', { hours: v }), onRange: (f) => go('opsdash', { from: f }) });
   const t = d.trips, p = d.payments, f = d.time_to_first_driver;
   el.append(h('h1', {}, 'Operations dashboard'),
     h('div', { class: 'row spread' }, h('div', { class: 'muted' }, 'Kigali time. Refreshed ' + when(d.generated_at) + '.'), h('span', { class: 'row' }, range, h('button', { class: 'b sec', onclick: () => go('opsdash') }, 'Refresh'))),
+    custom && wanted > hours ? note('The server reports at most the last 31 days, so the start was moved forward.') : null,
     h('h2', {}, 'Right now'),
     h('div', { class: 'grid' }, kpi('Drivers online', nfmt(d.live.online_drivers), { hint: 'seen in the last 2 minutes' }), kpi('Searching for a driver', nfmt(d.live.searching), { tone: d.live.searching > d.live.online_drivers ? 'warn' : '' }), kpi('Trips in progress', nfmt(d.live.active_trips))),
     h('h2', {}, 'Trips'),

@@ -5,6 +5,7 @@ import { fmtDateTime } from '../../lib/format';
 import { expiryLeft, type ShareRow } from '../../lib/trustApi';
 import { shareText } from '../../lib/shareText';
 import { AppModal } from '../../ui/AppModal';
+import { NumberStepper } from '../../ui/Pickers';
 import { Banner, Btn, Card, Pill, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
 import { showAlert } from '../../ui/dialog';
 import { Choice, SwitchRow } from '../../ui/trustParts';
@@ -50,6 +51,7 @@ export function R1ShareSheet({ id, visible, onClose }: { id: string; visible: bo
         <Card>
           <Text style={S.bold}>{t('r1.sh.ttl')}</Text>
           <Choice value={ttl} onPick={setTtl} options={TTLS.map((m) => ({ v: m, text: t('r1.sh.ttl.h', { n: m / 60 }) }))} />
+          <NumberStepper testID="share-ttl" label={t('pk.share.custom')} value={ttl} onChange={setTtl} min={10} max={1440} step={10} unit={t('pk.min')} />
           <SwitchRow testID="share-hide" label={t('r1.sh.hide')} hint={t('r1.sh.hide.hint')} value={hide} onChange={setHide} />
         </Card>
         <SectionTitle text={t('r1.sh.active')} />

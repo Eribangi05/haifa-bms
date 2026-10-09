@@ -172,7 +172,7 @@ function priceEditor(el, d, startRule) {
 
   const billingSel = h('select', { 'aria-label': 'Billing' }, h('option', { value: 'distance' }, 'By distance and time'), h('option', { value: 'hourly' }, 'By the hour'));
   const modelSel = h('select', { 'aria-label': 'Pricing model' }, h('option', { value: 'platform' }, 'Platform fare (calculated)'), h('option', { value: 'fixed' }, 'Fixed fare'));
-  effectiveEl = h('input', { type: 'datetime-local', 'aria-label': 'Effective from' });
+  effectiveEl = h('input', { type: 'datetime-local', min: new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), 'aria-label': 'Effective from' });
 
   // ---- field rendering
   const fieldRows = {};
@@ -432,6 +432,7 @@ V.promos = async (el) => {
     svc: h('select', { 'aria-label': 'Service', multiple: true, size: 4 }, sv.services.filter((s) => s.kind === 'ride').map((s) => h('option', { value: s.id }, s.name_en))),
   };
   const err = h('div', { class: 'err' });
+  linkDates(f.from, f.to);
   const syncKind = () => { const pct = f.kind.value === 'percent'; f.value.el.querySelector('.unit').textContent = pct ? '%' : 'RWF'; };
   f.kind.addEventListener('change', syncKind);
   f.seg.addEventListener('change', () => { f.phones.style.display = f.seg.value === 'phones' ? '' : 'none'; });

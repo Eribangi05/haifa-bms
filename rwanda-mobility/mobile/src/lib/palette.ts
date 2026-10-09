@@ -39,3 +39,6 @@ export const LARGE_TEXT_FACTOR = 1.25;
 export const MAX_FONT_MULT = 1.4;
 /** Font scale cap passed to Text: with the large-text factor applied by us, the OS scale may only add up to the overall 1.4 cap. */
 export const fontCap = (large: boolean) => (large ? MAX_FONT_MULT / LARGE_TEXT_FACTOR : MAX_FONT_MULT);
+
+/** Generalised for the four text sizes: with our own scale applied, the OS font scale may only add up to the overall cap. */
+export const fontCapFor = (scale: number) => Math.max(1, MAX_FONT_MULT / Math.max(1, scale));

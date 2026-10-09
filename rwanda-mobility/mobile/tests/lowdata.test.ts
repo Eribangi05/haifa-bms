@@ -43,6 +43,7 @@ test('theme resolution and font cap', () => {
 
 test('stored appearance prefs parse defensively', () => {
   assert.deepEqual(parsePrefs(null), DEFAULT_PREFS); assert.deepEqual(parsePrefs('{bad'), DEFAULT_PREFS);
-  assert.deepEqual(parsePrefs('{"theme":"dark","largeText":true,"lowData":true,"lockEnabled":true,"lockMinutes":5}'), { theme: 'dark', largeText: true, lowData: true, lockEnabled: true, lockMinutes: 5, offerSound: true, chatSound: true, voiceNav: true });
-  assert.equal(parsePrefs('{"theme":"neon","lockMinutes":7}').theme, 'system'); assert.equal(parsePrefs('{"lockMinutes":7}').lockMinutes, 1);
+  assert.deepEqual(parsePrefs('{"theme":"dark","largeText":true,"lowData":true,"lockEnabled":true,"lockMinutes":5}'), { ...DEFAULT_PREFS, theme: 'dark', largeText: true, textScale: 1.25, lowData: true, lockEnabled: true, lockMinutes: 5 });   // an older install that only had large text on/off becomes the 'large' size
+  assert.equal(parsePrefs('{"theme":"neon","lockMinutes":7}').theme, 'system'); assert.equal(parsePrefs('{"lockMinutes":7}').lockMinutes, 7, 'any whole number of minutes up to 120 is allowed'); assert.equal(parsePrefs('{"lockMinutes":500}').lockMinutes, 1);
+  assert.equal(parsePrefs('{"textScale":1.5,"timeFormat":"12h","weekStart":0,"soundVolume":0.5,"vibrate":false}').timeFormat, '12h'); assert.equal(parsePrefs('{"textScale":3}').textScale, 1);
 });

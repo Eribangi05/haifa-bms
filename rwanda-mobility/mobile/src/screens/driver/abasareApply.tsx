@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { isIsoDate } from '../../lib/format';
+import { DateField } from '../../ui/Pickers';
+import { addDays, todayKigali } from '../../lib/calendar';
 import type { DriverStatus } from '../../lib/types';
 import { Btn, Card, Chip, Field, Screen, Text, useFormFocus } from '../../ui/components';
 import { Illustration } from '../../ui/dash';
@@ -30,7 +32,7 @@ export function AbasareApply() {
         <Field {...f(0)} label={t('drv.legalname')} value={legal} onChangeText={setLegal} autoComplete="name" />
         <Field {...f(1)} label={t('drv.nid')} value={nid} onChangeText={(x) => setNid(x.replace(/[^\d\s]/g, ''))} keyboardType="number-pad" maxLength={24} error={nid.length > 0 && !nidOk ? t('drv.nid.bad') : undefined} />
         <Field {...f(2)} label={t('drv.payout')} value={payout} onChangeText={setPayout} keyboardType="phone-pad" maxLength={16} />
-        <Field {...f(3)} label={t('ab.apply.licence')} value={since} onChangeText={setSince} placeholder="2018-03-15" maxLength={10} keyboardType="numbers-and-punctuation" error={since.length === 10 && !dateOk ? t('drv.date.bad') : undefined} />
+        <DateField testID="licence-since" label={t('ab.apply.licence')} value={since} onChange={setSince} max={todayKigali()} startAt={addDays(todayKigali(), -365 * 5)} error={since.length === 10 && !dateOk ? t('drv.date.bad') : undefined} />
         <Field {...f(4)} label={t('ab.apply.exp')} value={years} onChangeText={(x) => setYears(x.replace(/\D/g, ''))} keyboardType="number-pad" maxLength={2} />
         <Text style={S.muted}>{t('ab.apply.trans')}</Text><View style={[S.wrap, { marginVertical: 6 }]}>{(['manual', 'automatic'] as const).map((x) => <Chip key={x} text={x === 'manual' ? t('ab.car.manual') : t('ab.car.auto')} on={trans.includes(x)} onPress={() => tog(setTrans)(x)} />)}</View>
         <Text style={S.muted}>{t('ab.apply.classes')}</Text><View style={[S.wrap, { marginVertical: 6 }]}>{ALL_CLASSES.map((x) => <Chip key={x} text={t(`ab.cls.${x}` as 'ab.cls.car')} on={classes.includes(x)} onPress={() => tog(setClasses)(x)} />)}</View>

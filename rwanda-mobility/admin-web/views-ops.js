@@ -34,12 +34,14 @@ const pctDelta = (cur, prev) => (prev ? Math.round(((cur - prev) / prev) * 100) 
 const secs = (n) => (n > 0 ? (n >= 120 ? Math.round(n / 60) + ' min' : n + ' s') : '-');
 
 V.dashboard = async (el, state = {}) => {
-  const days = Number(state.days) || 30;
-  const to = new Date(), from = new Date(to - days * 864e5), pfrom = new Date(from - days * 864e5);
+  const custom = state.from && state.to ? { from: state.from, to: state.to } : null, days = Number(state.days) || 30;
+  let to = new Date(), from = new Date(to - days * 864e5);
+  if (custom) { from = dayStart(custom.from); to = dayEnd(custom.to); if (to > Date.now()) to = new Date(); }   // a range that ends today stops at this moment
+  const pfrom = new Date(from - (to - from));
   const [d, prev, an] = await Promise.all([api('GET', '/admin/dashboard' + qs(from, to)), api('GET', '/admin/dashboard' + qs(pfrom, new Date(from - 1))), api('GET', '/admin/analytics').catch(() => null), catalog()]);
   const b = d.bookings, p = d.payments, r = d.revenue, pb = prev.bookings, pr = prev.revenue;
   const slots = {}; const spark = (key) => (slots[key] = h('span', { class: 'slot' }, sparkline(null)));
-  const range = h('select', { 'aria-label': 'Period', onchange: () => go('dashboard', { days: Number(range.value) }) }, [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']].map(([v, l]) => h('option', { value: v, selected: v === days }, l)));
+  const range = periodControl({ value: days, options: [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']], range: custom, onQuick: (v) => go('dashboard', { days: v }), onRange: (f, t) => go('dashboard', { from: f, to: t }) });
   const attention = [
     ['Drivers waiting for verification', d.drivers.pending, 'drivers', d.drivers.pending > 10 ? 'bad' : d.drivers.pending > 0 ? 'warn' : '', can('drivers.view')],
     ['Refunds awaiting approval', d.refunds.pending_refunds, 'finance', d.refunds.pending_refunds > 0 ? 'warn' : '', can('finance.view')],
@@ -121,10 +123,10 @@ V.live = async (el) => {
       if (token !== S.nav) { m?.remove(); return; }                         // user left the tab: stop polling
       if (!document.hidden) {
         try { const data = await api('GET', '/admin/live'); if (token !== S.nav) { m?.remove(); return; }
-          info.replaceChildren(h('span', {}, h('b', {}, data.drivers.length), ' drivers online · ', h('b', {}, data.bookings.length), ' active bookings'), h('span', { class: 'muted' }, 'Updated ' + new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali' }) + ' · refreshes every 5 s')); draw(data); }
+          info.replaceChildren(h('span', {}, h('b', {}, data.drivers.length), ' drivers online · ', h('b', {}, data.bookings.length), ' active bookings'), h('span', { class: 'muted' }, 'Updated ' + clock() + ' · refreshes every ' + liveSecs() + ' s')); draw(data); }
         catch (e) { if (token === S.nav) info.replaceChildren(h('span', { class: 'err' }, e.message + ' Retrying…')); }
       }
-      timer = setTimeout(tick, 5000);
+      timer = setTimeout(tick, liveSecs() * 1000);
     };
     tick();
   };

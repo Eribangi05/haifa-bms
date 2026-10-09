@@ -7,7 +7,8 @@ import { kv } from './storage';
 import { applyPalette } from '../ui/theme';
 import { resolveTheme } from './palette';
 import { DEFAULT_PREFS, parsePrefs, type Prefs } from './prefs';
-export { LOCK_CHOICES, DEFAULT_PREFS, parsePrefs, type Prefs } from './prefs';
+import { setTimeFormat } from './format';
+export { LOCK_CHOICES, TEXT_SCALES, VOLUMES, DEFAULT_PREFS, parsePrefs, type Prefs } from './prefs';
 
 const KEY = 'rm_appearance';
 
@@ -16,6 +17,7 @@ const subs = new Set<() => void>();
 const system = () => { try { return RNAppearance.getColorScheme(); } catch { return 'light'; } };
 let snapshot = { ...prefs, resolved: 'light' as 'light' | 'dark', version, loaded };
 function commit() {
+  setTimeFormat(prefs.timeFormat);
   const resolved = resolveTheme(prefs.theme, system());
   applyPalette(resolved); version++;
   snapshot = { ...prefs, resolved, version, loaded }; subs.forEach((f) => f());
@@ -29,6 +31,6 @@ export const appearance = {
   isLowData: () => prefs.lowData,
   subscribe: (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; },
   async load() { try { prefs = parsePrefs(await kv.get(KEY)); } catch { /* keep defaults */ } loaded = true; commit(); },
-  async set(patch: Partial<Prefs>) { prefs = { ...prefs, ...patch }; commit(); try { await kv.set(KEY, JSON.stringify(prefs)); } catch { /* not persisted */ } },
+  async set(patch: Partial<Prefs>) { prefs = { ...prefs, ...patch, ...(patch.textScale !== undefined ? { largeText: patch.textScale > 1 } : patch.largeText !== undefined ? { textScale: patch.largeText ? 1.25 : 1 } : {}) }; commit(); try { await kv.set(KEY, JSON.stringify(prefs)); } catch { /* not persisted */ } },
 };
 export const useAppearance = () => useSyncExternalStore(appearance.subscribe, appearance.get, appearance.get);
