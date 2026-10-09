@@ -136,3 +136,15 @@ test('QR endpoints return SVG and a 1024px PNG for the landing URL; need permiss
   assert.equal((await t.api('GET', `/admin/request-codes/${c.id}/qr.png`, { token: disp.token })).status, 403);
   assert.equal((await t.api('GET', '/admin/request-codes/00000000-0000-4000-8000-000000000000/qr.svg', { token: admin.token })).status, 404);
 });
+
+test('Branded QR is a vector SVG with the Abasare mark, three blue finder corners and level-H data; plain variant has no logo', async () => {
+  const admin = await t.staff('super_admin'), disp = await t.staff('dispatcher');
+  const c = await mk(admin);
+  const r = await t.api('GET', `/admin/request-codes/${c.id}/qr-branded.svg`, { token: admin.token });
+  assert.equal(r.status, 200); assert.match(r.headers['content-type'] as string, /image\/svg\+xml/);
+  assert.match(r.raw, /^<svg/); assert.match(r.raw, /<image href="data:image\/png;base64,/); assert.equal((r.raw.match(/fill-rule="evenodd"/g) ?? []).length, 3);
+  assert.ok(r.raw.length < 120_000, 'small enough to email and print');
+  const plain = await t.api('GET', `/admin/request-codes/${c.id}/qr-branded.svg?plain=1`, { token: admin.token });
+  assert.ok(!/<image /.test(plain.raw));
+  assert.equal((await t.api('GET', `/admin/request-codes/${c.id}/qr-branded.svg`, { token: disp.token })).status, 403);
+});

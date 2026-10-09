@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import QRCode from 'qrcode';
+import { brandedQrSvg } from '../services/qrStyle.js';
 import { parse } from '../util/validate.js';
 import { requirePerm, routeLimit, actorOf } from '../guards.js';
 import { q, q1 } from '../db.js';
@@ -88,6 +89,13 @@ export async function requestCodeRoutes(app: FastifyInstance) {
     const row = await qrRow(req);
     const svg = await QRCode.toString(R.landingUrl(row.code), { type: 'svg', margin: 2, errorCorrectionLevel: 'M' });
     return reply.header('content-type', 'image/svg+xml').header('content-disposition', `inline; filename="abasare-${row.code}.svg"`).send(svg);
+  });
+  // Branded, print-ready vector QR (rounded dots, Rwanda-blue corners, Abasare mark in the middle). ?plain=1 leaves the mark out.
+  app.get('/admin/request-codes/:id/qr-branded.svg', { preHandler: requirePerm('codes.view') }, async (req, reply) => {
+    const row = await qrRow(req);
+    const plain = (req.query as any)?.plain === '1';
+    const svg = await brandedQrSvg(R.landingUrl(row.code), { logo: !plain });
+    return reply.header('content-type', 'image/svg+xml').header('content-disposition', `inline; filename="abasare-${row.code}-branded.svg"`).send(svg);
   });
   app.get('/admin/request-codes/:id/qr.png', { preHandler: requirePerm('codes.view') }, async (req, reply) => {
     const row = await qrRow(req);

@@ -14,24 +14,57 @@ async function fetchBlob(path) {
   return r.blob();
 }
 const blobToDataUrl = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
-async function downloadQr(c) { downloadBlob(await fetchBlob(`/admin/request-codes/${c.id}/qr.png`), `abasare-${c.code}.png`); }
-// The printed poster is for the public at the venue, so it deliberately shows all three languages together.
-async function printPoster(c) {
-  const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups to print the poster', true); return; }
-  const qr = await blobToDataUrl(await fetchBlob(`/admin/request-codes/${c.id}/qr.png`));
-  const logo = await fetch('logo.png').then((r) => r.blob()).then(blobToDataUrl).catch(() => '');
-  const d = w.document; d.title = 'Abasare ' + c.code;
-  const st = d.createElement('style');
-  st.textContent = '@page{size:A5;margin:0}*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;color:#14281d;text-align:center}.p{width:148mm;height:210mm;padding:10mm;border-top:8mm solid #00A1DE;border-bottom:8mm solid #20603D;display:flex;flex-direction:column;align-items:center;justify-content:space-between}.logo{height:22mm}h1{font-size:26pt;margin:0}.qr{width:100mm;height:100mm}.l{font-size:15pt;font-weight:700;margin:1mm 0}.s{font-size:10pt;color:#456}.bar{height:3mm;width:60mm;background:#FAD201;border-radius:2mm}';
-  d.head.append(st);
-  const el = (tag, cls, txt) => { const e = d.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-  const box = el('div', 'p'); const top = el('div'); if (logo) { const i = el('img', 'logo'); i.src = logo; top.append(i); }
-  top.append(el('h1', '', c.label)); if (c.partner_name) top.append(el('div', 's', c.partner_name));
-  const q = el('img', 'qr'); q.src = qr;
-  const txt = el('div'); txt.append(el('div', 'l', 'Sikana usabe umushoferi'), el('div', 'l', 'Scannez pour demander un chauffeur'), el('div', 'l', 'Scan to request a driver'), el('div', 'bar'), el('div', 's', c.code));
-  box.append(top, q, txt); d.body.append(box);
-  setTimeout(() => { w.focus(); w.print(); }, 400);
+// Branded QR (vector): rounded dots, Rwanda-blue corners, Abasare mark in the middle. PNG is drawn from the SVG in the browser so printers get a sharp 2048 px file.
+const brandedSvg = async (c) => (await fetchBlob(`/admin/request-codes/${c.id}/qr-branded.svg`)).text();
+async function downloadQr(c) {
+  const svg = await brandedSvg(c);
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const cv = document.createElement('canvas'); cv.width = cv.height = 2048; const g = cv.getContext('2d'); g.drawImage(img, 0, 0, 2048, 2048);
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/png')); downloadBlob(blob, `abasare-${c.code}.png`);
+  } finally { URL.revokeObjectURL(url); }
 }
+async function downloadQrSvg(c) { downloadBlob(new Blob([await brandedSvg(c)], { type: 'image/svg+xml' }), `abasare-${c.code}.svg`); }
+const escHtml = (t) => String(t ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+// The printed poster is for the public at the venue, so it deliberately shows all three languages together (each line is one language).
+// kind: 'a5' | 'a4' (poster, vector QR) | 'sticker' (square, QR only with a call to action).
+async function printPoster(c, kind = 'a5') {
+  const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups to print the poster', true); return; }
+  const qr = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(await brandedSvg(c));
+  const logo = await fetch('logo.png').then((r) => r.blob()).then(blobToDataUrl).catch(() => '');
+  const sticker = kind === 'sticker', a4 = kind === 'a4';
+  const W = sticker ? 100 : a4 ? 210 : 148, H = sticker ? 108 : a4 ? 297 : 210, k = W / 148;      // everything scales from the A5 design
+  const css = `@page{size:${W}mm ${H}mm;margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;color:#0F3554}
+.p{width:${W}mm;height:${H}mm;position:relative;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.flag{display:flex;flex-direction:column}.flag i{display:block;width:100%}.f1{background:#00A1DE;height:${7 * k}mm}.f2{background:#FAD201;height:${2.4 * k}mm}.f3{background:#20603D;height:${3.6 * k}mm}
+.head{display:flex;align-items:center;justify-content:center;gap:${4 * k}mm;padding:${4 * k}mm ${8 * k}mm ${1 * k}mm}.head img{height:${16 * k}mm;width:${16 * k}mm;border-radius:${3.5 * k}mm}
+.brand b{display:block;font-size:${27 * k}pt;letter-spacing:.5mm;color:#0069A8;line-height:1}.brand span{font-size:${9.5 * k}pt;letter-spacing:.6mm;color:#20603D;font-weight:700}
+.venue{text-align:center;font-size:${12 * k}pt;font-weight:700;margin:${1 * k}mm ${8 * k}mm 0}.partner{text-align:center;font-size:${9 * k}pt;color:#55708a}
+h1{text-align:center;margin:${2 * k}mm ${6 * k}mm 0;font-size:${23 * k}pt;line-height:1.1;color:#0F3554}.sub{text-align:center;font-size:${11 * k}pt;line-height:1.35;color:#2c4a63}.sub b{color:#0069A8}
+.cardwrap{display:flex;justify-content:center;margin:${4.5 * k}mm 0 ${3 * k}mm}
+.card{position:relative;width:${80 * k}mm;height:${80 * k}mm;background:#fff;border-radius:${6 * k}mm;border:${1.1 * k}mm solid #0069A8;padding:${3 * k}mm}
+.card img.q{width:100%;height:100%;display:block}
+.c{position:absolute;width:${11 * k}mm;height:${11 * k}mm;border:${1.6 * k}mm solid #FAD201}.c1{left:-${2.4 * k}mm;top:-${2.4 * k}mm;border-right:0;border-bottom:0;border-top-left-radius:${7 * k}mm}.c2{right:-${2.4 * k}mm;top:-${2.4 * k}mm;border-left:0;border-bottom:0;border-top-right-radius:${7 * k}mm}
+.c3{left:-${2.4 * k}mm;bottom:-${2.4 * k}mm;border-right:0;border-top:0;border-bottom-left-radius:${7 * k}mm}.c4{right:-${2.4 * k}mm;bottom:-${2.4 * k}mm;border-left:0;border-top:0;border-bottom-right-radius:${7 * k}mm}
+.pill{display:flex;justify-content:center}.pill span{background:#0069A8;color:#fff;border-radius:${8 * k}mm;padding:${1.3 * k}mm ${6 * k}mm;font-weight:800;font-size:${11.5 * k}pt;letter-spacing:.4mm}
+.steps{display:flex;justify-content:center;gap:${5 * k}mm;margin:${3.5 * k}mm ${6 * k}mm 0}.st{width:${38 * k}mm;text-align:center;font-size:${8 * k}pt;line-height:1.25}.st i{display:flex;align-items:center;justify-content:center;width:${7 * k}mm;height:${7 * k}mm;margin:0 auto ${1 * k}mm;border-radius:50%;background:#FAD201;color:#0F3554;font-style:normal;font-weight:800;font-size:${11 * k}pt}
+.foot{margin-top:auto;background:#20603D;color:#fff;text-align:center;padding:${2.6 * k}mm ${6 * k}mm;font-size:${8.5 * k}pt;line-height:1.3}.foot b{font-size:${11.5 * k}pt}.code{display:inline-block;margin-top:${.8 * k}mm;font-family:Consolas,monospace;letter-spacing:.5mm;font-size:${8 * k}pt;opacity:.85}
+.tag{text-align:center;font-size:${8.5 * k}pt;letter-spacing:.5mm;color:#0069A8;font-weight:700;margin-top:${2 * k}mm}
+.sk .card{width:${72 * k}mm;height:${72 * k}mm}.sk h1{font-size:${20 * k}pt;margin-top:${2 * k}mm}.sk .cardwrap{margin-top:${3 * k}mm}`;
+  const steps = [['1', 'Sikana', 'Scannez', 'Scan'], ['2', 'Hitamo urugendo', 'Choisissez', 'Choose your ride'], ['3', 'Genda', 'Partez', 'Go']];
+  const stepsHtml = steps.map(([n, rw, fr, en]) => `<div class="st"><i>${n}</i><b>${rw}</b><br>${fr}<br>${en}</div>`).join('');
+  const brand = `<div class="head">${logo ? `<img src="${logo}" alt="">` : ''}<div class="brand"><b>ABASARE</b><span>GENDA · KORA · SURA</span></div></div>`;
+  const venue = `<div class="venue">${escHtml(c.label)}</div>${c.partner_name ? `<div class="partner">${escHtml(c.partner_name)}</div>` : ''}`;
+  const card = `<div class="cardwrap"><div class="card"><span class="c c1"></span><span class="c c2"></span><span class="c c3"></span><span class="c c4"></span><img class="q" src="${qr}" alt="QR"></div></div><div class="pill"><span>SIKANA · SCANNEZ · SCAN</span></div>`;
+  const body = sticker
+    ? `<div class="flag"><i class="f1"></i><i class="f2"></i><i class="f3"></i></div>${brand}<h1>Sikana usabe umushoferi</h1><div class="sub">Scannez pour un chauffeur · Scan for a driver</div>${card}<div class="foot"><b>${escHtml(SUPPORT_PHONE)}</b><br><span class="code">${escHtml(c.code)}</span></div>`
+    : `<div class="flag"><i class="f1"></i><i class="f2"></i><i class="f3"></i></div>${brand}${venue}<h1>Sikana usabe umushoferi</h1><div class="sub">Scannez pour demander un chauffeur<br><b>Scan to request a driver</b></div>${card}<div class="steps">${stepsHtml}</div><div class="foot"><b>${escHtml(SUPPORT_PHONE)}</b><br>Umutekano · Sécurité · Safety<br><span class="code">${escHtml(c.code)}</span></div>`;
+  const d = w.document; d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Abasare ${escHtml(c.code)}</title><style>${css}</style></head><body><div class="p${sticker ? ' sk' : ''}">${body}</div></body></html>`); d.close();
+  const imgs = [...d.images]; await Promise.all(imgs.map((i) => (i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))));
+  setTimeout(() => { w.focus(); w.print(); }, 300);
+}
+const SUPPORT_PHONE = '+250 786 880 880';
 V.codes = async (el) => {
   const d = await api('GET', '/admin/request-codes'), manage = can('codes.manage');
   const f = { label: h('input', { placeholder: 'Venue name (e.g. Hotel Serena)', maxlength: 120, 'aria-label': 'Venue name' }), partner: h('input', { placeholder: 'Partner name (optional)', maxlength: 120, 'aria-label': 'Partner name' }),
@@ -54,7 +87,7 @@ V.codes = async (el) => {
     table([{ h: 'Code', f: (c) => h('code', {}, c.code), s: (c) => c.code, csv: (c) => c.code }, { h: 'Venue', f: (c) => c.label + (c.partner_name ? ' (' + c.partner_name + ')' : ''), s: (c) => c.label }, { h: 'Default', f: (c) => human(c.default_service), s: (c) => c.default_service },
       { h: 'Scans', k: 'scans', cls: 'num' }, { h: 'Bookings', k: 'bookings', cls: 'num' }, { h: 'Completed', k: 'completed', cls: 'num' }, { h: 'Expires', f: (c) => (c.expires_at ? when(c.expires_at) : '-'), s: (c) => (c.expires_at ? Date.parse(c.expires_at) : Infinity) },
       { h: 'Status', f: (c) => (c.active && !c.expired ? pill('active', 'ok') : pill(c.expired ? 'expired' : 'inactive', 'bad')), s: (c) => (c.active && !c.expired ? 0 : 1), csv: (c) => (c.active && !c.expired ? 'active' : c.expired ? 'expired' : 'inactive') },
-      { h: '', f: (c) => h('span', { class: 'row' }, h('button', { class: 'b sec', onclick: () => act(() => downloadQr(c)) }, 'Download QR'), h('button', { class: 'b sec', onclick: () => act(() => printPoster(c)) }, 'Print poster'),
+      { h: '', f: (c) => h('span', { class: 'row' }, h('button', { class: 'b sec', onclick: () => act(() => downloadQr(c)) }, 'QR (PNG)'), h('button', { class: 'b sec', onclick: () => act(() => downloadQrSvg(c)) }, 'QR (SVG)'), h('button', { class: 'b sec', onclick: () => act(() => printPoster(c, 'a5')) }, 'Poster A5'), h('button', { class: 'b sec', onclick: () => act(() => printPoster(c, 'a4')) }, 'Poster A4'), h('button', { class: 'b sec', onclick: () => act(() => printPoster(c, 'sticker')) }, 'Sticker'),
         manage && h('button', { class: 'b sec', onclick: () => act(() => api('PATCH', '/admin/request-codes/' + c.id, { active: !c.active }), () => go('codes')) }, c.active ? 'Deactivate' : 'Activate')) }], d.codes, null, 'No request codes yet.', { csv: 'request-codes' }),
     manage && form);
 };

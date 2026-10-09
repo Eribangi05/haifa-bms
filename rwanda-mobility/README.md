@@ -67,6 +67,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 | [`docs/SECURITY_AND_PRIVACY.md`](docs/SECURITY_AND_PRIVACY.md) | Controls, data handling, known limitations. |
 | [`docs/MAP_PROVIDER_EVALUATION.md`](docs/MAP_PROVIDER_EVALUATION.md) | Choice of routing and map provider. |
 | [`docs/IMPROVEMENT_BACKLOG.md`](docs/IMPROVEMENT_BACKLOG.md) | What was reviewed, what is done, what needs the owner. |
+| [`docs/QR_PRINT.md`](docs/QR_PRINT.md) | Branded QR codes, posters and stickers for request codes. |
 | [`docs/MAP.md`](docs/MAP.md) | The Rwanda base map: data, how it is served, refresh, limits. |
 | [`docs/PERFORMANCE_NOTES.md`](docs/PERFORMANCE_NOTES.md) | Load test results and limits. |
 
