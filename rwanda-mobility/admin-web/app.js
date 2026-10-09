@@ -70,19 +70,40 @@ async function loadView() {
   if (S.focusView) { S.focusView = false; const t = view.querySelector('h1'); if (t) { t.tabIndex = -1; t.focus({ preventScroll: true }); } }
 }
 
+
+// Menu icons: small line drawings (24x24, drawn here, no external font). Unknown tabs get a dot.
+const IC = {
+  home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10', map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14', list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  car: 'M5 16V11l2-5h10l2 5v5M3 16h18M7 19v-3M17 19v-3M7 12h10', check: 'M5 12l5 5L20 7', bell: 'M6 16V11a6 6 0 0112 0v5l2 2H4zM10 20h4', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+  chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2', phone: 'M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2', users: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.5 2.5-6 6-6s6 2.5 6 6M17 11a2.5 2.5 0 100-5M21 19c0-2.5-1.5-4.5-4-5',
+  chat: 'M4 5h16v11H9l-5 4z', lock: 'M6 11h12v9H6zM8 11V8a4 4 0 018 0v3', coin: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v10M9.5 9.5c0-1 1-1.7 2.5-1.7s2.5.7 2.5 1.7-1 1.5-2.5 1.8S9.5 13 9.5 14s1 1.7 2.5 1.7 2.5-.7 2.5-1.7',
+  tag: 'M3 12V4h8l10 10-8 8zM7.5 8h.01', gift: 'M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-2 0-4-1-3.5-3 1.5-1 3.5 1 3.5 3zM12 7c2 0 4-1 3.5-3-1.5-1-3.5 1-3.5 3z',
+  gear: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19 12l2-1-1-3-2 .5-1.5-1.5L17 5l-3-1-1 2h-2L10 4 7 5l.5 2L6 8.5 4 8l-1 3 2 1v1l-2 1 1 3 2-.5L7.5 18 7 20l3 1 1-2h2l1 2 3-1-.5-2 1.5-1.5 2 .5 1-3-2-1z',
+  doc: 'M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6', pin: 'M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11zM12 12a2 2 0 100-4 2 2 0 000 4Z', flag: 'M5 21V4M5 4h12l-2 4 2 4H5', bolt: 'M13 2L4 14h7l-1 8 9-12h-7z', briefcase: 'M3 8h18v12H3zM8 8V5h8v3M3 13h18',
+};
+const TAB_ICON = { dashboard: 'home', live: 'map', bookings: 'list', drivers: 'car', reviewq: 'check', opsdash: 'chart', alerts: 'bell', abasare: 'car', safety: 'shield', trust: 'shield', ussd: 'phone', demand: 'map', users: 'users', support: 'chat', privacy: 'lock', claims: 'doc', finance: 'coin', wallet: 'coin', pricing: 'tag', services: 'list', promos: 'tag', codes: 'tag', fixedroutes: 'map', quests: 'flag', referrals: 'gift', campaigns: 'bolt', partners: 'pin', partner: 'pin', business: 'briefcase', settings: 'gear', audit: 'doc', staff: 'users', places: 'pin', content: 'doc', flags: 'flag' };
+function navIcon(key) {
+  const p = IC[TAB_ICON[key]]; const el = document.createElement('span'); el.className = 'ni'; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = p ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + p + '"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>';
+  return el;
+}
+const initials = (e) => { const p = String(e || '?').split('@')[0].split(/[._\-\s]+/).filter(Boolean); return ((p[0]?.[0] || '?') + (p[1]?.[0] || '')).toUpperCase(); };
+
 function buildShell(root, tabs) {
   const groups = [...new Set(tabs.map((t) => t[3]))];
   const email = store.get('rm_email');
   const nav = h('nav', { id: 'sidenav', 'aria-label': 'Main navigation' },
     h('div', { class: 'brand' }, h('span', { class: 'bmark' }, h('img', { src: 'brand-mark.png', alt: '', width: 30, height: 25 })), h('span', {}, 'Abasare'), h('small', {}, 'Operations')),
-    groups.map((g) => h('div', { class: 'navgroup', role: 'group', 'aria-label': g }, h('div', { class: 'navhead' }, g), tabs.filter((t) => t[3] === g).map(([k, l]) => h('button', { 'data-tab': k, onclick: () => go(k) }, l)))),
+    h('input', { class: 'navfind', type: 'search', placeholder: 'Go to…  (press /)', 'aria-label': 'Find a page', oninput: (e) => { const q = e.target.value.trim().toLowerCase(); document.querySelectorAll('#sidenav .navgroup').forEach((g) => { let any = false; g.querySelectorAll('button').forEach((b) => { const m = !q || b.textContent.toLowerCase().includes(q); b.hidden = !m; if (m) any = true; }); g.hidden = !any; }); }, onkeydown: (e) => { if (e.key === 'Enter') { const b = [...document.querySelectorAll('#sidenav .navgroup button')].find((x) => !x.hidden); if (b) { b.click(); e.target.value = ''; e.target.dispatchEvent(new Event('input')); e.target.blur(); } } } }),
+    groups.map((g) => h('div', { class: 'navgroup', role: 'group', 'aria-label': g }, h('div', { class: 'navhead' }, g), tabs.filter((t) => t[3] === g).map(([k, l]) => h('button', { 'data-tab': k, onclick: () => go(k) }, navIcon(k), h('span', { class: 'nl' }, l))))),
     h('div', { class: 'navfoot' }, h('button', { onclick: logout }, 'Sign out')));
   const themeBtn = h('button', { class: 'iconbtn', 'aria-label': 'Switch between light and dark theme', title: 'Light / dark', onclick: () => { const t = effectiveTheme() === 'dark' ? 'light' : 'dark'; applyTheme(t); pref.set('rm_theme', t); themeBtn.textContent = t === 'dark' ? '☀' : '☾'; } }, effectiveTheme() === 'dark' ? '☀' : '☾');
   const top = h('header', { class: 'topbar' },
     h('button', { class: 'iconbtn', 'data-nav-toggle': '', 'aria-label': 'Open menu', 'aria-expanded': 'false', 'aria-controls': 'sidenav', onclick: () => { const open = nav.classList.toggle('open'); $('[data-nav-toggle]').setAttribute('aria-expanded', String(open)); } }, '☰'),
     h('ol', { id: 'crumbs', class: 'crumbs', 'aria-label': 'Breadcrumb' }), h('span', { class: 'grow' }), themeBtn,
-    h('span', { class: 'who', title: S.roles.join(', ') }, h('b', {}, email || 'Signed in'), h('small', {}, S.roles.map(human).join(', '))));
+    h('span', { class: 'avatar', 'aria-hidden': 'true' }, initials(email)), h('span', { class: 'who', title: S.roles.join(', ') }, h('b', {}, email || 'Signed in'), h('small', {}, S.roles.map(human).join(', '))));
   const scrim = h('div', { class: 'scrim', onclick: closeNav });
+  document.addEventListener('keydown', (e) => { if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) { const f = document.querySelector('.navfind'); if (f) { e.preventDefault(); document.getElementById('sidenav')?.classList.add('open'); f.focus(); } } });
   root.replaceChildren(h('a', { class: 'skip', href: '#view', onclick: (e) => { e.preventDefault(); $('#view').focus(); } }, 'Skip to content'),
     h('div', { class: 'shell', id: 'shell' }, nav, scrim, h('div', { class: 'content' }, top, h('main', { id: 'view', tabindex: '-1' }))));
 }
