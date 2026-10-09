@@ -5,6 +5,7 @@ import { anyAuth, routeLimit } from '../guards.js';
 import { q } from '../db.js';
 import { estimate, zoneFor } from '../services/bookings.js';
 import { searchPlaces } from '../services/maps.js';
+import { reverseIndex } from '../services/placeIndex.js';
 import { flag, getSetting, rolloutBucket } from '../services/settings.js';
 import { checkPromo } from '../services/promos.js';
 import { badRequest } from '../errors.js';
@@ -36,6 +37,11 @@ export async function catalogRoutes(app: FastifyInstance) {
   app.get('/places/search', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
     const b = parse(z.object({ q: z.string().min(2).max(80), lang: z.enum(['rw', 'fr', 'en']).default('en'), lat: z.coerce.number().min(-3).max(0).optional(), lng: z.coerce.number().min(28).max(32).optional() }), req.query);
     return { places: await searchPlaces(b.q, b.lang, b.lat != null && b.lng != null ? { lat: b.lat, lng: b.lng } : undefined) };
+  });
+  // Name for a point: "Near {place}" in the apps (offline data, no external service)
+  app.get('/places/reverse', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
+    const b = parse(z.object({ lat: z.coerce.number().min(-3).max(0), lng: z.coerce.number().min(28).max(32) }), req.query);
+    return { place: reverseIndex({ lat: b.lat, lng: b.lng }) };
   });
   // Feature switches the apps may read: on/off for this person (gradual rollout applies) plus the message to show when a feature is off. Cached by the app, so the off-switch works within a minute.
   app.get('/config/flags', { preHandler: anyAuth }, async (req) => {

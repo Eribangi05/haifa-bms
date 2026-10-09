@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { usePingOnChange, usePingOnIncrease } from '../../lib/offerAlert';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { useTrip } from '../../lib/hooks';
@@ -21,6 +22,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean; sa
   const { t, client, nav, pendingOutbox, online, errMsg } = useApp();
   const [chat, setChat] = useState(false); const [shareOpen, setShareOpen] = useState(false); const { busy, run } = useAsync();
   const { booking: b, error, stale, reload, loaded } = useTrip(params.id, POLL_MS, [pendingOutbox]);
+  usePingOnIncrease(b?.unread_messages); usePingOnChange(b?.status, ['DRIVER_ASSIGNED', 'DRIVER_ARRIVED']);   // a short ping: driver found, driver arrived, new message
   const mapH = useProportionalHeight(0.32, 190, 340);
   const home = () => nav.reset('home');
   const searchStart = useRef(Date.now()); const [now, setNow] = useState(Date.now());

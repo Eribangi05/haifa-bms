@@ -37,7 +37,9 @@ export async function registerPush(client: Client, lang: Lang, isDriver: boolean
     if (Platform.OS === 'android') {
       await N.setNotificationChannelAsync('default', { name: translate(lang, 'push.channel.default'), importance: N.AndroidImportance.HIGH });
       await N.setNotificationChannelAsync('trips', { name: translate(lang, 'push.channel.default'), importance: N.AndroidImportance.MAX, vibrationPattern: [0, 300, 200, 300] });   // the server tags trip/safety pushes with channelId 'trips'
-      if (isDriver) await N.setNotificationChannelAsync('offers', { name: translate(lang, 'push.channel.offers'), importance: N.AndroidImportance.HIGH, vibrationPattern: [0, 250, 250, 250], sound: 'default' });
+      // new trip requests: loud, own chime (assets/sounds/offer.wav is bundled by the expo-notifications plugin), long vibration, shown on the lock screen
+      if (isDriver) await N.setNotificationChannelAsync('offers_v2', { name: translate(lang, 'push.channel.offers'), importance: N.AndroidImportance.MAX, vibrationPattern: [0, 700, 350, 700, 350, 700], sound: 'offer.wav', lockscreenVisibility: N.AndroidNotificationVisibility.PUBLIC, enableVibrate: true });
+      await N.setNotificationChannelAsync('messages_v1', { name: translate(lang, 'push.channel.default'), importance: N.AndroidImportance.HIGH, vibrationPattern: [0, 200], sound: 'ping.wav' });
     }
     let perm = await N.getPermissionsAsync();
     if (perm.status !== 'granted') {

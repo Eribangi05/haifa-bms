@@ -21,6 +21,7 @@ import { StatRow, StatTile } from '../../ui/dash';
 import { leaveDriverMode } from './leave';
 import { driverKind, jobTypes } from '../../lib/driverKind';
 import { CategoryCard } from './kindUi';
+import { useOfferAlert } from '../../lib/offerAlert';
 import { GoalCard, StatusStrip } from './workTools';
 
 const GPS_STALE_MS = 45_000;
@@ -42,6 +43,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
   const trip = active.data?.booking ?? null;
   const offers = usePoll(() => client.get<{ offers: Offer[] }>('/drivers/me/offers'), 3000, [isOnline], isOnline && !trip);
   useEffect(() => { setDriverTracking({ online: isOnline, onTrip: !!trip }); }, [isOnline, trip]);
+  useOfferAlert((offers.data?.offers ?? []).map((o) => o.booking_id), isOnline && !trip);   // sound + vibration until answered
 
   const toggle = (on: boolean) => run(async () => {
     if (on && !consent) return;

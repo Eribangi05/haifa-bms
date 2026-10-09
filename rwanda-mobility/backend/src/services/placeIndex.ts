@@ -7,11 +7,13 @@ import { haversineM, type LatLng } from '../util/geo.js';
  * Offline place search over named OpenStreetMap places (areas, hospitals, schools, hotels, markets, banks, bus stations...).
  * Built by scripts/map/places.py into backend/map/places.json (docs/MAP.md). No external service, no cost; works on the free plan.
  */
-type Row = { name: string; kind: string; lat: number; lng: number; rw: string; fr: string; en: string; words: string[]; nname: string };
-export type OsmHit = { name: string; kind: string; lat: number; lng: number; source: 'osm' };
+type Row = { name: string; kind: string; sub?: string; rank?: number; lat: number; lng: number; rw: string; fr: string; en: string; words: string[]; nname: string };
+export type OsmHit = { name: string; kind: string; lat: number; lng: number; source: 'osm'; sub?: string };
 
 export const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'map', 'places.json');
+const LOC_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'map', 'localities.json');
+const PROVINCES = ['Kigali City', 'Northern Province', 'Southern Province', 'Eastern Province', 'Western Province'];
 let rows: Row[] | null = null;
 
 function load(): Row[] {
@@ -20,6 +22,11 @@ function load(): Row[] {
   if (existsSync(FILE)) {
     try { for (const r of JSON.parse(readFileSync(FILE, 'utf8')) as any[]) rows.push({ name: r[0], kind: r[1], lat: r[2], lng: r[3], rw: r[4], fr: r[5], en: r[6], words: norm([r[0], r[4], r[5], r[6]].filter(Boolean).join(' ')).split(' '), nname: norm(r[0]) }); }
     catch { rows = []; }
+  }
+  // villages, cells, towns and the 30 districts (scripts/map/localities.py): ranked below OpenStreetMap places, they let rural spots be found and named
+  if (existsSync(LOC_FILE)) {
+    try { for (const r of JSON.parse(readFileSync(LOC_FILE, 'utf8')) as any[]) rows.push({ name: r[0], kind: r[5] ? 'district' : 'locality', sub: PROVINCES[r[3]], rank: -6, lat: r[1], lng: r[2], rw: '', fr: '', en: '', words: norm(r[0]).split(' '), nname: norm(r[0]) }); }
+    catch { /* optional file */ }
   }
   return rows;
 }
@@ -37,7 +44,7 @@ export function searchIndex(text: string, lang: 'rw' | 'fr' | 'en', near?: LatLn
   for (const r of load()) {
     const words = r.words;
     if (!toks.every((t) => words.some((w) => w.startsWith(t)))) continue;
-    let s = 0;
+    let s = r.rank ?? 0;
     const n = r.nname;
     if (n === q) s += 100; else if (n.startsWith(q)) s += 60;
     if (toks.every((t) => words.includes(t))) s += 20;
@@ -46,7 +53,19 @@ export function searchIndex(text: string, lang: 'rw' | 'fr' | 'en', near?: LatLn
     scored.push({ r, s });
   }
   scored.sort((a, b) => b.s - a.s);
-  const res = scored.slice(0, limit).map(({ r }) => ({ name: (lang === 'rw' ? r.rw : lang === 'fr' ? r.fr : r.en) || r.name, kind: r.kind, lat: r.lat, lng: r.lng, source: 'osm' as const }));
+  const res = scored.slice(0, limit).map(({ r }) => ({ name: (lang === 'rw' ? r.rw : lang === 'fr' ? r.fr : r.en) || r.name, kind: r.kind, lat: r.lat, lng: r.lng, source: 'osm' as const, ...(r.sub ? { sub: r.sub } : {}) }));
   if (ck) { if (cache.size > 500) cache.clear(); cache.set(ck, res); }
   return res;
+}
+
+/** Nearest named place to a point (used to name "My location" in the field): OpenStreetMap areas first, then villages/cells; null when nothing is within maxM. */
+export function reverseIndex(p: LatLng, maxM = 2500): OsmHit | null {
+  let best: Row | null = null; let bd = Infinity;
+  for (const r of load()) {
+    if (r.kind === 'district') continue;
+    if (Math.abs(r.lat - p.lat) > 0.03 || Math.abs(r.lng - p.lng) > 0.03) continue;
+    const d = haversineM(p, r) + (r.rank ? 150 : 0);
+    if (d < bd) { bd = d; best = r; }
+  }
+  return best && bd <= maxM ? { name: best.name, kind: best.kind, lat: best.lat, lng: best.lng, source: 'osm', ...(best.sub ? { sub: best.sub } : {}) } : null;
 }

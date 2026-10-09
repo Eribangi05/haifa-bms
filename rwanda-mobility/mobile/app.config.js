@@ -62,7 +62,7 @@ module.exports = () => ({
       ['expo-location', { locationWhenInUsePermission: 'Abasare uses your location to set your pickup and match you with nearby drivers.', locationAlwaysAndWhenInUsePermission: 'Drivers only: Abasare shares your position with passengers while you are online or on a trip, including when the screen is locked.', isIosBackgroundLocationEnabled: true, isAndroidForegroundServiceEnabled: true, isAndroidBackgroundLocationEnabled: false }],
       ['expo-image-picker', { cameraPermission: 'Used to photograph your driver documents.', photosPermission: 'Used to attach your driver documents.' }],
       ['expo-camera', { cameraPermission: 'Abasare uses the camera only to scan QR codes for your pickup point.', recordAudioAndroid: false }],
-      ['expo-notifications', { color: '#0077B0' }],
+      ['expo-notifications', { color: '#0077B0', sounds: ['./assets/sounds/offer.wav', './assets/sounds/ping.wav'] }],   // bundled so a push can play them (the new-request chime and the ping)
       ['expo-build-properties', { android: { usesCleartextTraffic: allowCleartext, useLegacyPackaging: true, enableShrinkResourcesInReleaseBuilds: true, enableProguardInReleaseBuilds: true, enablePngCrunchInReleaseBuilds: true } }],
     ],
     web: { bundler: 'metro', output: 'single', favicon: './assets/favicon.png' },

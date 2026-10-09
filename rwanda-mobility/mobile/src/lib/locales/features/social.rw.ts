@@ -1,5 +1,13 @@
 import { socialEn } from './social.en';
 export const socialRw: Record<keyof typeof socialEn, string> = {
+  'home.near': 'Hafi na {place}',
+  'snd.title': 'Amajwi',
+  'snd.offer': 'Ijwi ry\'ubusabe bw\'urugendo rushya (abashoferi)',
+  'snd.offer.hint': 'Ijwi rirenga rigumya kumvikana n\'ubwoba bwa telefone kugeza usubije. Rireke rikora kugira ngo utazacikanwa n\'ubusabe.',
+  'snd.chat': 'Ijwi rito ry\'ubutumwa no kugera k\'umushoferi',
+  'snd.chat.hint': 'Ijwi rito iyo ubutumwa buje cyangwa umushoferi yageze.',
+  'snd.test': 'Gerageza ijwi ry\'ubusabe bushya',
+  'snd.test.hint': 'Zamura ijwi rya telefone urebe ko ryumvikana.',
   'cache.note': 'Ibi ni kopi yabitswe {when}. Nta murongo uhari ubu.',
   'cache.ago.min': 'hashize iminota {n}',
   'cache.ago.h': 'hashize amasaha {n}',

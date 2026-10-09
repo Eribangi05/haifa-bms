@@ -3,7 +3,8 @@ import { Platform } from 'react-native';
 import { useApp } from '../../lib/app';
 import { appearance, LOCK_CHOICES, useAppearance } from '../../lib/appearance';
 import { bioAuthenticate, bioSupport, type BioSupport } from '../../lib/biometric';
-import { Banner, Card, Screen, SectionTitle, Text } from '../../ui/components';
+import { Banner, Btn, Card, Screen, SectionTitle, Text } from '../../ui/components';
+import { testOfferSound } from '../../lib/sound';
 import { Choice, SwitchRow } from '../../ui/trustParts';
 import { S } from '../../ui/theme';
 import { OfflineMapCard } from '../../ui/OfflineMap';
@@ -30,6 +31,13 @@ export function R1Settings() {
       </Card>
       <SectionTitle text={t('r1.set.data')} />
       <Card><SwitchRow testID="set-lowdata" label={t('r1.set.lowdata')} hint={t('r1.set.lowdata.hint')} value={ap.lowData} onChange={(v) => void appearance.set({ lowData: v })} /></Card>
+      <SectionTitle text={t('snd.title')} />
+      <Card>
+        <SwitchRow testID="set-offersound" label={t('snd.offer')} hint={t('snd.offer.hint')} value={ap.offerSound} onChange={(v) => void appearance.set({ offerSound: v })} />
+        <SwitchRow testID="set-chatsound" label={t('snd.chat')} hint={t('snd.chat.hint')} value={ap.chatSound} onChange={(v) => void appearance.set({ chatSound: v })} />
+        <Btn testID="snd-test" kind="ghost" title={t('snd.test')} onPress={() => void testOfferSound()} />
+        <Text style={S.muted}>{t('snd.test.hint')}</Text>
+      </Card>
       <OfflineMapCard />
       <SectionTitle text={t('r1.set.privacy')} />
       <Card>

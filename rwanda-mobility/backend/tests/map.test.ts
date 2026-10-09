@@ -99,3 +99,12 @@ test('GEO-02 a driver is found near the pickup through the geohash filter and no
   const far = await nearbyAvailable(svc, 'kigali', { lat: -1.60, lng: 30.40 }, 3000, 600);
   assert.equal(far.length, 0);
 });
+
+test('MAP-04 villages and districts from the locality list are searchable (below OSM) and name a point', async () => {
+  const { searchIndex, reverseIndex } = await import('../src/services/placeIndex.ts');
+  const d = searchIndex('nyagatare district', 'en');
+  assert.ok(d.some((h) => h.kind === 'district' && h.sub === 'Eastern Province'), 'district found with its province');
+  const r = reverseIndex({ lat: -1.31455, lng: 30.37242 });
+  assert.ok(r && r.name, 'a point on a known place gets a name');
+  assert.equal(reverseIndex({ lat: -1.0, lng: 28.2 }), null, 'nothing named in the lake gives null');
+});

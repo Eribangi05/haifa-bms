@@ -6,7 +6,18 @@ import { config } from '../config.js';
  * `PUSH_PROVIDER=expo` posts to the Expo Push API (works for Expo push tokens, which wrap FCM and APNs).
  * Tokens are revoked when Expo reports DeviceNotRegistered, either in the send ticket or in the later receipt.
  */
-export type PushMessage = { to: string; title: string; body: string; data?: Record<string, unknown>; priority?: 'high' | 'default'; channelId?: string };
+export type PushMessage = { to: string; title: string; body: string; data?: Record<string, unknown>; priority?: 'high' | 'default'; channelId?: string; sound?: string; ttl?: number };
+
+/**
+ * How each kind of notification sounds. A new trip request must not be missed: it uses its own loud channel and the long chime (assets/sounds/offer.wav inside the app),
+ * and expires after 30 s (an old request is worthless). Messages get the short ping. Everything else keeps the normal trips channel.
+ * Android fixes a channel's sound when it is first created, so a changed sound needs a new channel id (offers_v2 / messages_v1, created by the app).
+ */
+export function pushStyle(templateKey: string): Pick<PushMessage, 'channelId' | 'sound' | 'ttl'> {
+  if (templateKey === 'offer') return { channelId: 'offers_v2', sound: 'offer.wav', ttl: 30 };
+  if (templateKey === 'chat_message') return { channelId: 'messages_v1', sound: 'ping.wav', ttl: 600 };
+  return { channelId: 'trips' };
+}
 export type PushTicket = { status: 'ok'; id?: string } | { status: 'error'; message?: string; error?: string };
 export type PushReceipt = { status: 'ok' | 'error'; message?: string; error?: string };
 export interface PushAdapter {
@@ -99,7 +110,7 @@ export async function flushPush(limit = 50) {
     if (!tokens.length) { await q("update notifications set status='skipped', error='no_push_token' where id=$1", [n.id]); continue; }
     const data: Record<string, unknown> = { template_key: n.template_key, ...(n.params?.ref ? { ref: n.params.ref } : {}) };
     try {
-      const tickets = await a.send(tokens.map((t) => ({ to: t.token, title: n.title, body: n.body, data, priority: 'high' as const, channelId: 'trips' })));
+      const tickets = await a.send(tokens.map((t) => ({ to: t.token, title: n.title, body: n.body, data, priority: 'high' as const, ...pushStyle(n.template_key) })));
       let ok = 0, transient = 0;
       for (let i = 0; i < tokens.length; i++) {
         const t = tickets[i];

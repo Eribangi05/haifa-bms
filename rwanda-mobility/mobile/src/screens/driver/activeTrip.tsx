@@ -7,6 +7,7 @@ import { Banner, Btn, Card, Chip, Field, Money, Pill, Text } from '../../ui/comp
 import { ChatModal } from '../chat';
 import { NavigationModal } from './navigation';
 import { useFlag } from '../../lib/flags';
+import { usePingOnIncrease } from '../../lib/offerAlert';
 import { MapBox } from '../../ui/MapView';
 import { C, S } from '../../ui/theme';
 import { HandoverForm } from './handover';
@@ -19,6 +20,7 @@ type LL = { lat: number; lng: number };
 export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; pos: LL | null; reload: () => void; mapHeight: number }) {
   const { t, lang, client, say, nav, errMsg } = useApp(); const { busy, run } = useAsync(); const [pin, setPin] = useState(''); const [cash, setCash] = useState(String(Math.round(trip.final_fare ?? trip.estimated_fare ?? 0))); const [cancelling, setCancelling] = useState(false);
   const [chatOpen, setChatOpen] = useState(false); const [navOpen, setNavOpen] = useState(false); const navOn = useFlag('navigation.enabled'); const chatOn = useFlag('chat.enabled');
+  usePingOnIncrease(trip.unread_messages, !chatOpen);
   const st = trip.status; const act = (path: string, body?: unknown) => run(async () => { try { await client.post(`/bookings/${trip.id}/${path}`, body ?? {}); } finally { reload(); } });
   useEffect(() => { if (trip.payment?.outstanding != null && trip.payment.method === 'cash') setCash(String(Math.round(trip.payment.outstanding))); }, [trip.payment?.outstanding, trip.payment?.method]);
   const ab = trip.abasare; const hs = ab?.handovers ?? []; const pickupH = hs.find((h) => h.phase === 'pickup'); const dropH = hs.find((h) => h.phase === 'dropoff');

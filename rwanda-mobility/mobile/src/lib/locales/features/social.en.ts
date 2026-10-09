@@ -1,6 +1,14 @@
 // Offline cache and map, in-app navigation, chat, driver work tools, vehicle application, referrals, SOS support, onboarding review (English source).
 // The .rw.ts and .fr.ts files must define exactly the same keys.
 export const socialEn = {
+  'home.near': 'Near {place}',
+  'snd.title': 'Sounds',
+  'snd.offer': 'Sound for new trip requests (drivers)',
+  'snd.offer.hint': 'A loud chime and vibration that repeat until you answer. Keep this on so you never miss a request.',
+  'snd.chat': 'Short ping for messages and driver arrival',
+  'snd.chat.hint': 'A quiet ping when a message arrives or your driver has arrived.',
+  'snd.test': 'Test the new-request sound',
+  'snd.test.hint': 'Turn the phone volume up and check that you hear it.',
   'cache.note': 'Saved copy from {when}. There is no signal right now.',
   'cache.ago.min': '{n} min ago',
   'cache.ago.h': '{n} h ago',

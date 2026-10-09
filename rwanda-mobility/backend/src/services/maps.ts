@@ -36,7 +36,7 @@ export async function route(a: LatLng, b: LatLng, vehicle = 'car'): Promise<Rout
 /** ETA for dispatch (straight line * road factor; OSRM matrix is a drop-in upgrade). */
 export const etaS = (from: LatLng, to: LatLng, vehicle = 'car') => estimateRoute(from, to, vehicle).duration_s;
 
-export type PlaceHit = { id?: string; name: string; lat: number; lng: number; kind: string; source: 'local' | 'nominatim' | 'osm' };
+export type PlaceHit = { id?: string; name: string; lat: number; lng: number; kind: string; source: 'local' | 'nominatim' | 'osm'; sub?: string };
 export async function searchPlaces(text: string, lang: 'rw' | 'fr' | 'en', near?: LatLng): Promise<PlaceHit[]> {
   const like = `%${text.replace(/[%_]/g, '')}%`;
   const rows = await q<any>(`select id, name_en, name_rw, name_fr, kind, lat, lng from places where active and (name_en ilike $1 or name_rw ilike $1 or name_fr ilike $1) order by designated_pickup desc, name_en limit 8`, [like]);

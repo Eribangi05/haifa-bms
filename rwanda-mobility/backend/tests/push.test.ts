@@ -132,3 +132,18 @@ test('expo adapter batches 100 messages per request and parses tickets and recei
     assert.equal(r.a.error, 'DeviceNotRegistered');
   } finally { globalThis.fetch = realFetch; }
 });
+
+test('SOUND-01 a new trip request is pushed on the loud offers channel with the long chime and a 30 s life; messages get the ping; the rest the normal channel', async () => {
+  const { pushStyle } = await import('../src/services/push.ts');
+  assert.deepEqual(pushStyle('offer'), { channelId: 'offers_v2', sound: 'offer.wav', ttl: 30 });
+  assert.deepEqual(pushStyle('chat_message'), { channelId: 'messages_v1', sound: 'ping.wav', ttl: 600 });
+  assert.deepEqual(pushStyle('driver_assigned'), { channelId: 'trips' });
+  // end to end: a real dispatch offer reaches the driver's push token with those settings
+  const a = fake(); setPushAdapter(a); await drain();
+  const p = await t.register('passenger'); const d = await t.driver();
+  await t.api('POST', '/users/me/push-token', { token: d.token, body: { token: TOKEN(), platform: 'android' } });
+  await t.book(p.token, 'moto', 'cash');
+  await flushPush();
+  const m = a.sent.find((x) => x.channelId === 'offers_v2'); assert.ok(m, 'offer push sent on offers_v2');
+  assert.equal(m!.sound, 'offer.wav'); assert.equal(m!.ttl, 30); assert.equal(m!.priority, 'high');
+});

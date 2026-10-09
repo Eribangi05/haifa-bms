@@ -1,5 +1,13 @@
 import { socialEn } from './social.en';
 export const socialFr: Record<keyof typeof socialEn, string> = {
+  'home.near': 'Près de {place}',
+  'snd.title': 'Sons',
+  'snd.offer': 'Son des nouvelles demandes de course (chauffeurs)',
+  'snd.offer.hint': 'Une sonnerie forte et une vibration qui se répètent jusqu\'à votre réponse. Laissez-la activée pour ne jamais manquer une demande.',
+  'snd.chat': 'Petit son pour les messages et l\'arrivée du chauffeur',
+  'snd.chat.hint': 'Un petit son discret quand un message arrive ou que votre chauffeur est arrivé.',
+  'snd.test': 'Tester le son d\'une nouvelle demande',
+  'snd.test.hint': 'Montez le volume du téléphone et vérifiez que vous l\'entendez.',
   'cache.note': 'Copie enregistrée {when}. Pas de réseau pour le moment.',
   'cache.ago.min': 'il y a {n} min',
   'cache.ago.h': 'il y a {n} h',

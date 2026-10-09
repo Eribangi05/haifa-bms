@@ -6,6 +6,7 @@ import type { Offer } from '../../lib/types';
 import { Btn, Card, Money, Pill, Text } from '../../ui/components';
 import { C, S } from '../../ui/theme';
 import { CountdownBar } from './workTools';
+import { stopOffer } from '../../lib/sound';
 
 const secondsLeft = (iso: string) => Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
 const GONE = ['offer_no_longer_available', 'offer_expired', 'offer_not_found'];
@@ -17,10 +18,12 @@ export function OfferCard({ o, done }: { o: Offer; done: () => void }) {
   useEffect(() => { const i = setInterval(() => setLeft(secondsLeft(o.expires_at)), 1000); return () => clearInterval(i); }, [o.expires_at]);
   useEffect(() => { if (left <= 0 && !expiredNotified.current) { expiredNotified.current = true; done(); } }, [left, done]);
   const accept = () => run(async () => {
+    stopOffer();
     try { await client.post(`/bookings/${o.booking_id}/accept`); done(); }
     catch (e) { if (GONE.includes((e as { code?: string }).code ?? '')) { say(errMsg(e)); done(); } else throw e; }
   });
-  const reject = (reason: string) => run(async () => { await client.post(`/bookings/${o.booking_id}/reject`, { reason }); done(); });
+  const reject = (reason: string) => run(async () => {
+    stopOffer(); await client.post(`/bookings/${o.booking_id}/reject`, { reason }); done(); });
   return (
     <Card style={{ borderColor: left > 0 ? C.primary : C.line, borderWidth: 2, opacity: left > 0 ? 1 : 0.6 }}>
       <View style={S.between}><Text style={S.muted}>{left > 0 ? `${t('drv.expires')} ${left}${t('unit.s')}` : t('drv.offer.expired')}</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={o.payment_method === 'wallet' ? t('cr.prepaid') : label(lang, 'pm', o.payment_method)} tone="warn" /></View></View>
