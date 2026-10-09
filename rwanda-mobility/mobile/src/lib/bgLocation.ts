@@ -1,6 +1,7 @@
-// Driver location while the app is backgrounded: an Android foreground service (type "location") run through expo-task-manager.
+// Driver location while the app is backgrounded: an Android foreground service (type "location"), or on iOS the "location" background mode with the
+// blue status-bar indicator, both run through expo-task-manager.
 // Started only while a DRIVER is online or on a trip, always with a visible notification, and it needs no ACCESS_BACKGROUND_LOCATION
-// because it is started while the app is on screen. Inert on web and iOS (iOS keeps the in-app foreground watch only).
+// because it is started while the app is on screen. iOS asks for "Always" access; if the driver declines, only the in-app foreground watch runs. Inert on web.
 // Native modules are loaded lazily with require() so the web bundle never executes them.
 import { Platform } from 'react-native';
 import { API_URL } from '../config';
@@ -11,7 +12,7 @@ import { isLang, translate, type Lang } from './i18n';
 export const BG_TASK = 'abasare-driver-location';
 const FLAG = 'rm_bg_loc_on';
 const MIN_GAP_MS = 5000;
-export const bgSupported = Platform.OS === 'android';
+export const bgSupported = Platform.OS === 'android' || Platform.OS === 'ios';
 
 let shared: Client | null = null;
 let own: Client | null = null;
@@ -53,10 +54,12 @@ export async function startBgLocation(lang: Lang): Promise<BgResult> {
     const Loc = require('expo-location'); const TM = require('expo-task-manager');
     if (!(await TM.isAvailableAsync())) return 'unsupported';
     const p = await Loc.requestForegroundPermissionsAsync(); if (p.status !== 'granted') return 'denied';
+    if (Platform.OS === 'ios') { const b = await Loc.requestBackgroundPermissionsAsync(); if (b.status !== 'granted') return 'denied'; }   // iOS needs "Always" for updates with the screen locked
     await kv.set(FLAG, '1');
     if (await Loc.hasStartedLocationUpdatesAsync(BG_TASK)) return 'started';
     await Loc.startLocationUpdatesAsync(BG_TASK, {
       accuracy: Loc.Accuracy.High, timeInterval: MIN_GAP_MS, distanceInterval: 15, pausesUpdatesAutomatically: false,
+      ...(Platform.OS === 'ios' ? { showsBackgroundLocationIndicator: true, activityType: Loc.ActivityType?.AutomotiveNavigation } : {}),
       foregroundService: { notificationTitle: translate(lang, 'drv.bg.notif.title'), notificationBody: translate(lang, 'drv.bg.notif.body'), notificationColor: '#0077B0', killServiceOnDestroy: true },
     });
     return 'started';

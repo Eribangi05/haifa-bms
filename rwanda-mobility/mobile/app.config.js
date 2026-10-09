@@ -21,7 +21,7 @@ module.exports = () => ({
       buildNumber: '11',                       // bump with every App Store / TestFlight upload
       config: { usesNonExemptEncryption: false },   // HTTPS only: standard encryption, exempt from export documentation
       // The app opens wa.me / sms: / tel: / mailto: links itself; no private URL schemes are queried.
-      infoPlist: { CFBundleAllowMixedLocalizations: true },
+      infoPlist: { CFBundleAllowMixedLocalizations: true, UIBackgroundModes: ['location'] },   // drivers share their position while online with the screen locked
     },
     android: {
       package: 'rw.abasare.app',
@@ -58,7 +58,7 @@ module.exports = () => ({
     plugins: [
       'expo-secure-store',
       ['expo-local-authentication', { faceIDPermission: 'Abasare uses Face ID to unlock the app.' }],
-      ['expo-location', { locationWhenInUsePermission: 'Abasare uses your location to set your pickup and match you with nearby drivers.', isAndroidForegroundServiceEnabled: true, isAndroidBackgroundLocationEnabled: false }],
+      ['expo-location', { locationWhenInUsePermission: 'Abasare uses your location to set your pickup and match you with nearby drivers.', locationAlwaysAndWhenInUsePermission: 'Drivers only: Abasare shares your position with passengers while you are online or on a trip, including when the screen is locked.', isIosBackgroundLocationEnabled: true, isAndroidForegroundServiceEnabled: true, isAndroidBackgroundLocationEnabled: false }],
       ['expo-image-picker', { cameraPermission: 'Used to photograph your driver documents.', photosPermission: 'Used to attach your driver documents.' }],
       ['expo-camera', { cameraPermission: 'Abasare uses the camera only to scan QR codes for your pickup point.', recordAudioAndroid: false }],
       ['expo-notifications', { color: '#0077B0' }],

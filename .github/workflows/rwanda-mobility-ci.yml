@@ -56,6 +56,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npx expo export --platform android --output-dir /tmp/android-export
+      - run: npx expo export --platform ios --output-dir /tmp/ios-export   # the iPhone bundle must compile too
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 25
