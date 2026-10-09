@@ -222,7 +222,7 @@ for (const lang of LANGS) {
   await step(L + 'low-data mode: x-lite header on API calls, map replaced by a text card', async () => {
     const before = apiHeaders.length; if (apiHeaders.some((h) => h.lite)) throw new Error('x-lite sent before enabling');
     await pp.getByRole('switch', { name: t('r1.set.lowdata') }).click(); await pp.waitForTimeout(400);
-    await pp.getByLabel(t('common.back')).first().click(); await pp.getByLabel(t('common.back')).first().click(); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 20000 });
+    await pp.getByLabel(t('common.back')).first().click(); await pp.getByTestId('tab-book').click(); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 20000 });
     await pp.waitForTimeout(3000); const lite = apiHeaders.slice(before).filter((h) => h.lite === '1'); if (!lite.length) throw new Error('no x-lite request after enabling');
     await pp.getByTestId('lite-map').first().waitFor({ timeout: 10000 }); await pp.screenshot({ path: `${OUT}/r1-${lang}-lowdata-home.png` });
   }, pp);
