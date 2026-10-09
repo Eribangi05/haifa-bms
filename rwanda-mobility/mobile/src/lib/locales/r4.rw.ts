@@ -1,7 +1,7 @@
 import type { r4en } from './r4.en';
 export const r4rw: Record<keyof typeof r4en, string> = {
   'tab.home': 'Ahabanza', 'tab.book': 'Saba', 'tab.trips': 'Ingendo', 'tab.wallet': 'Igikapu', 'tab.account': 'Konti',
-  'tab.drv.work': 'Akazi', 'tab.drv.earn': 'Amafaranga', 'tab.drv.car': 'Ikinyabiziga',
+  'tab.drv.work': 'Imirimo', 'tab.drv.earn': 'Amafaranga', 'tab.drv.car': 'Umwirondoro',
   'mo.1': 'Mutarama', 'mo.2': 'Gashyantare', 'mo.3': 'Werurwe', 'mo.4': 'Mata', 'mo.5': 'Gicurasi', 'mo.6': 'Kamena', 'mo.7': 'Nyakanga', 'mo.8': 'Kanama', 'mo.9': 'Nzeri', 'mo.10': 'Ukwakira', 'mo.11': 'Ugushyingo', 'mo.12': 'Ukuboza',
 
   'ov.greet.morning': 'Mwaramutse', 'ov.greet.afternoon': 'Mwiriwe', 'ov.greet.evening': 'Muraho neza',

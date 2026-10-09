@@ -19,6 +19,8 @@ import { fmtRwf } from '../../lib/format';
 import { useTripFeed } from '../../lib/tripFeed';
 import { StatRow, StatTile } from '../../ui/dash';
 import { leaveDriverMode } from './leave';
+import { driverKind, jobTypes } from '../../lib/driverKind';
+import { CategoryCard } from './kindUi';
 
 const GPS_STALE_MS = 45_000;
 
@@ -68,10 +70,11 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
           <View style={S.between}><View style={{ flex: 1, paddingRight: SP.sm }}><Text style={S.h2}>{isOnline ? t('drv.online') : t('drv.offline')}</Text><Text style={S.muted}>★ {Number(status.profile.rating_avg).toFixed(1)} · {status.profile.completed_count} {t('drv.trips')}</Text></View>
             <Btn testID="cta" kind={isOnline ? 'danger' : 'primary'} title={isOnline ? t('drv.gooffline') : t('drv.goonline')} onPress={() => toggle(!isOnline)} loading={busy} disabled={(!rideOk && !absOk && !isOnline) || (!isOnline && !consent)} /></View>
           {both ? <View style={{ marginTop: 10 }}><Text style={S.muted}>{t('ab.accepting')}</Text><View style={[S.wrap, { marginTop: 6 }]}>
-            {rideOk ? <Chip text={t('ab.accepting.ride')} on={accepting.includes('ride')} onPress={() => flip('ride')} /> : null}
-            {absOk ? <Chip text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => flip('abasare')} /> : null}</View></View> : null}
+            {rideOk ? <Chip glyph="🛵" text={t('ab.accepting.ride')} on={accepting.includes('ride')} onPress={() => flip('ride')} /> : null}
+            {absOk ? <Chip glyph="🧑‍✈️" text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => flip('abasare')} /> : null}</View></View> : null}
           {!rideOk && !absOk ? <View style={{ marginTop: SP.md }}><Banner kind="bad" text={blockedText()} /></View> : null}
         </Card>
+        <CategoryCard kind={driverKind(status)} jobs={jobTypes({ ridePermitted: rideOk, abasarePermitted: absOk })} onGuide={() => nav.push('driverGuide', { kind: driverKind(status) === 'abasare' ? 'abasare' : 'own' })} />
         <StatRow>
           <StatTile testID="dh-trips" glyph="🧾" value={String(today.trips)} label={`${t('dh.today')} · ${t('dh.stat.trips')}`} />
           <StatTile testID="dh-earned" glyph="💰" value={fmtRwf(today.net || today.fares)} unit="RWF" label={`${t('dh.today')} · ${t('dh.stat.earned')}`} tint={C.warnBg} />

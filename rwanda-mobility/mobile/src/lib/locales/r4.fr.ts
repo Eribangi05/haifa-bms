@@ -1,7 +1,7 @@
 import type { r4en } from './r4.en';
 export const r4fr: Record<keyof typeof r4en, string> = {
   'tab.home': 'Accueil', 'tab.book': 'Réserver', 'tab.trips': 'Courses', 'tab.wallet': 'Portefeuille', 'tab.account': 'Compte',
-  'tab.drv.work': 'Travail', 'tab.drv.earn': 'Revenus', 'tab.drv.car': 'Véhicule',
+  'tab.drv.work': 'Missions', 'tab.drv.earn': 'Revenus', 'tab.drv.car': 'Profil',
   'mo.1': 'Janvier', 'mo.2': 'Février', 'mo.3': 'Mars', 'mo.4': 'Avril', 'mo.5': 'Mai', 'mo.6': 'Juin', 'mo.7': 'Juillet', 'mo.8': 'Août', 'mo.9': 'Septembre', 'mo.10': 'Octobre', 'mo.11': 'Novembre', 'mo.12': 'Décembre',
 
   'ov.greet.morning': 'Bonjour', 'ov.greet.afternoon': 'Bon après-midi', 'ov.greet.evening': 'Bonsoir',

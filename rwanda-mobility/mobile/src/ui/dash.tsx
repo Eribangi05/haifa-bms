@@ -56,3 +56,52 @@ export const MenuGroup = ({ title, children }: { title?: string; children: React
     <View style={{ backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, paddingHorizontal: SP.md, ...SHADOW.card }}>{children}</View>
   </View>
 );
+
+/** Illustrated panel built from emoji and flag-coloured shapes (no image assets): used on guide pages, choosers and empty pages. */
+export function Illustration({ glyphs, tint = C.skyBg, height = 150, testID }: { glyphs: string; tint?: string; height?: number; testID?: string }) {
+  return (
+    <View testID={testID} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ height, borderRadius: R.lg, backgroundColor: tint, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: SP.md }}>
+      <View style={{ position: 'absolute', left: -24, bottom: -30, width: 110, height: 110, borderRadius: 55, backgroundColor: C.sky, opacity: 0.22 }} />
+      <View style={{ position: 'absolute', right: 26, top: -28, width: 84, height: 84, borderRadius: 42, backgroundColor: C.gold, opacity: 0.5 }} />
+      <View style={{ position: 'absolute', right: -18, bottom: -22, width: 100, height: 100, borderRadius: 50, backgroundColor: C.green, opacity: 0.35 }} />
+      <Text style={{ fontSize: Math.round(height * 0.38), letterSpacing: 6 }}>{glyphs}</Text>
+    </View>
+  );
+}
+
+/** Segmented control for sub-pages inside one tab (equal-width pills). */
+export function Segmented({ items, value, onChange }: { items: { key: string; label: string }[]; value: string; onChange: (k: string) => void }) {
+  return (
+    <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: C.line, borderRadius: R.pill, padding: 3, marginBottom: SP.md }}>
+      {items.map((it) => {
+        const on = it.key === value;
+        return (
+          <Pressable key={it.key} testID={`seg-${it.key}`} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={it.label}
+            style={{ flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: R.pill, backgroundColor: on ? C.card : 'transparent', paddingHorizontal: 4, ...(on ? SHADOW.card : {}) }}>
+            <Text numberOfLines={1} style={{ fontSize: FS.sm, fontWeight: on ? '800' : '600', color: on ? C.primaryDark : C.muted }}>{it.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Horizontal progress steps (done = ✓, current = highlighted number). */
+export function StepBar({ steps, labels }: { steps: { key: string; state: 'done' | 'current' | 'todo' }[]; labels: Record<string, string> }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: SP.sm }}>
+      {steps.map((st, i) => (
+        <View key={st.key} testID={`step-${st.key}-${st.state}`} accessible accessibilityLabel={`${labels[st.key]}: ${st.state}`} style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+            <View style={{ flex: 1, height: 3, backgroundColor: i === 0 ? 'transparent' : st.state === 'todo' ? C.line : C.green }} />
+            <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: st.state === 'done' ? C.green : st.state === 'current' ? C.gold : C.line, borderWidth: st.state === 'current' ? 2 : 0, borderColor: C.ink }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: st.state === 'done' ? '#fff' : C.ink }}>{st.state === 'done' ? '✓' : i + 1}</Text>
+            </View>
+            <View style={{ flex: 1, height: 3, backgroundColor: i === steps.length - 1 ? 'transparent' : st.state === 'done' ? C.green : C.line }} />
+          </View>
+          <Text numberOfLines={2} style={{ fontSize: FS.xs, textAlign: 'center', marginTop: 4, fontWeight: st.state === 'current' ? '800' : '500', color: st.state === 'todo' ? C.muted : C.ink }}>{labels[st.key]}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}

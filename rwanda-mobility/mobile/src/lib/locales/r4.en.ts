@@ -2,7 +2,7 @@
 // r4.rw.ts and r4.fr.ts must define exactly the same keys.
 export const r4en = {
   'tab.home': 'Home', 'tab.book': 'Book', 'tab.trips': 'Trips', 'tab.wallet': 'Wallet', 'tab.account': 'Account',
-  'tab.drv.work': 'Work', 'tab.drv.earn': 'Earnings', 'tab.drv.car': 'Vehicle',
+  'tab.drv.work': 'Jobs', 'tab.drv.earn': 'Earnings', 'tab.drv.car': 'Profile',
   'mo.1': 'January', 'mo.2': 'February', 'mo.3': 'March', 'mo.4': 'April', 'mo.5': 'May', 'mo.6': 'June', 'mo.7': 'July', 'mo.8': 'August', 'mo.9': 'September', 'mo.10': 'October', 'mo.11': 'November', 'mo.12': 'December',
 
   // Home overview

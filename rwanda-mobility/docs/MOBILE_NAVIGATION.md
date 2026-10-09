@@ -22,6 +22,20 @@ The app used to put almost everything on one long Home page. From 0.7.0 every ar
 | **Vehicle** | Driving record (rating, completed trips, status, badges), vehicle details (make, model, plate, seats), every required document with status and renewal upload, quests |
 | **Account** | Same as the rider Account: language, profile, claims, settings, help, switch to rider mode, sign out |
 
+## Driver categories
+
+Drivers belong to one of two categories, and one person can be both. The app shows the category on the Jobs tab and on the Profile overview, and every page adapts to it.
+
+| Category | Needs | Jobs received | Profile pages |
+|---|---|---|---|
+| **Owner-driver** (has a vehicle) | ID, licence, vehicle registration, insurance, photo | Ride requests in their own vehicle; may also apply for Abasare | Vehicle (details, ride history), Abasare ("Add Abasare" form), Documents |
+| **Abasare driver** (no vehicle) | ID, licence with experience, police clearance, photo | Abasare jobs: driving a customer's own car, home or by the hour | Vehicle (explains none is needed), Abasare (skills, jobs), Documents |
+| **Both** | Both sets | Ride and Abasare jobs, switchable on the Jobs tab | All pages populated |
+
+Screens added for the categories: a **chooser** with two comparison cards and a five-step **application progress bar** (Choose, Details, Documents, Review, Approved); **guide pages** (4 pages for owner-drivers, 6 for Abasare drivers: check the car, drive, check out, return home, get paid); a four-page **Profile** (Overview, Vehicle, Abasare, Documents); **Apply for Abasare** for approved owner-drivers; **Earnings by job type** (rides vs Abasare); job-type filter and badges on the driver Trips tab.
+
+An owner-driver can add Abasare to the same account. An Abasare driver who later buys a vehicle must ask support to add it (a new vehicle application on an approved account is not offered in the app yet).
+
 ## Rules of the navigation
 
 * **One language** across the whole app; the Account tab switches it instantly.

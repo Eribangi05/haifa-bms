@@ -3,6 +3,7 @@ import { r1fr } from './r1.fr';
 import { r2fr } from './r2.fr';
 import { r3fr } from './r3.fr';
 import { r4fr } from './r4.fr';
+import { r5fr } from './r5.fr';
 // Français. Typed against English keys so a missing string is a compile error.
 const base: Record<BaseK, string> = {
   'app.tagline': 'Des trajets sûrs et simples partout au Rwanda',
@@ -280,4 +281,4 @@ const base: Record<BaseK, string> = {
   'prof.export.done': 'Nous avons reçu votre demande et vous enverrons une copie de vos données.',
   'prof.signout.confirm': 'Se déconnecter de ce téléphone ?',
 };
-export const fr: Record<K, string> = { ...base, ...r1fr, ...r2fr, ...r3fr, ...r4fr };
+export const fr: Record<K, string> = { ...base, ...r1fr, ...r2fr, ...r3fr, ...r4fr, ...r5fr };

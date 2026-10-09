@@ -3,6 +3,7 @@ import { r1rw } from './r1.rw';
 import { r2rw } from './r2.rw';
 import { r3rw } from './r3.rw';
 import { r4rw } from './r4.rw';
+import { r5rw } from './r5.rw';
 // Kinyarwanda. Typed against English keys so a missing string is a compile error.
 const base: Record<BaseK, string> = {
   'app.tagline': 'Ingendo zizewe kandi zoroshye mu Rwanda',
@@ -280,4 +281,4 @@ const base: Record<BaseK, string> = {
   'prof.export.done': 'Twakiriye ubusabe bwawe, tuzakoherereza kopi y\'amakuru yawe.',
   'prof.signout.confirm': 'Wifuza gusohoka kuri iyi telefone?',
 };
-export const rw: Record<K, string> = { ...base, ...r1rw, ...r2rw, ...r3rw, ...r4rw };
+export const rw: Record<K, string> = { ...base, ...r1rw, ...r2rw, ...r3rw, ...r4rw, ...r5rw };

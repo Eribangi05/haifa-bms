@@ -8,7 +8,8 @@ import { Home } from '../passenger/home';
 import { TripsPanel, TripsTab } from '../history';
 import { DriverHome } from '../driver';
 import { Earnings } from '../driver/earnings';
-import { VehicleTab } from '../driver/vehicleTab';
+import { ProfileTab } from '../driver/profileTab';
+import { EarningsSplit } from '../driver/earningsSplit';
 import { AccountTab } from './account';
 import { Overview } from './overview';
 import { WalletTab } from './wallet';
@@ -46,7 +47,7 @@ function DriverTrips() {
 }
 function DriverEarnings() {
   const { t } = useApp();
-  return <Screen title={t('de.title')}><Earnings /></Screen>;
+  return <Screen title={t('de.title')}><EarningsSplit /><Earnings /></Screen>;
 }
 
 /** Driver root: Work (application or online/offers), Trips, Earnings, Vehicle and record, Account. */
@@ -63,7 +64,7 @@ export function DriverShell() {
         <TabPane active={cur === 'home'} lazy={false}><DriverHome /></TabPane>
         <TabPane active={cur === 'trips'}><DriverTrips /></TabPane>
         <TabPane active={cur === 'earn'}><DriverEarnings /></TabPane>
-        <TabPane active={cur === 'car'}><VehicleTab focused={cur === 'car'} /></TabPane>
+        <TabPane active={cur === 'car'}><ProfileTab focused={cur === 'car'} /></TabPane>
         <TabPane active={cur === 'account'}><AccountTab /></TabPane>
       </TabShell>
     </TripFeedProvider>

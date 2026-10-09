@@ -7,6 +7,8 @@ import { Welcome, Phone, Otp } from './src/screens/auth';
 import { Scan } from './src/screens/scan';
 import { Options, Track } from './src/screens/passenger';
 import { PassengerShell, DriverShell } from './src/screens/tabs/shells';
+import { DriverGuide } from './src/screens/driver/guide';
+import { AbasareApply } from './src/screens/driver/abasareApply';
 import { History } from './src/screens/history';
 import { Profile } from './src/screens/profile';
 import { Support } from './src/screens/support';
@@ -103,6 +105,8 @@ function Router() {
     case 'schedules': screen = <Schedules />; break;
     case 'quests': screen = <Quests />; break;
     case 'heatmap': screen = <Heatmap />; break;
+    case 'driverGuide': screen = <DriverGuide params={route.params} />; break;
+    case 'abasareApply': screen = <AbasareApply />; break;
     case 'driverHome': screen = <DriverShell />; break;
     default: screen = <PassengerShell />;
   }

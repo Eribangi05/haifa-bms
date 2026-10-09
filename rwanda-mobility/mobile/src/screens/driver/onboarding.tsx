@@ -4,15 +4,18 @@ import { useApp, useAsync } from '../../lib/app';
 import { isIsoDate } from '../../lib/format';
 import type { DriverStatus } from '../../lib/types';
 import { Banner, Btn, Card, Chip, Field, Pill, Screen, Text, useFormFocus } from '../../ui/components';
-import { C, S } from '../../ui/theme';
+import { C, S, SP } from '../../ui/theme';
 import { DocRow } from './docRow';
+import { applicationSteps } from '../../lib/driverKind';
+import { Illustration, StepBar } from '../../ui/dash';
+import { OptionCard } from './kindUi';
 
 const VTYPES = ['moto', 'car', 'minivan'] as const;
 const ALL_CLASSES = ['car', 'suv', 'minivan', 'pickup', 'moto'] as const;
 
 /** Driver application: choose a path (own vehicle / Abasare), fill details, upload documents, submit for review. */
 export function Onboarding({ status, reload }: { status: DriverStatus; reload: () => void }) {
-  const { t, client, setMode, say } = useApp(); const { busy, run } = useAsync();
+  const { t, client, setMode, say, nav } = useApp(); const { busy, run } = useAsync();
   const p = status.profile, v = status.vehicle; const ab = status.abasare ?? { status: 'none', skills: {} };
   const [showRide, setShowRide] = useState(!!v); const [showAb, setShowAb] = useState(ab.status !== 'none');
   const [af, setAf] = useState({ licence_since: ab.skills?.licence_since ?? '', years: String(ab.skills?.years_experience ?? ''), transmissions: ab.skills?.transmissions ?? ['manual'], classes: ab.skills?.classes ?? ['car'], return_mode: ab.skills?.return_mode ?? 'moto' });
@@ -34,12 +37,27 @@ export function Onboarding({ status, reload }: { status: DriverStatus; reload: (
   const submit = () => run(async () => { await client.post('/drivers/applications/submit'); reload(); });
   const hasPath = !!v || ab.status !== 'none';
   const need = status.requirements ?? [];
+  const docsOk = need.filter((r) => r.mandatory).every((r) => status.documents.some((d) => d.doc_type === r.doc_type));
+  const steps = applicationSteps({ profileStatus: p.status, chosen: showRide || showAb, saved: hasPath, docsOk });
+  const cur = steps.find((x) => x.state === 'current')?.key ?? 'approved';
+  const stepHelp = p.status === 'INFO_REQUIRED' ? t('st.help.info') : t(`st.help.${cur === 'details' ? 'documents' : cur}` as 'st.help.path');
   return (
     <Screen title={t('drv.app.title')} onBack={() => setMode('passenger')} footer={editable && hasPath ? <Btn testID="cta" big title={t('drv.submit')} onPress={submit} loading={busy} /> : undefined}>
       <Card><Text style={S.muted}>{t('drv.status')}</Text><Pill tone={p.status === 'REJECTED' || p.status === 'SUSPENDED' ? 'bad' : p.status === 'APPROVED' ? 'ok' : 'warn'} text={t(('drv.st.' + p.status) as 'drv.st.APPROVED')} />{p.status_reason ? <Text style={[S.body, { marginTop: 6 }]}>{p.status_reason}</Text> : null}</Card>
+      <Card>
+        <Text accessibilityRole="header" style={S.h2}>{t('st.title')}</Text>
+        <StepBar steps={steps} labels={{ path: t('st.path'), details: t('st.details'), documents: t('st.documents'), review: t('st.review'), approved: t('st.approved') }} />
+        <Text style={S.muted}>{stepHelp}</Text>
+      </Card>
       {status.fleet_invites?.length ? <Card><Text style={S.h2}>{t('drv.fleet.invite')}</Text>{status.fleet_invites.map((i) => <View key={i.id} style={[S.between, { marginTop: 6 }]}><Text style={[S.body, { flex: 1 }]}>{i.name}</Text><Btn title={t('common.yes')} onPress={() => run(async () => { await client.post('/drivers/me/fleet/accept', { invite_id: i.id }); reload(); })} /></View>)}</Card> : null}
-      {editable && !showRide && !showAb ? <Card><Text style={S.h2}>{t('drv.become')}</Text><Text style={[S.muted, { marginBottom: 10 }]}>{t('ab.apply.sub')}</Text>
-        <Btn title={t('ab.apply.path.abasare')} onPress={() => setShowAb(true)} big /><View style={{ height: 10 }} /><Btn kind="ghost" title={t('ab.apply.path.ride')} onPress={() => setShowRide(true)} /></Card> : null}
+      {editable && !showRide && !showAb ? <>
+        <Illustration glyphs="🛵🧑‍✈️🚗" tint={C.skyBg} height={130} />
+        <Text accessibilityRole="header" style={S.h1}>{t('ds.title')}</Text><Text style={[S.muted, { marginBottom: SP.md }]}>{t('ds.sub')}</Text>
+        <OptionCard testID="choose-own" accent={C.primary} glyph="🛵" tint={C.skyBg} tag={t('ds.own.tag')} title={t('ds.own.title')} bullets={[t('ds.own.b1'), t('ds.own.b2'), t('ds.own.b3')]} need={t('ds.own.need')} cta={t('ds.cta.own')} onPress={() => setShowRide(true)} />
+        <OptionCard testID="choose-abasare" accent={C.gold} glyph="🧑‍✈️" tint={C.warnBg} tag={t('ds.ab.tag')} title={t('ds.ab.title')} bullets={[t('ds.ab.b1'), t('ds.ab.b2'), t('ds.ab.b3')]} need={t('ds.ab.need')} cta={t('ds.cta.ab')} onPress={() => setShowAb(true)} />
+        <Banner kind="ok" text={t('ds.both')} />
+        <View style={[S.wrap, { gap: SP.xs }]}><Btn testID="guide-own" kind="ghost" title={`${t('dg.own.title')} ›`} onPress={() => nav.push('driverGuide', { kind: 'own' })} /><View style={{ width: SP.sm }} /><Btn testID="guide-abasare" kind="ghost" title={`${t('dg.ab.title')} ›`} onPress={() => nav.push('driverGuide', { kind: 'abasare' })} /></View>
+      </> : null}
       {editable && (showRide || showAb) ? <View style={S.wrap}><Chip text={t('ab.apply.path.ride')} on={showRide} onPress={() => setShowRide(!showRide || !showAb)} /><Chip text={t('ab.apply.path.abasare')} on={showAb} onPress={() => setShowAb(!showAb || !showRide)} /></View> : null}
       {editable && showAb ? <Card style={{ borderColor: C.gold, borderWidth: 2 }}>
         <Text style={S.h2}>{t('ab.apply.title')}</Text><Text style={[S.muted, { marginBottom: 8 }]}>{t('ab.apply.need')}</Text>
