@@ -30,7 +30,7 @@ await step('sign up through the UI (English)', async () => {
 await step('profile -> Start driver application', async () => { await page.getByTestId('tab-account').click(); await page.getByTestId('acc-become').click(); await page.getByText('Driver application', { exact: true }).first().waitFor({ timeout: 20000 }); await shot('1-application'); });
 const plate = 'RD' + (100 + Math.floor(Math.random() * 899)) + 'C';
 await step('fill and save application', async () => {
-  await page.getByText('Drive with my own vehicle', { exact: true }).first().click(); await page.getByLabel('Full legal name').fill('Alice Uwimana'); await page.getByLabel('National ID number').fill('1199080012345678');
+  await page.getByTestId('choose-own').click(); await page.getByLabel('Full legal name').fill('Alice Uwimana'); await page.getByLabel('National ID number').fill('1199080012345678');
   await page.getByLabel('Make').fill('Bajaj'); await page.getByLabel('Model').fill('Boxer'); await page.getByLabel('Colour').fill('Red'); await page.getByLabel('Plate number').fill(plate);
   await page.getByLabel('Payout Mobile Money number').fill('0788123456'); await page.getByText('Save', { exact: true }).click(); await page.getByText('Documents', { exact: true }).waitFor({ timeout: 20000 }); await shot('2-docs');
 });

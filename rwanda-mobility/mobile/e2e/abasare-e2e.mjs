@@ -26,10 +26,10 @@ const chooseFile = async (page, label) => { const [fc] = await Promise.all([page
 // ---------------- driver applies ----------------
 await step('driver signs up and opens the Abasare application', async () => {
   await signUp(D, dph); await D.page.getByTestId('tab-account').click(); await D.page.getByTestId('acc-become').click();
-  await D.page.getByText('Abasare: drive customers\' cars', { exact: true }).first().waitFor({ timeout: 20000 }); await shot(D, '1-chooser');
+  await D.page.getByTestId('choose-abasare').waitFor({ timeout: 20000 }); await shot(D, '1-chooser');
 }, D);
 await step('choose Abasare, fill skills, save', async () => {
-  await D.page.getByText('Abasare: drive customers\' cars', { exact: true }).first().click();
+  await D.page.getByTestId('choose-abasare').click();
   await D.page.getByLabel('Full legal name').fill('Eric Umusare'); await D.page.getByLabel('National ID number').fill('1198580012345678');
   await D.page.getByLabel('Driving licence issue date (YYYY-MM-DD)').fill('2016-04-12'); await D.page.getByLabel('Years of driving experience').fill('9');
   await D.page.getByText('Automatic', { exact: true }).click(); await D.page.getByText('SUV', { exact: true }).click();
