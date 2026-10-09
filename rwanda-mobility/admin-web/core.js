@@ -50,8 +50,16 @@ const LOC = () => (typeof curLang !== 'undefined' && curLang === 'fr' ? 'fr-FR' 
 const NUM = () => (typeof curLang !== 'undefined' && curLang === 'fr' ? 'fr-FR' : 'en-US');
 const money = (n) => (n == null ? '-' : Number(n).toLocaleString(NUM()) + ' RWF');
 const nfmt = (n) => (n == null || Number.isNaN(Number(n)) ? '-' : Number(n).toLocaleString(NUM()));
-const when = (d) => (d ? new Date(d).toLocaleString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-');
-const dateOnly = (d) => (d ? new Date(d).toLocaleDateString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric' }) : '-');
+const MONTHS_RW = ['Mutarama', 'Gashyantare', 'Werurwe', 'Mata', 'Gicurasi', 'Kamena', 'Nyakanga', 'Kanama', 'Nzeri', 'Ukwakira', 'Ugushyingo', 'Ukuboza'];
+// Kinyarwanda month names are written here because not every browser ships the Kinyarwanda calendar data.
+function kigaliParts(d, time) {
+  const o = { timeZone: 'Africa/Kigali', day: '2-digit', month: 'numeric', year: 'numeric', ...(time ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}) };
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', o).formatToParts(new Date(d)).map((x) => [x.type, x.value]));
+  return `${p.day} ${MONTHS_RW[Number(p.month) - 1]} ${p.year}${time ? `, ${p.hour === '24' ? '00' : p.hour}:${p.minute}` : ''}`;
+}
+const isRw = () => typeof curLang !== 'undefined' && curLang === 'rw';
+const when = (d) => (d ? (isRw() ? kigaliParts(d, true) : new Date(d).toLocaleString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })) : '-');
+const dateOnly = (d) => (d ? (isRw() ? kigaliParts(d, false) : new Date(d).toLocaleDateString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric' })) : '-');
 const ago = (d) => { if (!d) return '-'; const s = Math.max(0, Math.round((Date.now() - new Date(d)) / 1000)); return s < 90 ? s + ' s ago' : s < 5400 ? Math.round(s / 60) + ' min ago' : s < 129600 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
 const human = (s) => String(s ?? '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 const short = (s, n = 8) => (s ? String(s).slice(0, n) : '');

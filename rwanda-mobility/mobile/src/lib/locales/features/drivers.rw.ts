@@ -1,12 +1,12 @@
 import type { driversEn } from './drivers.en';
 export const driversRw: Record<keyof typeof driversEn, string> = {
-  'dk.own': 'Umushoferi ufite ikinyabiziga', 'dk.abasare': 'Umushoferi wa Abasare', 'dk.both': 'Ufite ikinyabiziga kandi uri Abasare', 'dk.new': 'Umushoferi mushya',
+  'dk.own': 'Umushoferi ufite ikinyabiziga', 'dk.abasare': 'Umusare', 'dk.both': 'Ufite ikinyabiziga kandi uri Umusare', 'dk.new': 'Umushoferi mushya',
   'dk.own.sub': 'Utwara ikinyabiziga cyawe ukakira ubusabe bw\'ingendo.',
   'dk.abasare.sub': 'Nta kinyabiziga ukeneye: utwara imodoka z\'abakiriya, mu rugendo rwo gutaha cyangwa ku isaha.',
   'dk.both.sub': 'Wakira ingendo ukoresheje ikinyabiziga cyawe, ukanatwara imodoka z\'abakiriya muri Abasare.',
   'dk.new.sub': 'Hitamo uko ushaka gutwara kugira ngo utangire.',
   'dk.jobs': 'Imirimo ushobora kwakira', 'dk.job.ride': 'Ingendo mu kinyabiziga cyanjye', 'dk.job.abasare': 'Abasare: gutwara imodoka y\'umukiriya',
-  'dk.guide': 'Uko bikora', 'dk.badge.own': 'Ikinyabiziga cyawe', 'dk.badge.abasare': 'Abasare',
+  'dk.guide': 'Uko bikora', 'dk.badge.own': 'Ikinyabiziga cyawe', 'dk.badge.abasare': 'Umusare',
 
   'ds.title': 'Wifuza gutwara ute?', 'ds.sub': 'Hitamo ikubereye uyu munsi. Ushobora kongeraho ikindi nyuma.',
   'ds.own.title': 'Mfite ikinyabiziga', 'ds.own.tag': 'IKINYABIZIGA CYAWE',
@@ -15,7 +15,7 @@ export const driversRw: Record<keyof typeof driversEn, string> = {
   'ds.ab.title': 'Nta kinyabiziga mfite', 'ds.ab.tag': 'ABASARE',
   'ds.ab.b1': 'Utwara imodoka z\'abakiriya: gutaha nyuma y\'ijoro ryo kwishimisha, cyangwa ku isaha', 'ds.ab.b2': 'Nta kiguzi cya lisansi cyangwa gusana ikinyabiziga', 'ds.ab.b3': 'Akazi kizewe, imodoka ifotorwa mu ntangiriro no mu iherezo',
   'ds.ab.need': 'Ukeneye: indangamuntu, uruhushya rwo gutwara n\'uburambe, icyemezo cya polisi, ifoto yawe',
-  'ds.cta.own': 'Tangirana n\'ikinyabiziga cyanjye', 'ds.cta.ab': 'Saba kuba umushoferi wa Abasare', 'ds.both': 'Ufite ikinyabiziga? Ushobora gukora byombi: ingendo mu kinyabiziga cyawe n\'imirimo ya Abasare mu modoka z\'abakiriya.',
+  'ds.cta.own': 'Tangirana n\'ikinyabiziga cyanjye', 'ds.cta.ab': 'Saba kuba Umusare', 'ds.both': 'Ufite ikinyabiziga? Ushobora gukora byombi: ingendo mu kinyabiziga cyawe n\'imirimo ya Abasare mu modoka z\'abakiriya.',
   'ds.guide': 'Reba uko buri buryo bukora',
 
   'st.title': 'Ubusabe bwawe', 'st.path': 'Hitamo', 'st.details': 'Amakuru', 'st.documents': 'Ibyangombwa', 'st.review': 'Gusuzumwa', 'st.approved': 'Wemewe',
@@ -41,12 +41,12 @@ export const driversRw: Record<keyof typeof driversEn, string> = {
   'pf.v.none': 'Utwara imodoka z\'abakiriya, ntukeneye ikinyabiziga. Akazi kawe kari ku rupapuro rwa Abasare.',
   'pf.v.rides': 'Ingendo zakozwe n\'iki kinyabiziga', 'pf.v.recent': 'Ingendo ziheruka', 'pf.v.norides': 'Ingendo zawe zizagaragara hano.',
   'pf.v.add': 'Ufite n\'ikinyabiziga? Saba ubufasha bagishyire kuri konti yawe.', 'pf.v.support': 'Vugana n\'ubufasha',
-  'pf.a.status': 'Uko Abasare ihagaze', 'pf.a.skills': 'Uko utwara', 'pf.a.licence': 'Uruhushya kuva', 'pf.a.exp': 'Imyaka y\'uburambe', 'pf.a.trans': 'Ubwoko bwa moteri', 'pf.a.classes': 'Ubwoko bw\'imodoka', 'pf.a.return': 'Uko usubira iwawe',
+  'pf.a.status': 'Uko ubusabe bwo kuba Umusare buhagaze', 'pf.a.skills': 'Uko utwara', 'pf.a.licence': 'Uruhushya kuva', 'pf.a.exp': 'Imyaka y\'uburambe', 'pf.a.trans': 'Ubwoko bwa moteri', 'pf.a.classes': 'Ubwoko bw\'imodoka', 'pf.a.return': 'Uko usubira iwawe',
   'pf.a.jobs': 'Imirimo ya Abasare', 'pf.a.jobs.empty': 'Imirimo yawe ya Abasare izagaragara hano.', 'pf.a.mode.p2p': 'Ntwara mu rugo', 'pf.a.mode.hourly': 'Ku isaha: amasaha {h}',
-  'pf.a.apply': 'Ongera Abasare kuri konti yanjye', 'pf.a.apply.sub': 'Ufite ikinyabiziga kandi ushobora gutwara n\'imodoka z\'abakiriya. Saba kugira ngo wakire imirimo ya Abasare.', 'pf.a.guide': 'Uko umushoferi wa Abasare akora',
+  'pf.a.apply': 'Ongeraho kuba Umusare kuri konti yanjye', 'pf.a.apply.sub': 'Ufite ikinyabiziga kandi ushobora gutwara n\'imodoka z\'abakiriya. Saba kugira ngo wakire imirimo ya Abasare.', 'pf.a.guide': 'Uko Umusare akora',
   'pf.d.intro': 'Gumisha ibyangombwa byose bifite agaciro kugira ngo ukomeze kubona imirimo. Gusimbuza icyangombwa mbere y\'uko kirangira.',
 
   'er.split': 'Amafaranga ukurikije akazi', 'er.ride': 'Ingendo', 'er.abasare': 'Abasare', 'er.jobs': 'Imirimo {n}', 'er.latest': 'Imirimo 50 iheruka',
   'dt.f.all': 'Yose', 'dt.f.ride': 'Ingendo', 'dt.f.abasare': 'Abasare',
-  'ap.title': 'Saba Abasare', 'ap.sub': 'Tubwire uko utwara. Dusuzuma ibyangombwa byawe mbere y\'uko wakira imirimo ya Abasare.', 'ap.sent': 'Ubusabe bwoherejwe. Turabusuzuma.',
+  'ap.title': 'Saba kuba Umusare', 'ap.sub': 'Tubwire uko utwara. Dusuzuma ibyangombwa byawe mbere y\'uko wakira imirimo ya Abasare.', 'ap.sent': 'Ubusabe bwoherejwe. Turabusuzuma.',
 };

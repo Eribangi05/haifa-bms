@@ -52,5 +52,5 @@ export const tabsFr: Record<keyof typeof tabsEn, string> = {
   'vh.title': 'Véhicule et dossier de conduite', 'vh.record': 'Dossier de conduite', 'vh.rating': 'Note', 'vh.trips': 'Courses terminées', 'vh.status': 'Statut du compte',
   'vh.vehicle': 'Mon véhicule', 'vh.novehicle': 'Aucun véhicule ajouté. Terminez votre candidature de chauffeur pour en ajouter un.', 'vh.apply': 'Ouvrir la candidature',
   'vh.docs': 'Documents', 'vh.docs.valid': 'Valide', 'vh.docs.until': 'Valide jusqu\'au {date}', 'vh.docs.review': 'En cours d\'examen', 'vh.docs.rejected': 'Refusé', 'vh.docs.missing': 'Manquant', 'vh.docs.manage': 'Gérer les documents',
-  'vh.abasare': 'Chauffeur Abasare', 'vh.badges': 'Badges', 'vh.growth': 'Augmentez vos revenus',
+  'vh.abasare': 'Umusare', 'vh.badges': 'Badges', 'vh.growth': 'Augmentez vos revenus',
 };

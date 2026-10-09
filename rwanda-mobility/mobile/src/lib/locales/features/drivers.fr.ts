@@ -1,12 +1,12 @@
 import type { driversEn } from './drivers.en';
 export const driversFr: Record<keyof typeof driversEn, string> = {
-  'dk.own': 'Chauffeur propriétaire', 'dk.abasare': 'Chauffeur Abasare', 'dk.both': 'Propriétaire et Abasare', 'dk.new': 'Nouveau chauffeur',
+  'dk.own': 'Chauffeur propriétaire', 'dk.abasare': 'Umusare', 'dk.both': 'Propriétaire et Umusare', 'dk.new': 'Nouveau chauffeur',
   'dk.own.sub': 'Vous conduisez votre propre véhicule et acceptez des courses.',
   'dk.abasare.sub': 'Aucun véhicule nécessaire : vous conduisez les voitures des clients, pour rentrer chez eux ou à l\'heure.',
   'dk.both.sub': 'Vous prenez des courses avec votre véhicule et des missions Abasare dans les voitures des clients.',
   'dk.new.sub': 'Choisissez comment vous voulez conduire pour commencer.',
   'dk.jobs': 'Missions que vous pouvez recevoir', 'dk.job.ride': 'Courses avec mon véhicule', 'dk.job.abasare': 'Abasare : conduire la voiture d\'un client',
-  'dk.guide': 'Comment ça marche', 'dk.badge.own': 'Véhicule perso', 'dk.badge.abasare': 'Abasare',
+  'dk.guide': 'Comment ça marche', 'dk.badge.own': 'Véhicule perso', 'dk.badge.abasare': 'Umusare',
 
   'ds.title': 'Comment voulez-vous conduire ?', 'ds.sub': 'Choisissez ce qui vous convient aujourd\'hui. Vous pourrez ajouter l\'autre option plus tard.',
   'ds.own.title': 'J\'ai un véhicule', 'ds.own.tag': 'VÉHICULE PERSONNEL',
@@ -15,7 +15,7 @@ export const driversFr: Record<keyof typeof driversEn, string> = {
   'ds.ab.title': 'Je n\'ai pas de véhicule', 'ds.ab.tag': 'ABASARE',
   'ds.ab.b1': 'Conduisez les voitures des clients : retour à la maison après une soirée, ou à l\'heure', 'ds.ab.b2': 'Aucun frais de véhicule, de carburant ou de réparation', 'ds.ab.b3': 'Un travail de confiance, avec photos de la voiture au départ et à l\'arrivée',
   'ds.ab.need': 'Il vous faut : carte d\'identité, permis avec de l\'expérience, casier judiciaire vierge, photo de profil',
-  'ds.cta.own': 'Commencer avec mon véhicule', 'ds.cta.ab': 'Postuler comme chauffeur Abasare', 'ds.both': 'Vous avez un véhicule ? Vous pouvez faire les deux : des courses avec votre véhicule et des missions Abasare dans les voitures des clients.',
+  'ds.cta.own': 'Commencer avec mon véhicule', 'ds.cta.ab': 'Postuler pour devenir Umusare', 'ds.both': 'Vous avez un véhicule ? Vous pouvez faire les deux : des courses avec votre véhicule et des missions Abasare dans les voitures des clients.',
   'ds.guide': 'Voir comment fonctionne chaque option',
 
   'st.title': 'Votre candidature', 'st.path': 'Choix', 'st.details': 'Détails', 'st.documents': 'Documents', 'st.review': 'Examen', 'st.approved': 'Approuvé',
@@ -41,12 +41,12 @@ export const driversFr: Record<keyof typeof driversEn, string> = {
   'pf.v.none': 'Vous conduisez les voitures des clients, donc aucun véhicule n\'est nécessaire. Votre travail est sur la page Abasare.',
   'pf.v.rides': 'Courses avec ce véhicule', 'pf.v.recent': 'Courses récentes', 'pf.v.norides': 'Vos courses seront listées ici.',
   'pf.v.add': 'Vous avez aussi un véhicule ? Demandez à l\'assistance de l\'ajouter à votre compte.', 'pf.v.support': 'Contacter l\'assistance',
-  'pf.a.status': 'Statut Abasare', 'pf.a.skills': 'Votre profil de conducteur', 'pf.a.licence': 'Permis depuis', 'pf.a.exp': 'Années d\'expérience', 'pf.a.trans': 'Boîtes de vitesses', 'pf.a.classes': 'Types de voitures', 'pf.a.return': 'Votre retour',
+  'pf.a.status': 'Statut de la candidature Umusare', 'pf.a.skills': 'Votre profil de conducteur', 'pf.a.licence': 'Permis depuis', 'pf.a.exp': 'Années d\'expérience', 'pf.a.trans': 'Boîtes de vitesses', 'pf.a.classes': 'Types de voitures', 'pf.a.return': 'Votre retour',
   'pf.a.jobs': 'Missions Abasare', 'pf.a.jobs.empty': 'Vos missions Abasare apparaîtront ici.', 'pf.a.mode.p2p': 'Ramenez-moi', 'pf.a.mode.hourly': 'À l\'heure : {h} h',
-  'pf.a.apply': 'Ajouter Abasare à mon compte', 'pf.a.apply.sub': 'Vous avez un véhicule et pouvez aussi conduire les voitures des clients. Postulez pour débloquer les missions Abasare.', 'pf.a.guide': 'Guide du chauffeur Abasare',
+  'pf.a.apply': 'Devenir Umusare sur mon compte', 'pf.a.apply.sub': 'Vous avez un véhicule et pouvez aussi conduire les voitures des clients. Postulez pour débloquer les missions Abasare.', 'pf.a.guide': 'Guide de l\'Umusare',
   'pf.d.intro': 'Gardez tous vos documents valides pour continuer à recevoir des missions. Remplacez un document avant son expiration.',
 
   'er.split': 'Revenus par type de mission', 'er.ride': 'Courses', 'er.abasare': 'Abasare', 'er.jobs': '{n} missions', 'er.latest': '50 dernières missions',
   'dt.f.all': 'Toutes', 'dt.f.ride': 'Courses', 'dt.f.abasare': 'Abasare',
-  'ap.title': 'Postuler à Abasare', 'ap.sub': 'Parlez-nous de votre conduite. Nous vérifions vos documents avant que vous receviez des missions Abasare.', 'ap.sent': 'Candidature envoyée. Nous allons l\'examiner.',
+  'ap.title': 'Postuler pour devenir Umusare', 'ap.sub': 'Parlez-nous de votre conduite. Nous vérifions vos documents avant que vous receviez des missions Abasare.', 'ap.sent': 'Candidature envoyée. Nous allons l\'examiner.',
 };

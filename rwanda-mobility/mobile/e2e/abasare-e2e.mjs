@@ -71,7 +71,7 @@ await step('owner signs up, switches to Abasare and adds a car', async () => {
 }, O);
 await step('Drive me home: pick a destination and see the honest price breakdown', async () => {
   await O.page.getByText('Kimironko Market', { exact: true }).first().click().catch(async () => { await O.page.getByText('Isoko rya Kimironko', { exact: true }).first().click(); });
-  await O.page.getByText('See prices', { exact: true }).click(); await O.page.getByText('Your Abasare').waitFor({ timeout: 20000 });
+  await O.page.getByText('See prices', { exact: true }).click(); await O.page.getByText('Your Umusare').waitFor({ timeout: 20000 });
   await O.page.getByText('Driver return allowance').waitFor({ timeout: 20000 }); await shot(O, '8-options');
   if (!(await O.page.getByText('Please confirm to continue').count())) throw new Error('confirm must be blocked until the owner attests');
 }, O);

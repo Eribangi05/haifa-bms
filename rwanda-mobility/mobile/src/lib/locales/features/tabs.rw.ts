@@ -52,5 +52,5 @@ export const tabsRw: Record<keyof typeof tabsEn, string> = {
   'vh.title': 'Ikinyabiziga n\'amateka y\'akazi', 'vh.record': 'Amateka y\'akazi', 'vh.rating': 'Amanota', 'vh.trips': 'Ingendo zarangiye', 'vh.status': 'Uko konti ihagaze',
   'vh.vehicle': 'Ikinyabiziga cyanjye', 'vh.novehicle': 'Nta kinyabiziga urongeraho. Uzuza ubusabe bwo kuba umushoferi ukongeremo kimwe.', 'vh.apply': 'Fungura ubusabe bw\'umushoferi',
   'vh.docs': 'Ibyangombwa', 'vh.docs.valid': 'Bifite agaciro', 'vh.docs.until': 'Bifite agaciro kugeza {date}', 'vh.docs.review': 'Birimo gusuzumwa', 'vh.docs.rejected': 'Ntibyemewe', 'vh.docs.missing': 'Ntibirashyirwaho', 'vh.docs.manage': 'Genzura ibyangombwa',
-  'vh.abasare': 'Umushoferi wa Abasare', 'vh.badges': 'Ibimenyetso by\'ishimwe', 'vh.growth': 'Zamura amafaranga winjiza',
+  'vh.abasare': 'Umusare', 'vh.badges': 'Ibimenyetso by\'ishimwe', 'vh.growth': 'Zamura amafaranga winjiza',
 };

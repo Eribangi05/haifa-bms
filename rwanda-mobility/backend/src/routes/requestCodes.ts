@@ -117,13 +117,13 @@ export const LANDING_STRINGS: Record<Lang, LS> = {
     badTitle: 'Iyi kode ntikora', badBody: 'Iyi kode ntiyemewe cyangwa yararangiye. Baza abakozi bo aha hantu.', at: 'Aho uri', footer: 'Abasare · Gutwara abantu mu Rwanda',
   },
   fr: {
-    title: 'Demander un chauffeur', here: 'Demandez un chauffeur ici', ride: 'Demander une course', abasare: 'Demander un Abasare', abasareHint: 'Un chauffeur pour votre propre voiture',
+    title: 'Demander un chauffeur', here: 'Demandez un chauffeur ici', ride: 'Demander une course', abasare: 'Demander un Umusare', abasareHint: 'Un chauffeur pour votre propre voiture',
     appNote: 'L\'application Abasare doit être installée sur votre téléphone pour continuer.', getApp: 'Installer l\'application Abasare',
     getAppNone: 'Vous n\'avez pas l\'application Abasare ? Demandez à l\'établissement ou installez-la sur votre téléphone.', tryLink: 'Si rien ne s\'ouvre, touchez ici',
     badTitle: 'Ce code n\'est pas valide', badBody: 'Ce code est invalide ou a expiré. Demandez au personnel de l\'établissement.', at: 'Vous êtes à', footer: 'Abasare · Transport au Rwanda',
   },
   en: {
-    title: 'Request a driver', here: 'Request a driver here', ride: 'Request a ride', abasare: 'Request an Abasare', abasareHint: 'A driver for your own car',
+    title: 'Request a driver', here: 'Request a driver here', ride: 'Request a ride', abasare: 'Request an Umusare', abasareHint: 'A driver for your own car',
     appNote: 'The Abasare app must be installed on your phone to continue.', getApp: 'Get the Abasare app',
     getAppNone: 'Don\'t have the Abasare app? Ask the venue or install Abasare on your phone.', tryLink: 'If nothing opens, tap here',
     badTitle: 'This code is not valid', badBody: 'This code is invalid or has expired. Please ask the venue staff.', at: 'You are at', footer: 'Abasare · Getting around Rwanda',

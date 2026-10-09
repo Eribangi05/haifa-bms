@@ -59,5 +59,5 @@ export const tabsEn = {
   'vh.title': 'Vehicle and driving record', 'vh.record': 'Driving record', 'vh.rating': 'Rating', 'vh.trips': 'Completed trips', 'vh.status': 'Account status',
   'vh.vehicle': 'My vehicle', 'vh.novehicle': 'No vehicle added yet. Complete your driver application to add one.', 'vh.apply': 'Open driver application',
   'vh.docs': 'Documents', 'vh.docs.valid': 'Valid', 'vh.docs.until': 'Valid until {date}', 'vh.docs.review': 'Under review', 'vh.docs.rejected': 'Rejected', 'vh.docs.missing': 'Missing', 'vh.docs.manage': 'Manage documents',
-  'vh.abasare': 'Abasare driver', 'vh.badges': 'Badges', 'vh.growth': 'Grow your earnings',
+  'vh.abasare': 'Umusare', 'vh.badges': 'Badges', 'vh.growth': 'Grow your earnings',
 } as const;

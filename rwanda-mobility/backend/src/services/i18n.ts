@@ -25,9 +25,9 @@ export const DEFAULT_TEMPLATES: Record<string, Record<Lang, Tpl>> = {
     fr: { title: 'Chauffeur trouvé', body: '{{driver}} ({{plate}}) est en route. Le code PIN de votre course est affiché dans l\'application.' },
   },
   abasare_assigned: {
-    en: { title: 'Abasare assigned', body: '{{driver}} is coming to drive your car {{plate}}. Check their identity in the app before handing over the keys.' },
-    rw: { title: 'Abasare yabonetse', body: '{{driver}} araje gutwara imodoka yawe {{plate}}. Banza ugenzure umwirondoro we muri porogaramu mbere yo kumuha imfunguzo.' },
-    fr: { title: 'Abasare trouvé', body: '{{driver}} vient conduire votre voiture {{plate}}. Vérifiez son identité dans l\'application avant de lui remettre les clés.' },
+    en: { title: 'Umusare assigned', body: '{{driver}} is coming to drive your car {{plate}}. Check their identity in the app before handing over the keys.' },
+    rw: { title: 'Umusare yabonetse', body: '{{driver}} araje gutwara imodoka yawe {{plate}}. Banza ugenzure umwirondoro we muri porogaramu mbere yo kumuha imfunguzo.' },
+    fr: { title: 'Umusare trouvé', body: '{{driver}} vient conduire votre voiture {{plate}}. Vérifiez son identité dans l\'application avant de lui remettre les clés.' },
   },
   handover_submitted: {
     en: { title: 'Car condition recorded', body: 'Your driver recorded the {{phase}} condition of your car. Please review and confirm in the app.' },
@@ -164,8 +164,8 @@ export const VALUE_LABELS: Record<string, Triple> = {
   approved: V('approved', 'bwemejwe', 'approuvée'), rejected: V('rejected', 'bwanzwe', 'refusée'), suspended: V('suspended', 'bwahagaritswe by\'agateganyo', 'suspendue'),
   pending: V('pending', 'burategerejwe', 'en attente'), resubmit: V('resubmit', 'ongera wohereze', 'à renvoyer'), reinstated: V('reinstated', 'bwongeye gukora', 'rétablie'),
   info_required: V('more information required', 'dukeneye andi makuru', 'informations complémentaires requises'),
-  abasare_approved: V('Abasare approved', 'Abasare byemejwe', 'Abasare approuvé'), abasare_rejected: V('Abasare rejected', 'Abasare byanzwe', 'Abasare refusé'),
-  abasare_suspended: V('Abasare suspended', 'Abasare byahagaritswe by\'agateganyo', 'Abasare suspendu'), abasare_pending: V('Abasare pending', 'Abasare biri gusuzumwa', 'Abasare en attente'),
+  abasare_approved: V('Umusare approved', 'Umusare yemejwe', 'Umusare approuvé'), abasare_rejected: V('Umusare rejected', 'Umusare yanzwe', 'Umusare refusé'),
+  abasare_suspended: V('Umusare suspended', 'Umusare yahagaritswe by\'agateganyo', 'Umusare suspendu'), abasare_pending: V('Umusare pending', 'Umusare asuzumwa', 'Umusare en attente'),
   APPLICATION_STARTED: V('application started', 'ubusabe bwatangiye', 'candidature commencée'), DOCUMENTS_SUBMITTED: V('documents submitted', 'ibyangombwa byoherejwe', 'documents envoyés'),
   UNDER_REVIEW: V('under review', 'burimo gusuzumwa', 'en cours d\'examen'), INFO_REQUIRED: V('more information required', 'dukeneye andi makuru', 'informations complémentaires requises'),
   APPROVED: V('approved', 'bwemejwe', 'approuvé'), REJECTED: V('rejected', 'bwanzwe', 'refusé'), SUSPENDED: V('suspended', 'bwahagaritswe by\'agateganyo', 'suspendu'),

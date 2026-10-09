@@ -83,7 +83,7 @@ V.codes = async (el) => {
       if (f.partner.value.trim()) body.partner_name = f.partner.value.trim(); if (f.note.value.trim()) body.pickup_note = f.note.value.trim();
       if (f.exp.value) body.expires_at = new Date(f.exp.value + 'T23:59:59+02:00').toISOString();
       return act(() => api('POST', '/admin/request-codes', body), () => go('codes')); } }, 'Create code'));
-  el.append(h('h1', {}, 'Request codes'), note('Print a QR code for a hotel, bar, mall or taxi rank. Customers scan it and request a ride or an Abasare with almost no steps. Scans are counted once per phone network every 10 minutes.'),
+  el.append(h('h1', {}, 'Request codes'), note('Print a QR code for a hotel, bar, mall or taxi rank. Customers scan it and request a ride or an Umusare with almost no steps. Scans are counted once per phone network every 10 minutes.'),
     table([{ h: 'Code', f: (c) => h('code', {}, c.code), s: (c) => c.code, csv: (c) => c.code }, { h: 'Venue', f: (c) => c.label + (c.partner_name ? ' (' + c.partner_name + ')' : ''), s: (c) => c.label }, { h: 'Default', f: (c) => human(c.default_service), s: (c) => c.default_service },
       { h: 'Scans', k: 'scans', cls: 'num' }, { h: 'Bookings', k: 'bookings', cls: 'num' }, { h: 'Completed', k: 'completed', cls: 'num' }, { h: 'Expires', f: (c) => (c.expires_at ? when(c.expires_at) : '-'), s: (c) => (c.expires_at ? Date.parse(c.expires_at) : Infinity) },
       { h: 'Status', f: (c) => (c.active && !c.expired ? pill('active', 'ok') : pill(c.expired ? 'expired' : 'inactive', 'bad')), s: (c) => (c.active && !c.expired ? 0 : 1), csv: (c) => (c.active && !c.expired ? 'active' : c.expired ? 'expired' : 'inactive') },

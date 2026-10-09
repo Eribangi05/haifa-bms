@@ -47,7 +47,7 @@ const L_FR = {
   'Date': 'Date', 'Requested': 'Demandées', 'No driver found': 'Aucun chauffeur trouvé', 'Cancellation rate (%)': 'Taux d\'annulation (%)', 'Platform commission': 'Commission de la plateforme', 'Cash collected': 'Espèces encaissées', 'New users': 'Nouveaux utilisateurs', 'Suspicious activity': 'Activité suspecte', 'Gross booking value': 'Valeur brute des réservations', 'Driver earnings': 'Gains des chauffeurs',
 };
 // Generated translations (i18n-data.js: every console string, written once for Kinyarwanda and French) with the hand-written lists above on top.
-const GEN = typeof L_DATA === 'object' ? L_DATA : {};
+const GEN = { ...(typeof L_DATA === 'object' ? L_DATA : {}), ...(typeof L_EXTRA === 'object' ? L_EXTRA : {}) };
 const DICT = { rw: {}, fr: {} }, PATTERNS = { rw: [], fr: [] }, AFFIX = { rw: [], fr: [] };
 for (const [lang, hand] of [['rw', L_RW], ['fr', L_FR]]) {
   const all = {}; for (const [en, t] of Object.entries(GEN)) if (t[lang]) all[en] = t[lang]; Object.assign(all, hand); DICT[lang] = all;
@@ -56,14 +56,25 @@ for (const [lang, hand] of [['rw', L_RW], ['fr', L_FR]]) {
     else if (k !== k.trim() && k.trim().length > 1) AFFIX[lang].push([k, v]);       // a fragment written with a leading or trailing space: " rows", "Showing "
   }
   AFFIX[lang].sort((x, y) => y[0].length - x[0].length);
+  PATTERNS[lang].sort((x, y) => y[0].source.length - x[0].source.length);      // the most specific pattern wins
 }
+const LANG_KEY = 'rm_lang';
+let curLang = (() => { const v = pref.get(LANG_KEY); return v === 'rw' || v === 'fr' ? v : 'en'; })();
 const origText = new WeakMap(), origAttr = new WeakMap();
 const ATTRS = ['placeholder', 'aria-label', 'title'];
+const capTr = (x) => { const nu = /^([\d.,\s]+)\s*([A-Za-z%/]+)$/.exec(x.trim()); if (nu && DICT[curLang][nu[2]]) return nu[1].trim() + ' ' + DICT[curLang][nu[2]]; const d = DICT[curLang], k = x.trim(); return d[k] ?? (d[k.charAt(0).toUpperCase() + k.slice(1)] ? d[k.charAt(0).toUpperCase() + k.slice(1)].replace(/^./, (c) => c.toLowerCase()) : x); };
 const tr = (s) => {
   if (curLang === 'en') return s; const d = DICT[curLang]; const str = String(s), k = str.trim(); if (!k) return s;
   const v = d[k]; if (v) return str.replace(k, v);
-  for (const [re, t] of PATTERNS[curLang]) { const m = re.exec(k); if (m) return str.replace(k, t.replace(/\{(\d+)\}/g, (_, i) => m[+i + 1] ?? '')); }
-  for (const [frag, t] of AFFIX[curLang]) { if (frag.startsWith(' ') && str.endsWith(frag)) return str.slice(0, -frag.length) + t; if (frag.endsWith(' ') && str.startsWith(frag)) return t + str.slice(frag.length); }
+  for (const [re, t] of PATTERNS[curLang]) { const m = re.exec(k); if (m) return str.replace(k, t.replace(/\{(\d+)\}/g, (_, i) => capTr(m[+i + 1] ?? ''))); }
+  for (const [frag, t] of AFFIX[curLang]) {      // a fragment next to a number or a name ("37 rows", "Sort by Status"): the rest must be data, never English words
+    let rest = null, pre = true;
+    if (frag.startsWith(' ') && str.endsWith(frag)) { rest = str.slice(0, -frag.length); pre = false; } else if (frag.endsWith(' ') && str.startsWith(frag)) rest = str.slice(frag.length);
+    if (rest === null) continue;
+    const r2 = rest.trim() ? (DICT[curLang][rest.trim()] ? rest.replace(rest.trim(), DICT[curLang][rest.trim()]) : /^[\d\s.,:%\/\-+#'\u2019&()\u00b7]*$|^([A-Z][\w'\u2019-]*\s?)+$/.test(rest) ? rest : null) : rest;
+    if (r2 === null) continue;
+    return pre ? t + r2 : r2 + t;
+  }
   return s;
 };
 function trNode(n) {

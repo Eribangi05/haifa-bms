@@ -2,13 +2,13 @@
 // r5.rw.ts and r5.fr.ts must define exactly the same keys.
 export const driversEn = {
   // categories
-  'dk.own': 'Owner-driver', 'dk.abasare': 'Abasare driver', 'dk.both': 'Owner-driver and Abasare', 'dk.new': 'New driver',
+  'dk.own': 'Owner-driver', 'dk.abasare': 'Umusare', 'dk.both': 'Owner-driver and Umusare', 'dk.new': 'New driver',
   'dk.own.sub': 'You drive your own vehicle and take ride requests.',
   'dk.abasare.sub': 'No vehicle needed: you drive customers\' own cars, at home time or by the hour.',
   'dk.both.sub': 'You take ride requests in your vehicle and Abasare jobs in customers\' cars.',
   'dk.new.sub': 'Choose how you want to drive to get started.',
   'dk.jobs': 'Jobs you can receive', 'dk.job.ride': 'Rides in my vehicle', 'dk.job.abasare': 'Abasare: drive a customer\'s car',
-  'dk.guide': 'How it works', 'dk.badge.own': 'Own vehicle', 'dk.badge.abasare': 'Abasare',
+  'dk.guide': 'How it works', 'dk.badge.own': 'Own vehicle', 'dk.badge.abasare': 'Umusare',
 
   // chooser
   'ds.title': 'How do you want to drive?', 'ds.sub': 'Pick what fits you today. You can add the other option later.',
@@ -18,7 +18,7 @@ export const driversEn = {
   'ds.ab.title': 'I do not have a vehicle', 'ds.ab.tag': 'ABASARE',
   'ds.ab.b1': 'Drive customers\' own cars: home after a night out, or by the hour', 'ds.ab.b2': 'No vehicle, fuel or repair costs for you', 'ds.ab.b3': 'Trusted work with photo checks of the car at start and end',
   'ds.ab.need': 'You need: national ID, driving licence with experience, police clearance, profile photo',
-  'ds.cta.own': 'Start with my vehicle', 'ds.cta.ab': 'Apply as an Abasare driver', 'ds.both': 'Own a vehicle? You can do both: ride jobs in your vehicle and Abasare jobs in customers\' cars.',
+  'ds.cta.own': 'Start with my vehicle', 'ds.cta.ab': 'Apply to become an Umusare', 'ds.both': 'Own a vehicle? You can do both: ride jobs in your vehicle and Abasare jobs in customers\' cars.',
   'ds.guide': 'See how each option works',
 
   // application progress
@@ -47,13 +47,13 @@ export const driversEn = {
   'pf.v.none': 'You drive customers\' cars, so you do not need a vehicle. Your work is on the Abasare page.',
   'pf.v.rides': 'Ride jobs with this vehicle', 'pf.v.recent': 'Recent ride jobs', 'pf.v.norides': 'Your ride jobs will be listed here.',
   'pf.v.add': 'Own a vehicle too? Ask support to add it to your account.', 'pf.v.support': 'Contact support',
-  'pf.a.status': 'Abasare status', 'pf.a.skills': 'Your driving profile', 'pf.a.licence': 'Licence since', 'pf.a.exp': 'Years of experience', 'pf.a.trans': 'Gearboxes', 'pf.a.classes': 'Car types', 'pf.a.return': 'How you get home',
+  'pf.a.status': 'Umusare application status', 'pf.a.skills': 'Your driving profile', 'pf.a.licence': 'Licence since', 'pf.a.exp': 'Years of experience', 'pf.a.trans': 'Gearboxes', 'pf.a.classes': 'Car types', 'pf.a.return': 'How you get home',
   'pf.a.jobs': 'Abasare jobs', 'pf.a.jobs.empty': 'Your Abasare jobs will appear here.', 'pf.a.mode.p2p': 'Drive me home', 'pf.a.mode.hourly': 'By the hour: {h} h',
-  'pf.a.apply': 'Add Abasare to my account', 'pf.a.apply.sub': 'You have a vehicle and can also drive customers\' cars. Apply to unlock Abasare jobs.', 'pf.a.guide': 'Abasare driver guide',
+  'pf.a.apply': 'Become an Umusare on my account', 'pf.a.apply.sub': 'You have a vehicle and can also drive customers\' cars. Apply to unlock Abasare jobs.', 'pf.a.guide': 'Umusare guide',
   'pf.d.intro': 'Keep every document valid to keep receiving jobs. Replace a document before it expires.',
 
   // earnings split
   'er.split': 'Earnings by job type', 'er.ride': 'Rides', 'er.abasare': 'Abasare', 'er.jobs': '{n} jobs', 'er.latest': 'Latest 50 jobs',
   'dt.f.all': 'All jobs', 'dt.f.ride': 'Rides', 'dt.f.abasare': 'Abasare',
-  'ap.title': 'Apply for Abasare', 'ap.sub': 'Tell us about your driving. We check your documents before you receive Abasare jobs.', 'ap.sent': 'Application sent. We will review it.',
+  'ap.title': 'Apply to become an Umusare', 'ap.sub': 'Tell us about your driving. We check your documents before you receive Abasare jobs.', 'ap.sent': 'Application sent. We will review it.',
 } as const;

@@ -47,7 +47,7 @@ export const MONEY_META: Record<keyof typeof MONEY_DEFAULTS, SettingMeta> = {
   'loyalty.gold_bonus_pct': { group: W, label: 'Gold bonus points', desc: 'Extra points on each trip for Gold members.', unit: '%', min: 0, max: 300 },
   'loyalty.silver_extra_grace_s': { group: W, label: 'Silver extra free-cancel time', desc: 'Added to the free cancellation window.', unit: 'seconds', min: 0, max: 600 },
   'loyalty.gold_extra_grace_s': { group: W, label: 'Gold extra free-cancel time', desc: 'Added to the free cancellation window.', unit: 'seconds', min: 0, max: 600 },
-  'abasare.deposit_percent': { group: D, label: 'Abasare deposit', desc: 'Percent of the estimated fare the customer pays before an Abasare is dispatched. 0 = no deposit. The deposit is applied to the final fare.', unit: '%', min: 0, max: 100 },
+  'abasare.deposit_percent': { group: D, label: 'Abasare deposit', desc: 'Percent of the estimated fare the customer pays before an Umusare is dispatched. 0 = no deposit. The deposit is applied to the final fare.', unit: '%', min: 0, max: 100 },
   'abasare.deposit_timeout_min': { group: D, label: 'Deposit payment time', desc: 'An unpaid deposit cancels the (unscheduled) booking after this long.', unit: 'minutes', min: 2, max: 120 },
   'claims.filing_window_hours': { group: C, label: 'Claim filing window', desc: 'A claim can be filed this long after the trip ended.', unit: 'hours', min: 1, max: 720 },
   'claims.sla_hours': { group: C, label: 'First response target', desc: 'Staff should start reviewing a claim within this time; a reminder goes out at 75%.', unit: 'hours', min: 1, max: 336 },

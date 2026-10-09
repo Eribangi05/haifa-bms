@@ -5,6 +5,12 @@ One look across the app, the admin console, the store listing and printed materi
 ## Name and promise
 **Abasare** (Kinyarwanda: "those who drive / those who serve"). Tagline from the logo: **Ride · Work · Explore**, always translated, never mixed with another language: *Genda · Kora · Sura* (Kinyarwanda), *Roulez · Travaillez · Explorez* (French). Strings: `brand.tagline` in `mobile/src/lib/locales/features/brand.*.ts`. Voice: warm, clear, short sentences; safety and fair pay are stated plainly, never exaggerated.
 
+## Abasare and Umusare (one word, two numbers)
+**Abasare** is the plural: the drivers who drive cars that belong to other people, and the name of the service and the app. One such driver is an **Umusare**. Use *Umusare* whenever a single person is meant ("Your Umusare", "Become an Umusare", "Umusare approved") and *Abasare* for the service, the app, the team or several drivers ("Abasare: a driver for your own car", "Abasare drivers"). This holds in English, French and Kinyarwanda.
+
+## Languages
+The console and the app show one language at a time: Kinyarwanda, French or English, never a mix. In the console every text has a translation (`admin-web/i18n-data.js`, `i18n-extra.js`, `i18n.js`); `backend/scripts/console-lang-check.ts` opens every page in Kinyarwanda and French and lists any text that still looks English (what remains are names typed by people and the editors that show all three languages of one record on purpose). Dates use the chosen language, with Kinyarwanda month names written in the code.
+
 ## Colours (Rwanda flag)
 | Role | Light | Dark | Use |
 |---|---|---|---|

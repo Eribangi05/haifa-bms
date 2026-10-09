@@ -202,7 +202,8 @@ Labels (assigned by evidence, not intent):
 * **TESTED** (backend tests, browser audit of every console page for every role): pulse and digest endpoints (R5-20); the console in rw/fr/en (checked in a browser for the menu and the overview page); live alert badges and tab title; phone card layout (333 cells labelled on the bookings page); installable shell (service worker registers).
 * **IMPLEMENTED, not heard**: the console alarm and ping sounds (Web Audio, need one click to allow sound), the phone's text-to-speech for spoken directions (unit-tested cue timing only; a real phone and, for Kinyarwanda, an installed Kinyarwanda voice are needed to hear it).
 * **TESTED**: rush-hour speeds and turn-restriction loading (MAP-05), document pre-check (DOC-01 and a mobile unit test).
-* **Translations**: console rw/fr and the new app strings are written by the assistant and need a native-speaker review before launch.
+* **Translations**: console rw/fr (about 2,600 texts) and the new app strings are written by the assistant and need a native-speaker review before launch. `console-lang-check.ts` found no English left on any page in either language except names typed by people and the multi-language record editors.
+* **Naming**: one driver is an Umusare, several are Abasare (see `docs/BRAND.md`); the app, notifications and console were changed accordingly.
 
 ## Village and district search (0.9.1)
 
