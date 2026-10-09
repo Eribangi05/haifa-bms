@@ -238,11 +238,13 @@ export function LangPicker({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => 
 export function LangSwitch() {
   const { lang, setLang } = useApp();
   return (
-    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: R.pill, padding: 2 }}>
+    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', alignItems: 'center' }}>
       {LANGS.map((l) => { const on = l.code === lang; return (
-        <Pressable key={l.code} testID={`lang-${l.code}`} onPress={() => setLang(l.code)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={l.label} hitSlop={4}
-          style={{ minWidth: 38, minHeight: 32, alignItems: 'center', justifyContent: 'center', borderRadius: R.pill, backgroundColor: on ? C.gold : 'transparent', paddingHorizontal: 6 }}>
-          <Text accessible={false} style={{ fontSize: FS.xs + 1, fontWeight: '800', color: on ? C.onGold : C.onHeader }}>{l.code.toUpperCase()}</Text>
+        <Pressable key={l.code} testID={`lang-${l.code}`} onPress={() => setLang(l.code)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={l.label}
+          style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ minWidth: 36, height: 30, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.gold : 'rgba(255,255,255,0.16)', paddingHorizontal: 6 }}>
+            <Text accessible={false} style={{ fontSize: FS.xs + 1, fontWeight: '800', color: on ? C.onGold : C.onHeader }}>{l.code.toUpperCase()}</Text>
+          </View>
         </Pressable>); })}
     </View>
   );
