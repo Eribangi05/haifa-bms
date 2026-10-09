@@ -126,5 +126,6 @@ Complete the checklists in [`docs/LAUNCH_CHECKLIST.md`](docs/LAUNCH_CHECKLIST.md
 - [docs/MOBILE_ROUND1.md](docs/MOBILE_ROUND1.md): build notes for the trust, safety and appearance screens
 - [docs/MOBILE_ROUND2.md](docs/MOBILE_ROUND2.md): build notes for the growth screens (guest rides, recurring rides, quests, demand map)
 - [docs/MOBILE_ROUND3.md](docs/MOBILE_ROUND3.md): build notes for the credit, deposit and claims screens
+- [docs/IOS_BUILD.md](docs/IOS_BUILD.md): putting the app on iPhone (what is ready, what Apple needs, steps and limits)
 - [docs/BRAND.md](docs/BRAND.md): brand guide (colours, logo, icons, tone, where each lives in code)
 - [docs/MOBILE_NAVIGATION.md](docs/MOBILE_NAVIGATION.md): the tab-based navigation (rider and driver), what each screen shows, back and safe-area rules

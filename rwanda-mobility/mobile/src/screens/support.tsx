@@ -37,10 +37,10 @@ export function Support({ params }: { params?: { booking_id?: string } }) {
           </View>
         </View>
         <Text style={{ color: C.onPrimary, opacity: 0.92, marginVertical: SP.sm }}>{t('sup.contact.sub')}</Text>
-        <View style={{ flexDirection: 'row', gap: SP.sm }}>
-          <View style={{ flex: 1 }}><Btn testID="support-call" kind="gold" title={t('sup.call')} onPress={() => void reach(callNumber(SUPPORT.phone), t('sup.call'))} /></View>
-          <View style={{ flex: 1 }}><Btn testID="support-whatsapp" kind="light" title={t('sup.whatsapp')} onPress={() => void reach(openWhatsApp(t('sup.hello'), SUPPORT.phone), 'WhatsApp')} /></View>
-          <View style={{ flex: 1 }}><Btn testID="support-sms" kind="light" title={t('sup.sms')} onPress={() => void reach(openSms(t('sup.hello'), SUPPORT.phone), t('sup.sms'))} /></View>
+        <Btn testID="support-call" icon="phone" kind="gold" title={`${t('sup.call')} ${SUPPORT.display}`} onPress={() => void reach(callNumber(SUPPORT.phone), t('sup.call'))} />
+        <View style={{ flexDirection: 'row', gap: SP.sm, marginTop: SP.sm }}>
+          <View style={{ flex: 1 }}><Btn testID="support-whatsapp" icon="whatsapp" kind="light" title={t('sup.whatsapp')} onPress={() => void reach(openWhatsApp(t('sup.hello'), SUPPORT.phone), 'WhatsApp')} /></View>
+          <View style={{ flex: 1 }}><Btn testID="support-sms" icon="sms" kind="light" title={t('sup.sms')} onPress={() => void reach(openSms(t('sup.hello'), SUPPORT.phone), t('sup.sms'))} /></View>
         </View>
       </Hero>
       <UssdCard />

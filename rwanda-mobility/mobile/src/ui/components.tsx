@@ -8,7 +8,7 @@ import { useApp } from '../lib/app';
 import type { Tone } from '../lib/trip';
 import { useAppearance } from '../lib/appearance';
 import { LARGE_TEXT_FACTOR, fontCap } from '../lib/palette';
-import { iconFor } from './icons';
+import { ICONS, iconFor, type IconName } from './icons';
 
 /** Text that respects the user's font-size setting but caps it so layouts and CTAs never clip (React 19 ignores Text.defaultProps, so this wrapper does it). */
 export function Text(p: TextProps) {
@@ -175,8 +175,8 @@ export function ProgressBar({ value, label, a11y }: { value: number; label?: str
 }
 
 // ------------------------------------------------------------------ controls
-export function Btn({ title, onPress, kind = 'primary', disabled, loading, style, big, testID }: {
-  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'gold' | 'light'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; big?: boolean; testID?: string;
+export function Btn({ title, onPress, kind = 'primary', disabled, loading, style, big, testID, icon }: {
+  icon?: IconName; title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'gold' | 'light'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; big?: boolean; testID?: string;
 }) {
   const bg = kind === 'primary' ? C.primary : kind === 'danger' ? C.danger : kind === 'gold' ? C.gold : kind === 'light' ? C.card : 'transparent';
   const fg = kind === 'ghost' || kind === 'light' ? C.primary : kind === 'gold' ? C.onGold : kind === 'danger' ? C.onDanger : C.onPrimary;
@@ -188,7 +188,7 @@ export function Btn({ title, onPress, kind = 'primary', disabled, loading, style
         onPressIn={() => to(0.97)} onPressOut={() => to(1)} hitSlop={4}
         style={({ pressed }) => [{ backgroundColor: bg, borderRadius: R.md, minHeight: big ? 60 : 52, minWidth: 44, paddingHorizontal: 18, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
           borderWidth: kind === 'ghost' ? 1.5 : 0, borderColor: C.primary }, kind === 'primary' && !disabled ? SHADOW.card : null, style]}>
-        {loading ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontSize: big ? 19 : 16, fontWeight: '700', textAlign: 'center', flexShrink: 1 }}>{title}</Text>}
+        {loading ? <ActivityIndicator color={fg} /> : <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{icon ? <Image accessibilityElementsHidden source={ICONS[icon]} resizeMode="contain" style={{ width: 24, height: 24 }} /> : null}<Text style={{ color: fg, fontSize: big ? 19 : 16, fontWeight: '700', textAlign: 'center', flexShrink: 1 }}>{title}</Text></View>}
       </Pressable>
     </Animated.View>
   );

@@ -19,6 +19,9 @@
       "android": {
         "buildType": "apk"
       },
+      "ios": {
+        "simulator": false
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://abasare-api.onrender.com",
         "EXPO_PUBLIC_ALLOW_CLEARTEXT": "0"
@@ -27,6 +30,9 @@
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "autoIncrement": true
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.example.rw",
