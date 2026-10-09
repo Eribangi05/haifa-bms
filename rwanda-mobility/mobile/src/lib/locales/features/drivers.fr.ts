@@ -42,7 +42,7 @@ export const driversFr: Record<keyof typeof driversEn, string> = {
   'pf.v.rides': 'Courses avec ce véhicule', 'pf.v.recent': 'Courses récentes', 'pf.v.norides': 'Vos courses seront listées ici.',
   'pf.v.add': 'Vous avez aussi un véhicule ? Demandez à l\'assistance de l\'ajouter à votre compte.', 'pf.v.support': 'Contacter l\'assistance',
   'pf.a.status': 'Statut de la candidature Umusare', 'pf.a.skills': 'Votre profil de conducteur', 'pf.a.licence': 'Permis depuis', 'pf.a.exp': 'Années d\'expérience', 'pf.a.trans': 'Boîtes de vitesses', 'pf.a.classes': 'Types de voitures', 'pf.a.return': 'Votre retour',
-  'pf.a.jobs': 'Missions Abasare', 'pf.a.jobs.empty': 'Vos missions Abasare apparaîtront ici.', 'pf.a.mode.p2p': 'Ramenez-moi', 'pf.a.mode.hourly': 'À l\'heure : {h} h',
+  'pf.a.jobs': 'Missions Abasare', 'pf.a.jobs.empty': 'Vos missions Abasare apparaîtront ici.', 'pf.a.mode.p2p': 'Retour à la maison', 'pf.a.mode.hourly': 'À l\'heure : {h} h',
   'pf.a.apply': 'Devenir Umusare sur mon compte', 'pf.a.apply.sub': 'Vous avez un véhicule et pouvez aussi conduire les voitures des clients. Postulez pour débloquer les missions Abasare.', 'pf.a.guide': 'Guide de l\'Umusare',
   'pf.d.intro': 'Gardez tous vos documents valides pour continuer à recevoir des missions. Remplacez un document avant son expiration.',
 

@@ -1,0 +1,1302 @@
+{
+  "Remove window": {
+    "rw": "Kuvanaho igihe",
+    "fr": "Supprimer la période"
+  },
+  "Remove {0} for {1}?": {
+    "rw": "Kuvanaho {0} kuri {1}?",
+    "fr": "Supprimer {0} pour {1} ?"
+  },
+  "Removed": {
+    "rw": "Byavanywe",
+    "fr": "Supprimé"
+  },
+  "Repeat password": {
+    "rw": "Subiramo ijambo ry'ibanga",
+    "fr": "Répéter le mot de passe"
+  },
+  "Repeat riders": {
+    "rw": "Abagenzi bagaruka",
+    "fr": "Passagers récurrents"
+  },
+  "Repeat the password": {
+    "rw": "Subiramo ijambo ry'ibanga",
+    "fr": "Répétez le mot de passe"
+  },
+  "Replace your authenticator": {
+    "rw": "Simbuza porogaramu yawe y'ubwemeza",
+    "fr": "Remplacer votre application d'authentification"
+  },
+  "Replace your edits with the values of the selected price?": {
+    "rw": "Gusimbuza ibyo wahinduye n'agaciro k'igiciro cyatoranyijwe?",
+    "fr": "Remplacer vos modifications par les valeurs du tarif sélectionné ?"
+  },
+  "Replaces the name and email with placeholders. This cannot be undone. Audit rows stay, so past actions remain traceable to an anonymous \"Former staff member\".": {
+    "rw": "Isimbuza izina na imeri ibimenyetso bidafite icyo bivuze. Ntibishobora gusubizwa inyuma. Amateka y'ibikorwa aragumaho, bityo ibyakozwe mbere bikomeza kwerekana \"Umukozi wahozeho\" utazwi.",
+    "fr": "Remplace le nom et l'e-mail par des valeurs fictives. Action irréversible. Les lignes d'audit restent, donc les actions passées demeurent rattachées à un « Ancien membre du personnel » anonyme."
+  },
+  "Reply": {
+    "rw": "Subiza",
+    "fr": "Répondre"
+  },
+  "Reply from the other party": {
+    "rw": "Igisubizo cy'urundi ruhande",
+    "fr": "Réponse de l'autre partie"
+  },
+  "Reply to customer": {
+    "rw": "Subiza umukiriya",
+    "fr": "Répondre au client"
+  },
+  "Reply to customer (visible to them)": {
+    "rw": "Subiza umukiriya (arabibona)",
+    "fr": "Répondre au client (visible par le client)"
+  },
+  "Reporter": {
+    "rw": "Uwatanze raporo",
+    "fr": "Auteur du signalement"
+  },
+  "Request code": {
+    "rw": "Saba kode",
+    "fr": "Demander un code"
+  },
+  "Request codes": {
+    "rw": "Saba kode",
+    "fr": "Demander des codes"
+  },
+  "Request failed": {
+    "rw": "Gusaba ntibyakunze",
+    "fr": "Échec de la requête"
+  },
+  "Request failed (": {
+    "rw": "Gusaba ntibyakunze (",
+    "fr": "Échec de la requête ("
+  },
+  "Request refund": {
+    "rw": "Saba gusubizwa amafaranga",
+    "fr": "Demander un remboursement"
+  },
+  "Request refund (needs a second person to approve)": {
+    "rw": "Saba gusubizwa amafaranga (bikeneye undi muntu wemeza)",
+    "fr": "Demander un remboursement (approbation d'une seconde personne requise)"
+  },
+  "Request refunds": {
+    "rw": "Saba gusubizwa amafaranga",
+    "fr": "Demander des remboursements"
+  },
+  "Requested": {
+    "rw": "Byasabwe",
+    "fr": "Demandé"
+  },
+  "Requested by": {
+    "rw": "Byasabwe na",
+    "fr": "Demandé par"
+  },
+  "Requests": {
+    "rw": "Ubusabe",
+    "fr": "Demandes"
+  },
+  "Requests from your codes": {
+    "rw": "Ubusabe buturutse kuri kode zawe",
+    "fr": "Demandes issues de vos codes"
+  },
+  "Requests per day": {
+    "rw": "Ubusabe ku munsi",
+    "fr": "Demandes par jour"
+  },
+  "Requests per {0} m cell. Areas with fewer than {1} different requesters are hidden so no individual can be located. Refreshed about every minute.": {
+    "rw": "Ubusabe kuri buri gice cya {0} m. Ibice bifite abasabye bari munsi ya {1} ntibyerekanwa kugira ngo hatagira umuntu umenyekana aho ari. Bivugururwa hafi buri munota.",
+    "fr": "Demandes par cellule de {0} m. Les zones comptant moins de {1} demandeurs différents sont masquées afin qu'aucune personne ne puisse être localisée. Actualisé environ chaque minute."
+  },
+  "Requests with no driver found": {
+    "rw": "Ubusabe butabonewe umushoferi",
+    "fr": "Demandes sans chauffeur trouvé"
+  },
+  "Requests {0}, completed {1}, cancelled {2}, no driver {3} (cancellation {4})": {
+    "rw": "Ubusabe {0}, burangiye {1}, buhagaritswe {2}, nta mushoferi {3} (guhagarika {4})",
+    "fr": "Demandes {0}, terminées {1}, annulées {2}, sans chauffeur {3} (annulation {4})"
+  },
+  "Required": {
+    "rw": "Birakenewe",
+    "fr": "Obligatoire"
+  },
+  "Required when billing mode is credit.": {
+    "rw": "Birakenewe iyo uburyo bwo kwishyuza ari inguzanyo.",
+    "fr": "Obligatoire lorsque le mode de facturation est à crédit."
+  },
+  "Resend cooldown": {
+    "rw": "Igihe cyo gutegereza mbere yo kongera kohereza",
+    "fr": "Délai avant renvoi"
+  },
+  "Reservation released": {
+    "rw": "Amafaranga yabikiwe yarekuwe",
+    "fr": "Réservation libérée"
+  },
+  "Reserved": {
+    "rw": "Byabikiwe",
+    "fr": "Réservé"
+  },
+  "Reserved change": {
+    "rw": "Amafaranga asigaye yabikiwe",
+    "fr": "Monnaie réservée"
+  },
+  "Reserved for a trip": {
+    "rw": "Byabikiwe urugendo",
+    "fr": "Réservé pour une course"
+  },
+  "Reserved for open trips": {
+    "rw": "Byabikiwe ingendo zifunguye",
+    "fr": "Réservé pour les courses ouvertes"
+  },
+  "Reserved for trips": {
+    "rw": "Byabikiwe ingendo",
+    "fr": "Réservé pour les courses"
+  },
+  "Reset": {
+    "rw": "Subiza uko byari bimeze",
+    "fr": "Réinitialiser"
+  },
+  "Reset ": {
+    "rw": "Subiza uko byari bimeze ",
+    "fr": "Réinitialiser "
+  },
+  "Reset to default": {
+    "rw": "Subiza ku busanzwe",
+    "fr": "Rétablir par défaut"
+  },
+  "Reset to default?": {
+    "rw": "Gusubiza ku busanzwe?",
+    "fr": "Rétablir par défaut ?"
+  },
+  "Reset to defaults": {
+    "rw": "Subiza ku busanzwe",
+    "fr": "Rétablir les valeurs par défaut"
+  },
+  "Reset two-factor": {
+    "rw": "Ongera utangire ubwemeza bubiri",
+    "fr": "Réinitialiser la double authentification"
+  },
+  "Reset your password": {
+    "rw": "Ongera ushyireho ijambo ry'ibanga",
+    "fr": "Réinitialiser votre mot de passe"
+  },
+  "Reset your sign-in": {
+    "rw": "Ongera ushyireho uburyo bwo kwinjira",
+    "fr": "Réinitialiser votre connexion"
+  },
+  "Resolution": {
+    "rw": "Igisubizo cya nyuma",
+    "fr": "Résolution"
+  },
+  "Resolution (required when resolving)": {
+    "rw": "Igisubizo cya nyuma (birakenewe iyo ukemura ikibazo)",
+    "fr": "Résolution (obligatoire pour clôturer)"
+  },
+  "Resolve": {
+    "rw": "Kemura",
+    "fr": "Résoudre"
+  },
+  "Resolve incident ": {
+    "rw": "Kemura ikibazo ",
+    "fr": "Résoudre l'incident "
+  },
+  "Resolve item": {
+    "rw": "Kemura ikintu",
+    "fr": "Résoudre l'élément"
+  },
+  "Resolve safety check ": {
+    "rw": "Kemura igenzura ry'umutekano ",
+    "fr": "Résoudre le contrôle de sécurité "
+  },
+  "Resolved": {
+    "rw": "Byakemuwe",
+    "fr": "Résolu"
+  },
+  "Respond to safety incidents": {
+    "rw": "Gusubiza ku bibazo by'umutekano",
+    "fr": "Répondre aux incidents de sécurité"
+  },
+  "Respond within": {
+    "rw": "Subiza mu gihe cya",
+    "fr": "Répondre sous"
+  },
+  "Respond within (hours, 1 to 720)": {
+    "rw": "Subiza mu gihe cya (amasaha, 1 kugeza 720)",
+    "fr": "Répondre sous (heures, 1 à 720)"
+  },
+  "Response": {
+    "rw": "Igisubizo",
+    "fr": "Réponse"
+  },
+  "Restart search": {
+    "rw": "Ongera utangire gushaka",
+    "fr": "Relancer la recherche"
+  },
+  "Restrict customers": {
+    "rw": "Kugabanya uburenganzira bw'abakiriya",
+    "fr": "Restreindre les clients"
+  },
+  "Restrict or deactivate a customer account (never a colleague).": {
+    "rw": "Kugabanya uburenganzira cyangwa guhagarika konti y'umukiriya (ntibireba mugenzi wawe).",
+    "fr": "Restreindre ou désactiver un compte client (jamais un collègue)."
+  },
+  "Restricted": {
+    "rw": "Yafunzwe",
+    "fr": "Restreint"
+  },
+  "Restricted (cannot book)": {
+    "rw": "Yafunzwe (ntashobora gutumiza)",
+    "fr": "Restreint (réservation impossible)"
+  },
+  "Resubmit": {
+    "rw": "Ongera wohereze",
+    "fr": "Soumettre à nouveau"
+  },
+  "Result": {
+    "rw": "Ibyavuyemo",
+    "fr": "Résultat"
+  },
+  "Resume": {
+    "rw": "Komeza",
+    "fr": "Reprendre"
+  },
+  "Resume ": {
+    "rw": "Komeza ",
+    "fr": "Reprendre "
+  },
+  "Retired": {
+    "rw": "Yakuwe mu mikorere",
+    "fr": "Retiré"
+  },
+  "Revenue": {
+    "rw": "Amafaranga yinjiye",
+    "fr": "Revenus"
+  },
+  "Revert": {
+    "rw": "Subiza inyuma",
+    "fr": "Annuler"
+  },
+  "Review": {
+    "rw": "Suzuma",
+    "fr": "Examiner"
+  },
+  "Review and create": {
+    "rw": "Suzuma hanyuma ushyireho",
+    "fr": "Vérifier et créer"
+  },
+  "Review and propose": {
+    "rw": "Suzuma hanyuma utange igitekerezo",
+    "fr": "Vérifier et proposer"
+  },
+  "Review documents and approve, reject or suspend driver applications.": {
+    "rw": "Suzuma inyandiko wemeze, wange cyangwa uhagarike ubusabe bw'abashoferi.",
+    "fr": "Examinez les documents et approuvez, rejetez ou suspendez les candidatures de chauffeurs."
+  },
+  "Review driver payouts.": {
+    "rw": "Suzuma kwishyura abashoferi.",
+    "fr": "Examiner les versements aux chauffeurs."
+  },
+  "Review payouts": {
+    "rw": "Suzuma kwishyura abashoferi",
+    "fr": "Examiner les versements"
+  },
+  "Review queue": {
+    "rw": "Urutonde rwo gusuzuma",
+    "fr": "File d'examen"
+  },
+  "Revoke": {
+    "rw": "Kuraho uburenganzira",
+    "fr": "Révoquer"
+  },
+  "Revoke reason": {
+    "rw": "Impamvu yo kuvanaho uburenganzira",
+    "fr": "Motif de révocation"
+  },
+  "Revoke this link for ": {
+    "rw": "Kuraho uburenganzira bw'iyi sano kuri ",
+    "fr": "Révoquer ce lien pour "
+  },
+  "Revoke training": {
+    "rw": "Kuraho amahugurwa",
+    "fr": "Révoquer la formation"
+  },
+  "Revoke training badge": {
+    "rw": "Kuraho ikirango cy'amahugurwa",
+    "fr": "Révoquer le badge de formation"
+  },
+  "Revoked": {
+    "rw": "Byavanyweho",
+    "fr": "Révoqué"
+  },
+  "Revoked or expired sessions are deleted after this many days. Keep at least 30 so token-theft detection keeps working.": {
+    "rw": "Amasomo yavanyweho cyangwa yarangiye asibwa nyuma y'iyi minsi. Bika nibura 30 kugira ngo kumenya ubujura bw'ibimenyetso bikomeze gukora.",
+    "fr": "Les sessions révoquées ou expirées sont supprimées après ce nombre de jours. Gardez au moins 30 pour que la détection de vol de jetons continue de fonctionner."
+  },
+  "Reward": {
+    "rw": "Igihembo",
+    "fr": "Récompense"
+  },
+  "Reward (inviter / invited)": {
+    "rw": "Igihembo (utumira / utumiwe)",
+    "fr": "Récompense (parrain / filleul)"
+  },
+  "Reward for the inviter": {
+    "rw": "Igihembo cy'utumira",
+    "fr": "Récompense du parrain"
+  },
+  "Reward for the new rider": {
+    "rw": "Igihembo cy'umugenzi mushya",
+    "fr": "Récompense du nouveau client"
+  },
+  "Reward in RWF": {
+    "rw": "Igihembo mu RWF",
+    "fr": "Récompense en RWF"
+  },
+  "Rewarded": {
+    "rw": "Byahembwe",
+    "fr": "Récompensé"
+  },
+  "Rewarded invitations needed for the gold tier (+50% reward).": {
+    "rw": "Ubutumire bwahembwe bukenewe ku rwego rwa zahabu (+50% by'igihembo).",
+    "fr": "Invitations récompensées requises pour le niveau or (+50 % de récompense)."
+  },
+  "Rewarded invitations needed for the silver tier (+25% reward).": {
+    "rw": "Ubutumire bwahembwe bukenewe ku rwego rwa feza (+25% by'igihembo).",
+    "fr": "Invitations récompensées requises pour le niveau argent (+25 % de récompense)."
+  },
+  "Rewards per inviter per month": {
+    "rw": "Ibihembo kuri buri utumira ku kwezi",
+    "fr": "Récompenses par parrain et par mois"
+  },
+  "Ride": {
+    "rw": "Urugendo",
+    "fr": "Course"
+  },
+  "Ride · Work · Explore": {
+    "rw": "Genda · Kora · Sura",
+    "fr": "Se déplacer · Travailler · Explorer"
+  },
+  "Riders without a smartphone book over USSD (cash only). Phone numbers are masked here. Sessions are kept for 30 days.": {
+    "rw": "Abagenzi badafite telefoni igezweho batumiza hakoreshejwe USSD (amafaranga mu ntoki gusa). Nimero za telefoni zihishwe hano. Amasomo abikwa iminsi 30.",
+    "fr": "Les clients sans smartphone réservent par USSD (espèces uniquement). Les numéros de téléphone sont masqués ici. Les sessions sont conservées 30 jours."
+  },
+  "Right now": {
+    "rw": "Ubu nyine",
+    "fr": "En ce moment"
+  },
+  "Right of reply": {
+    "rw": "Uburenganzira bwo gusubiza",
+    "fr": "Droit de réponse"
+  },
+  "Road factor": {
+    "rw": "Igipimo cy'umuhanda",
+    "fr": "Facteur routier"
+  },
+  "Roads are longer than straight lines. 150 means roads are assumed 50% longer; the corridor is widened accordingly so normal detours do not trigger checks.": {
+    "rw": "Imihanda iruta imirongo igororotse. 150 bivuze ko imihanda ibarwa ko iruta 50%; inzira irafunguwe bijyanye n'ibyo kugira ngo inzira zisanzwe z'ikinyuranyo zitateza igenzura.",
+    "fr": "Les routes sont plus longues qu'une ligne droite. 150 signifie que les routes sont supposées 50 % plus longues ; le corridor est élargi en conséquence afin que les détours normaux ne déclenchent pas de contrôles."
+  },
+  "Role": {
+    "rw": "Inshingano",
+    "fr": "Rôle"
+  },
+  "Role created": {
+    "rw": "Inshingano yashyizweho",
+    "fr": "Rôle créé"
+  },
+  "Role deleted": {
+    "rw": "Inshingano yasibwe",
+    "fr": "Rôle supprimé"
+  },
+  "Role name": {
+    "rw": "Izina ry'inshingano",
+    "fr": "Nom du rôle"
+  },
+  "Role saved; it applies to everyone holding it on their next click": {
+    "rw": "Inshingano yabitswe; ireba buri wese uyifite ku nshuro ye ikurikira ukanze",
+    "fr": "Rôle enregistré ; il s'applique à toute personne qui le détient dès son prochain clic"
+  },
+  "Roles": {
+    "rw": "Inshingano",
+    "fr": "Rôles"
+  },
+  "Roles and permissions": {
+    "rw": "Inshingano n'uburenganzira",
+    "fr": "Rôles et autorisations"
+  },
+  "Roles for ": {
+    "rw": "Inshingano za ",
+    "fr": "Rôles de "
+  },
+  "Roles saved": {
+    "rw": "Inshingano zabitswe",
+    "fr": "Rôles enregistrés"
+  },
+  "Rollout": {
+    "rw": "Gutangiza buhoro buhoro",
+    "fr": "Déploiement"
+  },
+  "Rollout for ": {
+    "rw": "Gutangiza buhoro buhoro kuri ",
+    "fr": "Déploiement pour "
+  },
+  "Round the total to the nearest": {
+    "rw": "Zengurura igiteranyo kugera ku",
+    "fr": "Arrondir le total au plus proche"
+  },
+  "Route": {
+    "rw": "Inzira",
+    "fr": "Itinéraire"
+  },
+  "Route and long-stop safety checks": {
+    "rw": "Igenzura ry'umutekano ku nzira no guhagarara igihe kirekire",
+    "fr": "Contrôles de sécurité de l'itinéraire et des arrêts prolongés"
+  },
+  "Route corridor": {
+    "rw": "Umuhanda w'inzira",
+    "fr": "Corridor d'itinéraire"
+  },
+  "Route deviation": {
+    "rw": "Gutandukira inzira",
+    "fr": "Écart d'itinéraire"
+  },
+  "Row {0} is invalid. Each row needs a text \"reference\", a whole-number \"amount\" and a \"status\" of SUCCESS, FAILED or PENDING.": {
+    "rw": "Umurongo wa {0} ntiwemewe. Buri murongo ukeneye \"reference\" y'inyandiko, \"amount\" y'umubare wuzuye na \"status\" ya SUCCESS, FAILED cyangwa PENDING.",
+    "fr": "La ligne {0} est invalide. Chaque ligne requiert une « reference » textuelle, un « amount » entier et un « status » valant SUCCESS, FAILED ou PENDING."
+  },
+  "Row {0}: {1}": {
+    "rw": "Umurongo wa {0}: {1}",
+    "fr": "Ligne {0} : {1}"
+  },
+  "Rows": {
+    "rw": "Imirongo",
+    "fr": "Lignes"
+  },
+  "Run date": {
+    "rw": "Itariki yo gukora",
+    "fr": "Date d'exécution"
+  },
+  "Run reconciliation": {
+    "rw": "Kora ihuzwa ry'imibare",
+    "fr": "Lancer le rapprochement"
+  },
+  "Runs": {
+    "rw": "Imikorere",
+    "fr": "Exécutions"
+  },
+  "Rush hours for quests (PLACEHOLDER)": {
+    "rw": "Amasaha y'ikiruhuko ku ntego (IGISIMBURA)",
+    "fr": "Heures de pointe pour les défis (EXEMPLE)"
+  },
+  "Rw": {
+    "rw": "Ikinyarwanda",
+    "fr": "Kinyarwanda"
+  },
+  "SCHEDULED": {
+    "rw": "BYATEGANYIJWE",
+    "fr": "PLANIFIÉ"
+  },
+  "SEARCHING DRIVER": {
+    "rw": "GUSHAKA UMUSHOFERI",
+    "fr": "RECHERCHE DE CHAUFFEUR"
+  },
+  "SEARCHING_DRIVER": {
+    "rw": "GUSHAKA_UMUSHOFERI",
+    "fr": "RECHERCHE_CHAUFFEUR"
+  },
+  "SLA due": {
+    "rw": "SLA igomba kurangira",
+    "fr": "Échéance SLA"
+  },
+  "SOS alerts are recorded here. The platform never reports that police or ambulance were contacted: record in the resolution what you actually did.": {
+    "rw": "Ibimenyetso bya SOS bibikwa hano. Urubuga ntirwigera rubwira ko polisi cyangwa ambulansi byahamagawe: andika mu gisubizo cya nyuma icyo wakoze koko.",
+    "fr": "Les alertes SOS sont enregistrées ici. La plateforme n'indique jamais que la police ou l'ambulance a été contactée : notez dans la résolution ce que vous avez réellement fait."
+  },
+  "STATUS MISMATCH": {
+    "rw": "IMITERERE NTIHURA",
+    "fr": "ÉTAT INCOHÉRENT"
+  },
+  "SUCCESS": {
+    "rw": "BYAGENZE NEZA",
+    "fr": "SUCCÈS"
+  },
+  "SUSPENDED": {
+    "rw": "BYAHAGARIKIWE",
+    "fr": "SUSPENDU"
+  },
+  "Safety": {
+    "rw": "Umutekano",
+    "fr": "Sécurité"
+  },
+  "Safety & tracking": {
+    "rw": "Umutekano & gukurikirana",
+    "fr": "Sécurité & suivi"
+  },
+  "Safety check interval": {
+    "rw": "Igihe hagati y'igenzura ry'umutekano",
+    "fr": "Intervalle des contrôles de sécurité"
+  },
+  "Safety checks": {
+    "rw": "Igenzura ry'umutekano",
+    "fr": "Contrôles de sécurité"
+  },
+  "Safety checks, rating tags, tips, favourite and blocked drivers, badges. SMS and push delivery is SIMULATED until providers are connected; no agency is ever contacted automatically.": {
+    "rw": "Igenzura ry'umutekano, ibirango by'amanota, ibihembo by'inyongera, abashoferi bakunzwe n'abahagaritswe, ibirango. Kohereza SMS n'ibimenyetso bya porogaramu BIRIGANWA kugeza ababitanga bahujwe; nta rwego na rumwe ruhamagarwa mu buryo bwikora.",
+    "fr": "Contrôles de sécurité, étiquettes de notation, pourboires, chauffeurs favoris et bloqués, badges. L'envoi des SMS et des notifications est SIMULÉ tant que les prestataires ne sont pas connectés ; aucun organisme n'est jamais contacté automatiquement."
+  },
+  "Safety escalation contacts": {
+    "rw": "Abo kugezaho ibibazo by'umutekano",
+    "fr": "Contacts d'escalade sécurité"
+  },
+  "Safety incidents": {
+    "rw": "Ibibazo by'umutekano",
+    "fr": "Incidents de sécurité"
+  },
+  "Safety officer": {
+    "rw": "Ushinzwe umutekano",
+    "fr": "Responsable sécurité"
+  },
+  "Same as the current price for this trip.": {
+    "rw": "Kimwe n'igiciro cy'ubu kuri uru rugendo.",
+    "fr": "Identique au tarif actuel pour cette course."
+  },
+  "Same calculation as real quotes. Waiting time and extras are added when the trip ends.": {
+    "rw": "Kubara kimwe n'ibiciro nyabyo. Igihe cyo gutegereza n'inyongera byongerwaho urugendo rurangiye.",
+    "fr": "Même calcul que les devis réels. Le temps d'attente et les suppléments sont ajoutés à la fin de la course."
+  },
+  "Same hour last week": {
+    "rw": "Isaha imwe icyumweru gishize",
+    "fr": "Même heure la semaine dernière"
+  },
+  "Sat": {
+    "rw": "Gtandatu",
+    "fr": "Sam"
+  },
+  "Save": {
+    "rw": "Bika",
+    "fr": "Enregistrer"
+  },
+  "Save changes": {
+    "rw": "Bika impinduka",
+    "fr": "Enregistrer les modifications"
+  },
+  "Save draft": {
+    "rw": "Bika igihimbano",
+    "fr": "Enregistrer le brouillon"
+  },
+  "Save place": {
+    "rw": "Bika ahantu",
+    "fr": "Enregistrer le lieu"
+  },
+  "Save roles": {
+    "rw": "Bika inshingano",
+    "fr": "Enregistrer les rôles"
+  },
+  "Save wording": {
+    "rw": "Bika amagambo",
+    "fr": "Enregistrer le libellé"
+  },
+  "Save zone": {
+    "rw": "Bika agace",
+    "fr": "Enregistrer la zone"
+  },
+  "Saved": {
+    "rw": "Byabitswe",
+    "fr": "Enregistré"
+  },
+  "Say how the difference was explained or fixed.": {
+    "rw": "Vuga uko itandukaniro ryasobanuwe cyangwa ryakosowe.",
+    "fr": "Indiquez comment l'écart a été expliqué ou corrigé."
+  },
+  "Scan": {
+    "rw": "Sikana",
+    "fr": "Scanner"
+  },
+  "Scannez": {
+    "rw": "Sikana",
+    "fr": "Scannez"
+  },
+  "Scans": {
+    "rw": "Gusikana",
+    "fr": "Scans"
+  },
+  "Schedule": {
+    "rw": "Gahunda",
+    "fr": "Planification"
+  },
+  "Scheduled": {
+    "rw": "Byateganyijwe",
+    "fr": "Planifié"
+  },
+  "Scheduled booking fee": {
+    "rw": "Amafaranga y'ugutumiza giteganyijwe",
+    "fr": "Frais de réservation planifiée"
+  },
+  "School": {
+    "rw": "Ishuri",
+    "fr": "École"
+  },
+  "Screens": {
+    "rw": "Ibyerekanwa",
+    "fr": "Écrans"
+  },
+  "Screens per session": {
+    "rw": "Ibyerekanwa kuri buri somo",
+    "fr": "Écrans par session"
+  },
+  "Search": {
+    "rw": "Shakisha",
+    "fr": "Rechercher"
+  },
+  "Search and open passenger and driver accounts.": {
+    "rw": "Shakisha unafungure konti z'abagenzi n'abashoferi.",
+    "fr": "Rechercher et ouvrir les comptes des passagers et des chauffeurs."
+  },
+  "Search any language": {
+    "rw": "Shakisha mu rurimi urwo ari rwo rwose",
+    "fr": "Rechercher dans toutes les langues"
+  },
+  "Search booking ref, phone, name, payment reference": {
+    "rw": "Shakisha nimero y'ubutumize, telefoni, izina, nimero y'ubwishyu",
+    "fr": "Rechercher réf. de réservation, téléphone, nom, référence de paiement"
+  },
+  "Search bookings": {
+    "rw": "Shakisha ubutumize",
+    "fr": "Rechercher des réservations"
+  },
+  "Search by name, phone number or email to find an account.": {
+    "rw": "Shakisha ukoresheje izina, nimero ya telefoni cyangwa imeri kugira ngo ubone konti.",
+    "fr": "Recherchez par nom, numéro de téléphone ou e-mail pour trouver un compte."
+  },
+  "Search cases": {
+    "rw": "Shakisha ibibazo",
+    "fr": "Rechercher des dossiers"
+  },
+  "Search claims": {
+    "rw": "Shakisha ibirego",
+    "fr": "Rechercher des réclamations"
+  },
+  "Search drivers": {
+    "rw": "Shakisha abashoferi",
+    "fr": "Rechercher des chauffeurs"
+  },
+  "Search messages": {
+    "rw": "Shakisha ubutumwa",
+    "fr": "Rechercher des messages"
+  },
+  "Search name or email": {
+    "rw": "Shakisha izina cyangwa imeri",
+    "fr": "Rechercher nom ou e-mail"
+  },
+  "Search passengers": {
+    "rw": "Shakisha abagenzi",
+    "fr": "Rechercher des passagers"
+  },
+  "Search payments": {
+    "rw": "Shakisha ubwishyu",
+    "fr": "Rechercher des paiements"
+  },
+  "Search places": {
+    "rw": "Shakisha ahantu",
+    "fr": "Rechercher des lieux"
+  },
+  "Search staff": {
+    "rw": "Shakisha abakozi",
+    "fr": "Rechercher du personnel"
+  },
+  "Searching": {
+    "rw": "Barashaka",
+    "fr": "Recherche"
+  },
+  "Searching for a driver": {
+    "rw": "Gushaka umushoferi",
+    "fr": "Recherche d'un chauffeur"
+  },
+  "Seats": {
+    "rw": "Imyanya",
+    "fr": "Places"
+  },
+  "Seats (passengers)": {
+    "rw": "Imyanya (abagenzi)",
+    "fr": "Places (passagers)"
+  },
+  "Second approval for large credit adjustments.": {
+    "rw": "Kwemezwa ku nshuro ya kabiri ku mpinduka nini z'inguzanyo.",
+    "fr": "Seconde approbation pour les gros ajustements de crédit."
+  },
+  "Security & OTP": {
+    "rw": "Umutekano & OTP",
+    "fr": "Sécurité & OTP"
+  },
+  "See SOS and safety incidents, update them, block a driver from a passenger.": {
+    "rw": "Reba SOS n'ibibazo by'umutekano, ubivugurure, uhagarike umushoferi ku mugenzi.",
+    "fr": "Voir les SOS et incidents de sécurité, les mettre à jour, bloquer un chauffeur pour un passager."
+  },
+  "See all activity": {
+    "rw": "Reba ibikorwa byose",
+    "fr": "Voir toute l'activité"
+  },
+  "See all bookings": {
+    "rw": "Reba ubutumize bwose",
+    "fr": "Voir toutes les réservations"
+  },
+  "See cases marked sensitive (safety, driver complaints).": {
+    "rw": "Reba ibibazo bigaragajwe nk'ibyoroshye (umutekano, ibirego ku bashoferi).",
+    "fr": "Voir les dossiers marqués sensibles (sécurité, plaintes sur les chauffeurs)."
+  },
+  "See claims": {
+    "rw": "Reba ibirego",
+    "fr": "Voir les réclamations"
+  },
+  "See customer credit": {
+    "rw": "Reba inguzanyo z'abakiriya",
+    "fr": "Voir le crédit client"
+  },
+  "See diagnostics": {
+    "rw": "Reba isuzuma ry'ikoranabuhanga",
+    "fr": "Voir les diagnostics"
+  },
+  "See drivers": {
+    "rw": "Reba abashoferi",
+    "fr": "Voir les chauffeurs"
+  },
+  "See finance": {
+    "rw": "Reba imari",
+    "fr": "Voir les finances"
+  },
+  "See only their own venue's codes, requests and statement.": {
+    "rw": "Reba gusa kode, ibisabwa n'raporo y'ahantu hawe.",
+    "fr": "Voir uniquement les codes, demandes et relevé de son propre établissement."
+  },
+  "See reports": {
+    "rw": "Reba raporo",
+    "fr": "Voir les rapports"
+  },
+  "See request codes": {
+    "rw": "Reba kode z'ibisabwa",
+    "fr": "Voir les codes de demande"
+  },
+  "See staff alerts and fraud signals": {
+    "rw": "Reba ibimenyetso by'abakozi n'iby'uburiganya",
+    "fr": "Voir les alertes du personnel et les signaux de fraude"
+  },
+  "See the USSD channel": {
+    "rw": "Reba umuyoboro wa USSD",
+    "fr": "Voir le canal USSD"
+  },
+  "See who did what and when.": {
+    "rw": "Reba uwakoze iki n'igihe.",
+    "fr": "Voir qui a fait quoi et quand."
+  },
+  "Segoe UI": {
+    "rw": "Segoe UI",
+    "fr": "Segoe UI"
+  },
+  "Select and copy the link": {
+    "rw": "Hitamo wandukure iyi sano",
+    "fr": "Sélectionnez et copiez le lien"
+  },
+  "Self-approval is ON. ": {
+    "rw": "Kwiyemeza birafunguye. ",
+    "fr": "L'auto-approbation est ACTIVÉE. "
+  },
+  "Self-approval is ON: you will be able to approve your own change. It is flagged in the audit log.": {
+    "rw": "Kwiyemeza birafunguye: uzashobora kwemeza impinduka zawe bwite. Bigaragazwa mu gitabo cy'igenzura.",
+    "fr": "L'auto-approbation est ACTIVÉE : vous pourrez approuver votre propre modification. Elle est signalée dans le journal d'audit."
+  },
+  "Self-approval is enabled, so no second person will check this. It will be flagged in the audit log. ": {
+    "rw": "Kwiyemeza birafunguye, bityo nta wundi muntu uzabigenzura. Bizagaragazwa mu gitabo cy'igenzura. ",
+    "fr": "L'auto-approbation est activée, donc aucune seconde personne ne vérifiera ceci. Elle sera signalée dans le journal d'audit. "
+  },
+  "Self-approval is enabled. Approving now makes the new price live without a second check, and the audit log will mark it as self approved.": {
+    "rw": "Kwiyemeza birafunguye. Kwemeza ubu bituma igiciro gishya gitangira gukora nta genzura rya kabiri, kandi igitabo cy'igenzura kizagaragaza ko cyiyemejwe.",
+    "fr": "L'auto-approbation est activée. Approuver maintenant met le nouveau tarif en service sans seconde vérification, et le journal d'audit l'indiquera comme auto-approuvé."
+  },
+  "Send": {
+    "rw": "Ohereza",
+    "fr": "Envoyer"
+  },
+  "Send at, Kigali time (e.g. 2026-10-20T09:00), empty = as soon as allowed": {
+    "rw": "Ohereza saa, ku isaha ya Kigali (urugero 2026-10-20T09:00), ubusa = vuba bishoboka",
+    "fr": "Envoyer à, heure de Kigali (ex. 2026-10-20T09:00), vide = dès que possible"
+  },
+  "Send back": {
+    "rw": "Subiza inyuma",
+    "fr": "Renvoyer"
+  },
+  "Send password reset": {
+    "rw": "Ohereza isubizwa ry'ijambo ry'ibanga",
+    "fr": "Envoyer la réinitialisation du mot de passe"
+  },
+  "Send request": {
+    "rw": "Ohereza ubusabe",
+    "fr": "Envoyer la demande"
+  },
+  "Send test to me": {
+    "rw": "Ntumire igerageza",
+    "fr": "M'envoyer un test"
+  },
+  "Send this campaign": {
+    "rw": "Ohereza iyi gahunda yo kwamamaza",
+    "fr": "Envoyer cette campagne"
+  },
+  "Send this flag to the apps?": {
+    "rw": "Kohereza iki kimenyetso kuri porogaramu?",
+    "fr": "Envoyer cet indicateur aux applications ?"
+  },
+  "Send this link ONLY to ": {
+    "rw": "Ohereza iyi sano GUSA kuri ",
+    "fr": "Envoyez ce lien UNIQUEMENT à "
+  },
+  "Send this link only to the invitee. They set their own password and authenticator.": {
+    "rw": "Ohereza iyi sano gusa ku utumiwe. Yihitiramo ijambo ry'ibanga na porogaramu y'ubwemeza.",
+    "fr": "Envoyez ce lien uniquement à la personne invitée. Elle définit son propre mot de passe et son application d'authentification."
+  },
+  "Send to driver": {
+    "rw": "Ohereza ku mushoferi",
+    "fr": "Envoyer au chauffeur"
+  },
+  "Send {0} back": {
+    "rw": "Subiza {0} inyuma",
+    "fr": "Renvoyer {0}"
+  },
+  "Sending": {
+    "rw": "Kohereza",
+    "fr": "Envoi"
+  },
+  "Sensitive": {
+    "rw": "Byoroshye gukomereka",
+    "fr": "Sensible"
+  },
+  "Sensitive?": {
+    "rw": "Bikomeye?",
+    "fr": "Sensible ?"
+  },
+  "Sent": {
+    "rw": "Byoherejwe",
+    "fr": "Envoyé"
+  },
+  "Service": {
+    "rw": "Serivisi",
+    "fr": "Service"
+  },
+  "Service ": {
+    "rw": "Serivisi ",
+    "fr": "Service "
+  },
+  "Services": {
+    "rw": "Serivisi",
+    "fr": "Services"
+  },
+  "Services on": {
+    "rw": "Serivisi zifunguye",
+    "fr": "Services activés"
+  },
+  "Session log": {
+    "rw": "Igitabo cy'amasomo",
+    "fr": "Journal des sessions"
+  },
+  "Sessions": {
+    "rw": "Amasomo",
+    "fr": "Sessions"
+  },
+  "Set both the long-hire hours and rate, or leave both empty": {
+    "rw": "Shyiraho amasaha yo gukodesha igihe kirekire n'igiciro, cyangwa usige byombi ubusa",
+    "fr": "Renseignez les heures de location longue durée et le tarif, ou laissez les deux vides"
+  },
+  "Set both the start and end hour, or leave both empty": {
+    "rw": "Shyiraho isaha yo gutangira n'iyo kurangiriraho, cyangwa usige byombi ubusa",
+    "fr": "Renseignez l'heure de début et de fin, ou laissez les deux vides"
+  },
+  "Set price": {
+    "rw": "Shyiraho igiciro",
+    "fr": "Fixer le tarif"
+  },
+  "Set up your authenticator": {
+    "rw": "Tegura porogaramu yawe y'ubwemeza",
+    "fr": "Configurer votre application d'authentification"
+  },
+  "Setting": {
+    "rw": "Igenamiterere",
+    "fr": "Paramètre"
+  },
+  "Settings": {
+    "rw": "Igenamiterere",
+    "fr": "Paramètres"
+  },
+  "Settings and feature flags": {
+    "rw": "Igenamiterere n'ibimenyetso by'ibikorwa",
+    "fr": "Paramètres et indicateurs de fonctionnalités"
+  },
+  "Settle": {
+    "rw": "Ishyura",
+    "fr": "Régler"
+  },
+  "Settle ": {
+    "rw": "Ishyura ",
+    "fr": "Régler "
+  },
+  "Settled": {
+    "rw": "Byishyuwe",
+    "fr": "Réglé"
+  },
+  "Settled claims are closed automatically.": {
+    "rw": "Ibirego byishyuwe bifungwa mu buryo bwikora.",
+    "fr": "Les réclamations réglées sont clôturées automatiquement."
+  },
+  "Settled.": {
+    "rw": "Byishyuwe.",
+    "fr": "Réglé."
+  },
+  "Settlement": {
+    "rw": "Ishyurwa",
+    "fr": "Règlement"
+  },
+  "Settlement date": {
+    "rw": "Itariki y'ishyurwa",
+    "fr": "Date de règlement"
+  },
+  "Settlement needing a second approver": {
+    "rw": "Ishyurwa rikeneye uwemeza wa kabiri",
+    "fr": "Règlement nécessitant un second approbateur"
+  },
+  "Settlement rows": {
+    "rw": "Imirongo y'ishyurwa",
+    "fr": "Lignes de règlement"
+  },
+  "Settlements at or above this amount wait for a different person to approve.": {
+    "rw": "Ishyurwa rigeze kuri aya mafaranga cyangwa arenga ritegereza ko undi muntu aryemeza.",
+    "fr": "Les règlements égaux ou supérieurs à ce montant attendent l'approbation d'une autre personne."
+  },
+  "Shape": {
+    "rw": "Ishusho",
+    "fr": "Forme"
+  },
+  "Share link lifetime after the trip": {
+    "rw": "Igihe isano yo gusangiza imara nyuma y'urugendo",
+    "fr": "Durée de vie du lien de partage après la course"
+  },
+  "Share of people (0 to 100)": {
+    "rw": "Igice cy'abantu (0 kugeza 100)",
+    "fr": "Part des personnes (0 à 100)"
+  },
+  "Shortest booking allowed.": {
+    "rw": "Ubutumize bugufi bwemewe.",
+    "fr": "Réservation la plus courte autorisée."
+  },
+  "Show": {
+    "rw": "Erekana",
+    "fr": "Afficher"
+  },
+  "Show ": {
+    "rw": "Erekana ",
+    "fr": "Afficher "
+  },
+  "Show statement": {
+    "rw": "Erekana raporo",
+    "fr": "Afficher le relevé"
+  },
+  "Showing the latest {0} {1}. The API returns at most 200 per request: narrow the search to see older ones.": {
+    "rw": "Herekanwa {0} {1} bya vuba. API itanga 200 ku busabe ntarengwa: gabanya ishakisha kugira ngo ubone ibya kera.",
+    "fr": "Affichage des {0} {1} les plus récents. L'API renvoie au plus 200 par requête : affinez la recherche pour voir les plus anciens."
+  },
+  "Shown in code and audit entries. Cannot be changed later.": {
+    "rw": "Bigaragara muri kode no mu nyandiko z'igenzura. Ntibishobora guhindurwa nyuma.",
+    "fr": "Affiché dans le code et les entrées d'audit. Ne peut plus être modifié ensuite."
+  },
+  "Sign ": {
+    "rw": "Shyira umukono ",
+    "fr": "Signer "
+  },
+  "Sign in": {
+    "rw": "Injira",
+    "fr": "Se connecter"
+  },
+  "Sign in with your email, your new password and the code from your authenticator app. You were signed out everywhere.": {
+    "rw": "Injira ukoresheje imeri yawe, ijambo ry'ibanga rishya na kode iva kuri porogaramu y'ubwemeza. Wasohowe hose.",
+    "fr": "Connectez-vous avec votre e-mail, votre nouveau mot de passe et le code de votre application d'authentification. Vous avez été déconnecté partout."
+  },
+  "Sign out": {
+    "rw": "Sohoka",
+    "fr": "Se déconnecter"
+  },
+  "Sign out everywhere": {
+    "rw": "Sohoka hose",
+    "fr": "Se déconnecter partout"
+  },
+  "Sign-in failed": {
+    "rw": "Kwinjira byanze",
+    "fr": "Échec de la connexion"
+  },
+  "Signal": {
+    "rw": "Ikimenyetso",
+    "fr": "Signal"
+  },
+  "Signed in": {
+    "rw": "Yinjiye",
+    "fr": "Connecté"
+  },
+  "Signing in…": {
+    "rw": "Kwinjira…",
+    "fr": "Connexion…"
+  },
+  "Sikana": {
+    "rw": "Sikana",
+    "fr": "Scannez"
+  },
+  "Silver": {
+    "rw": "Feza",
+    "fr": "Argent"
+  },
+  "Silver ambassador after": {
+    "rw": "Intumwa ya feza nyuma ya",
+    "fr": "Ambassadeur argent après"
+  },
+  "Silver bonus points": {
+    "rw": "Amanota y'inyongera ya feza",
+    "fr": "Points bonus argent"
+  },
+  "Silver extra free-cancel time": {
+    "rw": "Igihe cy'inyongera cyo guhagarika ku buntu cya feza",
+    "fr": "Délai d'annulation gratuite supplémentaire argent"
+  },
+  "Silver tier from": {
+    "rw": "Urwego rwa feza guhera ku",
+    "fr": "Niveau argent à partir de"
+  },
+  "Since": {
+    "rw": "Kuva",
+    "fr": "Depuis"
+  },
+  "Skip to content": {
+    "rw": "Simbukira ku bikubiyemo",
+    "fr": "Aller au contenu"
+  },
+  "Skipped": {
+    "rw": "Byasimbutswe",
+    "fr": "Ignoré"
+  },
+  "Skipped cap": {
+    "rw": "Byasimbutswe kubera urugero ntarengwa",
+    "fr": "Ignoré (plafond)"
+  },
+  "Skipped no channel": {
+    "rw": "Byasimbutswe nta muyoboro",
+    "fr": "Ignoré (aucun canal)"
+  },
+  "Skipped optout": {
+    "rw": "Byasimbutswe kubera guhitamo kutabyemera",
+    "fr": "Ignoré (désinscription)"
+  },
+  "Slowest 10%": {
+    "rw": "10% bitinda cyane",
+    "fr": "10 % les plus lents"
+  },
+  "Smallest tip": {
+    "rw": "Igihembo gito cyane cy'inyongera",
+    "fr": "Plus petit pourboire"
+  },
+  "Sms": {
+    "rw": "SMS",
+    "fr": "SMS"
+  },
+  "Sort by ": {
+    "rw": "Tondeka ukurikije ",
+    "fr": "Trier par "
+  },
+  "Sos": {
+    "rw": "SOS",
+    "fr": "SOS"
+  },
+  "Sound alerts": {
+    "rw": "Ibimenyetso by'amajwi",
+    "fr": "Alertes sonores"
+  },
+  "Sound alerts on": {
+    "rw": "Ibimenyetso by'amajwi bifunguye",
+    "fr": "Alertes sonores activées"
+  },
+  "Source": {
+    "rw": "Inkomoko",
+    "fr": "Source"
+  },
+  "Spend": {
+    "rw": "Amafaranga yakoreshejwe",
+    "fr": "Dépense"
+  },
+  "Spent on a trip": {
+    "rw": "Yakoreshejwe ku rugendo",
+    "fr": "Dépensé pour une course"
+  },
+  "Staff": {
+    "rw": "Abakozi",
+    "fr": "Personnel"
+  },
+  "Staff accounts require two-factor authentication. Lost your authenticator? Ask a super admin.": {
+    "rw": "Konti z'abakozi zisaba ubwemeza bubiri. Wataye porogaramu y'ubwemeza? Baza umuyobozi mukuru.",
+    "fr": "Les comptes du personnel exigent une double authentification. Application d'authentification perdue ? Contactez un super administrateur."
+  },
+  "Staff and roles": {
+    "rw": "Abakozi n'inshingano",
+    "fr": "Personnel et rôles"
+  },
+  "Staff data views before alert": {
+    "rw": "Kureba amakuru n'abakozi mbere y'ibimenyetso",
+    "fr": "Consultations de données avant alerte"
+  },
+  "Staff member": {
+    "rw": "Umukozi",
+    "fr": "Membre du personnel"
+  },
+  "Staff member opened ${n!.n} records in 10 minutes": {
+    "rw": "Umukozi yafunguye inyandiko ${n!.n} mu minota 10",
+    "fr": "Un membre du personnel a ouvert ${n!.n} dossiers en 10 minutes"
+  },
+  "Staff should start reviewing a claim within this time; a reminder goes out at 75%.": {
+    "rw": "Abakozi bagomba gutangira gusuzuma ikirego muri iki gihe; kwibutsa bikoherezwa kuri 75%.",
+    "fr": "Le personnel doit commencer à examiner une réclamation dans ce délai ; un rappel est envoyé à 75 %."
+  },
+  "Staff sign-in": {
+    "rw": "Kwinjira kw'abakozi",
+    "fr": "Connexion du personnel"
+  },
+  "Standard fare": {
+    "rw": "Igiciro gisanzwe",
+    "fr": "Tarif standard"
+  },
+  "Start ": {
+    "rw": "Tangira ",
+    "fr": "Début "
+  },
+  "Start and end hour must differ": {
+    "rw": "Isaha yo gutangira n'iyo kurangiriraho bigomba gutandukana",
+    "fr": "L'heure de début et de fin doivent différer"
+  },
+  "Start date": {
+    "rw": "Itariki yo gutangira",
+    "fr": "Date de début"
+  },
+  "Start date (optional)": {
+    "rw": "Itariki yo gutangira (si ngombwa)",
+    "fr": "Date de début (facultatif)"
+  },
+  "Start from": {
+    "rw": "Tangira kuva ku",
+    "fr": "Commencer à partir de"
+  },
+  "Start from ": {
+    "rw": "Tangira kuva ku ",
+    "fr": "Commencer à partir de "
+  },
+  "Start review": {
+    "rw": "Tangira gusuzuma",
+    "fr": "Commencer l'examen"
+  },
+  "Start setup": {
+    "rw": "Tangira gutegura",
+    "fr": "Démarrer la configuration"
+  },
+  "Started": {
+    "rw": "Byatangiye",
+    "fr": "Démarré"
+  },
+  "Starting search radius": {
+    "rw": "Intera ya mbere yo gushakiraho",
+    "fr": "Rayon de recherche initial"
+  },
+  "State": {
+    "rw": "Imimerere",
+    "fr": "État"
+  },
+  "Statement": {
+    "rw": "Raporo",
+    "fr": "Relevé"
+  },
+  "Statement ": {
+    "rw": "Raporo ",
+    "fr": "Relevé "
+  },
+  "Stationary radius": {
+    "rw": "Intera yo guhagarara",
+    "fr": "Rayon d'immobilité"
+  },
+  "Status": {
+    "rw": "Imimerere",
+    "fr": "Statut"
+  },
+  "Status ": {
+    "rw": "Imimerere ",
+    "fr": "Statut "
+  },
+  "Status history": {
+    "rw": "Amateka y'imimerere",
+    "fr": "Historique des statuts"
+  },
+  "Status unchanged": {
+    "rw": "Imimerere ntiyahindutse",
+    "fr": "Statut inchangé"
+  },
+  "Sticker": {
+    "rw": "Agakarango",
+    "fr": "Autocollant"
+  },
+  "Streak": {
+    "rw": "Urukurikirane",
+    "fr": "Série"
+  },
+  "Subject": {
+    "rw": "Ingingo",
+    "fr": "Objet"
+  },
+  "Submit": {
+    "rw": "Ohereza",
+    "fr": "Soumettre"
+  },
+  "Submitted": {
+    "rw": "Byoherejwe",
+    "fr": "Soumis"
+  },
+  "Submitted: waiting for a second approver.": {
+    "rw": "Byoherejwe: bitegereje uwemeza wa kabiri.",
+    "fr": "Soumis : en attente d'un second approbateur."
+  },
+  "Success": {
+    "rw": "Byagenze neza",
+    "fr": "Succès"
+  },
+  "Sun": {
+    "rw": "Cyumweru",
+    "fr": "Dim"
+  },
+  "Super admin": {
+    "rw": "Umuyobozi mukuru",
+    "fr": "Super administrateur"
+  },
+  "Support": {
+    "rw": "Ubufasha",
+    "fr": "Support"
+  },
+  "Support agent": {
+    "rw": "Umukozi w'ubufasha",
+    "fr": "Agent du support"
+  },
+  "Support cases": {
+    "rw": "Ibibazo by'ubufasha",
+    "fr": "Dossiers du support"
+  },
+  "Support cases past SLA": {
+    "rw": "Ibibazo by'ubufasha birenze SLA",
+    "fr": "Dossiers du support hors SLA"
+  },
+  "Support categories and deadlines": {
+    "rw": "Ibyiciro n'igihe ntarengwa by'ubufasha",
+    "fr": "Catégories et délais du support"
+  },
+  "Support deadlines": {
+    "rw": "Igihe ntarengwa cy'ubufasha",
+    "fr": "Délais du support"
+  },
+  "Support lead": {
+    "rw": "Umuyobozi w'ubufasha",
+    "fr": "Responsable du support"
+  }
+}
