@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useApp } from '../../lib/app';
-import { arrowFor, fmtDist, progress, shouldReroute, type NavRoute, type NavStep } from '../../lib/nav';
+import { arrowFor, fmtDist, progress, shouldReroute, voiceCue, type NavRoute, type NavStep, type VoiceState } from '../../lib/nav';
+import { speak, stopSpeaking, voiceAvailable } from '../../lib/voice';
+import { useAppearance, appearance } from '../../lib/appearance';
 import type { TKey } from '../../lib/i18n';
 import type { Booking } from '../../lib/types';
 import { AppModal } from '../../ui/AppModal';
@@ -30,7 +32,7 @@ export function stepText(t: (k: TKey, v?: Record<string, string | number>) => st
  * Honest limits: no voice yet, and the road data is OpenStreetMap, so a very new road may be missing: another navigation app stays one tap away.
  */
 export function NavigationModal({ trip, pos, visible, onClose }: { trip: Booking; pos: LL | null; visible: boolean; onClose: () => void }) {
-  const { t, client } = useApp();
+  const { t, client, lang } = useApp(); const ap = useAppearance();
   const target: 'pickup' | 'destination' = trip.status === 'IN_PROGRESS' ? 'destination' : 'pickup';
   const [route, setRoute] = useState<(NavRoute & { target: 'pickup' | 'destination' }) | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'rerouting' | 'unavailable'>('idle');
@@ -57,12 +59,26 @@ export function NavigationModal({ trip, pos, visible, onClose }: { trip: Booking
   // left the road: ask for a new route (not more often than every 12 s)
   useEffect(() => { if (visible && nav && !nav.arrived && shouldReroute(nav.offRouteM, lastAt.current)) void fetchRoute(true); }, [nav?.offRouteM, visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // spoken guidance: the next turn is read aloud as the driver closes in (see lib/voice.ts for the language rule)
+  const voiceSt = useRef<VoiceState>({ key: '', level: 0 }); const [voiceOk, setVoiceOk] = useState(true);
+  useEffect(() => { void voiceAvailable(lang).then(setVoiceOk); }, [lang]);
+  useEffect(() => { if (!visible) stopSpeaking(); }, [visible]);
+  useEffect(() => {
+    if (!visible || !nav || !ap.voiceNav || !voiceOk) return;
+    const key = `${target}|${nav.stepIndex}|${nav.step.maneuver}`;
+    const r = voiceCue(voiceSt.current, key, nav.toNextM, nav.arrived, nav.step.maneuver === 'arrive');
+    voiceSt.current = r.state; if (!r.cue) return;
+    const what = r.cue === 'arrive' ? t(target === 'pickup' ? 'nav.arrive.pickup' : 'nav.arrive.dest') : stepText(t, nav.step, target);
+    void speak(r.cue === 'far' || r.cue === 'near' ? `${t('nav.in', { d: fmtDist(nav.toNextM) })}, ${what}` : what, lang);
+  }, [nav?.stepIndex, nav?.toNextM, nav?.arrived, visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const eta = nav ? new Date(Date.now() + nav.remainingS * 1000) : null;
   const hhmm = eta ? `${String(eta.getHours()).padStart(2, '0')}:${String(eta.getMinutes()).padStart(2, '0')}` : '';
   return (
     <AppModal visible={visible} onClose={onClose}>
       <Screen title={t('nav.title')} onBack={onClose} scroll={false}
         footer={<View style={{ gap: SP.sm }}>{nav ? <View style={S.between}><View><Text testID="nav-remaining" style={[S.h2, { color: C.primary }]}>{t('nav.remaining', { min: Math.max(1, Math.round(nav.remainingS / 60)), km: (nav.remainingM / 1000).toFixed(1) })}</Text><Text style={S.muted}>{t('nav.eta', { time: hhmm })}</Text></View><Pill text={t(target === 'pickup' ? 'nav.target.pickup' : 'nav.target.dest')} tone="ok" /></View> : null}
+          {voiceOk ? <Btn kind="ghost" testID="nav-voice" title={t(ap.voiceNav ? 'nav.voice.on' : 'nav.voice.off')} onPress={() => { void appearance.set({ voiceNav: !ap.voiceNav }); if (ap.voiceNav) stopSpeaking(); }} /> : <Text style={S.muted}>{t('nav.voice.none')}</Text>}
           <Btn kind="ghost" title={t('nav.close')} onPress={onClose} /></View>}>
         {state === 'loading' || (!route && state === 'idle') ? <View style={{ padding: SP.xl }}><Spinner /><Text style={[S.muted, { textAlign: 'center' }]}>{t('nav.loading')}</Text></View> : null}
         {state === 'unavailable' ? <><Banner text={t('nav.unavailable')} /><R1NavButtons trip={trip as never} which={target} /></> : null}

@@ -20,15 +20,19 @@ function startAlarm() {
   beat(); LIVE.alarm = setInterval(beat, 1300);
 }
 function setBadge(tab, n) {
-  const b = document.querySelector(`#sidenav button[data-tab="${tab}"]`); if (!b) return; let el = b.querySelector('.nb');
-  if (!n) { el?.remove(); return; } if (!el) { el = document.createElement('span'); el.className = 'nb'; b.append(el); } el.textContent = n > 99 ? '99+' : String(n);
+  const b = document.querySelector(`#sidenav button[data-tab="${tab}"]`); if (!b) return;       // the number is drawn by CSS from data-n, so the button's own text (its name) never changes
+  if (!n) { b.removeAttribute('data-n'); b.removeAttribute('title'); return; } b.dataset.n = n > 99 ? '99+' : String(n); b.title = `${n}`;
 }
-function titleFor(total, sos) {
-  clearInterval(LIVE.blink); LIVE.blink = null;
+// The tab title keeps the page name and gets a prefix: "(3) Bookings · Abasare Operations", or "⚠ SOS · Bookings ..." (blinking) while a safety incident is open.
+const PREFIX = /^(\(\d+\) |\u26a0 SOS \u00b7 )/;
+function refreshTitle(t) { const t0 = String(t).replace(PREFIX, '').replace(/ \u00b7 Abasare Operations$/, ''); LIVE.base = (typeof tr === 'function' ? tr(t0) : t0) + ' \u00b7 Abasare Operations'; applyTitle(); }
+function applyTitle() {
+  clearInterval(LIVE.blink); LIVE.blink = null; const { total, sos } = LIVE.tcount || { total: 0, sos: false };
   if (!total) { document.title = LIVE.base; return; }
-  const a = `(${total}) ${LIVE.base}`, b = sos ? `⚠ SOS · ${LIVE.base}` : a; let on = false;
+  const a = `(${total}) ${LIVE.base}`, b = sos ? `\u26a0 SOS \u00b7 ${LIVE.base}` : a; let on = false;
   document.title = b; if (sos) LIVE.blink = setInterval(() => { on = !on; document.title = on ? a : b; }, 1000);
 }
+function titleFor(total, sos) { LIVE.tcount = { total, sos }; applyTitle(); }
 async function pulse() {
   if (!S.access) return;
   let p; try { p = await api('GET', '/admin/pulse'); } catch { return; }
@@ -43,7 +47,7 @@ async function pulse() {
   else if (fresh('support') || fresh('alerts') || c.nodriver > prev.c.nodriver || c.drivers > prev.c.drivers) { ping(); if (fresh('support')) toast(tr('New support cases')); if (fresh('alerts')) toast(tr('New staff alert')); }
   if (!c.sos) stopAlarm();
 }
-function startLive() { if (LIVE.timer) return; LIVE.base = document.title.replace(/^\(\d+\) /, ''); void pulse(); LIVE.timer = setInterval(pulse, 15000); document.addEventListener('visibilitychange', () => { if (!document.hidden) void pulse(); }); }
+function startLive() { if (LIVE.timer) return; LIVE.base = document.title.replace(PREFIX, ''); void pulse(); LIVE.timer = setInterval(pulse, 15000); document.addEventListener('visibilitychange', () => { if (!document.hidden) void pulse(); }); }
 function stopLive() { clearInterval(LIVE.timer); LIVE.timer = null; LIVE.prev = null; stopAlarm(); titleFor(0, false); }
 // Looking at the safety page, or any click on the page, silences the alarm (the incident stays open until someone handles it).
 document.addEventListener('click', () => stopAlarm(), true);

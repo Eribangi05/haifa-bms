@@ -51,7 +51,7 @@ async function render() {
   const cur = TABS.find((t) => t[0] === S.tab);
   document.querySelectorAll('#sidenav button[data-tab]').forEach((b) => { const on = b.dataset.tab === S.tab; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#crumbs').replaceChildren(h('li', {}, cur[3]), h('li', { 'aria-current': 'page' }, cur[1]));
-  document.title = cur[1] + ' · Abasare Operations';
+  document.title = cur[1] + ' · Abasare Operations'; if (typeof refreshTitle === 'function') refreshTitle(document.title);
   closeNav();
   await loadView();
 }

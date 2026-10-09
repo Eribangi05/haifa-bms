@@ -378,9 +378,9 @@ test('D-04 purged / never-written files give 404, not a 500; impossible calendar
   const body = (date: string) => Buffer.concat([
     Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="doc_type"\r\n\r\ninsurance\r\n--${boundary}\r\nContent-Disposition: form-data; name="expiry_date"\r\n\r\n${date}\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n`), png, Buffer.from(`\r\n--${boundary}--\r\n`)]);
   const up = (date: string) => t.api('POST', '/drivers/documents', { token: d.token, headers: { 'content-type': `multipart/form-data; boundary=${boundary}` }, payload: body(date) });
-  assert.equal((await up('2099-02-30')).status, 400, 'was a 500 from the database');
-  assert.equal((await up('2099-13-01')).status, 400);
-  assert.equal((await up('2099-02-28')).status, 200);
+  assert.equal((await up('2040-02-30')).status, 400, 'was a 500 from the database');
+  assert.equal((await up('2040-13-01')).status, 400);
+  assert.equal((await up('2040-02-28')).status, 200);
 });
 
 test('D-05 client-error flood protection: past the hourly ceiling reports are acknowledged and dropped', async () => {

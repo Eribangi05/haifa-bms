@@ -23,6 +23,8 @@ export const socialRw: Record<keyof typeof socialEn, string> = {
   'offmap.notready': 'Ibikoresho by\'ikarita biracyatangira. Ongera ugerageze nyuma gato.',
   'nav.title': 'Kuyoborwa mu nzira',
   'nav.open': 'Yoborwa muri Abasare',
+  'nav.voice.on': 'Amajwi y\'inzira: arafunguye', 'nav.voice.off': 'Amajwi y\'inzira: arafunze', 'nav.voice.none': 'Telefone nta jwi ry\'ururimi rw\'porogaramu ifite. Ryinjize mu igenamiterere rya telefone (Text-to-speech) kugira ngo wumve inzira.', 'snd.voice': 'Amajwi y\'inzira',
+  'drv.photo.small': 'Ifoto ni nto cyane cyangwa ntisomeka. Subira inyuma gato, uzuze ifoto n\'urupapuro maze uyifate ukundi.', 'drv.photo.blurry': 'Ifoto isa n\'itameze neza cyangwa irimo umwijima. Fata telefone neza, shaka urumuri maze uyifate ukundi.', 'drv.uploaded.warn': 'Byoherejwe, ariko ifoto ishobora kutaboneka neza. Ifoto isobanutse isuzumwa vuba.',
   'nav.close': 'Funga',
   'nav.loading': 'Turashaka inzira nziza…',
   'nav.rerouting': 'Turashaka indi nzira…',

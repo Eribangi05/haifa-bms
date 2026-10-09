@@ -197,6 +197,13 @@ Labels (assigned by evidence, not intent):
 * **PENDING on a real phone**: hearing it (a browser test cannot hear audio), and ringing while the app is closed, which needs Firebase/Expo push credentials. An Android channel's sound is fixed when the channel is first created, which is why the channel is named `offers_v2`: on a phone with the app already installed the new channel is created at first launch of this version.
 * Riders and drivers can turn request and chat sounds off in Settings > Appearance > Sounds; there is a test button.
 
+## Console and 0.9.2 items
+
+* **TESTED** (backend tests, browser audit of every console page for every role): pulse and digest endpoints (R5-20); the console in rw/fr/en (checked in a browser for the menu and the overview page); live alert badges and tab title; phone card layout (333 cells labelled on the bookings page); installable shell (service worker registers).
+* **IMPLEMENTED, not heard**: the console alarm and ping sounds (Web Audio, need one click to allow sound), the phone's text-to-speech for spoken directions (unit-tested cue timing only; a real phone and, for Kinyarwanda, an installed Kinyarwanda voice are needed to hear it).
+* **TESTED**: rush-hour speeds and turn-restriction loading (MAP-05), document pre-check (DOC-01 and a mobile unit test).
+* **Translations**: console rw/fr and the new app strings are written by the assistant and need a native-speaker review before launch.
+
 ## Village and district search (0.9.1)
 
 * **TESTED**: `localities.json` search and `GET /places/reverse` (backend test MAP-04), "Near {place}" pickup naming wired in the passenger home screen (type-checked; not field-checked in the countryside).

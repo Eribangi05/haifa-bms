@@ -50,6 +50,7 @@
 | GET | `/coverage/check` |
 | POST | `/fares/estimate` |
 | GET | `/places/popular` |
+| GET | `/places/reverse` |
 | GET | `/places/search` |
 | POST | `/promotions/validate` |
 | GET | `/services` |
@@ -264,6 +265,7 @@
 | GET | `/admin/dashboard` |
 | GET | `/admin/dashboard/ops` |
 | GET | `/admin/deposits` |
+| GET | `/admin/digest` |
 | GET | `/admin/document-requirements` |
 | POST | `/admin/document-requirements` |
 | DELETE | `/admin/document-requirements/:id` |
@@ -317,6 +319,7 @@
 | GET | `/admin/promotions` |
 | POST | `/admin/promotions` |
 | PATCH | `/admin/promotions/:id` |
+| GET | `/admin/pulse` |
 | GET | `/admin/quests` |
 | POST | `/admin/quests` |
 | PATCH | `/admin/quests/:id` |

@@ -43,6 +43,6 @@ test('theme resolution and font cap', () => {
 
 test('stored appearance prefs parse defensively', () => {
   assert.deepEqual(parsePrefs(null), DEFAULT_PREFS); assert.deepEqual(parsePrefs('{bad'), DEFAULT_PREFS);
-  assert.deepEqual(parsePrefs('{"theme":"dark","largeText":true,"lowData":true,"lockEnabled":true,"lockMinutes":5}'), { theme: 'dark', largeText: true, lowData: true, lockEnabled: true, lockMinutes: 5, offerSound: true, chatSound: true });
+  assert.deepEqual(parsePrefs('{"theme":"dark","largeText":true,"lowData":true,"lockEnabled":true,"lockMinutes":5}'), { theme: 'dark', largeText: true, lowData: true, lockEnabled: true, lockMinutes: 5, offerSound: true, chatSound: true, voiceNav: true });
   assert.equal(parsePrefs('{"theme":"neon","lockMinutes":7}').theme, 'system'); assert.equal(parsePrefs('{"lockMinutes":7}').lockMinutes, 1);
 });

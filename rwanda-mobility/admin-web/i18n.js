@@ -69,7 +69,7 @@ function applyLang(lang) {
     if (n.nodeType === 3) { const r = origText.get(n); const o = r ? r.orig : n.data; const t = tr(o); origText.set(n, { orig: o, shown: t }); if (n.data !== t) n.data = t; }
     else if (n.nodeType === 1) { for (const a of ATTRS) if (n.hasAttribute(a)) { const m = origAttr.get(n) || {}; const o = m[a] ? m[a].orig : n.getAttribute(a); const t = tr(o); m[a] = { orig: o, shown: t }; origAttr.set(n, m); n.setAttribute(a, t); } n.childNodes.forEach(walk); }
   };
-  walk(document.body); document.title = tr(document.title.replace(/ · Abasare Operations$/, '')) + ' · Abasare Operations';
+  walk(document.body); { const page = tr(String(LIVE?.base ?? document.title).replace(/ · Abasare Operations$/, '')) + ' · Abasare Operations'; if (typeof refreshTitle === 'function') refreshTitle(page); else document.title = page; }
 }
 new MutationObserver((muts) => { for (const m of muts) { if (m.type === 'characterData') trNode(m.target); else if (m.type === 'attributes') trNode(m.target); else m.addedNodes.forEach(trNode); } })
   .observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });

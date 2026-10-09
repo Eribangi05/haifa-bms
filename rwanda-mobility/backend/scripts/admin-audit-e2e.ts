@@ -58,7 +58,7 @@ try {
         if (overflow > 2) bad(`${role}@${vp.width} [${t}] page scrolls horizontally by ${overflow}px`);
         if (!h1) bad(`${role}@${vp.width} [${t}] no page title`);
         if (t !== 'Overview' && h1 === 'Operations overview') bad(`${role}@${vp.width} [${t}] shows the Overview page instead of its own (script failed to load?)`);
-        if (!(await page.title()).startsWith(t)) bad(`${role}@${vp.width} [${t}] browser title is '${await page.title()}'`);
+        if (!(await page.title()).replace(/^(\(\d+\) |\u26a0 SOS \u00b7 )/, '').startsWith(t)) bad(`${role}@${vp.width} [${t}] browser title is '${await page.title()}'`);
         if (role === 'super_admin' || (vp.width === 1280 && ['dispatcher', 'finance_officer'].includes(role))) await page.screenshot({ path: `/tmp/shots/admin-audit-${role}-${t.replace(/\W+/g, '_')}-${vp.width}.png` });
       }
       ok(`${role} @${vp.width}: ${tabs.length} tabs clicked`);

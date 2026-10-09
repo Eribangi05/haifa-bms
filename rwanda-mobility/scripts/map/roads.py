@@ -31,9 +31,25 @@ class Ways(osmium.SimpleHandler):
         except ValueError: spd = 0
         if not (5 <= spd <= 130): spd = MAXSPEED_DEFAULT[h]
         name = t.get('name') or t.get('ref') or ''
-        s.ways.append((refs, CLS[h], oneway, spd, name))
+        s.ways.append((refs, CLS[h], oneway, spd, name, w.id))
         for r in refs: s.use[r] += 1
         s.use[refs[0]] += 1; s.use[refs[-1]] += 1          # ends always count as junctions
+
+class Restrictions(osmium.SimpleHandler):
+    # turn restrictions: relation type=restriction, from way -> via node -> to way, "no_*" forbids that turn, "only_*" forbids every other turn from that way at that node
+    def __init__(s): super().__init__(); s.items = []
+    def relation(s, r):
+        t = r.tags
+        if t.get('type') not in ('restriction', 'restriction:motorcar'): return
+        kind = t.get('restriction') or t.get('restriction:motorcar') or ''
+        if not (kind.startswith('no_') or kind.startswith('only_')): return
+        if t.get('except') and ('motorcar' in t.get('except') or 'motor_vehicle' in t.get('except')): return
+        fr = to = via = None
+        for m in r.members:
+            if m.role == 'from' and m.type == 'w': fr = m.ref
+            elif m.role == 'to' and m.type == 'w': to = m.ref
+            elif m.role == 'via' and m.type == 'n': via = m.ref
+        if fr and to and via: s.items.append((kind, fr, via, to))
 
 class Coords(osmium.SimpleHandler):
     def __init__(s, wanted): super().__init__(); s.wanted = wanted; s.xy = {}
@@ -70,6 +86,7 @@ def hav(a, b):
 
 src, dst = sys.argv[1], sys.argv[2]
 W = Ways(); W.apply_file(src)
+RS = Restrictions(); RS.apply_file(src)
 need = set(W.use.keys())
 C = Coords(need); C.apply_file(src, locations=False)
 xy = C.xy
@@ -82,7 +99,7 @@ def nm(s):
     if s not in name_idx: name_idx[s] = len(names); names.append(s)
     return name_idx[s]
 edges = []      # (from, to, len_dm, cls, speed, name, geom[(lat,lng)...])
-for refs, cls, oneway, spd, name in W.ways:
+for refs, cls, oneway, spd, name, wid in W.ways:
     refs = [r for r in refs if r in xy]
     if len(refs) < 2: continue
     ni = nm(name)
@@ -94,14 +111,29 @@ for refs, cls, oneway, spd, name in W.ways:
         a, b = nid(seg[0]), nid(seg[-1])
         if a == b and len(seg) < 4: return
         mid = rdp(pts[1:-1], pts[0], pts[-1])
-        if oneway >= 0: edges.append((a, b, int(length * 10), cls, spd, ni, mid))
-        if oneway <= 0: edges.append((b, a, int(length * 10), cls, spd, ni, mid[::-1]))
+        if oneway >= 0: edges.append((a, b, int(length * 10), cls, spd, ni, mid, wid))
+        if oneway <= 0: edges.append((b, a, int(length * 10), cls, spd, ni, mid[::-1], wid))
     for r in refs[1:]:
         seg.append(r)
         if W.use[r] > 1 or r == refs[-1]:
             flush(seg); seg = [r]
 n = len(lat); m = len(edges)
 edges.sort(key=lambda e: e[0])
+# turn restrictions as (from edge, to edge) pairs of final edge numbers
+by_to = collections.defaultdict(list); by_from = collections.defaultdict(list); by_node = collections.defaultdict(list)
+for i, e in enumerate(edges): by_to[(e[7], e[1])].append(i); by_from[(e[7], e[0])].append(i); by_node[e[0]].append(i)
+banned = set()
+for kind, fw, via, tw in RS.items:
+    if via not in node_idx: continue
+    v = node_idx[via]
+    for fe in by_to.get((fw, v), []):
+        outs = by_from.get((tw, v), [])
+        if kind.startswith('no_'):
+            for te in outs: banned.add((fe, te))
+        else:
+            keep = set(outs)
+            banned.update((fe, te) for te in by_node[v] if te not in keep)
+
 first = np.zeros(n + 1, dtype=np.uint32)
 for e in edges: first[e[0] + 1] += 1
 first = np.cumsum(first, dtype=np.uint32)
@@ -122,4 +154,7 @@ with gzip.open(dst, 'wb', compresslevel=9) as f:
     f.write(b'RGR1' + struct.pack('<IIIII', n, m, len(names), len(pool), len(blob)))
     for arr in (nlat, nlng, first, to, ln, cl, sp, na, gs, glat, glng): f.write(arr.tobytes())
     f.write(blob)
-print('nodes', n, 'edges', m, 'names', len(names), 'shape points', len(pool))
+    # turn restrictions: 'RST1', count, then (from edge, to edge) pairs; readers that do not know this section simply stop before it
+    pairs = np.array(sorted(banned), dtype=np.uint32).reshape(-1, 2)
+    f.write(b'RST1' + struct.pack('<I', len(pairs))); f.write(pairs.tobytes())
+print('banned turns', len(banned)); print('nodes', n, 'edges', m, 'names', len(names), 'shape points', len(pool))

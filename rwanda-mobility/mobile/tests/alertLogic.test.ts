@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { freshIds, shouldRing, increased } from '../src/lib/alertLogic.ts';
+import { voiceCue } from '../src/lib/nav.ts';
 import { parsePrefs, DEFAULT_PREFS } from '../src/lib/prefs.ts';
 
 test('new requests are the ids not seen before; an answered request frees its place', () => {
@@ -23,4 +24,21 @@ test('sound preferences default to ON and only an explicit false turns them off'
   assert.equal(parsePrefs(null).offerSound, true); assert.equal(parsePrefs('{}').chatSound, true);
   assert.equal(parsePrefs('{"offerSound":false}').offerSound, false); assert.equal(parsePrefs('{"offerSound":false}').chatSound, true);
   assert.equal(parsePrefs('{"offerSound":"no"}').offerSound, true, 'junk keeps the safe default');
+});
+
+test('voiceCue announces a turn at about 500 m, 150 m and at the turn, once each, and starts again for the next turn', () => {
+  let st = { key: '', level: 0 }; const said: (string | null)[] = [];
+  for (const d of [900, 480, 470, 140, 100, 30, 20]) { const r = voiceCue(st, 'a', d, false, false); st = r.state; said.push(r.cue); }
+  assert.deepEqual(said, [null, 'far', null, 'near', null, 'now', null]);
+  assert.equal(voiceCue(st, 'b', 450, false, false).cue, 'far', 'next manoeuvre starts again');
+  const last = voiceCue({ key: '', level: 0 }, 'z', 30, false, true); assert.equal(last.cue, 'arrive');
+  const arr = voiceCue({ key: 'z', level: 1 }, 'z', 5, true, true); assert.equal(arr.cue, 'arrive'); assert.equal(voiceCue(arr.state, 'z', 3, true, true).cue, null);
+});
+
+import { photoProblem } from '../src/lib/photoCheck.ts';
+test('photoProblem sends back small and nearly empty document photos, and lets unknown sizes and PDFs through', () => {
+  assert.equal(photoProblem({ type: 'image/jpeg', width: 400, height: 300, size: 90_000 }), 'small');
+  assert.equal(photoProblem({ type: 'image/jpeg', width: 1600, height: 1200, size: 40_000 }), 'blurry');
+  assert.equal(photoProblem({ type: 'image/jpeg', width: 1600, height: 1200, size: 600_000 }), null);
+  assert.equal(photoProblem({ type: 'application/pdf' }), null); assert.equal(photoProblem({ type: 'image/png' }), null);
 });

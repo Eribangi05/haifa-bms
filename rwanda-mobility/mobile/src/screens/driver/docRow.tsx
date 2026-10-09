@@ -5,7 +5,7 @@ import { useApp, useAsync } from '../../lib/app';
 import { label } from '../../lib/i18n';
 import { explainCameraDenied } from '../../lib/hooks';
 import { isIsoDate } from '../../lib/format';
-import { appendFile, pickPhoto, type Picked } from '../../lib/upload';
+import { appendFile, photoProblem, pickPhoto, type Picked } from '../../lib/upload';
 import type { DriverDoc, Requirement } from '../../lib/types';
 import { Banner, Btn, Field, Pill, Text } from '../../ui/components';
 import { C, S } from '../../ui/theme';
@@ -18,9 +18,10 @@ export function DocRow({ req, docs, reload, editable }: { req: Requirement; docs
   // Called from inside run() below (run ignores nested calls, so this is a plain async function).
   const upload = async (f: Picked) => {
     setFailed(false);
+    const bad = photoProblem(f); if (bad) { say(t(bad === 'small' ? 'drv.photo.small' : 'drv.photo.blurry')); return; }      // retake before wasting data
     try {
       const fd = new FormData(); fd.append('doc_type', req.doc_type); if (expiry) fd.append('expiry_date', expiry); await appendFile(fd, 'file', f);
-      await client.post('/drivers/documents', undefined, { form: fd, timeoutMs: 40000 }); setOpen(false); say(t('drv.uploaded')); reload();
+      const r = await client.post('/drivers/documents', undefined, { form: fd, timeoutMs: 40000 }); setOpen(false); say(t(r?.warnings?.length ? 'drv.uploaded.warn' : 'drv.uploaded')); reload();
     } catch (e) { setFailed(true); throw e; }   // keep the form open: tapping the same button again retries
   };
   const fromCamera = () => run(async () => {

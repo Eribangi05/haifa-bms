@@ -53,3 +53,17 @@ export const arrowFor = (maneuver: string, modifier?: string): string => {
   if (maneuver === 'arrive') return '⚑';
   switch (modifier) { case 'left': return '←'; case 'right': return '→'; case 'slight_left': return '↖'; case 'slight_right': return '↗'; case 'sharp_left': return '↙'; case 'sharp_right': return '↘'; case 'uturn': return '↶'; default: return '↑'; }
 };
+
+/**
+ * When to speak. A manoeuvre is announced up to three times as the driver closes in: about 500 m before, 150 m before, and at the turn;
+ * a new manoeuvre starts again. Returns the cue to speak now (or null) and the state to keep. Pure: unit-tested.
+ */
+export type VoiceState = { key: string; level: number };
+export type VoiceCue = 'far' | 'near' | 'now' | 'arrive' | null;
+export function voiceCue(st: VoiceState, key: string, toNextM: number, arrived: boolean, isLast: boolean): { state: VoiceState; cue: VoiceCue } {
+  const cur = st.key === key ? st : { key, level: 0 };
+  if (arrived) return cur.level >= 9 ? { state: cur, cue: null } : { state: { key, level: 9 }, cue: 'arrive' };
+  const level = toNextM <= 40 ? 3 : toNextM <= 150 ? 2 : toNextM <= 500 ? 1 : 0;
+  if (level > cur.level) return { state: { key, level }, cue: isLast && level === 3 ? 'arrive' : level === 3 ? 'now' : level === 2 ? 'near' : 'far' };
+  return { state: cur, cue: null };
+}

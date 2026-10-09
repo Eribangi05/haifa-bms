@@ -34,6 +34,7 @@ export function R1Settings() {
       <SectionTitle text={t('snd.title')} />
       <Card>
         <SwitchRow testID="set-offersound" label={t('snd.offer')} hint={t('snd.offer.hint')} value={ap.offerSound} onChange={(v) => void appearance.set({ offerSound: v })} />
+        <SwitchRow testID="set-voicenav" label={t('snd.voice')} value={ap.voiceNav} onChange={(v) => void appearance.set({ voiceNav: v })} />
         <SwitchRow testID="set-chatsound" label={t('snd.chat')} hint={t('snd.chat.hint')} value={ap.chatSound} onChange={(v) => void appearance.set({ chatSound: v })} />
         <Btn testID="snd-test" kind="ghost" title={t('snd.test')} onPress={() => void testOfferSound()} />
         <Text style={S.muted}>{t('snd.test.hint')}</Text>

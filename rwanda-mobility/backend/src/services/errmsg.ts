@@ -148,6 +148,7 @@ const T: Record<string, Pair> = {
   documents_not_approved: ['Ibyangombwa byose bisabwa bigomba kubanza kwemezwa.', 'Tous les documents obligatoires doivent d\'abord être approuvés.'],
   expiry_required: ['Iki cyangombwa gisaba itariki kirangiriraho.', 'Ce document nécessite une date d\'expiration.'],
   already_expired: ['Iki cyangombwa cyararangiye.', 'Ce document a déjà expiré.'],
+  expiry_too_far: ['Reba itariki irangiriraho: irenze imyaka 20.', 'Vérifiez la date d\'expiration : elle est à plus de 20 ans.'],
   file_required: ['Hitamo idosiye yo kohereza.', 'Sélectionnez un fichier à envoyer.'],
   file_too_large: ['Idosiye ni nini cyane. Ntishobora kurenza 5 MB.', 'Le fichier est trop volumineux. Taille maximale : 5 Mo.'],
   unsupported_file: ['Ubu bwoko bw\'idosiye ntibwemewe. Koresha ifoto (JPG, PNG) cyangwa PDF.', 'Ce type de fichier n\'est pas accepté. Utilisez une photo (JPG, PNG) ou un PDF.'],

@@ -6,6 +6,7 @@ import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, notFound, forbidden } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
 import { encrypt, verifyFileToken } from '../util/crypto.js';
+import { inspectDocument, expiryTooFar } from '../services/docCheck.js';
 import { saveFile, readFileByKey } from '../services/storage.js';
 import * as Dr from '../services/drivers.js';
 import { driverBalance } from '../services/ledger.js';
@@ -74,11 +75,13 @@ export async function driverRoutes(app: FastifyInstance) {
     const reqRow = types.length ? await q1<any>('select bool_or(requires_expiry) requires_expiry from document_requirements where vehicle_type = any($1) and doc_type=$2', [types, body.doc_type]) : null;
     if (reqRow?.requires_expiry && !body.expiry_date) throw badRequest('expiry_required', 'This document needs an expiry date');
     if (body.expiry_date && new Date(body.expiry_date) < new Date(new Date().toISOString().slice(0, 10))) throw badRequest('already_expired', 'This document has already expired');
+    if (body.expiry_date && expiryTooFar(body.expiry_date)) throw badRequest('expiry_too_far', 'Check the expiry date: it is more than 20 years away');
     const saved = await saveFile(buf, body.doc_type === 'profile_photo' ? 'photos' : 'docs', declared);
+    const check = inspectDocument(buf, saved.mime);
     const d = await q1<any>(`insert into driver_documents(driver_id, doc_type, file_key, mime, size, expiry_date) values ($1,$2,$3,$4,$5,$6) returning id, doc_type, review_status, expiry_date`,
       [req.auth!.id, body.doc_type, saved.key, saved.mime, saved.size, body.expiry_date ?? null]);
     // (the photo shown to passengers is set only when staff approve it: see /admin/documents/:id/review)
-    return d;
+    return { ...d, warnings: check.warnings };       // advice for the uploader (retake a small or blurry photo); the reviewer still decides
   });
 
   app.get('/drivers/me/status', drv, async (req) => {

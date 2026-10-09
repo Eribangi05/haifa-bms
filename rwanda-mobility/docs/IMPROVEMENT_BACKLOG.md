@@ -59,12 +59,20 @@ Checked by: 311 backend tests, 79 mobile unit tests, browser tests of the rider 
 
 ## Still to build later (feasible, not done yet)
 
-* Voice instructions in navigation, and live traffic.
-* Road routing with turn restrictions and time-of-day speeds (the router uses free-flow speed per road class).
-* An automatic first check of driver documents (photo quality, expiry reading).
+* Live traffic (the router assumes typical rush hours, it does not measure traffic).
+* Reading the expiry date from a document photo automatically (OCR).
 * A hosted map CDN once traffic grows (the map file is served by the API today).
 
 ## Added in 0.9.1
 
 * Loud repeating request chime with vibration for drivers, chat ping for both sides, push channels with custom sounds (needs push credentials to work in the background).
 * About 19,000 villages, cells, towns and the 30 districts searchable; pickup named "Near {place}".
+
+## Added in 0.9.2
+
+* **Console**: Kinyarwanda / French / English (menu, headings, buttons, table headings, statuses and the most used sentences; a text without a translation stays in English), live alerts (a repeating alarm for a new SOS, a ping for new support cases, staff alerts, requests with no driver and waiting drivers; numbers beside the menu items; the tab title shows the count), a daily digest page with "Copy as text", installable as an app (home-screen icon, page shell works offline), phone layout where table rows become cards, reduced-motion and high-contrast support, a quick page finder (press `/`).
+* **API**: `GET /admin/pulse` (small counts, each shown only to roles allowed to see it) and `GET /admin/digest?date=` (one Kigali day).
+* **Navigation**: spoken directions with the phone's own voice, in the app language only (about 500 m before, 150 m before and at the turn; on/off in the navigation screen and Settings). Kinyarwanda needs a Kinyarwanda voice installed on the phone; without one the app stays silent and says why.
+* **Routing**: weekday rush hours (07:00 to 09:00, 17:00 to 19:30 Kigali time) slow the roads inside Kigali (main roads to 60 %, small roads to 80 %): an assumption, not measured traffic. Turn restrictions from OpenStreetMap (no left turn, no U-turn, only straight on) are in the road file; Rwanda has few of them mapped (14 forbidden turns), so the effect is small today.
+* **Driver documents**: the app sends back a photo that is too small or looks blurry or dark before uploading it; the server also returns warnings and rejects an expiry date more than 20 years away (a typing mistake). Staff still decide every document.
+* **Load and restore**: both drills were run (see `docs/OPERATIONS_RUNBOOK.md`).

@@ -38,6 +38,11 @@ The offline cache for screens (trips, credit, earnings, driver status, landmarks
 2. If that fails too the screen shows the existing "map unavailable" banner and the landmark chips.
 3. Low-data mode still shows the text card instead of the map.
 
+## Routing details (0.9.2)
+
+* **Time of day**: `isRushHour` in `backend/src/services/roadGraph.ts`: weekdays 07:00 to 09:00 and 17:00 to 19:30 Kigali time, roads inside Kigali (box -2.10..-1.85, 29.95..30.20) run at 60 % (main roads) or 80 % (small roads) of free-flow speed. These factors are an assumption (`RUSH`); change them there. They affect ETAs and any fare that uses trip time.
+* **Turn restrictions**: `scripts/map/roads.py` reads OpenStreetMap `restriction` relations (no_* and only_*, motor vehicles only) into the `RST1` section of `roads.bin.gz`; the router skips forbidden turns and, if that leaves no route at all, tries again without them. The current Rwanda extract has only 14 forbidden turns.
+
 ## Cost and licence
 
 * Data: © OpenStreetMap contributors, ODbL. Tile design: © OpenMapTiles, CC-BY. Both credits are shown on the map. Fonts: Noto Sans (SIL OFL). MapLibre GL: BSD-3 (`backend/map/lib/LICENSE-maplibre.txt`).

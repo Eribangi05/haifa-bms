@@ -23,6 +23,8 @@ export const socialFr: Record<keyof typeof socialEn, string> = {
   'offmap.notready': 'L\'enregistreur de carte démarre encore. Réessayez dans un instant.',
   'nav.title': 'Navigation',
   'nav.open': 'Naviguer dans Abasare',
+  'nav.voice.on': 'Guidage vocal : activé', 'nav.voice.off': 'Guidage vocal : désactivé', 'nav.voice.none': 'Ce téléphone n\'a pas de voix pour la langue de l\'application. Installez-la dans les réglages (synthèse vocale) pour entendre les indications.', 'snd.voice': 'Guidage vocal',
+  'drv.photo.small': 'Cette photo est trop petite ou trop rapprochée pour être lue. Reculez un peu, cadrez le document en entier et reprenez-la.', 'drv.photo.blurry': 'Cette photo semble floue ou trop sombre. Tenez le téléphone bien droit, cherchez de la lumière et reprenez-la.', 'drv.uploaded.warn': 'Envoyé, mais la photo est peut-être difficile à lire. Une photo plus nette est examinée plus vite.',
   'nav.close': 'Fermer',
   'nav.loading': 'Recherche du meilleur itinéraire…',
   'nav.rerouting': 'Recherche d\'un nouvel itinéraire…',

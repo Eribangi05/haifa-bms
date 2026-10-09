@@ -24,6 +24,8 @@ export const socialEn = {
   'offmap.notready': 'The map saver is still starting. Try again in a moment.',
   'nav.title': 'Navigation',
   'nav.open': 'Navigate in Abasare',
+  'nav.voice.on': 'Voice guidance: on', 'nav.voice.off': 'Voice guidance: off', 'nav.voice.none': 'This phone has no voice for the app language. Install it in the phone settings (Text-to-speech) to hear directions.', 'snd.voice': 'Spoken directions',
+  'drv.photo.small': 'This photo is too small or too close to read. Move back a little, fill the frame with the document and take it again.', 'drv.photo.blurry': 'This photo looks blurry or too dark. Hold the phone steady, use good light and take it again.', 'drv.uploaded.warn': 'Uploaded, but the photo may be hard to read. A clearer photo is reviewed faster.',
   'nav.close': 'Close',
   'nav.loading': 'Finding the best road…',
   'nav.rerouting': 'Finding a new route…',

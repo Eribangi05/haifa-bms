@@ -18,7 +18,7 @@ const V_MAX = 80 / 3.6;
 export type Step = { maneuver: 'depart' | 'continue' | 'turn' | 'arrive'; modifier?: 'left' | 'right' | 'slight_left' | 'slight_right' | 'sharp_left' | 'sharp_right' | 'uturn' | 'straight'; name: string; distance_m: number; duration_s: number; at: LatLng; bearing: number };
 export type RoadRoute = { distance_m: number; duration_s: number; geometry: [number, number][]; steps: Step[]; snapped_start_m: number; snapped_end_m: number };
 
-type Graph = { n: number; m: number; lat: Float64Array; lng: Float64Array; first: Uint32Array; to: Uint32Array; from: Uint32Array; len: Float32Array; cls: Uint8Array; spd: Uint8Array; name: Uint32Array; gs: Uint32Array; glat: Float64Array; glng: Float64Array; names: string[]; grid: Map<number, number[]> };
+type Graph = { n: number; m: number; lat: Float64Array; lng: Float64Array; first: Uint32Array; to: Uint32Array; from: Uint32Array; len: Float32Array; cls: Uint8Array; spd: Uint8Array; name: Uint32Array; gs: Uint32Array; glat: Float64Array; glng: Float64Array; names: string[]; restr: Set<number> | null; grid: Map<number, number[]> };
 let GRAPH: Graph | null | undefined;
 
 function take<T extends { buffer: ArrayBufferLike }>(buf: Buffer, off: { o: number }, Ctor: new (b: ArrayBuffer) => T, count: number, size: number): T {
@@ -46,6 +46,9 @@ export function loadGraph(): Graph | null {
     const lenDm = take(buf, off, Uint32Array, m, 4), cls = take(buf, off, Uint8Array, m, 1), spd = take(buf, off, Uint8Array, m, 1), name = take(buf, off, Uint32Array, m, 4);
     const gs = take(buf, off, Uint32Array, m + 1, 4), gl = take(buf, off, Int32Array, p, 4), gg = take(buf, off, Int32Array, p, 4);
     const names = buf.toString('utf8', off.o, off.o + blob).split('\n');
+    // optional section after the names: forbidden turns (from edge, to edge), built from OpenStreetMap turn-restriction relations
+    let restr: Set<number> | null = null; const ro = off.o + blob;
+    if (buf.length >= ro + 8 && buf.toString('latin1', ro, ro + 4) === 'RST1') { const k = buf.readUInt32LE(ro + 4); restr = new Set(); for (let i = 0; i < k; i++) restr.add(buf.readUInt32LE(ro + 8 + i * 8) * m + buf.readUInt32LE(ro + 12 + i * 8)); }
     const lat = new Float64Array(n), lng = new Float64Array(n); for (let i = 0; i < n; i++) { lat[i] = nlat[i] / 1e6; lng[i] = nlng[i] / 1e6; }
     const glat = new Float64Array(p), glng = new Float64Array(p); for (let i = 0; i < p; i++) { glat[i] = gl[i] / 1e6; glng[i] = gg[i] / 1e6; }
     const from = new Uint32Array(m); const len = new Float32Array(m);
@@ -63,14 +66,26 @@ export function loadGraph(): Graph | null {
         for (let s = 1; s <= steps; s++) add(pts[i][0] + ((pts[i + 1][0] - pts[i][0]) * s) / (steps + 1), pts[i][1] + ((pts[i + 1][1] - pts[i][1]) * s) / (steps + 1), e);
       }
     }
-    GRAPH = { n, m, lat, lng, first, to, from, len, cls, spd, name, gs, glat, glng, names, grid };
+    GRAPH = { n, m, lat, lng, first, to, from, len, cls, spd, name, gs, glat, glng, names, grid, restr };
   } catch { GRAPH = null; }
   return GRAPH;
 }
 export const graphReady = () => !!loadGraph();
 export const graphStats = () => { const g = loadGraph(); return g ? { nodes: g.n, edges: g.m, names: g.names.length } : null; };
 
-const edgeSpeedMs = (g: Graph, e: number, vehicle: string) => Math.max(2, (Math.min(g.spd[e], CAP_KMH[g.cls[e]]) * (vehicle === 'moto' ? 1.1 : 1)) / 3.6);
+/**
+ * Time of day (an assumption, not measured traffic): on weekday rush hours (07:00-09:00 and 17:00-19:30 Kigali time) the roads inside Kigali are slower,
+ * main roads more than small ones. Outside the city and at other times the free-flow speed applies. Changing the factors here changes every ETA and fare estimate.
+ */
+export const RUSH = { arterial: 0.6, minor: 0.8 };
+export const isRushHour = (when: Date): boolean => { const k = new Date(when.getTime() + 2 * 3600e3), dow = k.getUTCDay(), t = k.getUTCHours() + k.getUTCMinutes() / 60; return dow >= 1 && dow <= 5 && ((t >= 7 && t < 9) || (t >= 17 && t < 19.5)); };
+const inKigali = (la: number, ln: number) => la > -2.1 && la < -1.85 && ln > 29.95 && ln < 30.2;
+let rushNow = false;      // set once per route() call (the router is synchronous, so this is safe)
+const edgeSpeedMs = (g: Graph, e: number, vehicle: string) => {
+  let kmh = Math.min(g.spd[e], CAP_KMH[g.cls[e]]) * (vehicle === 'moto' ? 1.1 : 1);
+  if (rushNow && g.cls[e] <= 6 && inKigali(g.lat[g.from[e]], g.lng[g.from[e]])) kmh *= g.cls[e] <= 4 ? RUSH.arterial : RUSH.minor;
+  return Math.max(2, kmh / 3.6);
+};
 
 type Snap = { e: number; frac: number; dist: number; pt: [number, number] };
 const KX = 111_320;
@@ -134,8 +149,12 @@ type Leg = { e: number; f0: number; f1: number };
 const normName = (s: string) => s.toLowerCase().replace(/\b(rd|road)\b/g, 'road').replace(/\b(ave|avenue)\b/g, 'avenue').replace(/\b(st|street)\b/g, 'street').replace(/[^a-z0-9]+/g, ' ').trim();
 
 /** Fastest route between two points, or null when there is no road graph, no road within 600 m, or the places are not connected. */
-export function routeOnRoads(a: LatLng, b: LatLng, vehicle = 'car'): RoadRoute | null {
+export function routeOnRoads(a: LatLng, b: LatLng, vehicle = 'car', when: Date = new Date()): RoadRoute | null {
   const g = loadGraph(); if (!g) return null;
+  rushNow = isRushHour(when);
+  const r = route(g, a, b, vehicle, true); return r ?? (g.restr?.size ? route(g, a, b, vehicle, false) : null);     // if turn restrictions leave no way, ignore them rather than give no route
+}
+function route(g: Graph, a: LatLng, b: LatLng, vehicle: string, useRestr: boolean): RoadRoute | null {
   const S = snap(g, a), D = snap(g, b); if (!S.length || !D.length) return null;
   const dist = new Map<number, number>(), prevEdge = new Map<number, number>(); const open = new Heap();
   const h = (u: number) => haversineM({ lat: g.lat[u], lng: g.lng[u] }, b) / V_MAX;
@@ -159,6 +178,7 @@ export function routeOnRoads(a: LatLng, b: LatLng, vehicle = 'car'): RoadRoute |
     const gu = dist.get(u)!; const ge = goalExtra.get(u); if (ge && gu + ge.cost < best) { best = gu + ge.cost; bestGoal = u; }
     for (let e = g.first[u]; e < g.first[u + 1]; e++) {
       const v = g.to[e]; if (done.has(v)) continue;
+      if (useRestr && g.restr) { const pe = prevEdge.get(u)!; if (g.restr.has((pe < 0 ? -1 - pe : pe) * g.m + e)) continue; }      // a forbidden turn (no left turn, no U-turn, only straight on...)
       const nd = gu + g.len[e] / edgeSpeedMs(g, e, vehicle);
       if (nd < (dist.get(v) ?? Infinity)) { dist.set(v, nd); prevEdge.set(v, e); open.push(v, nd + h(v)); }
     }

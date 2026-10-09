@@ -33,12 +33,12 @@ test('driver onboarding end to end: apply, upload documents, submit, review, app
   // upload validation: expiry required, fake files rejected, past expiry rejected
   const m1 = multipart({ doc_type: 'national_id' }, { name: 'id.jpg', data: JPEG, type: 'image/jpeg' });
   assert.equal((await t.api('POST', '/drivers/documents', { token: d.token, ...m1 })).json.error.code, 'expiry_required');
-  const m2 = multipart({ doc_type: 'national_id', expiry_date: '2099-01-01' }, { name: 'id.jpg', data: Buffer.from('<script>alert(1)</script>'), type: 'image/jpeg' });
+  const m2 = multipart({ doc_type: 'national_id', expiry_date: '2040-01-01' }, { name: 'id.jpg', data: Buffer.from('<script>alert(1)</script>'), type: 'image/jpeg' });
   assert.equal((await t.api('POST', '/drivers/documents', { token: d.token, ...m2 })).json.error.code, 'unsupported_file');
   const m3 = multipart({ doc_type: 'national_id', expiry_date: '2001-01-01' }, { name: 'id.jpg', data: JPEG, type: 'image/jpeg' });
   assert.equal((await t.api('POST', '/drivers/documents', { token: d.token, ...m3 })).json.error.code, 'already_expired');
   for (const doc of ['national_id', 'driving_licence', 'vehicle_registration', 'insurance']) {
-    const m = multipart({ doc_type: doc, expiry_date: '2099-01-01' }, { name: 'x.jpg', data: JPEG, type: 'image/jpeg' });
+    const m = multipart({ doc_type: doc, expiry_date: '2040-01-01' }, { name: 'x.jpg', data: JPEG, type: 'image/jpeg' });
     assert.equal((await t.api('POST', '/drivers/documents', { token: d.token, ...m })).status, 200, doc);
   }
   const photo = multipart({ doc_type: 'profile_photo' }, { name: 'p.jpg', data: JPEG, type: 'image/jpeg' });
@@ -182,4 +182,17 @@ test('an existing passenger can enroll as a driver without gaining any dispatch 
   const st = await t.api('GET', '/drivers/me/status', { token: v.json.access_token });
   assert.equal(st.json.profile.status, 'APPLICATION_STARTED'); assert.equal(st.json.permission.can_work, false);
   assert.equal((await t.api('PATCH', '/drivers/me/availability', { token: v.json.access_token, body: { online: true } })).status, 403);
+});
+
+test('DOC-01 document pre-check: reads the image size, warns about small or blurry photos, and catches a mistyped expiry year', async () => {
+  const { imageSize, inspectDocument, expiryTooFar } = await import('../src/services/docCheck.ts');
+  const png = (w: number, h: number) => { const b = Buffer.alloc(33); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b); b.writeUInt32BE(13, 8); b.write('IHDR', 12); b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20); return b; };
+  assert.deepEqual(imageSize(png(1200, 800)), { width: 1200, height: 800 });
+  assert.deepEqual(inspectDocument(png(300, 200), 'image/png').warnings, ['low_resolution']);
+  assert.deepEqual(inspectDocument(png(1600, 1200), 'image/png').warnings, [], 'large enough');
+  const jpeg = (w: number, h: number, bytes: number) => { const b = Buffer.alloc(bytes); Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08]).copy(b); b.writeUInt16BE(h, 7); b.writeUInt16BE(w, 9); return b; };
+  assert.deepEqual(inspectDocument(jpeg(1600, 1200, 40_000), 'image/jpeg').warnings, ['looks_blurry_or_dark'], '0.02 bytes per pixel: almost nothing in the picture');
+  assert.deepEqual(inspectDocument(jpeg(1600, 1200, 700_000), 'image/jpeg').warnings, []);
+  assert.deepEqual(inspectDocument(Buffer.from('%PDF-1.4'), 'application/pdf').warnings, []);
+  assert.equal(expiryTooFar('2208-01-01'), true); assert.equal(expiryTooFar('2029-06-30'), false);
 });

@@ -108,3 +108,16 @@ test('MAP-04 villages and districts from the locality list are searchable (below
   assert.ok(r && r.name, 'a point on a known place gets a name');
   assert.equal(reverseIndex({ lat: -1.0, lng: 28.2 }), null, 'nothing named in the lake gives null');
 });
+
+test('MAP-05 rush hour slows Kigali roads (weekdays 07-09 and 17-19:30 Kigali time) and turn restrictions load from the road file', async () => {
+  const { isRushHour, routeOnRoads, loadGraph } = await import('../src/services/roadGraph.ts');
+  assert.equal(isRushHour(new Date('2026-10-12T06:00:00Z')), true, 'Monday 08:00 Kigali');
+  assert.equal(isRushHour(new Date('2026-10-12T10:00:00Z')), false, 'Monday 12:00');
+  assert.equal(isRushHour(new Date('2026-10-17T06:00:00Z')), false, 'Saturday 08:00');
+  assert.equal(isRushHour(new Date('2026-10-12T16:00:00Z')), true, 'Monday 18:00');
+  const g = loadGraph(); assert.ok(g && g.restr && g.restr.size > 0, 'turn restrictions are part of roads.bin.gz');
+  const a = { lat: -1.9441, lng: 30.0619 }, b = { lat: -1.9496, lng: 30.1262 };
+  const calm = routeOnRoads(a, b, 'car', new Date('2026-10-12T10:00:00Z')), rush = routeOnRoads(a, b, 'car', new Date('2026-10-12T06:00:00Z'));
+  assert.ok(calm && rush && rush.duration_s > calm.duration_s * 1.1, `rush ${rush?.duration_s}s is slower than midday ${calm?.duration_s}s`);
+  assert.ok(Math.abs(rush.distance_m - calm.distance_m) / calm.distance_m < 0.4, 'roughly the same roads');
+});

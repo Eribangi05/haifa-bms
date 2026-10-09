@@ -31,6 +31,11 @@ Commands assume `psql "$DATABASE_URL"` reaches the production database (on the c
 
 Weekly: restore the latest backup into a scratch database and run the ledger query above; review staff accounts (Staff page) and disable leavers; review Audit log for `staff.*`, `user.status`, `settings.*`, `pricing.*` entries you do not recognise.
 
+## 1b. Last drills (9 Oct 2026, local PostgreSQL 16, compiled server)
+
+* **Load**: `backend/scripts/loadtest.ts --duration 15 --concurrency 20`: health 362 req/s (p95 9 ms), config 362 req/s (p95 49 ms), estimate p95 59 ms; the per-user and per-IP limits answered 429 as designed once exceeded (OTP and estimate). A free Render instance has far less CPU than this machine: repeat the drill on the real service before launch and note the first thing that slows down (usually the database connection pool).
+* **Restore**: `scripts/restore-test.sh`: dump, restore into a scratch database, compare every table: 101 tables, identical row counts. Run it weekly on the real database.
+
 ## 2. Backup and restore (PostgreSQL and uploaded documents)
 
 What must be backed up: **the database**, **the documents volume** (`STORAGE_DIR`: driver documents, evidence, Abasare car-check photos; files, not database rows) and **`DATA_ENC_KEY`** (stored separately in your password manager: without it encrypted national IDs, emergency contacts and staff authenticator secrets in a restored database are unreadable).
