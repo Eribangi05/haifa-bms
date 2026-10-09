@@ -4,7 +4,7 @@
 // [tab key, label, permissions that unlock it (any), group]. A tab is only shown when the signed-in role holds one of them, so no tab ever answers 403.
 const TABS = [
   ['dashboard', 'Overview', ['analytics.view'], 'Operations'], ['live', 'Live map', ['bookings.view_all'], 'Operations'], ['bookings', 'Bookings', ['bookings.view_all'], 'Operations'],
-  ['drivers', 'Drivers', ['drivers.view'], 'Operations'], ['reviewq', 'Review queue', ['drivers.view'], 'Operations'], ['opsdash', 'Operations dashboard', ['analytics.view'], 'Operations'], ['alerts', 'Alerts', ['alerts.view'], 'Operations'], ['abasare', 'Abasare', ['drivers.view'], 'Operations'], ['safety', 'Safety', ['safety.respond'], 'Operations'], ['trust', 'Trust and safety', ['safety.respond', 'drivers.view'], 'Operations'],
+  ['drivers', 'Drivers', ['drivers.view'], 'Operations'], ['reviewq', 'Review queue', ['drivers.view'], 'Operations'], ['opsdash', 'Operations dashboard', ['analytics.view'], 'Operations'], ['alerts', 'Alerts', ['alerts.view'], 'Operations'], ['digest', 'Daily digest', ['analytics.view'], 'Operations'], ['abasare', 'Abasare', ['drivers.view'], 'Operations'], ['safety', 'Safety', ['safety.respond'], 'Operations'], ['trust', 'Trust and safety', ['safety.respond', 'drivers.view'], 'Operations'],
   ['users', 'Passengers', ['users.view'], 'People and support'], ['support', 'Support', ['support.handle'], 'People and support'], ['privacy', 'Privacy', ['privacy.handle'], 'People and support'],
   ['finance', 'Finance', ['finance.view'], 'Money'], ['wallet', 'Credit & loyalty', ['wallet.view'], 'Money'], ['claims', 'Claims', ['claims.view'], 'People and support'], ['ussd', 'USSD channel', ['ussd.view'], 'Operations'],
   ['pricing', 'Pricing', ['pricing.manage', 'pricing.approve'], 'Business'], ['services', 'Services', ['pricing.manage'], 'Business'], ['promos', 'Promotions', ['promotions.manage'], 'Business'],
@@ -81,7 +81,7 @@ const IC = {
   gear: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19 12l2-1-1-3-2 .5-1.5-1.5L17 5l-3-1-1 2h-2L10 4 7 5l.5 2L6 8.5 4 8l-1 3 2 1v1l-2 1 1 3 2-.5L7.5 18 7 20l3 1 1-2h2l1 2 3-1-.5-2 1.5-1.5 2 .5 1-3-2-1z',
   doc: 'M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6', pin: 'M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11zM12 12a2 2 0 100-4 2 2 0 000 4Z', flag: 'M5 21V4M5 4h12l-2 4 2 4H5', bolt: 'M13 2L4 14h7l-1 8 9-12h-7z', briefcase: 'M3 8h18v12H3zM8 8V5h8v3M3 13h18',
 };
-const TAB_ICON = { dashboard: 'home', live: 'map', bookings: 'list', drivers: 'car', reviewq: 'check', opsdash: 'chart', alerts: 'bell', abasare: 'car', safety: 'shield', trust: 'shield', ussd: 'phone', demand: 'map', users: 'users', support: 'chat', privacy: 'lock', claims: 'doc', finance: 'coin', wallet: 'coin', pricing: 'tag', services: 'list', promos: 'tag', codes: 'tag', fixedroutes: 'map', quests: 'flag', referrals: 'gift', campaigns: 'bolt', partners: 'pin', partner: 'pin', business: 'briefcase', settings: 'gear', audit: 'doc', staff: 'users', places: 'pin', content: 'doc', flags: 'flag' };
+const TAB_ICON = { dashboard: 'home', live: 'map', bookings: 'list', drivers: 'car', reviewq: 'check', opsdash: 'chart', alerts: 'bell', digest: 'doc', abasare: 'car', safety: 'shield', trust: 'shield', ussd: 'phone', demand: 'map', users: 'users', support: 'chat', privacy: 'lock', claims: 'doc', finance: 'coin', wallet: 'coin', pricing: 'tag', services: 'list', promos: 'tag', codes: 'tag', fixedroutes: 'map', quests: 'flag', referrals: 'gift', campaigns: 'bolt', partners: 'pin', partner: 'pin', business: 'briefcase', settings: 'gear', audit: 'doc', staff: 'users', places: 'pin', content: 'doc', flags: 'flag' };
 function navIcon(key) {
   const p = IC[TAB_ICON[key]]; const el = document.createElement('span'); el.className = 'ni'; el.setAttribute('aria-hidden', 'true');
   el.innerHTML = p ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + p + '"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>';
@@ -100,12 +100,13 @@ function buildShell(root, tabs) {
   const themeBtn = h('button', { class: 'iconbtn', 'aria-label': 'Switch between light and dark theme', title: 'Light / dark', onclick: () => { const t = effectiveTheme() === 'dark' ? 'light' : 'dark'; applyTheme(t); pref.set('rm_theme', t); themeBtn.textContent = t === 'dark' ? '☀' : '☾'; } }, effectiveTheme() === 'dark' ? '☀' : '☾');
   const top = h('header', { class: 'topbar' },
     h('button', { class: 'iconbtn', 'data-nav-toggle': '', 'aria-label': 'Open menu', 'aria-expanded': 'false', 'aria-controls': 'sidenav', onclick: () => { const open = nav.classList.toggle('open'); $('[data-nav-toggle]').setAttribute('aria-expanded', String(open)); } }, '☰'),
-    h('ol', { id: 'crumbs', class: 'crumbs', 'aria-label': 'Breadcrumb' }), h('span', { class: 'grow' }), themeBtn,
+    h('ol', { id: 'crumbs', class: 'crumbs', 'aria-label': 'Breadcrumb' }), h('span', { class: 'grow' }), langSelect(), soundToggle(), themeBtn,
     h('span', { class: 'avatar', 'aria-hidden': 'true' }, initials(email)), h('span', { class: 'who', title: S.roles.join(', ') }, h('b', {}, email || 'Signed in'), h('small', {}, S.roles.map(human).join(', '))));
   const scrim = h('div', { class: 'scrim', onclick: closeNav });
   document.addEventListener('keydown', (e) => { if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) { const f = document.querySelector('.navfind'); if (f) { e.preventDefault(); document.getElementById('sidenav')?.classList.add('open'); f.focus(); } } });
   root.replaceChildren(h('a', { class: 'skip', href: '#view', onclick: (e) => { e.preventDefault(); $('#view').focus(); } }, 'Skip to content'),
     h('div', { class: 'shell', id: 'shell' }, nav, scrim, h('div', { class: 'content' }, top, h('main', { id: 'view', tabindex: '-1' }))));
+  startLive();
 }
 
 // ---------------- sign-in ----------------

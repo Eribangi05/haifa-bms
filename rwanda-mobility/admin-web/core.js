@@ -120,7 +120,7 @@ async function api(method, path, body, retry = true) {
   }
   return data;
 }
-function logout() { if (S.access) fetch(API + '/auth/logout', { method: 'POST', headers: { authorization: 'Bearer ' + S.access } }).catch(() => {}); store.clear(); S.access = S.refresh = null; S.roles = []; S.perms = []; S.notice = ''; render(); }
+function logout() { if (typeof stopLive === 'function') stopLive(); if (S.access) fetch(API + '/auth/logout', { method: 'POST', headers: { authorization: 'Bearer ' + S.access } }).catch(() => {}); store.clear(); S.access = S.refresh = null; S.roles = []; S.perms = []; S.notice = ''; render(); }
 
 // ---------------- feedback ----------------
 function toast(msg, bad) {

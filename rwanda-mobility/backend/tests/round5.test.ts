@@ -240,3 +240,15 @@ test('R5-13 MAP_PROVIDER=roads feeds fares; the driver gets a turn-by-turn route
     finally { await t.db.q("update feature_flags set enabled=true where key='navigation.enabled'"); }
   } finally { (config as any).mapProvider = prev; }
 });
+
+test('R5-20 console pulse shows each role only what it may see; the daily digest needs analytics.view', async () => {
+  const admin = await t.staff('super_admin'); const sup = await t.staff('support_agent'); const p = await t.register('passenger');
+  const a = await t.api('GET', '/admin/pulse', { token: admin.token });
+  assert.equal(a.status, 200); assert.equal(typeof a.json.sos.open, 'number'); assert.equal(typeof a.json.drivers_waiting, 'number');
+  const s = await t.api('GET', '/admin/pulse', { token: sup.token });
+  assert.equal(s.status, 200); assert.ok(s.json.support); assert.equal(s.json.sos, null, 'support agents do not see the safety counter');
+  assert.equal((await t.api('GET', '/admin/pulse', { token: p.token })).status, 403);
+  const d = await t.api('GET', '/admin/digest?date=2026-10-09', { token: admin.token });
+  assert.equal(d.status, 200); assert.equal(d.json.date, '2026-10-09'); assert.ok('trips' in d.json && 'money' in d.json && 'suspicious' in d.json);
+  assert.equal((await t.api('GET', '/admin/digest', { token: sup.token })).status, 403);
+});
