@@ -103,7 +103,9 @@ test('GEO-02 a driver is found near the pickup through the geohash filter and no
 test('MAP-04 villages and districts from the locality list are searchable (below OSM) and name a point', async () => {
   const { searchIndex, reverseIndex } = await import('../src/services/placeIndex.ts');
   const d = searchIndex('nyagatare district', 'en');
-  assert.ok(d.some((h) => h.kind === 'district' && h.sub === 'Eastern Province'), 'district found with its province');
+  assert.ok(d.some((h) => h.kind === 'district' && h.sub === 'Eastern Province' && h.name === 'Nyagatare District'), 'district found with its province');
+  const dr = searchIndex('nyagatare', 'rw').find((h) => h.kind === 'district'); assert.equal(dr?.name, 'Akarere ka Nyagatare'); assert.equal(dr?.sub, 'Intara y\'Iburasirazuba');
+  assert.equal(searchIndex('nyagatare', 'fr').find((h) => h.kind === 'district')?.sub, 'Province de l\'Est');
   const r = reverseIndex({ lat: -1.31455, lng: 30.37242 });
   assert.ok(r && r.name, 'a point on a known place gets a name');
   assert.equal(reverseIndex({ lat: -1.0, lng: 28.2 }), null, 'nothing named in the lake gives null');

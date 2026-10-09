@@ -51,9 +51,9 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
     const fix = await loc.locate();
     if (fix) { setAccuracy(fix.accuracy); setPickup({ lat: fix.lat, lng: fix.lng, name: t('home.mylocation') });
       // name the spot ("Near Gihara") from the server's offline village list; keep "My location" when nothing is close or offline
-      client.get(`/places/reverse?lat=${fix.lat.toFixed(5)}&lng=${fix.lng.toFixed(5)}`).then((r) => { const n = r?.place?.name as string | undefined; if (n) setPickup((cur) => (cur && cur.lat === fix.lat && cur.lng === fix.lng ? { ...cur, name: t('home.near', { place: n }) } : cur)); }).catch(() => {}); }
+      client.get(`/places/reverse?lat=${fix.lat.toFixed(5)}&lng=${fix.lng.toFixed(5)}&lang=${lang}`).then((r) => { const n = r?.place?.name as string | undefined; if (n) setPickup((cur) => (cur && cur.lat === fix.lat && cur.lng === fix.lng ? { ...cur, name: t('home.near', { place: n }) } : cur)); }).catch(() => {}); }
     else if (loc.perm === 'granted' || loc.perm === 'unknown') say(t('home.nolocation'));
-  }, [loc, say, t, client]);
+  }, [loc, say, t, client, lang]);
   const locateRef = useRef(locate); locateRef.current = locate;
   useEffect(() => { if (consent && !skipped && !fromCode.current) void locateRef.current(); }, [consent, skipped]);
 

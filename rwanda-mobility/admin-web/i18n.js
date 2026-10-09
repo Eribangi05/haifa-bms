@@ -46,12 +46,26 @@ const L_FR = {
   'New safety incident (SOS)': 'Nouvel incident de sécurité (SOS)', 'New support cases': 'Nouveaux dossiers d\'assistance', 'New staff alert': 'Nouvelle alerte du personnel', 'Requests with no driver': 'Demandes sans chauffeur', 'Drivers waiting': 'Chauffeurs en attente',
   'Date': 'Date', 'Requested': 'Demandées', 'No driver found': 'Aucun chauffeur trouvé', 'Cancellation rate (%)': 'Taux d\'annulation (%)', 'Platform commission': 'Commission de la plateforme', 'Cash collected': 'Espèces encaissées', 'New users': 'Nouveaux utilisateurs', 'Suspicious activity': 'Activité suspecte', 'Gross booking value': 'Valeur brute des réservations', 'Driver earnings': 'Gains des chauffeurs',
 };
-const DICT = { rw: L_RW, fr: L_FR };
-const LANG_KEY = 'rm_lang';
-let curLang = (() => { const v = pref.get(LANG_KEY); return v === 'rw' || v === 'fr' ? v : 'en'; })();
+// Generated translations (i18n-data.js: every console string, written once for Kinyarwanda and French) with the hand-written lists above on top.
+const GEN = typeof L_DATA === 'object' ? L_DATA : {};
+const DICT = { rw: {}, fr: {} }, PATTERNS = { rw: [], fr: [] }, AFFIX = { rw: [], fr: [] };
+for (const [lang, hand] of [['rw', L_RW], ['fr', L_FR]]) {
+  const all = {}; for (const [en, t] of Object.entries(GEN)) if (t[lang]) all[en] = t[lang]; Object.assign(all, hand); DICT[lang] = all;
+  for (const [k, v] of Object.entries(all)) {
+    if (/\{\d+\}/.test(k)) PATTERNS[lang].push([new RegExp('^' + k.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\{(\d+)\}/g, '(.+?)') + '$', 's'), v]);
+    else if (k !== k.trim() && k.trim().length > 1) AFFIX[lang].push([k, v]);       // a fragment written with a leading or trailing space: " rows", "Showing "
+  }
+  AFFIX[lang].sort((x, y) => y[0].length - x[0].length);
+}
 const origText = new WeakMap(), origAttr = new WeakMap();
 const ATTRS = ['placeholder', 'aria-label', 'title'];
-const tr = (s) => { if (curLang === 'en') return s; const d = DICT[curLang], k = String(s).trim(); const v = d[k]; return v ? String(s).replace(k, v) : s; };
+const tr = (s) => {
+  if (curLang === 'en') return s; const d = DICT[curLang]; const str = String(s), k = str.trim(); if (!k) return s;
+  const v = d[k]; if (v) return str.replace(k, v);
+  for (const [re, t] of PATTERNS[curLang]) { const m = re.exec(k); if (m) return str.replace(k, t.replace(/\{(\d+)\}/g, (_, i) => m[+i + 1] ?? '')); }
+  for (const [frag, t] of AFFIX[curLang]) { if (frag.startsWith(' ') && str.endsWith(frag)) return str.slice(0, -frag.length) + t; if (frag.endsWith(' ') && str.startsWith(frag)) return t + str.slice(frag.length); }
+  return s;
+};
 function trNode(n) {
   if (n.nodeType === 3) {
     const p = n.parentNode; if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE')) return;
@@ -69,7 +83,8 @@ function applyLang(lang) {
     if (n.nodeType === 3) { const r = origText.get(n); const o = r ? r.orig : n.data; const t = tr(o); origText.set(n, { orig: o, shown: t }); if (n.data !== t) n.data = t; }
     else if (n.nodeType === 1) { for (const a of ATTRS) if (n.hasAttribute(a)) { const m = origAttr.get(n) || {}; const o = m[a] ? m[a].orig : n.getAttribute(a); const t = tr(o); m[a] = { orig: o, shown: t }; origAttr.set(n, m); n.setAttribute(a, t); } n.childNodes.forEach(walk); }
   };
-  walk(document.body); { const page = tr(String(LIVE?.base ?? document.title).replace(/ · Abasare Operations$/, '')) + ' · Abasare Operations'; if (typeof refreshTitle === 'function') refreshTitle(page); else document.title = page; }
+  walk(document.body); if (typeof loadView === 'function' && S.access && document.getElementById('view')) void loadView();     // pages built with dates and numbers are drawn again in the new language
+  { const page = tr(String(LIVE?.base ?? document.title).replace(/ · Abasare Operations$/, '')) + ' · Abasare Operations'; if (typeof refreshTitle === 'function') refreshTitle(page); else document.title = page; }
 }
 new MutationObserver((muts) => { for (const m of muts) { if (m.type === 'characterData') trNode(m.target); else if (m.type === 'attributes') trNode(m.target); else m.addedNodes.forEach(trNode); } })
   .observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });

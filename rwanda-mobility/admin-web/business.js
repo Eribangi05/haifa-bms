@@ -2,7 +2,7 @@
 // Business-settings screens: pricing editor, settings, promotions, services. Loaded after core.js and views-*.js and shares their helpers (h, api, ask, table, act, toast, V, S, go, can).
 // Everything here is a front-end over audited server endpoints; the server re-validates every value.
 
-const fmt = (n) => (n == null || Number.isNaN(n) ? '' : Number(n).toLocaleString('en-US'));
+const fmt = (n) => (n == null || Number.isNaN(n) ? '' : Number(n).toLocaleString(NUM()));
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const kigaliNow = () => { const d = new Date(Date.now() + 2 * 3600e3); return { hour: d.getUTCHours(), dow: d.getUTCDay() }; };
 const hourLabel = (n) => String(n).padStart(2, '0') + ':00';
@@ -461,7 +461,7 @@ V.promos = async (el) => {
   const lab = (t, c, hint) => h('label', { class: 'field' }, h('span', { class: 'flabel' }, t), c, hint && h('span', { class: 'hint' }, hint));
   el.append(h('h1', {}, 'Promotions'),
     table([{ h: 'Code', k: 'code' }, { h: 'Discount', f: (p) => (p.kind === 'percent' ? p.value + '%' : money(p.value)) + (p.max_discount ? ' (max ' + fmt(p.max_discount) + ')' : '') }, { h: 'Audience', f: segName },
-      { h: 'Runs', f: (p) => `${p.valid_from ? new Date(p.valid_from).toLocaleDateString('en-GB') : 'now'} → ${p.valid_to ? new Date(p.valid_to).toLocaleDateString('en-GB') : 'no end'}` },
+      { h: 'Runs', f: (p) => `${p.valid_from ? new Date(p.valid_from).toLocaleDateString(LOC()) : 'now'} → ${p.valid_to ? new Date(p.valid_to).toLocaleDateString(LOC()) : 'no end'}` },
       { h: 'Budget used', f: (p) => p.budget ? h('div', {}, `${fmt(p.spent)} / ${fmt(p.budget)} RWF`, h('div', { class: 'meter' }, h('i', { style: `width:${Math.min(100, Math.round(p.spent / p.budget * 100))}%` }))) : `${fmt(p.spent)} RWF (no cap)` },
       { h: '', f: (p) => h('span', { class: 'row', style: 'margin:0' },
         h('button', { class: 'b sec', onclick: () => act(() => api('PATCH', '/admin/promotions/' + p.id, { active: !p.active }), () => go('promos')) }, p.active ? 'Active · pause' : 'Paused · resume'),

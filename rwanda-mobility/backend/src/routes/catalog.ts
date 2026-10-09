@@ -40,8 +40,8 @@ export async function catalogRoutes(app: FastifyInstance) {
   });
   // Name for a point: "Near {place}" in the apps (offline data, no external service)
   app.get('/places/reverse', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {
-    const b = parse(z.object({ lat: z.coerce.number().min(-3).max(0), lng: z.coerce.number().min(28).max(32) }), req.query);
-    return { place: reverseIndex({ lat: b.lat, lng: b.lng }) };
+    const b = parse(z.object({ lat: z.coerce.number().min(-3).max(0), lng: z.coerce.number().min(28).max(32), lang: z.enum(['rw', 'fr', 'en']).default('en') }), req.query);
+    return { place: reverseIndex({ lat: b.lat, lng: b.lng }, 2500, b.lang) };
   });
   // Feature switches the apps may read: on/off for this person (gradual rollout applies) plus the message to show when a feature is off. Cached by the app, so the off-switch works within a minute.
   app.get('/config/flags', { preHandler: anyAuth }, async (req) => {

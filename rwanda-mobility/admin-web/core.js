@@ -46,10 +46,12 @@ function svg(tag, attrs, ...kids) {
 }
 
 // ---------------- formatting ----------------
-const money = (n) => (n == null ? '-' : Number(n).toLocaleString('en-US') + ' RWF');
-const nfmt = (n) => (n == null || Number.isNaN(Number(n)) ? '-' : Number(n).toLocaleString('en-US'));
-const when = (d) => (d ? new Date(d).toLocaleString('en-GB', { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-');
-const dateOnly = (d) => (d ? new Date(d).toLocaleDateString('en-GB', { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric' }) : '-');
+const LOC = () => (typeof curLang !== 'undefined' && curLang === 'fr' ? 'fr-FR' : typeof curLang !== 'undefined' && curLang === 'rw' ? 'rw-RW' : 'en-GB');
+const NUM = () => (typeof curLang !== 'undefined' && curLang === 'fr' ? 'fr-FR' : 'en-US');
+const money = (n) => (n == null ? '-' : Number(n).toLocaleString(NUM()) + ' RWF');
+const nfmt = (n) => (n == null || Number.isNaN(Number(n)) ? '-' : Number(n).toLocaleString(NUM()));
+const when = (d) => (d ? new Date(d).toLocaleString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-');
+const dateOnly = (d) => (d ? new Date(d).toLocaleDateString(LOC(), { timeZone: 'Africa/Kigali', day: '2-digit', month: 'short', year: 'numeric' }) : '-');
 const ago = (d) => { if (!d) return '-'; const s = Math.max(0, Math.round((Date.now() - new Date(d)) / 1000)); return s < 90 ? s + ' s ago' : s < 5400 ? Math.round(s / 60) + ' min ago' : s < 129600 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
 const human = (s) => String(s ?? '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 const short = (s, n = 8) => (s ? String(s).slice(0, n) : '');
@@ -106,7 +108,7 @@ function expireSession(msg = 'Your session has expired. Please sign in again.') 
 }
 async function api(method, path, body, retry = true) {
   let r;
-  try { r = await fetch(API + path, { method, headers: { ...(body !== undefined ? { 'content-type': 'application/json' } : {}), ...(S.access ? { authorization: 'Bearer ' + S.access } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined }); }
+  try { r = await fetch(API + path, { method, headers: { ...(body !== undefined ? { 'content-type': 'application/json' } : {}), ...(S.access ? { authorization: 'Bearer ' + S.access } : {}), ...(typeof curLang !== 'undefined' && curLang !== 'en' ? { 'accept-language': curLang } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined }); }
   catch { throw new ApiError('Cannot reach the server. Check your connection and try again.', 0, 'network'); }
   if (r.status === 401 && S.access) {
     if (retry && await doRefresh()) return api(method, path, body, false);
