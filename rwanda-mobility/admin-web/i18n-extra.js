@@ -126,4 +126,6 @@ const L_EXTRA = {
   'Kigali time. Refreshed {0}.': { rw: 'Isaha ya Kigali. Byavuguruwe {0}.', fr: 'Heure de Kigali. Actualisé {0}.' },
   '{0}% of requests': { rw: '{0}% by\'ubusabe', fr: '{0} % des demandes' },
   '{0}: {1} requested, {2} completed, {3} cancelled': { rw: '{0}: {1} byasabwe, {2} zarangiye, {3} zahagaritswe', fr: '{0} : {1} demandées, {2} terminées, {3} annulées' },
+  'car, suv / manual, automatic': { rw: 'imodoka, SUV / ya manuel, yikoresha', fr: 'voiture, SUV / manuelle, automatique' },
+  'car': { rw: 'imodoka', fr: 'voiture' }, 'suv': { rw: 'SUV', fr: 'SUV' }, 'minivan': { rw: 'minivani', fr: 'monospace' }, 'pickup': { rw: 'pick-up', fr: 'pick-up' }, 'moto': { rw: 'moto', fr: 'moto' }, 'manual': { rw: 'ya manuel', fr: 'manuelle' }, 'automatic': { rw: 'yikoresha', fr: 'automatique' },
 };
