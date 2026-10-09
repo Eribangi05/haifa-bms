@@ -1,11 +1,13 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { boot, type Ctx } from './helpers.ts';
-import { totpAt } from '../src/util/crypto.ts';
-import { q } from '../src/db.ts';
 
-let t: Ctx;
-before(async () => { t = await boot('rwanda_mobility_test'); });
+let t: Ctx, totpAt: typeof import('../src/util/crypto.ts').totpAt, q: typeof import('../src/db.ts').q;
+before(async () => {
+  t = await boot('rwanda_mobility_test');
+  ({ totpAt } = await import('../src/util/crypto.js'));
+  ({ q } = await import('../src/db.js'));
+});
 after(async () => { await t.close(); });
 
 test('staff invite: invitee sets own password and enrols own authenticator; admin never sees the secret', async () => {

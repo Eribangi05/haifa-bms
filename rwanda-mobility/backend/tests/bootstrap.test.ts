@@ -1,12 +1,15 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { boot, type Ctx } from './helpers.ts';
-import { bootstrapAdminIfMissing } from '../src/seed.ts';
-import { config } from '../src/config.ts';
-import { q1 } from '../src/db.ts';
 
-let t: Ctx;
-before(async () => { t = await boot('rwanda_mobility_test'); });
+// src modules read DATABASE_URL at import time, so load them only after boot() has set it.
+let t: Ctx, bootstrapAdminIfMissing: typeof import('../src/seed.ts').bootstrapAdminIfMissing, config: typeof import('../src/config.ts').config, q1: typeof import('../src/db.ts').q1;
+before(async () => {
+  t = await boot('rwanda_mobility_test');
+  ({ bootstrapAdminIfMissing } = await import('../src/seed.js'));
+  ({ config } = await import('../src/config.js'));
+  ({ q1 } = await import('../src/db.js'));
+});
 after(async () => { await t.close(); });
 
 test('bootstrap admin is created once and never overwritten', async () => {

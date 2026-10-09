@@ -113,7 +113,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Compose file is valid
-        run: DB_PASSWORD=ci API_DOMAIN=ci.example docker compose -f rwanda-mobility/deploy/docker-compose.yml --env-file rwanda-mobility/deploy/.env.example config -q
+        run: cp rwanda-mobility/deploy/.env.example rwanda-mobility/deploy/.env && DB_PASSWORD=ci API_DOMAIN=ci.example docker compose -f rwanda-mobility/deploy/docker-compose.yml --env-file rwanda-mobility/deploy/.env.example config -q
       - name: Container starts in production mode, migrates an empty database and serves the API and the console
         run: |
           docker run -d --name api --network host \
