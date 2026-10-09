@@ -15,6 +15,8 @@ Sample: KCC -> Kimironko Market: straight 3.76 km, OSRM 5.95 km / 9.6 min.
 
 **Limits of this test:** only 10 places and 5 routes, public demo servers (not for production use), reference coordinates are not surveyed. It shows OSM *is usable* in Kigali for the pilot; it does not prove pickup accuracy across the city.
 
+> Update: the base map is now self-hosted Rwanda OSM data; see [MAP.md](MAP.md). The comparison below still applies to routing and place search.
+
 ## Candidates
 
 | Provider | Pros | Cons / unknowns | Verdict for pilot |

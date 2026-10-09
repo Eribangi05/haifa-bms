@@ -75,7 +75,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
   });
   // CORS_ORIGINS="https://admin.example.rw,https://app.example.rw" restricts browsers; unset keeps it open (bearer tokens only, no cookies).
   const origins = (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
-  await app.register(cors, { origin: origins.length ? origins : true, exposedHeaders: ['x-request-id'] });
+  await app.register(cors, { origin: origins.length ? origins : true, exposedHeaders: ['x-request-id', 'content-range', 'accept-ranges', 'content-length', 'etag'] });
   await app.register(jwt, { secret: config.jwtSecret });
   // Rate-limit bucket: the signed-in user (token verified, no database), else the client IP. Without this, everyone behind one mobile-carrier NAT shares 300 requests a minute.
   const globalKey = (req: any): string => {
@@ -83,7 +83,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     if (h.startsWith('Bearer ')) { try { const p: any = app.jwt.verify(h.slice(7)); if (p?.sub) return `u:${p.sub}`; } catch { /* anonymous */ } }
     return `ip:${req.ip}`;
   };
-  await app.register(rateLimit, { global: true, max: Number(process.env.RATE_LIMIT_MAX ?? 300), timeWindow: '1 minute', keyGenerator: globalKey });
+  await app.register(rateLimit, { global: true, max: Number(process.env.RATE_LIMIT_MAX ?? 300), timeWindow: '1 minute', keyGenerator: globalKey, allowList: (req) => req.url.startsWith('/map/') });
   await app.register(compress, { global: true, threshold: 512, encodings: ['br', 'gzip', 'deflate'] });   // low-data mode: gzip/brotli when the client asks for it
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
@@ -144,6 +144,14 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
   if (existsSync(adminDir)) {
     await app.register(fstatic, { root: adminDir, prefix: '/admin/', decorateReply: false });
     app.get('/admin', async (_r, reply) => reply.redirect('/admin/'));
+  }
+  // Rwanda base map (OpenStreetMap vector tiles as one PMTiles file + map libraries + fonts). Static, public, HTTP range requests supported.
+  const mapDir = join(here, '..', 'map');
+  if (existsSync(mapDir)) {
+    await app.register(fstatic, {
+      root: mapDir, prefix: '/map/', decorateReply: false, acceptRanges: true,
+      cacheControl: false, setHeaders: (res: any) => { res.header('cache-control', 'public, max-age=86400'); },
+    });
   }
   return app;
 }

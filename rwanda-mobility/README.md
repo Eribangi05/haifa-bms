@@ -66,6 +66,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 | [`docs/PERMISSION_MATRIX.md`](docs/PERMISSION_MATRIX.md) | Which role may call what (generated: `npm run docs`). |
 | [`docs/SECURITY_AND_PRIVACY.md`](docs/SECURITY_AND_PRIVACY.md) | Controls, data handling, known limitations. |
 | [`docs/MAP_PROVIDER_EVALUATION.md`](docs/MAP_PROVIDER_EVALUATION.md) | Choice of routing and map provider. |
+| [`docs/MAP.md`](docs/MAP.md) | The Rwanda base map: data, how it is served, refresh, limits. |
 | [`docs/PERFORMANCE_NOTES.md`](docs/PERFORMANCE_NOTES.md) | Load test results and limits. |
 
 **4. Run it day to day**
