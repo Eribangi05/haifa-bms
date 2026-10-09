@@ -2,7 +2,7 @@ import { reqLang } from '../services/errmsg.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizeAnyPhone } from '../util/phone.js';
 import { badRequest } from '../errors.js';
 import * as auth from '../services/auth.js';
 import { anyAuth, routeLimit } from '../guards.js';
@@ -15,7 +15,7 @@ const headerLang = (req: { headers: Record<string, any> }) => (req.headers['acce
 export async function authRoutes(app: FastifyInstance) {
   const sign = (p: any, ttl: number) => app.jwt.sign(p, { expiresIn: ttl });
   const dev = (req: any) => ({ id: (req.headers['x-device-id'] as string) || undefined, name: (req.headers['x-device-name'] as string) || undefined, ip: req.ip });
-  const phone = z.string().transform((s, ctx) => normalizePhone(s) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a valid Rwandan mobile number (+250 7XX XXX XXX)' }), z.NEVER));
+  const phone = z.string().transform((s, ctx) => normalizeAnyPhone(s) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a valid mobile number with its country code (for example +250 7XX XXX XXX)' }), z.NEVER));
 
   app.post('/auth/otp/request', { config: { rateLimit: { max: Number(process.env.AUTH_RATE_MAX ?? 10), timeWindow: '1 minute' } } }, async (req) => {
     const b = parse(z.object({ phone, language: z.enum(['rw', 'fr', 'en']).optional() }), req.body);

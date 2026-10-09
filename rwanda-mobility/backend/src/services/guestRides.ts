@@ -2,7 +2,7 @@
 import type { PoolClient } from 'pg';
 import { q, q1 } from '../db.js';
 import { AppError, badRequest, conflict, notFound } from '../errors.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizeAnyPhone } from '../util/phone.js';
 import { getSetting } from './settings.js';
 import { sms } from '../providers/sms.js';
 import { DEFAULT_TEMPLATES, render, type Lang } from './i18n.js';
@@ -17,8 +17,8 @@ const langOf = (l: unknown): Lang => (l === 'fr' || l === 'en' || l === 'rw' ? l
 /** Inside the booking transaction: validates the guest, enforces the abuse limits and stores the minimum (name, phone, language). */
 export async function attachGuest(c: PoolClient, b: BookingRow, serviceKind: string, g: GuestIn) {
   if (serviceKind !== 'ride') throw badRequest('guest_not_allowed', 'A ride for someone else is only available for normal rides');
-  const phone = normalizePhone(g.phone);
-  if (!phone) throw badRequest('invalid_phone', 'Enter a valid Rwandan phone number for the guest');
+  const phone = normalizeAnyPhone(g.phone);
+  if (!phone) throw badRequest('invalid_phone', 'Enter a valid phone number with its country code for the guest');
   const booker = (await q1<any>('select phone, preferred_language from users where id=$1', [b.passenger_id], c))!;
   if (booker.phone === phone) throw badRequest('guest_same_as_booker', 'The guest number is your own number');
   await q('select pg_advisory_xact_lock(hashtext($1))', ['guest:' + phone], c);

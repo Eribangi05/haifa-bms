@@ -3,7 +3,7 @@ import { referralSummary } from '../services/referrals.js';
 import { z } from 'zod';
 import { effectivePermissions, isStaff } from '../rbac.js';
 import { parse, lat, lng } from '../util/validate.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizeAnyPhone } from '../util/phone.js';
 import { anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { conflict, notFound } from '../errors.js';
@@ -70,7 +70,7 @@ export async function meRoutes(app: FastifyInstance) {
   app.get('/users/me/emergency-contacts', pre, async (req) => ({ contacts: await q('select id,name,phone,notify_on_trip,lang from emergency_contacts where user_id=$1 order by created_at', [req.auth!.id]) }));
   app.post('/users/me/emergency-contacts', pre, async (req) => {
     const b = parse(z.object({ name: z.string().min(1).max(80), phone: z.string(), notify_on_trip: z.boolean().default(false), lang: z.enum(['rw', 'fr', 'en']).default('rw') }), req.body);
-    const phone = normalizePhone(b.phone);
+    const phone = normalizeAnyPhone(b.phone);
     if (!phone) throw conflict('invalid_phone', 'Invalid phone');
     const n = await q1<any>('select count(*)::int n from emergency_contacts where user_id=$1', [req.auth!.id]);
     if (n.n >= 5) throw conflict('limit', 'Maximum 5 emergency contacts');

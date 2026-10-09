@@ -324,7 +324,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.post('/admin/promotions', { preHandler: requirePerm('promotions.manage') }, async (req) => {
     const b = parse(z.object({ code: z.string().min(3).max(20).regex(/^[A-Za-z0-9_-]+$/), kind: z.enum(['percent', 'fixed']), value: z.number().int().positive(), max_discount: z.number().int().positive().optional(), min_fare: z.number().int().min(0).default(0),
       valid_from: z.string().datetime().optional(), valid_to: z.string().datetime().optional(), usage_limit: z.number().int().positive().optional(), per_user_limit: z.number().int().positive().default(1), budget: z.number().int().positive().optional(), service_ids: z.array(z.string()).optional(), zone_ids: z.array(z.string()).optional(), first_ride_only: z.boolean().default(false),
-      segment: z.enum(['all', 'first_ride', 'corporate', 'referred', 'phones']).default('all'), segment_phones: z.array(z.string().regex(/^\+250[0-9]{9}$/)).max(500).optional() }), req.body);
+      segment: z.enum(['all', 'first_ride', 'corporate', 'referred', 'phones']).default('all'), segment_phones: z.array(z.string().regex(/^\+[1-9][0-9]{7,14}$/)).max(500).optional() }), req.body);
     if (b.kind === 'percent' && b.value > 100) throw badRequest('invalid_percent');
     if (b.segment === 'phones' && !b.segment_phones?.length) throw badRequest('segment_phones_required', 'Add at least one phone number for this audience');
     if (b.valid_from && b.valid_to && b.valid_to <= b.valid_from) throw badRequest('invalid_dates', 'The end date must be after the start date');

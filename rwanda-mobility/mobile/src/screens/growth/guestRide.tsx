@@ -1,4 +1,5 @@
 import React from 'react';
+import { PhoneField } from '../../ui/Pickers';
 import { Switch, View } from 'react-native';
 import { useApp } from '../../lib/app';
 import { checkGuest, type GuestForm } from '../../lib/growthApi';
@@ -22,8 +23,8 @@ export function GuestSection({ value, onChange, disabled, error }: { value: Gues
       {disabled ? <Text style={S.muted}>{t('r2.guest.na')}</Text> : <Text style={S.muted}>{t('r2.guest.explain')}</Text>}
       {show ? <View style={{ marginTop: SP.md }}>
         <Field {...f(0)} label={t('r2.guest.name')} value={value.name} onChangeText={(x) => onChange({ ...value, name: x })} maxLength={60} autoComplete="name" error={value.name.length > 0 && chk.name ? t('r2.guest.err.name') : undefined} />
-        <Field {...f(1)} label={t('r2.guest.phone')} value={value.phone} onChangeText={(x) => onChange({ ...value, phone: x })} keyboardType="phone-pad" maxLength={16}
-          error={value.phone.length > 3 && chk.phone ? (chk.phone === 'phone_own' ? t('r2.guest.err.own') : t('r2.guest.err.phone')) : undefined} />
+        <PhoneField testID="guest-phone" label={t('r2.guest.phone')} value={value.phone} onChange={(x) => onChange({ ...value, phone: x })} invalidText={t('r2.guest.err.phone')} />
+        {chk.phone === 'phone_own' ? <Text style={{ color: C.danger, fontSize: 13 }}>{t('r2.guest.err.own')}</Text> : null}
         <Text style={S.muted}>{t('r2.guest.lang')}</Text>
         <View style={[S.wrap, { marginTop: 6 }]} accessibilityRole="radiogroup">{LANGS.map((l) => <Chip key={l.code} text={l.label} on={value.language === l.code} onPress={() => onChange({ ...value, language: l.code })} />)}</View>
         {error ? <Banner kind="bad" text={error} /> : null}

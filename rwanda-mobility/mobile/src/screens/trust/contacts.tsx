@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { PhoneField } from '../../ui/Pickers';
 import { Pressable, View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import type { Lang } from '../../lib/i18n';
@@ -8,7 +9,6 @@ import { showAlert } from '../../ui/dialog';
 import { Choice, SwitchRow } from '../../ui/trustParts';
 import { C, S, SP } from '../../ui/theme';
 
-const RW_PHONE = /^(?:\+?250|0)?7[2389]\d{7}$/;
 const LANG_KEYS = { rw: 'r1.tc.lang.rw', fr: 'r1.tc.lang.fr', en: 'r1.tc.lang.en' } as const;
 
 /** Profile: trusted contacts with per-contact "notify when my trip starts" and SMS language, the auto-share master switch, and a plain explanation of what is sent. */
@@ -28,7 +28,7 @@ export function R1TrustedContacts() {
     void run(async () => { try { await client.patch(`/users/me/emergency-contacts/${c.id}`, p); } catch (e) { setList((l) => (l ?? []).map((x) => (x.id === c.id ? c : x))); throw e; } });
   };
   const flipAuto = (v: boolean) => { const old = auto; setAuto(v); void run(async () => { try { await client.patch('/users/me/safety-prefs', { auto_share: v }); } catch (e) { setAuto(old); throw e; } }); };
-  const phoneOk = RW_PHONE.test(cp.replace(/[\s-]/g, ''));
+  const phoneOk = !!cp;
   const add = () => { if (!cn.trim() || !phoneOk) return; void run(async () => { await client.post('/users/me/emergency-contacts', { name: cn.trim(), phone: cp, notify_on_trip: cnotify, lang: cl }); setCn(''); setCp(''); load(); say(t('r1.tc.saved')); }); };
   const remove = (c: TrustedContact) => showAlert(t('r1.tc.remove.confirm'), `${c.name} · ${c.phone}`, [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.confirm'), style: 'destructive', onPress: () => void run(async () => { await client.del(`/users/me/emergency-contacts/${c.id}`); load(); }) }]);
   const langOpts = (['rw', 'fr', 'en'] as Lang[]).map((v) => ({ v, text: t(LANG_KEYS[v]) }));
@@ -55,7 +55,7 @@ export function R1TrustedContacts() {
       <Card>
         <Text style={S.bold}>{t('r1.tc.add')}</Text>
         <Field {...fc(0)} label={t('prof.contact.name')} value={cn} onChangeText={setCn} maxLength={60} />
-        <Field {...fc(1, add)} label={t('prof.contact.phone')} value={cp} onChangeText={setCp} keyboardType="phone-pad" maxLength={16} error={cp.length > 4 && !phoneOk ? t('auth.invalid') : undefined} />
+        <PhoneField testID="contact-phone" label={t('prof.contact.phone')} value={cp} onChange={setCp} invalidText={t('auth.invalid')} onSubmit={add} />
         <Text style={S.muted}>{t('r1.tc.lang')}</Text><Choice value={cl} options={langOpts} onPick={setCl} />
         <SwitchRow label={t('r1.tc.new.notify')} value={cnotify} onChange={setCnotify} />
         <Btn testID="tc-add" kind="ghost" title={t('r1.tc.add.btn')} disabled={!cn.trim() || !phoneOk} onPress={add} />

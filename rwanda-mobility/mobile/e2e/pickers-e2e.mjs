@@ -6,18 +6,21 @@ import { pickDate, pickTime } from './pickers.mjs';
 // change the text size and the clock format in Settings. Usage: node e2e/pickers-e2e.mjs <screenshot-dir>   (prerequisites as app-e2e.mjs)
 const WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8081', OUT = process.argv[2] ?? '/tmp';
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL ?? 'postgres://rm:rm@localhost:5432/rwanda_mobility' }); await db.connect();
-const phone = '+2507886' + String(10000 + Math.floor(Math.random() * 89999)).slice(0, 5);
+const national = '772' + String(100000 + Math.floor(Math.random() * 899999));   // a Ugandan number: the whole sign-in goes through the country picker
 const br = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] });
 const page = visibleOnly(await ctx.newPage()); const errors = []; page.on('pageerror', (e) => errors.push(e.message));
 const step = async (name, fn) => { try { await fn(); console.log('OK  ', name); } catch (e) { console.log('FAIL', name, '-', e.message.split('\n')[0]); await page.screenshot({ path: `${OUT}/pk-FAIL-${name.replace(/\W+/g, '_')}.png` }); } };
 const kigaliDay = (plus) => new Date(Date.now() + 2 * 3600e3 + plus * 86400e3).toISOString().slice(0, 10);
 
-await step('rider signs in', async () => {
+await step('rider signs in with a Ugandan number chosen from the country list', async () => {
   await db.query('delete from otp_challenges'); await page.goto(WEB); await page.getByText('English', { exact: true }).click(); await page.getByText('Continue', { exact: true }).click();
-  await page.getByPlaceholder('07X XXX XXXX').fill('0' + phone.slice(4)); await page.getByText('Send code', { exact: true }).click();
+  await page.getByTestId('phone-input-country').click(); await page.waitForTimeout(500); await page.screenshot({ path: `${OUT}/pk-countries.png` }); await page.getByTestId('country-search').fill('uganda'); await page.getByTestId('country-UG').click();
+  const shown = await page.getByTestId('phone-input-country').innerText(); if (!/\+256/.test(shown)) throw new Error('country not chosen: ' + shown);
+  await page.getByPlaceholder('Phone number').fill(national); await page.getByText('Send code', { exact: true }).click();
   const code = (await page.getByText(/Test build: code: \d{6}/).textContent()).match(/\d{6}/)[0];
   await page.getByPlaceholder('••••••').fill(code); await page.getByText('Verify', { exact: true }).click(); await page.getByTestId('tabbar').waitFor({ timeout: 25000 });
+  const row = await db.query('select phone from users where phone=$1', ['+256' + national]); if (row.rowCount !== 1) throw new Error('account not created with the +256 number');
 });
 await step('choose a ride time with the calendar and the clock (nothing typed)', async () => {
   await page.evaluate(() => localStorage.setItem('rm_loc_consent', '1')); await page.reload(); await page.getByTestId('tabbar').waitFor({ timeout: 25000 }); await page.getByTestId('tab-book').click();

@@ -39,4 +39,11 @@ export const pickRw: Record<keyof typeof pickEn, string> = {
   'pk.set.display': 'Imigaragarire n\'igihe',
   'pk.on': 'Birakora',
   'pk.off': 'Ntibikora',
+  'ph.country': 'Igihugu',
+  'ph.search': 'Shakisha igihugu cyangwa inyuguti z\'igihugu',
+  'ph.common': 'Ibihugu bikunze gukoreshwa',
+  'ph.none': 'Nta gihugu cyabonetse',
+  'ph.number': 'Nimero ya telefone',
+  'ph.invalid': 'Andika nimero ya telefone yemewe y\'iki gihugu',
+  'ph.change': 'Hindura igihugu',
 };

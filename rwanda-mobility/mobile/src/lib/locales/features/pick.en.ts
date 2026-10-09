@@ -38,4 +38,11 @@ export const pickEn = {
   'pk.set.display': 'Display and time',
   'pk.on': 'On',
   'pk.off': 'Off',
+  'ph.country': 'Country',
+  'ph.search': 'Search a country or code',
+  'ph.common': 'Common countries',
+  'ph.none': 'No country found',
+  'ph.number': 'Phone number',
+  'ph.invalid': 'Enter a valid number for this country',
+  'ph.change': 'Change country',
 } as const;

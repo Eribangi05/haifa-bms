@@ -266,3 +266,17 @@ test('R5-21 shortest notice for scheduled trips and the quick hire lengths are s
     assert.equal(e.status, 400); assert.equal(e.json.error.code, 'invalid_schedule'); assert.match(e.json.error.message, /90 minutes/);
   } finally { await t.api('DELETE', '/admin/settings/booking.min_schedule_lead_min', { token: admin.token }); await t.api('DELETE', '/admin/settings/abasare.quick_hours', { token: admin.token }); }
 });
+
+test('R5-22 phone numbers from any country: sign-in, trusted contacts and the guest rider accept them; mobile-money numbers stay Rwandan', async () => {
+  const { normalizeAnyPhone, isInternationalPhone } = await import('../src/util/phone.ts');
+  assert.equal(normalizeAnyPhone('+256 772 123 456'), '+256772123456'); assert.equal(normalizeAnyPhone('0033 6 12 34 56 78'), '+33612345678'); assert.equal(normalizeAnyPhone('078 812 3456'), '+250788123456');
+  assert.equal(normalizeAnyPhone('+999 123 456 789'), null, 'no such calling code'); assert.equal(normalizeAnyPhone('12345'), null); assert.equal(isInternationalPhone('+14155550123'), true);
+  // sign in with a Ugandan number
+  const phone = '+2567' + String(10000000 + Math.floor(Math.random() * 89999999)).slice(0, 8);
+  const o = await t.api('POST', '/auth/otp/request', { body: { phone } }); assert.equal(o.status, 200, JSON.stringify(o.json));
+  const v = await t.api('POST', '/auth/otp/verify', { body: { phone, code: o.json.dev_code } }); assert.equal(v.status, 200, JSON.stringify(v.json)); assert.equal(v.json.user.phone, phone);
+  // a trusted contact abroad
+  const c = await t.api('POST', '/users/me/emergency-contacts', { token: v.json.access_token, body: { name: 'Aunt', phone: '+33 6 12 34 56 78', notify_on_trip: true, lang: 'fr' } }); assert.equal(c.status, 200, JSON.stringify(c.json));
+  const list = await t.api('GET', '/users/me/emergency-contacts', { token: v.json.access_token }); assert.equal(list.json.contacts[0].phone, '+33612345678');
+  assert.equal((await t.api('POST', '/users/me/emergency-contacts', { token: v.json.access_token, body: { name: 'X', phone: '+999 1', notify_on_trip: false, lang: 'en' } })).status, 409);
+});

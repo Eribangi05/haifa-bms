@@ -4,7 +4,7 @@ import { parse } from '../util/validate.js';
 import { anyAuth, actorOf, routeLimit } from '../guards.js';
 import { q, q1, tx } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizePhone, normalizeAnyPhone } from '../util/phone.js';
 import { flag } from '../services/settings.js';
 import * as B from '../services/bookings.js';
 import { requestPayout } from '../services/finance.js';
@@ -60,7 +60,7 @@ export async function businessRoutes(app: FastifyInstance) {
   app.post('/businesses/:id/members', { ...pre, config: routeLimit('MEMBER_RATE_MAX', 30) }, async (req) => {
     const { id } = parse(idp, req.params); await corpMember(req.auth!.id, id, true);
     const b = parse(z.object({ phone: z.string(), role: z.enum(['admin', 'booker', 'employee']).default('employee'), spending_limit: z.number().int().positive().optional(), cost_centre: z.string().max(60).optional(), name: z.string().max(80).optional() }), req.body);
-    const phone = normalizePhone(b.phone); if (!phone) throw badRequest('invalid_phone');
+    const phone = normalizeAnyPhone(b.phone); if (!phone) throw badRequest('invalid_phone');
     return tx(async (c) => {
       let u = await q1<any>('select id from users where phone=$1', [phone], c);
       if (!u) { u = await q1<any>('insert into users(phone, display_name) values ($1,$2) returning id', [phone, b.name ?? null], c); await q("insert into user_roles values ($1,'passenger')", [u.id], c); }

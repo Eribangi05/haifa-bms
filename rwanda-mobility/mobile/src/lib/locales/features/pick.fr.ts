@@ -39,4 +39,11 @@ export const pickFr: Record<keyof typeof pickEn, string> = {
   'pk.set.display': 'Affichage et heure',
   'pk.on': 'Activé',
   'pk.off': 'Désactivé',
+  'ph.country': 'Pays',
+  'ph.search': 'Chercher un pays ou un indicatif',
+  'ph.common': 'Pays fréquents',
+  'ph.none': 'Aucun pays trouvé',
+  'ph.number': 'Numéro de téléphone',
+  'ph.invalid': 'Saisissez un numéro valide pour ce pays',
+  'ph.change': 'Changer de pays',
 };

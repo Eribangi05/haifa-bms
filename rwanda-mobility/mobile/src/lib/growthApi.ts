@@ -1,5 +1,6 @@
 // Round 2 pure logic (ride for someone else, recurring rides, quests, heat map). Platform-free, unit-tested in tests/r2.test.ts.
 import type { Lang } from './i18n';
+import { normalizeAny } from './phone.ts';
 
 // ------------------------------------------------------------------ guest (ride for someone else)
 const RW_PHONE = /^(?:\+?250|0)?7[2389]\d{7}$/;
@@ -14,11 +15,11 @@ export type GuestCheck = { ok: boolean; name?: 'name_short'; phone?: 'phone_inva
 export function checkGuest(g: GuestForm, ownPhone?: string | null): GuestCheck {
   const out: GuestCheck = { ok: true };
   if (g.name.trim().length < 2) { out.name = 'name_short'; out.ok = false; }
-  const p = normalizeRwPhone(g.phone);
-  if (!p) { out.phone = 'phone_invalid'; out.ok = false; } else if (ownPhone && normalizeRwPhone(ownPhone) === p) { out.phone = 'phone_own'; out.ok = false; }
+  const p = normalizeAny(g.phone);
+  if (!p) { out.phone = 'phone_invalid'; out.ok = false; } else if (ownPhone && normalizeAny(ownPhone) === p) { out.phone = 'phone_own'; out.ok = false; }
   return out;
 }
-export const guestBody = (g: GuestForm) => ({ name: g.name.trim().slice(0, 60), phone: normalizeRwPhone(g.phone) ?? g.phone, language: g.language });
+export const guestBody = (g: GuestForm) => ({ name: g.name.trim().slice(0, 60), phone: normalizeAny(g.phone) ?? g.phone, language: g.language });
 /** Server error codes about the guest that are shown next to the form (the message itself is already localised by the server). */
 export const isGuestError = (code?: string) => !!code && (code.startsWith('guest_') || code === 'invalid_phone');
 

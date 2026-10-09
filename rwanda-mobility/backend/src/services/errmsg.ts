@@ -62,7 +62,7 @@ const T: Record<string, Pair> = {
   'otp_invalid|Wrong code': ['Kode winjije ntabwo ari yo. Ongera ugerageze.', 'Le code saisi est incorrect. Veuillez réessayer.'],
   'otp_invalid|Code already used': ['Iyi kode yarakoreshejwe. Saba indi kode.', 'Ce code a déjà été utilisé. Demandez un nouveau code.'],
   otp_cooldown: ['Tegereza amasegonda {seconds} mbere yo gusaba indi kode.', 'Patientez {seconds} secondes avant de demander un nouveau code.'],
-  invalid_phone: ['Andika nimero ya telefone yo mu Rwanda yemewe (+250 7XX XXX XXX).', 'Saisissez un numéro de téléphone rwandais valide (+250 7XX XXX XXX).'],
+  invalid_phone: ['Andika nimero ya telefone yemewe, hamwe n\'inyuguti z\'igihugu (urugero +250 7XX XXX XXX).', 'Saisissez un numéro de téléphone valide avec son indicatif de pays (+250 7XX XXX XXX).'],
   suspicious_registration: ['Hafunguwe konti nyinshi kuri iki gikoresho. Hamagara ubufasha.', 'Trop de comptes ont été créés depuis cet appareil. Contactez l\'assistance.'],
   not_a_driver: ['Iyi konti ntabwo ari iy\'umushoferi.', 'Ce compte n\'est pas un compte chauffeur.'],
 

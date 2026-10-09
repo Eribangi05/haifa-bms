@@ -1,6 +1,6 @@
 # Entity-relationship overview
 
-> **Generated** from the migrated PostgreSQL schema by `docs/tools/gen-erd.mjs` (101 tables, 186 foreign keys, migrations 001 to 019). Do not edit by hand: change a migration, run it, then regenerate:
+> **Generated** from the migrated PostgreSQL schema by `docs/tools/gen-erd.mjs` (101 tables, 186 foreign keys, migrations 001 to 020). Do not edit by hand: change a migration, run it, then regenerate:
 > `DATABASE_URL=postgres://rm:rm@localhost:5432/rwanda_mobility node docs/tools/gen-erd.mjs`
 
 Full DDL with checks, partial unique indexes and triggers lives in [`backend/migrations/`](../backend/migrations). One diagram per module showing each table's columns and its outgoing foreign keys; a table from another module appears as a bare box where a key crosses modules. Columns are marked `PK` / `FK`. The table index lists how many columns are nullable.
@@ -28,6 +28,7 @@ Full DDL with checks, partial unique indexes and triggers lives in [`backend/mig
 | 017 | `017_admin_flexibility.sql` |  |
 | 018 | `018_stored_files.sql` |  |
 | 019 | `019_trust_scale.sql` |  |
+| 020 | `020_international_phones.sql` |  |
 
 ## Identity and privacy
 
@@ -1671,7 +1672,7 @@ erDiagram
 | `driver_quest_awards` | Drivers and vehicles | 012 | 8 | 1 nullable |
 | `driver_quests` | Drivers and vehicles | 012 | 21 | 5 nullable |
 | `driver_status_history` | Drivers and vehicles | 001 | 7 | 3 nullable |
-| `emergency_contacts` | Rider | 001 | 7 | altered in 009 |
+| `emergency_contacts` | Rider | 001 | 7 | altered in 009, 020 |
 | `faq_entries` | Support and safety | 017 | 12 | 1 nullable |
 | `fare_quotes` | Catalogue and pricing | 001 | 21 | altered in 002; 3 nullable |
 | `feature_flags` | Platform | 001 | 8 | altered in 019; 3 nullable |
@@ -1721,7 +1722,7 @@ erDiagram
 | `service_categories` | Catalogue and pricing | 001 | 17 | altered in 002, 003; 5 nullable |
 | `service_zones` | Catalogue and pricing | 001 | 7 | altered in 017; 1 nullable |
 | `sessions` | Identity and privacy | 001 | 11 | 4 nullable |
-| `sms_opt_outs` | Identity and privacy | 009 | 4 | 1 nullable |
+| `sms_opt_outs` | Identity and privacy | 009 | 4 | altered in 020; 1 nullable |
 | `staff_invites` | Identity and privacy | 005 | 14 | altered in 013, 017; 6 nullable |
 | `stored_files` | Platform | 018 | 5 |  |
 | `support_cases` | Support and safety | 001 | 15 | 4 nullable |
@@ -1732,7 +1733,7 @@ erDiagram
 | `trip_messages` | Bookings and dispatch | 001 | 6 | altered in 019; 1 nullable |
 | `trip_shares` | Bookings and dispatch | 001 | 10 | altered in 009; 2 nullable |
 | `user_roles` | Identity and privacy | 001 | 2 | altered in 013 |
-| `users` | Identity and privacy | 001 | 21 | altered in 009, 017; 11 nullable |
+| `users` | Identity and privacy | 001 | 21 | altered in 009, 017, 020; 11 nullable |
 | `ussd_phones` | Identity and privacy | 016 | 6 | 3 nullable |
 | `ussd_sessions` | Identity and privacy | 016 | 15 | 6 nullable |
 | `vehicles` | Drivers and vehicles | 001 | 15 | altered in 019; 7 nullable |

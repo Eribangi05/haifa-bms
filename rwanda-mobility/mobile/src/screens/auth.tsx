@@ -8,6 +8,7 @@ import { InstallHint } from '../ui/InstallHint';
 import { APP_NAME } from '../config';
 import { ApiError } from '../lib/net';
 import { tokenStore } from '../lib/storage';
+import { PhoneField } from '../ui/Pickers';
 
 export function Welcome() {
   const narrow = useWindowDimensions().width < 340;
@@ -40,7 +41,7 @@ export function Welcome() {
 export function Phone() {
   const { t, client, nav, lang } = useApp();
   const [phone, setPhone] = useState(''); const [ref, setRef] = useState(''); const { busy, run } = useAsync();
-  const valid = /^(?:\+?250|0)?7[2389]\d{7}$/.test(phone.replace(/[\s-]/g, ''));
+  const valid = !!phone;
   const f = useFormFocus(2);
   const send = () => { if (!valid) return; void run(async () => {
     try {
@@ -50,10 +51,7 @@ export function Phone() {
   }); };
   return (
     <Screen title={t('auth.phone')} onBack={() => nav.replace('welcome')} footer={<Btn testID="cta" title={t('auth.sendcode')} onPress={send} disabled={!valid} loading={busy} big />}>
-      <View style={[S.row, { gap: SP.sm, alignItems: 'flex-start' }]}>
-        <View style={[S.input, { justifyContent: 'center', marginTop: 0 }]}><Text style={{ fontSize: 16 }}>+250</Text></View>
-        <View style={{ flex: 1 }}><Field {...f(0)} value={phone} onChangeText={setPhone} placeholder={t('auth.phone.hint')} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" maxLength={16} accessibilityLabel={t('auth.phone')} error={phone.length > 4 && !valid ? t('auth.invalid') : undefined} /></View>
-      </View>
+      <PhoneField testID="phone-input" value={phone} onChange={setPhone} invalidText={t('auth.invalid')} onSubmit={send} />
       <Field {...f(1, send)} label={t('auth.referral')} value={ref} onChangeText={setRef} autoCapitalize="characters" autoCorrect={false} maxLength={12} />
       <Text style={S.muted}>{t('auth.terms')}</Text>
     </Screen>

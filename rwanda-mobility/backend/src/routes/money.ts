@@ -4,7 +4,7 @@ import { parse } from '../util/validate.js';
 import { anyAuth, requirePerm, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { notFound } from '../errors.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizeAnyPhone } from '../util/phone.js';
 import * as W from '../services/credit.js';
 import * as L from '../services/loyalty.js';
 import * as Dp from '../services/deposit.js';
@@ -44,7 +44,7 @@ export async function moneyRoutes(app: FastifyInstance) {
   const view = requirePerm('wallet.view');
   app.get('/admin/wallet/lookup', { preHandler: view }, async (req) => {
     const b = parse(z.object({ q: z.string().min(3).max(80) }), req.query);
-    const phone = normalizePhone(b.q);
+    const phone = normalizeAnyPhone(b.q);
     const users = await q<any>(`select id, phone, display_name, email, status from users where id::text=$1 or ($2::text is not null and phone=$2) or phone like $3 or display_name ilike $4 limit 10`,
       [b.q, phone, `%${b.q.replace(/[^\d+]/g, '')}%`, `%${b.q}%`]);
     return { users: await Promise.all(users.map(async (u) => ({ ...u, balance: await W.balances(u.id), loyalty: await q1('select points, lifetime_points, tier from loyalty_accounts where user_id=$1', [u.id]) }))) };

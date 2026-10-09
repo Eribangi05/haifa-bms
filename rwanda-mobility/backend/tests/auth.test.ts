@@ -32,7 +32,7 @@ test('OTP is never stored in plaintext and never appears in notification logs', 
 });
 
 test('invalid numbers are rejected', async () => {
-  for (const phone of ['12345', '+254722123456', '0712345678', 'abc']) {
+  for (const phone of ['12345', '+999722123456', '+2547', '0712345678', 'abc']) {
     const r = await t.api('POST', '/auth/otp/request', { body: { phone } });
     assert.equal(r.status, 400, phone);
   }

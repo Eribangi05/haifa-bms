@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { q, q1, tx } from '../db.js';
 import { AppError, badRequest, conflict, notFound } from '../errors.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizeAnyPhone } from '../util/phone.js';
 import { getSetting } from './settings.js';
 import { audit, type Actor } from './audit.js';
 
@@ -41,7 +41,7 @@ function segmentWhere(seg: Segment, args: unknown[]): string {
     case 'zone': args.push(seg.zone_id);
       return seg.role === 'driver' ? `exists (select 1 from driver_profiles dp where dp.user_id=u.id and dp.zone_id=$${args.length})` : `exists (select 1 from bookings b where b.passenger_id=u.id and b.zone_id=$${args.length})`;
     case 'language': args.push(seg.lang); return `u.preferred_language=$${args.length} and ${seg.role ? role(seg.role) : `(${role('passenger')} or ${role('driver')})`}`;
-    case 'phone_list': args.push(seg.phones.map(normalizePhone).filter(Boolean)); return `u.phone = any($${args.length})`;
+    case 'phone_list': args.push(seg.phones.map(normalizeAnyPhone).filter(Boolean)); return `u.phone = any($${args.length})`;
     case 'abasare_owners': return `exists (select 1 from customer_vehicles cv where cv.owner_id=u.id and cv.active)`;
   }
 }

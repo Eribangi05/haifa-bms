@@ -4,7 +4,7 @@ import { parse } from '../util/validate.js';
 import { anyAuth, requirePerm, actorOf, routeLimit } from '../guards.js';
 import { q, q1 } from '../db.js';
 import { notFound } from '../errors.js';
-import { normalizePhone } from '../util/phone.js';
+import { normalizeAnyPhone } from '../util/phone.js';
 import { audit } from '../services/audit.js';
 import * as B from '../services/bookings.js';
 import { respondToCheck, resolveAlert } from '../services/safety.js';
@@ -72,14 +72,14 @@ export async function safetyRoutes(app: FastifyInstance) {
   app.get('/admin/safety/opt-outs', { preHandler: view }, async () => ({ opt_outs: await q('select phone, source, created_at from sms_opt_outs order by created_at desc limit 500') }));
   app.post('/admin/safety/opt-outs', { preHandler: view }, async (req) => {
     const b = parse(z.object({ phone: z.string() }), req.body);
-    const phone = normalizePhone(b.phone); if (!phone) throw (await import('../errors.js')).badRequest('invalid_phone');
+    const phone = normalizeAnyPhone(b.phone); if (!phone) throw (await import('../errors.js')).badRequest('invalid_phone');
     await q("insert into sms_opt_outs(phone,source,created_by) values ($1,'staff',$2) on conflict do nothing", [phone, req.auth!.id]);
     await q('update emergency_contacts set notify_on_trip=false where phone=$1', [phone]);
     await audit(actorOf(req), 'safety.opt_out_added', 'phone', null, undefined, { phone: phone.slice(0, 7) + '***' });
     return { ok: true };
   });
   app.delete('/admin/safety/opt-outs/:phone', { preHandler: view }, async (req) => {
-    const { phone } = parse(z.object({ phone: z.string().regex(/^\+250[0-9]{9}$/) }), req.params);
+    const { phone } = parse(z.object({ phone: z.string().regex(/^\+[1-9][0-9]{7,14}$/) }), req.params);
     await q('delete from sms_opt_outs where phone=$1', [phone]);
     await audit(actorOf(req), 'safety.opt_out_removed', 'phone', null, undefined, { phone: phone.slice(0, 7) + '***' });
     return { ok: true };

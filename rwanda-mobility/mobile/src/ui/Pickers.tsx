@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, TextInput, View } from 'react-native';
 import { useApp } from '../lib/app';
 import { useAppearance } from '../lib/appearance';
 import { MONTHS, WEEKDAYS_SHORT, addDays, addMonths, clampIso, dayAllowed, joinHM, joinInstant, longDate, minuteChoices, monthGrid, parseIso, showHM, splitHM, splitInstant, todayKigali, toIso, validHM } from '../lib/calendar';
-import { Btn, Chip, Text } from './components';
+import { kv } from '../lib/storage';
+import { byIso, countryName, DEFAULT_COUNTRY, flag, searchCountries, splitE164, toE164 } from '../lib/phone';
+import { Btn, Chip, Field, Text } from './components';
 import { C, R, S, SP } from './theme';
 
 /**
@@ -133,6 +135,49 @@ export function NumberStepper({ value, onChange, min, max, step = 1, unit, testI
         <Btn kind="ghost" title="+" testID={testID ? `${testID}-inc` : undefined} onPress={() => onChange(clamp(value + step))} style={{ minWidth: 52 }} disabled={value >= max} />
         {unit ? <Text style={S.muted}>{unit}</Text> : null}
       </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------- phone number with a country picker
+
+/**
+ * A phone number with a country picker: the person chooses the country from a searchable list (name in the app language, calling code, flag) and types the
+ * national number. `value` and `onChange` use E.164 ("+250788123456"); onChange gives '' while the number is not complete or plausible.
+ */
+export function PhoneField({ value, onChange, testID, label, invalidText, onSubmit, autoFocus }: { value: string; onChange: (e164: string) => void; testID?: string; label?: string; invalidText?: string; onSubmit?: () => void; autoFocus?: boolean }) {
+  const { t, lang } = useApp(); const first = splitE164(value);
+  const [iso, setIso] = useState(first?.country.iso ?? DEFAULT_COUNTRY); const [text, setText] = useState(first?.national ?? ''); const [open, setOpen] = useState(false); const [q, setQ] = useState('');
+  const c = byIso(iso);
+  React.useEffect(() => { if (!first) void kv.get('rm_country').then((v) => { if (v) setIso(byIso(v).iso); }).catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const set = (nextIso: string, nextText: string) => { setIso(nextIso); setText(nextText); onChange(toE164(byIso(nextIso), nextText) ?? ''); };
+  const pickCountry = (code: string) => { setOpen(false); setQ(''); void kv.set('rm_country', code).catch(() => {}); set(code, text); };
+  const results = searchCountries(q, lang); const bad = text.replace(/\D/g, '').length >= 4 && !toE164(c, text);
+  return (
+    <View>
+      {label ? <Text style={S.muted}>{label}</Text> : null}
+      <View style={[S.row, { gap: SP.sm, alignItems: 'flex-start' }]}>
+        <Pressable testID={testID ? `${testID}-country` : undefined} accessibilityRole="button" accessibilityLabel={`${t('ph.country')}: ${countryName(c, lang)} +${c.dial}`} onPress={() => setOpen(true)} style={[S.input, { justifyContent: 'center', marginTop: 0, minWidth: 104, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+          <Text style={{ fontSize: 20 }}>{flag(c.iso)}</Text><Text style={{ fontSize: 16, fontWeight: '600' }}>+{c.dial}</Text><Text style={{ color: C.muted }}>▾</Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Field testID={testID} value={text} onChangeText={(x) => set(iso, x.replace(/[^\d\s\-()]/g, ''))} placeholder={c.iso === 'RW' ? t('auth.phone.hint') : t('ph.number')} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" maxLength={18}
+            accessibilityLabel={label ?? t('ph.number')} autoFocus={autoFocus} onSubmitEditing={onSubmit} error={bad ? invalidText ?? t('ph.invalid') : undefined} />
+        </View>
+      </View>
+      <Sheet visible={open} onClose={() => setOpen(false)} title={t('ph.country')}>
+        <TextInput testID="country-search" value={q} onChangeText={setQ} placeholder={t('ph.search')} placeholderTextColor={C.placeholder} autoCorrect={false} accessibilityLabel={t('ph.search')} style={S.input} />
+        <FlatList style={{ maxHeight: 420 }} data={results} keyExtractor={(x) => x.iso} keyboardShouldPersistTaps="handled" initialNumToRender={20} ListEmptyComponent={<Text style={S.muted}>{t('ph.none')}</Text>}
+          renderItem={({ item, index }) => (
+            <View>
+              {!q && index === 0 ? <Text style={[S.muted, { paddingVertical: 4 }]}>{t('ph.common')}</Text> : null}
+              <Pressable testID={`country-${item.iso}`} onPress={() => pickCountry(item.iso)} accessibilityRole="button" accessibilityState={{ selected: item.iso === iso }} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingVertical: 6, borderTopWidth: 1, borderTopColor: C.line }}>
+                <Text style={{ fontSize: 22, width: 32 }}>{flag(item.iso)}</Text><Text style={{ flex: 1, fontWeight: item.iso === iso ? '700' : '400' }}>{countryName(item, lang)}</Text><Text style={{ color: C.muted }}>+{item.dial}</Text>
+              </Pressable>
+            </View>
+          )} />
+        <Btn kind="ghost" title={t('common.cancel')} onPress={() => setOpen(false)} />
+      </Sheet>
     </View>
   );
 }
