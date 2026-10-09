@@ -222,8 +222,8 @@ export const LinkBtn = ({ title, onPress, label, color = C.primary, style }: { t
   </Pressable>
 );
 
-export const Chip = ({ text, onPress, on, glyph }: { text: string; onPress: () => void; on?: boolean; glyph?: string }) => (
-  <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: !!on }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : C.card, marginRight: SP.sm, marginBottom: SP.sm, maxWidth: '100%' }}>
+export const Chip = ({ text, onPress, on, glyph, testID, action }: { text: string; onPress: () => void; on?: boolean; glyph?: string; testID?: string; action?: boolean }) => (
+  <Pressable testID={testID} onPress={onPress} accessibilityRole={action ? 'button' : 'radio'} accessibilityState={action ? undefined : { selected: !!on }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.okBg : C.card, marginRight: SP.sm, marginBottom: SP.sm, maxWidth: '100%' }}>
     {glyph ? <View style={{ marginRight: 6 }}><Glyph g={glyph} size={22} /></View> : null}
     <Text style={{ color: on ? C.primary : C.ink, fontWeight: on ? '700' : '500', flexShrink: 1 }}>{text}</Text>
   </Pressable>

@@ -3,18 +3,22 @@ import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { label } from '../../lib/i18n';
 import type { Booking } from '../../lib/types';
-import { Banner, Btn, Card, Field, Money, Pill, Text } from '../../ui/components';
+import { Banner, Btn, Card, Chip, Field, Money, Pill, Text } from '../../ui/components';
+import { ChatModal } from '../chat';
+import { NavigationModal } from './navigation';
+import { useFlag } from '../../lib/flags';
 import { MapBox } from '../../ui/MapView';
 import { C, S } from '../../ui/theme';
 import { HandoverForm } from './handover';
-import { R1NavButtons } from '../r1Nav';
-import { GuestContact } from './r2GuestContact';
+import { R1NavButtons } from '../trust/navHandoff';
+import { GuestContact } from '../growth/guestContact';
 
 type LL = { lat: number; lng: number };
 
 /** The driver's current job: every step is one large button; state always comes back from the server (`reload` in `finally`). */
 export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; pos: LL | null; reload: () => void; mapHeight: number }) {
   const { t, lang, client, say, nav, errMsg } = useApp(); const { busy, run } = useAsync(); const [pin, setPin] = useState(''); const [cash, setCash] = useState(String(Math.round(trip.final_fare ?? trip.estimated_fare ?? 0))); const [cancelling, setCancelling] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false); const [navOpen, setNavOpen] = useState(false); const navOn = useFlag('navigation.enabled'); const chatOn = useFlag('chat.enabled');
   const st = trip.status; const act = (path: string, body?: unknown) => run(async () => { try { await client.post(`/bookings/${trip.id}/${path}`, body ?? {}); } finally { reload(); } });
   useEffect(() => { if (trip.payment?.outstanding != null && trip.payment.method === 'cash') setCash(String(Math.round(trip.payment.outstanding))); }, [trip.payment?.outstanding, trip.payment?.method]);
   const ab = trip.abasare; const hs = ab?.handovers ?? []; const pickupH = hs.find((h) => h.phase === 'pickup'); const dropH = hs.find((h) => h.phase === 'dropoff');
@@ -36,6 +40,10 @@ export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; po
       <View style={S.between}><Text style={S.h2}>{trip.ref}</Text><Pill text={label(lang, 'bs', st)} tone="warn" /></View>
       <Text style={S.body}>{t('drv.passenger')}: {trip.passenger?.first_name}</Text>
       {trip.guest?.first_name ? <GuestContact trip={trip} /> : null}
+      {['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'AWAITING_PASSENGER_VERIFICATION', 'IN_PROGRESS'].includes(st) ? <View style={[S.wrap, { marginVertical: 6 }]}>
+        {chatOn ? <Chip action glyph="💬" testID="drv-chat" text={trip.unread_messages ? `${t('trip.chat')} · ${t('chat.unread', { n: trip.unread_messages })}` : t('trip.chat')} on={!!trip.unread_messages} onPress={() => setChatOpen(true)} /> : null}
+        {navOn && ['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'IN_PROGRESS'].includes(st) && !(ab && hourly) ? <Chip action glyph="🧭" testID="drv-nav" text={t('nav.open')} onPress={() => setNavOpen(true)} /> : null}
+      </View> : null}
       {trip.estimated_driver_net != null ? <Text style={S.muted}>{t('drv.earn')}: {trip.estimated_driver_net} RWF</Text> : null}
       {ab ? <View style={{ backgroundColor: C.warnBg, borderRadius: 10, padding: 10, marginVertical: 6 }}>
         <Text style={S.muted}>{t('ab.job.car')} · {hourly ? `${t('ab.trip.hourly')} ${ab.hours} ${t('ab.h')}` : t('ab.trip.home')}</Text>
@@ -67,6 +75,8 @@ export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; po
         {trip.payment_method === 'cash' ? <><Field label={t('drv.collected.q')} value={cash} onChangeText={(x) => setCash(x.replace(/\D/g, ''))} keyboardType="number-pad" />
           <Btn title={t('drv.collect')} onPress={() => run(async () => { const r = await client.post<{ status: string; outstanding?: number }>(`/bookings/${trip.id}/cash-collected`, { amount: Number(cash) }, { retry: true }); if (r.status === 'PARTIAL') say(`${t('drv.collected.partial')}: ${r.outstanding} RWF`); reload(); })} loading={busy} disabled={!Number(cash)} big /></>
           : <Banner text={t('drv.wait.pay')} />}</View> : null}
+      <ChatModal id={trip.id} visible={chatOpen} onClose={() => { setChatOpen(false); reload(); }} role="driver" trip={trip} onChanged={reload} />
+      <NavigationModal trip={trip} pos={pos} visible={navOpen} onClose={() => setNavOpen(false)} />
     </Card>
   );
 }

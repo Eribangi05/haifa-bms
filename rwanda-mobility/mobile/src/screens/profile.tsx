@@ -5,7 +5,7 @@ import { label } from '../lib/i18n';
 import { getPushPermission } from '../lib/push';
 import { openAppSettings } from '../lib/hooks';
 import type { SavedPlace } from '../lib/types';
-import { R1TrustedContacts } from './r1Contacts';
+import { R1TrustedContacts } from './trust/contacts';
 import { Banner, Btn, Card, Field, IconBadge, LangPicker, Pill, Screen, SectionTitle, Text, useFormFocus } from '../ui/components';
 import { showAlert } from '../ui/dialog';
 import { C, S, SP } from '../ui/theme';

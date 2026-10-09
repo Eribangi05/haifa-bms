@@ -123,7 +123,7 @@ Labels (assigned by evidence, not intent):
 | | Settings page: grouped, labelled, units/ranges, default + reset-to-default, last change from audit, legacy keys under Advanced | TESTED (API) + browser e2e |
 | | Services screen: enable per zone, rename (rw/fr/en), seats | TESTED (API); screen rendered in browser e2e |
 | | Live map (self-hosted Leaflet, OpenStreetMap tiles, 5 s refresh that stops when you leave the page, driver and booking tables under the map, notice when tiles are blocked) | TESTED in browser (`admin-console-e2e.ts`: renders, tile failure notice); **driver and booking markers were not exercised with live traffic** (no driver was online during the run) |
-| Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android); audited: safe-area insets and visible Back on every screen, permission recovery, localised errors, offline start, driver location kept alive across screens | IMPLEMENTED (type-checked; web build e2e; **not run on a device**) Round 3 (credit and loyalty screen with statement and tier ring, pay with credit full/partial in Options, receipt lines for credit and deposit, Abasare deposit step with MoMo/credit pay, retry and refund messages, claims: file with photos, list, detail with timeline/evidence/before-after/decision/settlement, driver reply, withdraw, more-info flow, USSD info card): IMPLEMENTED; unit-tested (`tests/money3.test.ts`) and exercised in the web build by `mobile/e2e/r3-e2e.mjs` (rw and fr) against a local backend with the MoMo SIMULATOR; **not run on a device**; staff steps in that script use the backend services directly, not the admin console; credit cannot be applied after a trip (only at booking, per the API); no insurer or real USSD network involved |
+| Mobile | Auth, home, options, track, pay, rate, history, profile, support, SOS, driver onboarding/home/offers/trip/earnings (React Native, Android); audited: safe-area insets and visible Back on every screen, permission recovery, localised errors, offline start, driver location kept alive across screens | IMPLEMENTED (type-checked; web build e2e; **not run on a device**) Round 3 (credit and loyalty screen with statement and tier ring, pay with credit full/partial in Options, receipt lines for credit and deposit, Abasare deposit step with MoMo/credit pay, retry and refund messages, claims: file with photos, list, detail with timeline/evidence/before-after/decision/settlement, driver reply, withdraw, more-info flow, USSD info card): IMPLEMENTED; unit-tested (`tests/moneyFmt.test.ts`) and exercised in the web build by `mobile/e2e/r3-e2e.mjs` (rw and fr) against a local backend with the MoMo SIMULATOR; **not run on a device**; staff steps in that script use the backend services directly, not the admin console; credit cannot be applied after a trip (only at booking, per the API); no insurer or real USSD network involved |
 | | Same screens as a responsive **web** build (`npm run web:export`) | TESTED (browser e2e) |
 | | Network layer: retry/backoff, idempotency keys, single-flight refresh, persistent outbox | TESTED |
 | | iOS | NOT BUILT/UNTESTED (code is shared; no iOS build produced) |
@@ -172,3 +172,21 @@ Labels (assigned by evidence, not intent):
 | Admin (round 4) | Staff management: search/filter, edit name/email/roles (several roles per person), disable/enable, remove (soft delete, email freed, audit kept), anonymise, resend invitation, password / two-factor / full reset links, sessions, last login, activity view; safeguards (self-protection, last super admin, super-admin-only actions, no privilege escalation) | TESTED (API + browser e2e) |
 | | Data-driven roles and permissions: DB-backed with cache and explicit invalidation, permission catalogue with descriptions, custom roles (clone, edit, delete with reassignment), built-in reset to defaults, server-provided permissions to the console (no static mirror) | TESTED |
 | | Editors: places (map pick, CSV import), zones (circle/polygon), driver document rules, help-centre FAQ (moved from code to a table), support priority/SLA per category, feature flags page, notification wording | TESTED (API + browser e2e) |
+
+### Round 5: scale, trust and driver tools
+
+| Feature | Status |
+|---|---|
+| Geohash cells for nearby drivers and dispatch | TESTED (backend tests GEO-01, GEO-02 and every dispatch test) |
+| Remote feature rollout (percentage) and off-switch (`booking.requests` pauses all new requests) | TESTED (R5-01, R5-02); console editor TESTED opening as each role |
+| Cancel-and-rebook pause, one promo per phone, fake GPS rejected | TESTED (R5-03, R5-04, FRAUD-01) |
+| Staff alerts (sign-ins, mass views, night actions, large credit, bursts) and fraud signal list | TESTED (R5-05); the thresholds are PLACEHOLDERS to confirm |
+| Operations dashboard | TESTED (R5-06); numbers checked against test trips, not against real traffic |
+| Chat: quick replies, read ticks, unread badge, number sharing | TESTED (R5-07 and browser test round5) |
+| Referral rewards, tiers, ambassador list | TESTED (R5-08); reward amounts are PLACEHOLDERS |
+| Vehicle application and review queue | TESTED (R5-09, R5-10 and browser test round5) |
+| SOS to the owner's number plus console alert | TESTED up to the SMS call; no real SMS provider connected (PENDING INTEGRATION) |
+| Own road router, fares from real road distance, turn-by-turn navigation | TESTED (R5-12, R5-13, browser test round5); not driven on a road with a phone; no voice, no live traffic |
+| Offline map of Kigali and saved copies of screens | TESTED in a browser (199 map pieces saved; map drew with the map file blocked; Trips tab showed the saved copy); not tested on Android |
+| Compiled production server (`node dist/server.js`) | TESTED locally (health, console, map, ready); the Docker image build runs in CI |
+

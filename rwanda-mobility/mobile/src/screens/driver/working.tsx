@@ -13,7 +13,7 @@ import { C, S, SP } from '../../ui/theme';
 import { SosButton } from '../sos';
 import { ActiveTrip } from './activeTrip';
 import { OfferCard } from './offer';
-import { QuestsCard } from './r2Quests';
+import { QuestsCard } from '../growth/quests';
 import { driverToday } from '../../lib/stats';
 import { fmtRwf } from '../../lib/format';
 import { useTripFeed } from '../../lib/tripFeed';
@@ -21,6 +21,7 @@ import { StatRow, StatTile } from '../../ui/dash';
 import { leaveDriverMode } from './leave';
 import { driverKind, jobTypes } from '../../lib/driverKind';
 import { CategoryCard } from './kindUi';
+import { GoalCard, StatusStrip } from './workTools';
 
 const GPS_STALE_MS = 45_000;
 
@@ -66,6 +67,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
       onRefresh={async () => { reload(); active.reload(); offers.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
       <>
+        <StatusStrip online={isOnline} />
         <Card>
           <View style={S.between}><View style={{ flex: 1, paddingRight: SP.sm }}><Text style={S.h2}>{isOnline ? t('drv.online') : t('drv.offline')}</Text><Text style={S.muted}>★ {Number(status.profile.rating_avg).toFixed(1)} · {status.profile.completed_count} {t('drv.trips')}</Text></View>
             <Btn testID="cta" kind={isOnline ? 'danger' : 'primary'} title={isOnline ? t('drv.gooffline') : t('drv.goonline')} onPress={() => toggle(!isOnline)} loading={busy} disabled={(!rideOk && !absOk && !isOnline) || (!isOnline && !consent)} /></View>
@@ -80,6 +82,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
           <StatTile testID="dh-earned" glyph="💰" value={fmtRwf(today.net || today.fares)} unit="RWF" label={`${t('dh.today')} · ${t('dh.stat.earned')}`} tint={C.warnBg} />
           <StatTile testID="dh-rating" glyph="⭐" value={Number(status.profile.rating_avg) > 0 ? Number(status.profile.rating_avg).toFixed(1) : '—'} label={t('dh.stat.rating')} tint={C.goldBg} />
         </StatRow>
+        {rideOk || absOk ? <GoalCard earned={today.net || today.fares} /> : null}
         <Btn testID="claims-about-me" kind="ghost" title={t('cl.title.about')} onPress={() => nav.push('claims')} />
         {rideOk || absOk ? <Btn testID="r1-feedback-open" kind="ghost" title={t('r1.fb.open')} onPress={() => nav.push('r1feedback')} /> : null}
         {rideOk || absOk ? <QuestsCard onOpen={() => nav.push('quests')} /> : null}

@@ -5,8 +5,8 @@ import type { Client } from './net';
 import { kv } from './storage';
 import { translate, type Lang } from './i18n';
 import { showAlert } from '../ui/dialog';
-import { safetyRoute } from './r1';
-import { claimRoute } from './money3';
+import { safetyRoute } from './trustApi';
+import { claimRoute } from './moneyFmt';
 
 const supported = Platform.OS === 'android' || Platform.OS === 'ios';
 const TOKEN_KEY = 'rm_push_token';

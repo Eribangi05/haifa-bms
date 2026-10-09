@@ -10,10 +10,10 @@ import { MapBox } from '../../ui/MapView';
 import { showAlert } from '../../ui/dialog';
 import { C, S, SP } from '../../ui/theme';
 import { SosButton } from '../sos';
-import { DepositCard, DepositNote } from '../r3/deposit';
+import { DepositCard, DepositNote } from '../money/deposit';
 import { ChatModal, Done, DriverCard, HandoverReview, PayCard } from './tripParts';
-import { R1ShareSheet } from '../r1Share';
-import { R1DriverEta, R1SafetyLayer } from '../r1Safety';
+import { R1ShareSheet } from '../trust/shareTrip';
+import { R1DriverEta, R1SafetyLayer } from '../trust/safety';
 
 const STALE_LOC_MS = 120_000;
 
@@ -77,7 +77,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean; sa
         {live && b.driver ? <DriverCard b={b} /> : null}
         {b.trip_pin ? <View style={{ backgroundColor: C.okBg, borderRadius: 14, padding: SP.md, marginTop: SP.md, borderWidth: 1, borderColor: C.primary }}><Text style={S.muted}>{t('trip.pin')}</Text><Text style={{ fontSize: 44, fontWeight: '800', letterSpacing: 10, color: C.primaryDark }}>{b.trip_pin}</Text><Text style={S.muted}>{t('trip.pin.hint')}</Text></View> : null}
         {live ? <View style={[S.wrap, { marginTop: SP.md }]}>
-          <Chip glyph="💬" text={t('trip.chat')} onPress={() => setChat(true)} /><Chip glyph="🔗" text={t('trip.share')} onPress={() => setShareOpen(true)} />
+          <Chip action glyph="💬" testID="pax-chat" text={b.unread_messages ? `${t('trip.chat')} · ${t('chat.unread', { n: b.unread_messages })}` : t('trip.chat')} on={!!b.unread_messages} onPress={() => setChat(true)} /><Chip glyph="🔗" text={t('trip.share')} onPress={() => setShareOpen(true)} />
           {st !== 'IN_PROGRESS' ? <Chip glyph="✕" text={t('trip.cancel')} onPress={cancel} /> : null}
         </View> : null}
       </Sheet>
@@ -90,7 +90,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean; sa
         {isPaid(st) ? <Done b={b} /> : null}
         {isCancelled(st) ? <Card><Text style={S.body}>{b.cancel_fee ? `${t('trip.cancel.fee')} (${b.cancel_fee} RWF)` : t('trip.cancelled')}</Text><View style={{ height: 8 }} /><Btn title={t('trip.rebook')} onPress={home} /></Card> : null}
       </View>
-      <ChatModal id={b.id} visible={chat} onClose={() => setChat(false)} />
+      <ChatModal id={b.id} visible={chat} onClose={() => { setChat(false); reload(); }} role="passenger" trip={b} onChanged={reload} />
       <R1ShareSheet id={b.id} visible={shareOpen} onClose={() => setShareOpen(false)} />
     </Screen>
   );

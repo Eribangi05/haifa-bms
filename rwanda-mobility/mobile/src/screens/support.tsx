@@ -10,7 +10,7 @@ import { SUPPORT } from '../config';
 import { callNumber, openSms, openWhatsApp } from '../lib/contact';
 import { Hero } from '../ui/dash';
 import { IconBadge } from '../ui/components';
-import { UssdCard } from './r3/ussd';
+import { UssdCard } from './money/ussd';
 
 const CATS = ['booking', 'payment', 'refund', 'driver_complaint', 'lost_item', 'safety', 'fare_dispute', 'other'] as const;
 

@@ -36,4 +36,27 @@ export async function opsRoutes(app: FastifyInstance) {
       by_kind: await q("select kind, count(*)::int n from risk_events where created_at > now() - interval '7 days' group by 1 order by 2 desc"),
     };
   });
+
+  // ---- referrals and ambassadors (growth.manage) ----
+  app.get('/admin/referrals', { preHandler: requirePerm('growth.manage') }, async () => {
+    const totals = await q1<any>(`select count(*)::int total, count(*) filter (where status='pending')::int pending, count(*) filter (where status='rewarded')::int rewarded, count(*) filter (where status='rejected')::int rejected,
+        coalesce(sum(reward_referrer + reward_referee) filter (where status='rewarded'),0)::int paid from referrals`);
+    const ambassadors = await q(`select a.user_id, a.tier, a.status, a.note, a.created_at, u.display_name, u.phone,
+        (select count(*)::int from referrals r where r.referrer_id=a.user_id and r.status='rewarded') rewarded,
+        (select count(*)::int from referrals r where r.referrer_id=a.user_id and r.status='pending') pending,
+        (select count(*)::int from referrals r where r.referrer_id=a.user_id and r.status='rejected') rejected,
+        (select coalesce(sum(reward_referrer),0)::int from referrals r where r.referrer_id=a.user_id and r.status='rewarded') earned
+      from ambassadors a join users u on u.id=a.user_id order by rewarded desc, a.created_at limit 200`);
+    const recent = await q(`select r.id, r.status, r.reject_reason, r.created_at, r.rewarded_at, r.reward_referrer, r.reward_referee, ur.display_name referrer, ue.display_name referee
+      from referrals r join users ur on ur.id=r.referrer_id join users ue on ue.id=r.referee_id order by r.created_at desc limit 100`);
+    return { totals, ambassadors, recent };
+  });
+  app.patch('/admin/ambassadors/:id', { preHandler: requirePerm('growth.manage') }, async (req) => {
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const b = parse(z.object({ status: z.enum(['active', 'paused']).optional(), tier: z.enum(['bronze', 'silver', 'gold']).optional(), note: z.string().trim().max(300).nullable().optional(), reason: z.string().trim().min(5).max(300) }), req.body);
+    const before = await q1<any>('select status, tier, note from ambassadors where user_id=$1', [id]); if (!before) throw notFound('ambassador');
+    await q('update ambassadors set status=coalesce($2,status), tier=coalesce($3,tier), note=case when $4::boolean then $5 else note end where user_id=$1', [id, b.status ?? null, b.tier ?? null, b.note !== undefined, b.note ?? null]);
+    await audit(actorOf(req), 'ambassador.updated', 'user', id, before, b);
+    return { ok: true };
+  });
 }

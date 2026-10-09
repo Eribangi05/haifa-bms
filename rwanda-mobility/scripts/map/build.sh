@@ -10,4 +10,5 @@ curl -fL -o rwanda.osm.pbf https://download.openstreetmap.fr/extracts/africa/rwa
 java -Xmx8g -jar planetiler.jar --osm-path=rwanda.osm.pbf --output=rwanda.pmtiles --download --force --maxzoom=14 --nodemap-type=sparsearray --storage=mmap
 cp rwanda.pmtiles "$OUT/rwanda.pmtiles"
 (python3 -I "$(dirname "$0")/places.py" rwanda.osm.pbf "$OUT/places.json" && echo "Wrote places.json") || echo "places.json not rebuilt (pip install osmium)"
+(python3 -I "$(dirname "$0")/roads.py" rwanda.osm.pbf "$OUT/roads.bin.gz" && echo "Wrote roads.bin.gz") || echo "roads.bin.gz not rebuilt (pip install osmium numpy)"
 echo "Wrote $OUT/rwanda.pmtiles ($(du -h "$OUT/rwanda.pmtiles" | cut -f1))"

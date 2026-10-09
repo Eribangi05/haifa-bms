@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { OfflineNote } from '../../ui/OfflineNote';
 import { View } from 'react-native';
 import { useApp, useAsync, usePoll } from '../../lib/app';
 import { label } from '../../lib/i18n';
@@ -12,13 +13,14 @@ type Txn = { id: string; memo: string; credit?: number; debit?: number };
 
 export function Earnings() {
   const { t, lang, client } = useApp(); const { busy, run } = useAsync(); const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day'); const [amt, setAmt] = useState('');
-  const e = usePoll(() => client.get<EarningsView>(`/drivers/me/earnings?period=${period}`), 20000, [period]);
-  const w = usePoll(() => client.get<{ balance?: EarningsView['balance']; transactions?: Txn[] }>('/drivers/me/wallet'), 20000);
-  const po = usePoll(() => client.get<{ payouts?: Payout[] }>('/drivers/me/payouts'), 20000);
+  const e = usePoll(() => client.get<EarningsView>(`/drivers/me/earnings?period=${period}`), 20000, [period], true, `earnings:${period}`);
+  const w = usePoll(() => client.get<{ balance?: EarningsView['balance']; transactions?: Txn[] }>('/drivers/me/wallet'), 20000, [], true, 'driver:wallet');
+  const po = usePoll(() => client.get<{ payouts?: Payout[] }>('/drivers/me/payouts'), 20000, [], true, 'driver:payouts');
   const d = e.data; const bal = d?.balance ?? w.data?.balance; const amount = Number(amt);
   const tooMuch = !!bal && amount > bal.eligible_payout;
   return (
     <View>
+      <OfflineNote at={e.cachedAt} />
       <View style={S.row}>{(['day', 'week', 'month'] as const).map((p) => <Chip key={p} text={t(('drv.' + p) as 'drv.day')} on={period === p} onPress={() => setPeriod(p)} />)}</View>
       {!d ? <SkeletonCard /> : <Card>
         <Text style={S.muted}>{t('drv.net')}</Text><Money n={d.net} style={{ fontSize: 34, fontWeight: '800', color: C.primary }} />

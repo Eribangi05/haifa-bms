@@ -25,13 +25,14 @@ export type Booking = {
   pickup: Pt & { note?: string | null }; destination: Pt;
   estimated_fare: number | null; final_fare: number | null; payment_method: string; payer_type?: string; scheduled_for?: string | null;
   requested_at: string; completed_at?: string | null; cancel_fee?: number | null; distance_m?: number; duration_s?: number;
-  started_at?: string | null; passenger?: { first_name: string }; estimated_driver_net?: number | null;
+  started_at?: string | null; passenger?: { first_name: string };
+  unread_messages?: number; phone_sharing?: { i_share: boolean; they_share: boolean }; contact_phone?: string; estimated_driver_net?: number | null;
   guest?: { name?: string; phone_masked?: string; language?: string; purged?: boolean; first_name?: string; can_contact?: boolean };
   driver?: DriverView; vehicle?: { make?: string; model?: string; color?: string; plate: string; type?: string };
-  driver_location?: { lat: number; lng: number; at?: string }; trip_pin?: string; wallet?: { mode: 'full' | 'partial'; reserved: number; applied: number } | null; deposit?: import('./money3').DepositView | null; awaiting_deposit?: boolean; channel?: string; payment?: PaymentView; abasare?: AbasareView;
+  driver_location?: { lat: number; lng: number; at?: string }; trip_pin?: string; wallet?: { mode: 'full' | 'partial'; reserved: number; applied: number } | null; deposit?: import('./moneyFmt').DepositView | null; awaiting_deposit?: boolean; channel?: string; payment?: PaymentView; abasare?: AbasareView;
 };
 export type Receipt = { receipt_no: string; issued_at: string; status: string; currency: string; total: number | null; route: { from?: string; to?: string; distance_m?: number; duration_s?: number }; fare?: Fare; payment: { method: string; status: string; reference?: string; paid_at?: string } | null; driver?: { name: string; plate?: string } | null };
-export type ChatMessage = { id: string; sender_id: string; body: string; created_at?: string };
+export type ChatMessage = { id: string; sender_id: string; body: string; created_at?: string; read_at?: string | null };
 
 export type Offer = { booking_id: string; expires_at: string; eta_s: number; distance_m: number; driver_net: number; pickup_name?: string; pickup_note?: string; dest_name?: string; payment_method: string; trip_distance_m: number; trip_duration_s: number; hire_mode?: 'p2p' | 'hourly' | null; hours_booked?: number; cv_class?: string; cv_transmission?: string };
 export type Requirement = { doc_type: string; mandatory: boolean; requires_expiry?: boolean };
@@ -39,7 +40,7 @@ export type DriverDoc = { id: string; doc_type: string; review_status: string; r
 export type Permission = { can_work: boolean; reasons?: string[]; expired_documents?: string[]; missing_documents?: string[] };
 export type DriverStatus = {
   profile: { status: string; status_reason?: string | null; is_online?: boolean; accepting?: string[]; legal_name?: string; payout_msisdn?: string; rating_avg: number | string; completed_count: number };
-  vehicle?: { vehicle_type: string; make: string; model: string; color: string; plate: string; capacity: number } | null;
+  vehicle?: { vehicle_type: string; make: string; model: string; color: string; plate: string; capacity: number; status?: string } | null;
   abasare?: { status: string; reason?: string | null; permission?: Permission; skills?: { licence_since?: string; years_experience?: number; transmissions?: string[]; classes?: string[]; return_mode?: string } };
   permission?: Permission; requirements?: Requirement[]; documents: DriverDoc[]; fleet_invites?: { id: string; name: string }[];
 };

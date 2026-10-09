@@ -12,7 +12,7 @@ import { Hero, QuickAction, QuickGrid, StatRow, StatTile } from '../../ui/dash';
 import { C, FS, R, S, SP } from '../../ui/theme';
 import { usePlaces } from '../passenger/usePlaces';
 import { PromoBanner, RecentTrips, StatusChip } from '../passenger/homeParts';
-import { useWallet } from '../r3/credit';
+import { useWallet } from '../money/credit';
 import { useBecomeDriver } from './account';
 
 /** Rider "Home" tab: greeting and one-tap booking, live trip, quick actions, personal statistics, safety and trending places. */

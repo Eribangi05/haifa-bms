@@ -6,7 +6,7 @@ import { Btn, Card, LangPicker, Pill, Screen, Text } from '../../ui/components';
 import { MenuGroup, MenuRow } from '../../ui/dash';
 import { showAlert } from '../../ui/dialog';
 import { C, FS, S, SP } from '../../ui/theme';
-import { UssdCard } from '../r3/ussd';
+import { UssdCard } from '../money/ussd';
 import { leaveDriverMode } from '../driver/leave';
 
 const initials = (s: string) => (s.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('') || '👤').toUpperCase();

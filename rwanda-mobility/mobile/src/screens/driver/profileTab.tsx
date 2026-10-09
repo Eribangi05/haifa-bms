@@ -4,16 +4,16 @@ import { useApp, usePoll } from '../../lib/app';
 import { fmtDate, fmtRwf } from '../../lib/format';
 import { driverKind, jobKind, jobTypes } from '../../lib/driverKind';
 import { label } from '../../lib/i18n';
-import type { Badge } from '../../lib/r1';
+import type { Badge } from '../../lib/trustApi';
 import { useTripFeed } from '../../lib/tripFeed';
 import type { Booking, DriverStatus } from '../../lib/types';
 import { Banner, Btn, Card, IconBadge, Money, Pill, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
 import { Illustration, Segmented, StatRow, StatTile } from '../../ui/dash';
 import { C, FS, S, SP } from '../../ui/theme';
-import { R1Badges } from '../r1Badges';
+import { R1Badges } from '../trust/badges';
 import { DocRow } from './docRow';
 import { CategoryCard, KindPill } from './kindUi';
-import { QuestsCard } from './r2Quests';
+import { QuestsCard } from '../growth/quests';
 
 const VGLYPH: Record<string, string> = { moto: '🛵', car: '🚗', minivan: '🚐' };
 type Page = 'overview' | 'vehicle' | 'abasare' | 'documents';
@@ -23,8 +23,8 @@ const Row = ({ k, v }: { k: string; v: string }) => <View style={[S.between, { m
 /** Driver "Profile" tab, four pages: Overview (category, record, permissions), Vehicle (own vehicle and its history), Abasare (skills and customer-car jobs), Documents. */
 export function ProfileTab({ focused }: { focused: boolean }) {
   const { t, lang, client, errMsg, nav, goTab } = useApp(); const feed = useTripFeed(); const [page, setPage] = useState<Page>('overview');
-  const st = usePoll(() => client.get<DriverStatus>('/drivers/me/status'), 20000, [], focused);
-  const fb = usePoll(() => client.get<{ badges: Badge[]; rating_count: number }>('/drivers/me/feedback'), 60000, [], focused);
+  const st = usePoll(() => client.get<DriverStatus>('/drivers/me/status'), 20000, [], focused, 'driver:status');
+  const fb = usePoll(() => client.get<{ badges: Badge[]; rating_count: number }>('/drivers/me/feedback'), 60000, [], focused, 'driver:feedback');
   const d = st.data; const kind = driverKind(d); const trips = feed.trips ?? [];
   const rides = useMemo(() => trips.filter((b) => jobKind(b) === 'ride'), [trips]); const abJobs = useMemo(() => trips.filter((b) => jobKind(b) === 'abasare'), [trips]);
   const ridePerm = !!d?.permission?.can_work; const abPerm = !!d?.abasare?.permission?.can_work; const abStatus = d?.abasare?.status ?? 'none';
@@ -66,6 +66,7 @@ export function ProfileTab({ focused }: { focused: boolean }) {
         </> : null}
 
         {page === 'vehicle' ? (d.vehicle ? <>
+          {d.vehicle.status && d.vehicle.status !== 'approved' && d.profile.status === 'APPROVED' ? <Btn testID="pf-continue-vehicle" kind="gold" title={t('va.entry')} onPress={() => nav.push('vehicleApply')} /> : null}
           <Card>
             <View style={[S.row, { gap: SP.md }]}>
               <IconBadge glyph={VGLYPH[d.vehicle.vehicle_type] ?? '🚗'} bg={C.skyBg} size={56} />
@@ -84,7 +85,7 @@ export function ProfileTab({ focused }: { focused: boolean }) {
         </> : <>
           <Illustration glyphs="🧑‍✈️🚗" tint={C.warnBg} />
           <Card><Text testID="pf-no-vehicle" style={S.body}>{t('pf.v.none')}</Text></Card>
-          <Banner text={t('pf.v.add')} action={<Btn kind="ghost" title={t('pf.v.support')} onPress={() => nav.push('support')} />} />
+          {d.profile.status === 'APPROVED' ? <Btn testID="pf-add-vehicle" title={t('va.entry')} onPress={() => nav.push('vehicleApply')} /> : <Banner text={t('pf.v.add')} action={<Btn kind="ghost" title={t('pf.v.support')} onPress={() => nav.push('support')} />} />}
         </>) : null}
 
         {page === 'abasare' ? (abStatus === 'none' ? <>

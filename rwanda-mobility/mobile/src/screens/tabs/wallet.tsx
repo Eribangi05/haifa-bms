@@ -7,7 +7,7 @@ import { useTripFeed } from '../../lib/tripFeed';
 import { Banner, Btn, Card, EmptyState, IconBadge, Money, Screen, SectionTitle, SkeletonCard, Text } from '../../ui/components';
 import { Hero, MenuGroup, MenuRow, StatRow, StatTile } from '../../ui/dash';
 import { C, FS, S, SP } from '../../ui/theme';
-import { useWallet } from '../r3/credit';
+import { useWallet } from '../money/credit';
 
 const methodGlyph = (m?: string) => (m?.startsWith('wallet') ? '💳' : m === 'mtn_momo' ? '📱' : '💵');
 const methodKey = (m?: string) => (m?.startsWith('wallet') ? 'wal.mix.credit' : m === 'mtn_momo' ? 'wal.mix.momo' : m === 'cash' ? 'wal.mix.cash' : 'wal.mix.other') as 'wal.mix.cash';

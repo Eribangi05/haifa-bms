@@ -36,10 +36,30 @@ Result of a full review of the app, and what has been done about each point. "Do
 8. Native-speaker review of the Kinyarwanda and French texts.
 9. Rotate the old `index.php` database password.
 
+## Round 5 (done): the 14 items that needed no account or payment
+
+| # | Item | Result |
+|---|---|---|
+| 1 | Offline cache of the Kigali map and of history, credit and earnings screens | Map: pieces cached on use and saved in advance for Kigali (199 pieces, drew with the map file blocked). Screens: saved copy with an age note. |
+| 2 | Spatial index for nearby drivers | Geohash cells on the driver row (indexed); nearby lookups and dispatch read only the cells around the pickup. |
+| 3 | In-app turn-by-turn navigation | Own road router over OpenStreetMap, navigation screen, rerouting. No voice. Another navigation app stays one tap away. |
+| 4 | Vehicle application for an approved Abasare driver | Screen, documents, send for review, console approval, notifications. |
+| 5 | Chat between rider and driver, numbers hidden by default | Quick replies, read ticks, unread badge, push once a minute; a number is shown only after the other person shares it for that trip. |
+| 6 | Fraud: promo per phone, cancel-and-rebook | One account per phone per promo; a rider who cancels 3 times in 30 minutes is paused for 15 (settings). Signals listed in the console. |
+| 7 | Alerts for suspicious staff activity | Failed sign-ins, token reuse, mass record views, night-time privileged actions, large credit changes, bursts of failed payments or fraud signals, every SOS. |
+| 8 | Gradual rollout and remote off-switch | Flags have a rollout percentage, an off message and "send to the apps"; `booking.requests` pauses all new requests. |
+| 9 | Compiled production build | `npm run build` then `node dist/server.js`; the Docker image builds in two stages. |
+| 10 | Dashboards | Console "Operations dashboard": busy hours, cancellation rate, time to first driver, failed payments. |
+| 11 | Driver app: countdown, goal bar, online status | Shrinking countdown on offers, daily goal card, status strip with a pulsing dot. |
+| 12 | SOS reaches the support number; faster onboarding | SOS texts the owner's number, raises a critical alert, shows Call and WhatsApp buttons; onboarding tracker, review target and late marker, console review queue. |
+| 13 | Referral rewards and ambassador tracking | Paid after the invited rider's first paid trip; bronze, silver, gold with +25% / +50%; rejected for the same phone or the monthly cap; console view. |
+| 14 | Split the big files | Locale files renamed by feature (`features/trust`, `growth`, `money`, ...), screens grouped in folders, `docs/MOBILE_CODE_MAP.md`. |
+
+Checked by: 311 backend tests, 79 mobile unit tests, browser tests of the rider and driver flows, the new `e2e/round5-e2e.mjs` (chat, navigation, goal, referral, paused requests, saved copy, vehicle application), and the console opened as every staff role. Not checked: on a real phone, with a real SMS or payment provider, under real traffic.
+
 ## Still to build later (feasible, not done yet)
 
-* Offline cache of the Kigali map and of history/wallet screens.
-* Road routing (OSRM or Valhalla) for accurate fares; today the fare uses a calibrated straight-line estimate when no routing server is configured.
-* In-app chat and number masking; richer fraud checks (promo abuse per device, cancel-and-rebook loops).
-* Spatial index (PostGIS or geohash) once there are thousands of online drivers.
-* Compiled production build instead of running TypeScript through `tsx`.
+* Voice instructions in navigation, and live traffic.
+* Road routing with turn restrictions and time-of-day speeds (the router uses free-flow speed per road class).
+* An automatic first check of driver documents (photo quality, expiry reading).
+* A hosted map CDN once traffic grows (the map file is served by the API today).

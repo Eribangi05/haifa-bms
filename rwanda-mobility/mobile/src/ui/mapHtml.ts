@@ -15,7 +15,45 @@ export const MAP_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta 
 <script>
 var BASE=${JSON.stringify(MAP_BASE)};
 function post(o){var s=JSON.stringify(o);if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(s)}else if(window.parent!==window){window.parent.postMessage(s,'*')}}
-var map,pin,markers=[],loaded=false;
+var map,pin,markers=[],loaded=false,archive=null,routeOn=false;
+var CACHE='abasare-map-v1';
+function openCache(){try{return window.caches?window.caches.open(CACHE).catch(function(){return null}):Promise.resolve(null)}catch(e){return Promise.resolve(null)}}
+// Every byte range of the map file is kept in the Cache API (label fonts and map libraries by the browser cache: the server marks them cacheable for a year):
+// the map keeps working with no signal for places already seen, and 'prefetch' saves a whole area (Kigali) in advance.
+function CachedSource(url){this.url=url}
+CachedSource.prototype.getKey=function(){return this.url};
+CachedSource.prototype.getBytes=function(offset,length,signal,etag){
+  var key=this.url+'?range='+offset+'-'+length,url=this.url;   // NOT '#': the Cache API ignores URL fragments, so every range would share one entry
+  return openCache().then(function(c){
+    return (c?c.match(key).catch(function(){return null}):Promise.resolve(null)).then(function(hit){
+      if(hit)return hit.arrayBuffer().then(function(b){return {data:b,etag:hit.headers.get('x-etag')||undefined}});
+      return fetch(url,{signal:signal,headers:{Range:'bytes='+offset+'-'+(offset+length-1)}}).catch(function(e){console.warn('tile fetch failed '+url+' '+offset+' '+e.message);throw e}).then(function(r){
+        if(r.status!==206&&r.status!==200)throw new Error('map '+r.status);
+        return r.arrayBuffer().then(function(b){
+          if(r.status===200&&b.byteLength>length)b=b.slice(offset,offset+length);
+          if(c)try{c.put(key,new Response(b.slice(0),{headers:{'x-etag':r.headers.get('etag')||''}}))}catch(e){}
+          return {data:b,etag:r.headers.get('etag')||undefined,cacheControl:r.headers.get('Cache-Control')||undefined};
+        });
+      });
+    });
+  });
+};
+function tileXY(lat,lng,z){var n=Math.pow(2,z),x=Math.floor((lng+180)/360*n),la=lat*Math.PI/180,y=Math.floor((1-Math.log(Math.tan(la)+1/Math.cos(la))/Math.PI)/2*n);return [Math.max(0,Math.min(n-1,x)),Math.max(0,Math.min(n-1,y))]}
+function prefetch(o){
+  if(!archive){post({t:'offline',state:'error',done:0,total:0});return}
+  var b=o.bbox,list=[],z;
+  for(z=o.minz;z<=o.maxz;z++){var a=tileXY(b[3],b[0],z),c=tileXY(b[1],b[2],z);for(var x=a[0];x<=c[0];x++)for(var y=a[1];y<=c[1];y++)list.push([z,x,y])}
+  var total=list.length+2,done=0,fails=0,i=0;
+  var step=function(){post({t:'offline',state:'running',done:done,total:total})};
+  var glyphs=[0,256].map(function(r){return BASE+'/fonts/'+encodeURIComponent('Noto Sans Regular')+'/'+r+'-'+(r+255)+'.pbf'});
+  var work=function(){
+    if(i>=list.length+glyphs.length){post({t:'offline',state:fails>list.length/5?'error':'done',done:done,total:total,failed:fails});return}
+    var k=i++,p;
+    if(k<list.length)p=archive.getZxy(list[k][0],list[k][1],list[k][2]);else p=fetch(glyphs[k-list.length]).then(function(r){return r.arrayBuffer()});   // label fonts: kept by the browser's own cache (the server marks them cacheable for a year)
+    p.then(function(){done++},function(){fails++}).then(function(){if(done%10===0)step();work()});
+  };
+  step();work();work();work();   // three downloads at a time
+}
 var NAME=['coalesce',['get','name:rw'],['get','name:latin'],['get','name']];
 var F='Noto Sans Regular';
 function lyr(id,type,src,paint,o){var l={id:id,type:type,source:'rw','source-layer':src,paint:paint||{}};for(var k in o||{})l[k]=o[k];return l}
@@ -53,14 +91,16 @@ function circle(lat,lng,r){var pts=[],d=r/111320,i;for(i=0;i<=32;i++){var a=i/32
 function el(cls,color){var e=document.createElement('div');e.className=cls;if(color)e.style.background=color;return e}
 function init(s){
   if(!window.maplibregl||!window.pmtiles){post({t:'status',ok:false});return}
-  try{maplibregl.addProtocol('pmtiles',new pmtiles.Protocol().tile)}catch(e){}
+  try{var proto=new pmtiles.Protocol();archive=new pmtiles.PMTiles(new CachedSource(BASE+'/rwanda.pmtiles'));proto.add(archive);maplibregl.addProtocol('pmtiles',proto.tile)}catch(e){console.warn('protocol setup failed: '+e.message)}
+  if(s.headless){post({t:'headless_ready'});return}      // offline-map saver: protocols and cache only, no map drawn
   var raster=false,errs=0;
   function start(st){
     if(map){map.remove();map=null}
     map=new maplibregl.Map({container:'m',style:st,center:[s.c.lng,s.c.lat],zoom:(s.z||14)-1,attributionControl:{compact:true},maxBounds:raster?undefined:[[27.8,-3.2],[31.2,-0.7]],dragRotate:false,pitchWithRotate:false});
     map.touchZoomRotate.disableRotation();
-    map.on('error',function(e){errs++;if(errs>3){if(!raster){raster=true;errs=0;start(rasterStyle())}else post({t:'status',ok:false})}});
+    map.on('error',function(e){errs++;console.warn('map error: '+(e&&e.error&&e.error.message));if(errs>3){if(!raster){raster=true;errs=0;start(rasterStyle())}else post({t:'status',ok:false})}});
     map.on('load',function(){loaded=true;post({t:'status',ok:true});
+      map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});map.addLayer({id:'route-c',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#fff','line-width':9}});map.addLayer({id:'route-l',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#1A73E8','line-width':5.5}});
       map.addSource('zones',{type:'geojson',data:{type:'FeatureCollection',features:[]}});map.addSource('heat',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'zf',type:'fill',source:'zones',paint:{'fill-color':'#0077B0','fill-opacity':.05}});map.addLayer({id:'zl',type:'line',source:'zones',paint:{'line-color':'#0077B0','line-width':2,'line-dasharray':[3,2]}});
       map.addLayer({id:'hf',type:'fill',source:'heat',paint:{'fill-color':['get','color'],'fill-opacity':['get','o']}});
@@ -77,11 +117,13 @@ function apply(s){
   map.getSource('heat').setData({type:'FeatureCollection',features:(s.h||[]).map(function(c){return{type:'Feature',properties:{color:c.color,o:c.o},geometry:{type:'Polygon',coordinates:circle(c.lat,c.lng,c.r||250)}}})});
   (s.m||[]).forEach(function(k){var e=el('d',k.color||'#1A5FB4');markers.push(new maplibregl.Marker({element:e}).setLngLat([k.lng,k.lat]).addTo(map));
     if(k.label){var t=el('l');t.textContent=k.label;markers.push(new maplibregl.Marker({element:t}).setLngLat([k.lng,k.lat]).addTo(map))}});
+  var rs=map.getSource('route');if(rs)rs.setData({type:'FeatureCollection',features:s.route&&s.route.length>1?[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:s.route.map(function(p){return[p[1],p[0]]})}}]:[]});
   if(pin){pin.remove();pin=null}
   if(s.p){pin=new maplibregl.Marker({element:el('pin'),draggable:true,anchor:'bottom'}).setLngLat([s.p.lng,s.p.lat]).addTo(map);pin.on('dragend',function(){var q=pin.getLngLat();post({t:'pin',lat:q.lat,lng:q.lng})})}
-  if(s.fit&&s.fit.length>1){var b=new maplibregl.LngLatBounds();s.fit.forEach(function(p){b.extend([p.lng,p.lat])});map.fitBounds(b,{padding:40,animate:false})}else if(s.c&&s.recenter){map.jumpTo({center:[s.c.lng,s.c.lat]})}
+  if(s.follow){map.easeTo({center:[s.follow.lng,s.follow.lat],zoom:Math.max(map.getZoom(),16),bearing:s.follow.bearing||0,duration:900})}
+  else if(s.fit&&s.fit.length>1){var b=new maplibregl.LngLatBounds();s.fit.forEach(function(p){b.extend([p.lng,p.lat])});map.fitBounds(b,{padding:40,animate:false})}else if(s.c&&s.recenter){map.jumpTo({center:[s.c.lng,s.c.lat]})}
 }
-function onMsg(e){try{var s=JSON.parse(e.data);if(s.init)init(s);else apply(s)}catch(_){}}
+function onMsg(e){try{var s=JSON.parse(e.data);if(s.cmd==='prefetch')prefetch(s);else if(s.init)init(s);else apply(s)}catch(_){}}
 window.addEventListener('message',onMsg);document.addEventListener('message',onMsg);
 post({t:'ready'});   // the parent answers with {init:true,...}
 </script></body></html>`;

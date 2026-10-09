@@ -9,11 +9,11 @@ import type { Booking, ChatMessage, HandoverRec, Receipt } from '../../lib/types
 import { AppModal } from '../../ui/AppModal';
 import { Banner, Btn, Card, EmptyState, Field, IconBadge, Money, Pill, RemoteImage, Screen, Text } from '../../ui/components';
 import { C, R, S, SP } from '../../ui/theme';
-import { R1Badges } from '../r1Badges';
-import { R1DriverPrefs } from '../r1Drivers';
+import { R1Badges } from '../trust/badges';
+import { R1DriverPrefs } from '../trust/favouriteDrivers';
 import { kv } from '../../lib/storage';
-import { ratedKey } from '../../lib/r1';
-import { PaidLines } from '../r3/receiptLines';
+import { ratedKey } from '../../lib/trustApi';
+import { PaidLines } from '../money/receiptLines';
 
 export const Stars = ({ v, set }: { v: number; set: (n: number) => void }) => {
   const { t } = useApp();
@@ -38,7 +38,7 @@ export function DriverCard({ b }: { b: Booking }) {
           {b.abasare ? <View style={{ marginTop: 4 }}><Pill text={b.abasare.mode === 'hourly' ? `${t('ab.trip.hourly')} · ${b.abasare.hours} ${t('ab.h')}` : t('ab.trip.home')} tone="warn" /></View> : <Text style={S.body} numberOfLines={1}>{[b.vehicle?.color, b.vehicle?.make, b.vehicle?.model].filter(Boolean).join(' ')}</Text>}
         </View>
       </View>
-      <R1Badges badges={(d as { badges?: import('../../lib/r1').Badge[] }).badges} />
+      <R1Badges badges={(d as { badges?: import('../../lib/trustApi').Badge[] }).badges} />
       {b.abasare ? <Text style={[S.muted, { marginTop: SP.sm }]}>{t('ab.trip.yourcar')}</Text> : null}
       {plate ? <View accessibilityLabel={`${t('trip.plate')} ${plate}`} accessible style={{ backgroundColor: C.warnBg, borderRadius: R.sm, paddingVertical: 8, paddingHorizontal: 14, alignSelf: 'flex-start', marginTop: SP.sm }}><Text style={{ fontSize: 24, fontWeight: '800', letterSpacing: 3 }}>{plate}</Text></View> : null}
       {b.abasare && d.abasare?.return_mode ? <Text style={[S.muted, { marginTop: 6 }]}>{t('ab.trip.returns')}</Text> : null}
@@ -139,24 +139,4 @@ export function Done({ b }: { b: Booking }) {
   );
 }
 
-/** Driver <-> passenger messages. Own modal with its own insets; sticks to the newest message; the input stays above the keyboard and the gesture bar. */
-export function ChatModal({ id, visible, onClose }: { id: string; visible: boolean; onClose: () => void }) {
-  const { t, client, me, say, errMsg } = useApp(); const [text, setText] = useState(''); const [sending, setSending] = useState(false); const scroll = useRef<ScrollView>(null);
-  const msgs = usePoll(() => client.get<{ messages: ChatMessage[] }>(`/bookings/${id}/messages`), 4000, [id], visible);
-  const list = msgs.data?.messages ?? [];
-  const send = async () => { const body = text.trim(); if (!body || sending) return; setSending(true); setText(''); try { await client.post(`/bookings/${id}/messages`, { body }, { retry: false }); msgs.reload(); } catch (e) { setText(body); say(errMsg(e)); } finally { setSending(false); } };
-  return (
-    <AppModal visible={visible} onClose={onClose}>
-      <Screen title={t('trip.chat')} onBack={onClose} scroll={false}
-        footer={<View style={[S.row, { alignItems: 'flex-start', gap: SP.sm }]}><View style={{ flex: 1 }}><Field value={text} onChangeText={setText} placeholder={t('trip.msg.ph')} maxLength={480} returnKeyType="send" onSubmitEditing={() => void send()} blurOnSubmit={false} /></View><Btn testID="cta" title={t('common.send')} onPress={() => void send()} disabled={!text.trim()} loading={sending} /></View>}>
-        <ScrollView ref={scroll} contentContainerStyle={{ padding: SP.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled" onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
-          {!list.length ? <EmptyState glyph="💬" title={t('chat.empty.title')} body={t('chat.empty')} /> : null}
-          {list.map((m) => { const mine = m.sender_id === me?.id; return (
-            <View key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', backgroundColor: mine ? C.primary : C.card, borderRadius: R.md, padding: SP.md - 2, marginBottom: 6, maxWidth: '82%', borderWidth: mine ? 0 : 1, borderColor: C.line }}>
-              <Text style={{ color: mine ? C.onPrimary : C.ink }}>{m.body}</Text>{m.created_at ? <Text style={{ color: mine ? C.onPrimary : C.muted, fontSize: 11, marginTop: 2, textAlign: 'right' }}>{fmtTime(m.created_at)}</Text> : null}
-            </View>); })}
-        </ScrollView>
-      </Screen>
-    </AppModal>
-  );
-}
+export { ChatModal } from '../chat';

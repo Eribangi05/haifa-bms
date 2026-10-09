@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useFlag, useFlagMessage } from '../../lib/flags';
 import { Pressable, View } from 'react-native';
 import { useApp, usePoll } from '../../lib/app';
 import { useLocate } from '../../lib/hooks';
@@ -11,11 +12,12 @@ import { MapBox } from '../../ui/MapView';
 import { C, S, SP } from '../../ui/theme';
 import { HowItWorks, RecentTrips, SavedShortcuts, ServiceCards, StatusChip } from './homeParts';
 import { usePlaces } from './usePlaces';
-import { CreditChip } from '../r3/credit';
+import { CreditChip } from '../money/credit';
 
 let resumedOnce = false;   // auto-open the active trip only once per app launch (resume after the app was killed)
 
 export function Home({ params, intent, onActive }: { params?: { venue?: Venue; svc?: Svc }; intent?: { dest?: Place | Pt; svc?: Svc; n: number } | null; onActive?: (b: Booking | null) => void }) {
+  const requestsOn = useFlag('booking.requests'); const requestsMsg = useFlagMessage('booking.requests');
   const { t, lang, client, nav, online, mode, say, cfg } = useApp();
   const loc = useLocate(); const places = usePlaces();
   const [pickup, setPickup] = useState<Pt | null>(null); const [dest, setDest] = useState<Pt | null>(null);
@@ -102,6 +104,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
       onRefresh={async () => { active.reload(); await Promise.all([client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}), new Promise((r) => setTimeout(r, 500))]); }}
       footer={<Btn testID="cta" big title={t('home.seeprices')} onPress={go} disabled={!ready} />}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
+      {!requestsOn ? <Banner kind="bad" text={`${t('flag.requests.off')} ${requestsMsg ?? ''}`.trim()} /> : null}
       <CreditChip />
       {activeB ? (
         <Card style={{ borderColor: C.primary, borderWidth: 2 }}>

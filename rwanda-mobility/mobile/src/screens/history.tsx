@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { OfflineNote } from '../ui/OfflineNote';
 import { Pressable, View } from 'react-native';
 import { useApp, usePoll } from '../lib/app';
 import { label } from '../lib/i18n';
@@ -11,7 +12,7 @@ import type { Booking } from '../lib/types';
 import { Banner, Btn, Card, Chip, EmptyState, IconBadge, Money, Pill, Screen, SkeletonCard, Text } from '../ui/components';
 import { StatRow, StatTile } from '../ui/dash';
 import { C, S, SP } from '../ui/theme';
-import { HistoryExtras } from './r3/receiptLines';
+import { HistoryExtras } from './money/receiptLines';
 import { KindPill } from './driver/kindUi';
 
 /** Trips grouped by day (Today / Yesterday / date), each with a status icon and chip. `driver` rows show the fare the driver collected. */
@@ -52,6 +53,7 @@ export function TripsPanel({ driver, onBook }: { driver?: boolean; onBook?: () =
   const shown = useMemo(() => filterTrips(all ?? [], f).filter((b) => !driver || jt === 'all' || jobKind(b) === jt), [all, f, jt, driver]);
   const hasAb = useMemo(() => (all ?? []).some((b) => jobKind(b) === 'abasare'), [all]);
   return <>
+    <OfflineNote at={feed.cachedAt} />
     {feed.error && !all ? <Banner kind="bad" text={errMsg(feed.error)} action={<Btn kind="ghost" title={t('common.retry')} onPress={feed.reload} />} /> : null}
     {!all && !feed.error ? <><SkeletonCard /><SkeletonCard /><SkeletonCard /></> : null}
     {all && all.length > 0 ? <>
@@ -79,9 +81,10 @@ export function TripsTab({ onBook }: { onBook: () => void }) {
 /** Stand-alone "My trips" (opened from a notification or another screen): same list with a back button. */
 export function History() {
   const { t, client, nav, goTab } = useApp();
-  const list = usePoll(() => client.get<{ bookings: Booking[] }>('/bookings?role=passenger&limit=50'), 15000);
+  const list = usePoll(() => client.get<{ bookings: Booking[] }>('/bookings?role=passenger&limit=50'), 15000, [], true, 'history:passenger');
   return (
     <Screen title={t('hist.title')} onBack={() => nav.pop()} onRefresh={async () => { list.reload(); await new Promise((r) => setTimeout(r, 600)); }}>
+      <OfflineNote at={list.cachedAt} />
       {!list.data && !list.error ? <SkeletonCard /> : null}
       {list.data && list.data.bookings.length === 0 ? <EmptyState glyph="🧾" title={t('hist.empty.title')} body={t('hist.empty')} action={<Btn title={t('home.where')} onPress={() => goTab('book')} />} /> : null}
       {list.data ? <TripRows bookings={list.data.bookings} /> : null}

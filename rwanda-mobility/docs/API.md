@@ -45,6 +45,7 @@
 | Method | Path |
 |---|---|
 | GET | `/config` |
+| GET | `/config/flags` |
 | GET | `/coverage` |
 | GET | `/coverage/check` |
 | POST | `/fares/estimate` |
@@ -76,6 +77,7 @@
 | POST | `/bookings/:id/handover/photos` |
 | GET | `/bookings/:id/messages` |
 | POST | `/bookings/:id/messages` |
+| GET | `/bookings/:id/navigation` |
 | POST | `/bookings/:id/no-show` |
 | POST | `/bookings/:id/payment-method` |
 | POST | `/bookings/:id/ratings` |
@@ -86,6 +88,7 @@
 | PATCH | `/bookings/:id/safety-settings` |
 | DELETE | `/bookings/:id/share` |
 | POST | `/bookings/:id/share` |
+| POST | `/bookings/:id/share-phone` |
 | DELETE | `/bookings/:id/share/:shareId` |
 | GET | `/bookings/:id/shares` |
 | POST | `/bookings/:id/start` |
@@ -109,12 +112,16 @@
 | GET | `/drivers/me/heatmap` |
 | POST | `/drivers/me/location` |
 | GET | `/drivers/me/offers` |
+| GET | `/drivers/me/onboarding` |
 | PATCH | `/drivers/me/payout-account` |
 | GET | `/drivers/me/payouts` |
 | POST | `/drivers/me/payouts` |
 | GET | `/drivers/me/quests` |
 | GET | `/drivers/me/quests/history` |
 | GET | `/drivers/me/status` |
+| GET | `/drivers/me/vehicle-application` |
+| POST | `/drivers/me/vehicle-application` |
+| POST | `/drivers/me/vehicle-application/submit` |
 | GET | `/drivers/me/wallet` |
 | GET | `/files/*` |
 
@@ -182,6 +189,7 @@
 | POST | `/admin/request-codes` |
 | DELETE | `/admin/request-codes/:id` |
 | PATCH | `/admin/request-codes/:id` |
+| GET | `/admin/request-codes/:id/qr-branded.svg` |
 | GET | `/admin/request-codes/:id/qr.png` |
 | GET | `/admin/request-codes/:id/qr.svg` |
 | GET | `/request-codes/:code` |
@@ -216,6 +224,9 @@
 | Method | Path |
 |---|---|
 | GET | `/admin/abasare/applications` |
+| GET | `/admin/alerts` |
+| POST | `/admin/alerts/:id/ack` |
+| PATCH | `/admin/ambassadors/:id` |
 | GET | `/admin/analytics` |
 | GET | `/admin/audit` |
 | GET | `/admin/bookings` |
@@ -251,6 +262,7 @@
 | POST | `/admin/commissions` |
 | POST | `/admin/commissions/:id/approve` |
 | GET | `/admin/dashboard` |
+| GET | `/admin/dashboard/ops` |
 | GET | `/admin/deposits` |
 | GET | `/admin/document-requirements` |
 | POST | `/admin/document-requirements` |
@@ -309,7 +321,10 @@
 | POST | `/admin/quests` |
 | PATCH | `/admin/quests/:id` |
 | GET | `/admin/quests/:id/awards` |
+| GET | `/admin/referrals` |
+| GET | `/admin/review-queue` |
 | GET | `/admin/ride-schedules` |
+| GET | `/admin/risk-events` |
 | GET | `/admin/roles` |
 | POST | `/admin/roles` |
 | DELETE | `/admin/roles/:name` |
@@ -360,6 +375,7 @@
 | POST | `/admin/users/:id/status` |
 | GET | `/admin/ussd/sessions` |
 | GET | `/admin/ussd/stats` |
+| POST | `/admin/vehicles/:id/review` |
 | GET | `/admin/wallet/:id/statement` |
 | GET | `/admin/wallet/adjustments` |
 | POST | `/admin/wallet/adjustments` |

@@ -39,7 +39,16 @@ await step('phone screen', async () => { await page.getByText('Komeza', { exact:
 let code;
 await step('otp screen shows test code and verifies', async () => { const t = await page.getByText(/Ikizamini: kode: \d{6}/).textContent(); code = t.match(/\d{6}/)[0]; await shot('2-otp'); await page.getByPlaceholder('••••••').fill(code); await page.getByText('Emeza', { exact: true }).click(); });
 await step('location consent then home', async () => { await page.getByTestId('tabbar').waitFor({ timeout: 20000 }); await shot('3a-home-overview'); await page.getByTestId('tab-book').click(); await page.getByText('Uruhushya rwo kumenya aho uri').waitFor(); await shot('3-consent'); await page.getByText('Emera', { exact: true }).click(); await page.getByText('Ujya he?').waitFor(); await page.waitForTimeout(1500); await shot('4-home'); });
-await step('Rwanda map draws vector tiles (MapLibre + self-hosted PMTiles)', async () => { const f = page.frameLocator('iframe').first(); await f.locator('canvas.maplibregl-canvas').waitFor({ timeout: 25000 }); const fr = page.frames().find((x) => x.url().startsWith('blob:')); await page.waitForFunction(() => true); for (let i = 0; i < 40 && !(await fr.evaluate(() => map && map.loaded() && map.isSourceLoaded('rw'))); i++) await page.waitForTimeout(500); if (!(await fr.evaluate(() => map.isSourceLoaded('rw')))) throw new Error('vector tiles did not load'); await shot('4b-map'); });
+await step('Rwanda map draws vector tiles (MapLibre + self-hosted PMTiles)', async () => {
+  await page.frameLocator('iframe').first().locator('canvas.maplibregl-canvas').waitFor({ timeout: 25000 });
+  // the page may hold more than one map frame (tabs stay mounted) and a frame can be replaced while the page settles: ask each live frame, retry for 20 s
+  let ok = false;
+  for (let i = 0; i < 40 && !ok; i++) {
+    for (const fr of page.frames().filter((x) => x.url().startsWith('blob:') && !x.isDetached())) { try { ok = await fr.evaluate(() => typeof map !== 'undefined' && !!map && map.loaded() && map.isSourceLoaded('rw')); } catch { /* frame replaced: try the next one */ } if (ok) break; }
+    if (!ok) await page.waitForTimeout(500);
+  }
+  if (!ok) throw new Error('vector tiles did not load'); await shot('4b-map');
+});
 await step('pick destination from popular landmarks', async () => { await page.getByText('Isoko rya Kimironko', { exact: true }).last().click(); await page.waitForTimeout(400); await shot('5-dest'); });
 await step('prices screen: moto available, honest unavailability for car, breakdown', async () => { await page.getByText('Reba ibiciro', { exact: true }).click(); await page.getByText('Hitamo urugendo').waitFor(); await page.getByText('Uko igiciro kigizwe').waitFor({ timeout: 20000 }); await page.getByText('Nta mushoferi uboneka').first().waitFor(); await shot('6-options'); });
 await step('confirm request -> searching', async () => { await page.getByText('Emeza ubusabe', { exact: true }).click(); await page.getByText('Turimo gushaka umushoferi…').waitFor({ timeout: 20000 }); await shot('7-searching'); });

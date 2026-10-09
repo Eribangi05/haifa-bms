@@ -16,7 +16,7 @@ const bad = (m: string) => { failed++; problems.push(m); console.log('FAIL', m);
 
 // What each nav tab needs (permission names, mirrors the API guards). A role must see a tab iff it holds ANY of these.
 const TAB_NEEDS: Record<string, string[]> = {
-  Overview: ['analytics.view'], 'Live map': ['bookings.view_all'], Bookings: ['bookings.view_all'], Drivers: ['drivers.view'], Abasare: ['drivers.view'], Passengers: ['users.view'],
+  Overview: ['analytics.view'], 'Review queue': ['drivers.view'], 'Operations dashboard': ['analytics.view'], Alerts: ['alerts.view'], Referrals: ['growth.manage'], 'Live map': ['bookings.view_all'], Bookings: ['bookings.view_all'], Drivers: ['drivers.view'], Abasare: ['drivers.view'], Passengers: ['users.view'],
   Support: ['support.handle'], Safety: ['safety.respond'], 'Trust and safety': ['safety.respond', 'drivers.view'], Pricing: ['pricing.manage', 'pricing.approve'], Services: ['pricing.manage'], Promotions: ['promotions.manage'],
   'Request codes': ['codes.view'], Finance: ['finance.view'], 'Business & fleets': ['corporate.manage'], Privacy: ['privacy.handle'], Settings: ['settings.manage'], 'Audit log': ['audit.view'], Staff: ['users.manage', 'roles.manage'], 'Places and zones': ['places.manage', 'zones.manage'], 'Content and rules': ['faq.manage', 'requirements.manage', 'support.configure', 'settings.manage'], 'Feature flags': ['settings.manage'], 'USSD channel': ['ussd.view'], 'Demand map': ['analytics.view'], Claims: ['claims.view'], 'Credit & loyalty': ['wallet.view'], 'Fixed-price routes': ['pricing.manage', 'pricing.approve'], 'Driver quests': ['growth.manage'], Campaigns: ['growth.manage'], 'Venue partners': ['partners.manage'], 'Your venue': ['partner.portal'],
 };

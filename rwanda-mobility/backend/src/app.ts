@@ -152,7 +152,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
   if (existsSync(mapDir)) {
     await app.register(fstatic, {
       root: mapDir, prefix: '/map/', decorateReply: false, acceptRanges: true,
-      cacheControl: false, setHeaders: (res: any) => { res.header('cache-control', 'public, max-age=86400'); },
+      cacheControl: false, setHeaders: (res: any, path: string) => { res.header('cache-control', /[\\/](fonts|lib)[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'public, max-age=86400'); },   // fonts and map libraries never change under the same name: keep them a year (works with no signal)
     });
   }
   return app;

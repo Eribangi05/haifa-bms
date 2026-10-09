@@ -9,6 +9,8 @@ import { unregisterPush } from './push';
 import { Lang, TKey, isLang, translate } from './i18n';
 import { errorText } from './errors';
 import { appearance, useAppearance } from './appearance';
+import { cacheClear, cacheLoad, cacheSave } from './cache';
+import { setFlags, restoreFlags, resetFlags } from './flags';
 
 export type Route = { name: string; params?: any };
 export type Me = { id: string; phone: string; display_name?: string | null; email?: string | null; preferred_language: string; roles: string[]; referral_code?: string; notif_prefs?: Record<string, boolean> };
@@ -105,11 +107,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await stopBgLocation(); await unregisterPush(client);
     try { await client.post('/auth/logout', undefined, { timeoutMs: 5000 }); } catch { /* ignore */ }
-    client.clearCache(); await tokenStore.set(null); await kv.del('rm_me'); await outbox.clear();   // never let a queued request of this user run as the next user
+    client.clearCache(); await tokenStore.set(null); await kv.del('rm_me'); await cacheClear(); resetFlags(); await outbox.clear();   // never let a queued request of this user run as the next user
     setMe(null); setModeState('passenger'); setTabState('home'); setStack([{ name: 'welcome' }]);
   }, [client, outbox]);
   // Refresh token rejected (revoked / expired session): drop to the welcome screen and say why.
-  authLost.current = () => { void stopBgLocation(); void kv.del('rm_me'); setMe(null); setModeState('passenger'); setStack([{ name: 'welcome' }]); say(translate(langRef.current, 'err.session')); };
+  authLost.current = () => { void stopBgLocation(); void kv.del('rm_me'); void cacheClear(); setMe(null); setModeState('passenger'); setStack([{ name: 'welcome' }]); say(translate(langRef.current, 'err.session')); };
 
   // A profile fetch hiccup right after a successful sign-in must not strand the user on the OTP screen (the tokens are already stored).
   const signedIn = useCallback(async () => { try { await refreshMe(); } catch { /* retried when the app is online again */ } setStack([{ name: 'home' }]); }, [refreshMe]);
@@ -148,23 +150,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { unsub(); sub.remove(); off(); clearInterval(iv); };
   }, [outbox, refreshMe]);
 
+  // remote feature switches: restore the last answer at start, refresh once a minute while signed in
+  useEffect(() => { void restoreFlags(); }, []);
+  useEffect(() => {
+    if (!me) return; let stop = false;
+    const pull = () => { void client.get<any>('/config/flags', { maxRetries: 0, timeoutMs: 6000 }).then((r) => { if (!stop) setFlags(r); }).catch(() => { /* keep the last answer */ }); };
+    pull(); const id = setInterval(pull, 60000); return () => { stop = true; clearInterval(id); };
+  }, [me?.id, client]);
   const value: Ctx = useMemo(() => ({ ready, lang, setLang, t, client, outbox, me, refreshMe: () => refreshMe(), signedIn, signOut, online, cfg, toast, say, errMsg, nav, mode, setMode, pendingOutbox, registerBack, tab, setTab, goTab }),
     [ready, lang, setLang, t, client, outbox, me, refreshMe, signedIn, signOut, online, cfg, toast, say, errMsg, nav, mode, setMode, pendingOutbox, registerBack, tab, setTab, goTab]);
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
 
 /** Poll an async function; pauses while the screen is unmounted or the app is in the background, backs off after failures, never overlaps calls. */
-export function usePoll<T>(fn: () => Promise<T>, ms: number, deps: unknown[] = [], enabled = true) {
+export function usePoll<T>(fn: () => Promise<T>, ms: number, deps: unknown[] = [], enabled = true, cacheKey?: string) {
   const [data, setData] = useState<T | null>(null); const [error, setError] = useState<ApiError | null>(null); const [loaded, setLoaded] = useState(false);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);          // set while the data shown is the saved copy (no fresh answer yet)
   const fnRef = useRef(fn); fnRef.current = fn;
+  const uid = useContext(AppCtx)?.me?.id ?? null;
   if (useAppearance().lowData) ms = ms * 2.5;   // low-data mode: poll less often
   const [tick, setTick] = useState(0);
   const [fg, setFg] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
   useEffect(() => { const s = AppState.addEventListener('change', (st) => setFg(st === 'active')); return () => s.remove(); }, []);
+  // offline cache: show the last saved copy at once; a fresh answer replaces it
+  useEffect(() => {
+    if (!cacheKey || !uid) return; let live = true;
+    void cacheLoad<T>(uid, cacheKey).then((v) => { if (live && v) { setData((cur) => cur ?? v.d); setCachedAt((cur) => cur ?? v.at); setLoaded(true); } });
+    return () => { live = false; };
+  }, [cacheKey, uid]);
   useEffect(() => {
     if (!enabled || !fg) return; let stop = false; let timer: ReturnType<typeof setTimeout>; let fails = 0;
     const run = async () => {
-      try { const d = await fnRef.current(); if (!stop) { setData(d); setError(null); setLoaded(true); fails = 0; } }
+      try { const d = await fnRef.current(); if (!stop) { setData(d); setError(null); setLoaded(true); setCachedAt(null); fails = 0; if (cacheKey && uid) void cacheSave(uid, cacheKey, d); } }
       catch (e) { fails++; if (!stop) { setError(e as ApiError); setLoaded(true); } }
       if (!stop) timer = setTimeout(run, Math.min(ms * 2 ** Math.min(fails, 3), 15000));
     };
@@ -172,7 +189,7 @@ export function usePoll<T>(fn: () => Promise<T>, ms: number, deps: unknown[] = [
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ms, enabled, fg, tick, ...deps]);
   const reload = useCallback(() => setTick((x) => x + 1), []);
-  return { data, error, loaded, reload, setData };
+  return { data, error, loaded, reload, setData, cachedAt };
 }
 
 /** Run an async action with a busy flag. Ignores a second call while one is running (double-tap / double-submit safe) and shows a localised error toast. */

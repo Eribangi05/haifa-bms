@@ -3,7 +3,7 @@
 One look across the app, the admin console, the store listing and printed material. Everything here is implemented in code; the files named below are the source of truth.
 
 ## Name and promise
-**Abasare** (Kinyarwanda: "those who drive / those who serve"). Tagline from the logo: **Ride · Work · Explore**, always translated, never mixed with another language: *Genda · Kora · Sura* (Kinyarwanda), *Roulez · Travaillez · Explorez* (French). Strings: `brand.tagline` in `mobile/src/lib/locales/r6.*.ts`. Voice: warm, clear, short sentences; safety and fair pay are stated plainly, never exaggerated.
+**Abasare** (Kinyarwanda: "those who drive / those who serve"). Tagline from the logo: **Ride · Work · Explore**, always translated, never mixed with another language: *Genda · Kora · Sura* (Kinyarwanda), *Roulez · Travaillez · Explorez* (French). Strings: `brand.tagline` in `mobile/src/lib/locales/features/brand.*.ts`. Voice: warm, clear, short sentences; safety and fair pay are stated plainly, never exaggerated.
 
 ## Colours (Rwanda flag)
 | Role | Light | Dark | Use |

@@ -4,12 +4,13 @@ import { APP_DOWNLOAD_URL } from '../config';
 import { useApp } from '../lib/app';
 import { callNumber, copyText, openMail, openSms, openWhatsApp, shareSheet } from '../lib/contact';
 import { inviteText } from '../lib/shareLinks';
-import { Banner, Btn, Card, Screen, SectionTitle, SkeletonCard, Text } from '../ui/components';
+import { Banner, Btn, Card, Pill, ProgressBar, Screen, SectionTitle, SkeletonCard, Text } from '../ui/components';
 import { Hero, Illustration, StatRow, StatTile } from '../ui/dash';
 import { ICONS, type IconName } from '../ui/icons';
 import { C, FS, R, S, SHADOW, SP } from '../ui/theme';
 
-type Ref = { code: string; rewarded: number; total: number };
+type Person = { status: 'pending' | 'rewarded' | 'rejected'; created_at: string; reward_referrer: number | null; display_name: string | null; reject_reason?: string | null };
+type Ref = { code: string; rewarded: number; total: number; pending?: number; rejected?: number; earned?: number; tier?: 'bronze' | 'silver' | 'gold'; bonus_pct?: number; next?: { tier: 'silver' | 'gold'; at: number } | null; enabled?: boolean; people?: Person[] };
 
 /** Invite friends: the code, one-tap sharing through WhatsApp, message, a phone call, e-mail, copy or any other app, how it works, and how many friends joined. */
 export function Invite() {
@@ -59,6 +60,24 @@ export function Invite() {
           <StatTile testID="inv-total" glyph="👥" value={String(ref.total)} label={t('inv.stat.joined')} />
           <StatTile testID="inv-rewarded" glyph="🎁" value={String(ref.rewarded)} label={t('inv.stat.rewarded')} tint={C.goldBg} />
         </StatRow>
+
+        {ref.tier ? <>
+          <SectionTitle text={t('rf.title')} />
+          <Card>
+            <View style={S.between}><Text style={S.h2}>{t(`rf.tier.${ref.tier}` as 'rf.tier.gold')}</Text>{ref.bonus_pct ? <Pill text={t('rf.bonus', { pct: ref.bonus_pct })} tone="ok" /> : null}</View>
+            {ref.next ? <ProgressBar value={ref.rewarded / ref.next.at} label={t('rf.progress', { n: ref.rewarded, goal: ref.next.at, tier: t(`rf.tier.${ref.next.tier}` as 'rf.tier.gold') })} /> : <Text style={S.muted}>{t('rf.top')}</Text>}
+            {ref.earned ? <Text style={[S.body, { marginTop: SP.sm, fontWeight: '700' }]}>{t('rf.earned', { amount: ref.earned })}</Text> : null}
+            <Text style={[S.muted, { marginTop: SP.sm }]}>{t('rf.rule')}</Text>
+            {ref.enabled === false ? <Banner text={t('rf.off')} /> : null}
+          </Card>
+          <SectionTitle text={t('rf.people')} />
+          {ref.people?.length ? <Card style={{ paddingVertical: SP.xs }}>{ref.people.map((p, i, a) => (
+            <View key={i} style={[S.between, { minHeight: 52, gap: SP.sm, borderBottomWidth: i === a.length - 1 ? 0 : 1, borderBottomColor: C.line }]}>
+              <View style={{ flex: 1 }}><Text style={S.bold} numberOfLines={1}>{p.display_name ?? '—'}</Text>
+                {p.status === 'rejected' && p.reject_reason ? <Text style={S.muted}>{t(`rf.reject.${p.reject_reason}` as 'rf.reject.same_device')}</Text> : null}</View>
+              <Pill tone={p.status === 'rewarded' ? 'ok' : p.status === 'rejected' ? 'bad' : 'warn'} text={t(`rf.status.${p.status}` as 'rf.status.pending')} />
+            </View>))}</Card> : <Card><Text style={[S.muted, { textAlign: 'center' }]}>{t('rf.none')}</Text></Card>}
+        </> : null}
 
         <SectionTitle text={t('inv.how')} />
         <Card>

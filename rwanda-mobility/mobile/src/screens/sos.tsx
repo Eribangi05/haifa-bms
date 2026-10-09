@@ -3,6 +3,8 @@ import { Linking, Pressable, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useApp, useAsync } from '../lib/app';
 import { uuid } from '../lib/net';
+import { callNumber, openWhatsApp } from '../lib/contact';
+import { useSupport } from '../lib/flags';
 import { AppModal } from '../ui/AppModal';
 import { Banner, Btn, Screen, Text } from '../ui/components';
 import { C, R, S, SP } from '../ui/theme';
@@ -11,7 +13,7 @@ const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> => new Promise<T
 
 /** Safety actions look different from normal actions: red, always labelled, one tap to open, explicit send. Never claims an agency was contacted. */
 export function SosButton({ bookingId }: { bookingId?: string }) {
-  const { t, client, cfg, say } = useApp(); const [open, setOpen] = useState(false); const [res, setRes] = useState<{ incident: string } | null>(null); const [noLoc, setNoLoc] = useState(false);
+  const { t, client, cfg, say } = useApp(); const [open, setOpen] = useState(false); const [res, setRes] = useState<{ incident: string; share_text?: string } | null>(null); const sup = useSupport(); const [noLoc, setNoLoc] = useState(false);
   const { busy, run } = useAsync(); const key = useRef<string | null>(null);   // one key per opening: a double tap or retry never records two alerts
   const close = () => { setOpen(false); setRes(null); key.current = null; };
   const send = () => run(async () => {
@@ -37,6 +39,10 @@ export function SosButton({ bookingId }: { bookingId?: string }) {
             <Btn kind="danger" big title={t('sos.callamb')} onPress={() => call(cfg?.emergency_numbers.ambulance ?? '912')} />
           </View>
           <View style={{ height: SP.lg }} />
+          <View testID="sos-support" style={{ gap: 10, marginBottom: SP.md }}>
+            <Btn kind="ghost" title={`${t('sos.support.call')} · ${sup.display}`} onPress={() => void callNumber(sup.phone)} />
+            {res ? <><Banner kind="ok" text={t('sos.support.title')} /><Btn kind="ghost" title={t('sos.support.wa')} onPress={() => void openWhatsApp(res.share_text ?? `SOS ${res.incident}`, sup.wa)} /></> : null}
+          </View>
           {res ? <><Banner kind="ok" text={`${t('sos.sent')} (${res.incident}). ${t('sos.notconfirmed')}`} />{noLoc ? <Banner text={t('sos.noloc')} /> : null}</> : <Btn kind="ghost" title={t('sos.send')} onPress={send} loading={busy} />}
         </Screen>
       </AppModal>

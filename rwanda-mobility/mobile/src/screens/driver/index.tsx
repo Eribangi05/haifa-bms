@@ -8,7 +8,7 @@ import { Working } from './working';
 /** Driver mode root: loads the driver's status, then shows the application (onboarding) or the working screen. */
 export function DriverHome() {
   const { t, client, setMode, errMsg } = useApp();
-  const st = usePoll(() => client.get<DriverStatus>('/drivers/me/status'), 10000);
+  const st = usePoll(() => client.get<DriverStatus>('/drivers/me/status'), 10000, [], true, 'driver:status');
   const d = st.data;
   if (!d) return (
     <Screen title={t('drv.mode')} onBack={() => setMode('passenger')}>

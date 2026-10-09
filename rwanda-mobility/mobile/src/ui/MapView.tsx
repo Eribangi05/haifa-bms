@@ -6,20 +6,22 @@ import { MAP_HTML } from './mapHtml';
 
 import { useApp } from '../lib/app';
 import { useAppearance } from '../lib/appearance';
-import { LiteMap } from './r1LiteMap';
+import { LiteMap } from './liteMap';
 export type HeatCircle = { lat: number; lng: number; r: number; color: string; o: number };
 export type Marker = { lat: number; lng: number; label?: string; color?: string };
 type Props = {
   center: { lat: number; lng: number }; zoom?: number; markers?: Marker[]; pin?: { lat: number; lng: number } | null;
   onPin?: (lat: number, lng: number) => void; onTap?: (lat: number, lng: number) => void; zones?: [number, number][][]; height?: number | string;
   onStatus?: (ok: boolean) => void; heat?: HeatCircle[];
+  /** Driving route to draw (lat,lng points) and, for turn-by-turn, a camera that follows the driver (with heading). */
+  route?: [number, number][]; follow?: { lat: number; lng: number; bearing?: number } | null;
 };
 
 // Leaflet + OpenStreetMap tiles inside a WebView: no API key needed. Tile usage policy: fine for pilots; use a commercial/self-hosted
 // tile server at scale (see docs/MAP_PROVIDER_EVALUATION.md). If tiles/Leaflet can't load (offline) the parent shows landmark fallbacks.
 
 
-function MapBoxFull({ center, zoom, markers, pin, onPin, onTap, zones, height = 280, onStatus, heat }: Props) {
+function MapBoxFull({ center, zoom, markers, pin, onPin, onTap, zones, height = 280, onStatus, heat, route, follow }: Props) {
   const { t } = useApp();
   const ref = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
@@ -29,10 +31,10 @@ function MapBoxFull({ center, zoom, markers, pin, onPin, onTap, zones, height = 
     const key = `${center.lat.toFixed(4)},${center.lng.toFixed(4)}`;
     const recenter = key !== lastCenter.current; lastCenter.current = key;
     const pts = [...(markers ?? []), ...(pin ? [pin] : [])];
-    return { c: center, z: zoom, h: heat ?? [], m: markers ?? [], p: pin ?? null, zones, recenter, fit: pts.length > 1 ? pts : undefined };
+    return { c: center, z: zoom, h: heat ?? [], m: markers ?? [], p: pin ?? null, zones, recenter, route: route ?? [], follow: follow ?? null, fit: !follow && pts.length > 1 ? pts : undefined };
   };
   useEffect(() => { const id = setTimeout(() => { if (!ready) { setOk(false); onStatus?.(false); } }, 8000); return () => clearTimeout(id); /* eslint-disable-next-line */ }, [ready]);
-  useEffect(() => { if (ready) ref.current?.postMessage(JSON.stringify(state())); /* eslint-disable-next-line */ }, [ready, center.lat, center.lng, JSON.stringify(markers), JSON.stringify(heat), pin?.lat, pin?.lng]);
+  useEffect(() => { if (ready) ref.current?.postMessage(JSON.stringify(state())); /* eslint-disable-next-line */ }, [ready, center.lat, center.lng, JSON.stringify(markers), JSON.stringify(heat), pin?.lat, pin?.lng, route?.length, route?.[0]?.[0], follow?.lat, follow?.lng, follow?.bearing]);
   const onMsg = (e: WebViewMessageEvent) => {
     try {
       const m = JSON.parse(e.nativeEvent.data);

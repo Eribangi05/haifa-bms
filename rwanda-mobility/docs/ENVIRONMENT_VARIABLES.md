@@ -26,7 +26,7 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `MOMO_CURRENCY` | | `RWF` | MTN sandbox accepts only `EUR`; set `EUR` while testing there. |
 | `MOMO_CALLBACK_URL` | sandbox/live | | Public HTTPS URL of `/api/v1/webhooks/payments/mtn_momo`; sent as `X-Callback-Url`. |
 | `MOMO_CALLBACK_TOKEN` | prod | dev value | Shared secret appended to the callback URL as `?token=`. The handler *also* re-queries MTN, so a leaked token cannot fake a payment. |
-| `MAP_PROVIDER` | no | `haversine` | `haversine` (estimate only) or `osrm` (uses `OSRM_URL` + `NOMINATIM_URL`; public demo servers are for evaluation only). |
+| `MAP_PROVIDER` | no | `haversine` | `haversine` (straight line x 1.5), `roads` (the built-in road router over `backend/map/roads.bin.gz`: real road distance and time, turn-by-turn steps, no external service) or `osrm` (uses `OSRM_URL` + `NOMINATIM_URL`; public demo servers are for evaluation only). |
 | `OSRM_URL`, `NOMINATIM_URL` | if osrm | public demo servers | Self-host or use a commercial provider for production. |
 | `SUPPORT_PHONE` | no | `+250786880880` | Support number the apps show and dial for SOS and help. |
 | `SUPPORT_NAME` | no | `Jean Paul INGABIRE` | Name shown with the support number. |
@@ -54,6 +54,7 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `PLACES_RATE_MAX` | no | `60` | Per-user per-minute cap on `GET /places/search`. |
 | `PROMO_RATE_MAX` | no | `30` | Per-user per-minute cap on `POST /promotions/validate`. |
 | `ENROLL_RATE_MAX` | no | `10` | Per-user per-minute cap on `POST /drivers/enroll`. |
+| `NAV_RATE_MAX` | no | `40` | Per-user per-minute cap on turn-by-turn route requests (`GET /bookings/:id/navigation`). |
 | `CHAT_RATE_MAX` | no | `30` | Per-user per-minute cap on in-trip chat messages. |
 | `SHARE_RATE_MAX` | no | `20` | Per-user per-minute cap on creating trip-share links. |
 | `SOS_RATE_MAX` | no | `6` | Per-user per-minute cap on `POST /safety/sos`. |

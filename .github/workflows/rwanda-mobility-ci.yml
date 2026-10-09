@@ -173,7 +173,7 @@ jobs:
         run: |
           export CHROMIUM_PATH="$(node -e "console.log(require('playwright-core').chromium.executablePath())")"
           mkdir -p /tmp/shots
-          for t in app driver brand; do echo "== $t"; node e2e/$t-e2e.mjs /tmp/shots; done
+          for t in app driver brand round5; do echo "== $t"; node e2e/$t-e2e.mjs /tmp/shots; done
       - if: always()
         uses: actions/upload-artifact@v4
         with: { name: e2e-screenshots, path: /tmp/shots, if-no-files-found: ignore }

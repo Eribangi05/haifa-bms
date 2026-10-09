@@ -7,11 +7,11 @@ import { fmtDateTime, fmtMin } from '../../lib/format';
 import type { Estimate, FareOption, Pt } from '../../lib/types';
 import { Banner, Btn, Card, Chip, Field, IconBadge, Money, Pill, Screen, SectionTitle, SkeletonCard, Text, useFormFocus } from '../../ui/components';
 import { C, R, S, SHADOW, SP } from '../../ui/theme';
-import { SwitchRow } from '../../ui/r1Parts';
-import { useCreditChoice } from '../r3/creditPay';
-import { checkGuest, guestBody, isGuestError, optKey } from '../../lib/r2';
-import { GuestSection, emptyGuest, type GuestState } from './r2Guest';
-import { RepeatSection } from './r2Repeat';
+import { SwitchRow } from '../../ui/trustParts';
+import { useCreditChoice } from '../money/creditPay';
+import { checkGuest, guestBody, isGuestError, optKey } from '../../lib/growthApi';
+import { GuestSection, emptyGuest, type GuestState } from '../growth/guestRide';
+import { RepeatSection } from '../growth/repeatRides';
 
 type Params = { pickup: Pt; request_code?: string; dest?: Pt; note?: string; scheduled_for?: string; abasare?: { customer_vehicle_id: string; hours?: number }; guest?: boolean };
 const GLYPH: Record<string, string> = { moto: '🛵', car: '🚗', comfort: '🚙', minivan: '🚐', abasare: '🧑‍✈️' };

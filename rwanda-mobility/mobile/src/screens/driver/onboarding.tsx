@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { OnboardingTracker } from './onboardingTracker';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { isIsoDate } from '../../lib/format';
@@ -49,6 +50,7 @@ export function Onboarding({ status, reload }: { status: DriverStatus; reload: (
         <StepBar steps={steps} labels={{ path: t('st.path'), details: t('st.details'), documents: t('st.documents'), review: t('st.review'), approved: t('st.approved') }} />
         <Text style={S.muted}>{stepHelp}</Text>
       </Card>
+      <OnboardingTracker />
       {status.fleet_invites?.length ? <Card><Text style={S.h2}>{t('drv.fleet.invite')}</Text>{status.fleet_invites.map((i) => <View key={i.id} style={[S.between, { marginTop: 6 }]}><Text style={[S.body, { flex: 1 }]}>{i.name}</Text><Btn title={t('common.yes')} onPress={() => run(async () => { await client.post('/drivers/me/fleet/accept', { invite_id: i.id }); reload(); })} /></View>)}</Card> : null}
       {editable && !showRide && !showAb ? <>
         <Illustration glyphs="🛵🧑‍✈️🚗" tint={C.skyBg} height={130} />

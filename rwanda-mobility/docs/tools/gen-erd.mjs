@@ -10,7 +10,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? 'postgres:
 
 const MODULES = {
   'Identity and privacy': ['users', 'user_roles', 'roles', 'role_permissions', 'otp_challenges', 'sessions', 'consents', 'privacy_requests', 'staff_invites', 'push_tokens', 'push_tickets', 'sms_opt_outs', 'ussd_phones', 'ussd_sessions'],
-  'Rider': ['saved_places', 'emergency_contacts', 'passenger_driver_prefs', 'tips', 'trip_contact_notices', 'guest_messages', 'ride_schedules', 'ride_schedule_runs', 'loyalty_accounts', 'loyalty_events', 'wallet_lots', 'wallet_holds', 'wallet_txns', 'wallet_adjustments'],
+  'Rider': ['ambassadors', 'saved_places', 'emergency_contacts', 'passenger_driver_prefs', 'tips', 'trip_contact_notices', 'guest_messages', 'ride_schedules', 'ride_schedule_runs', 'loyalty_accounts', 'loyalty_events', 'wallet_lots', 'wallet_holds', 'wallet_txns', 'wallet_adjustments'],
   'Catalogue and pricing': ['service_categories', 'service_zones', 'zone_services', 'places', 'pricing_rules', 'commission_rules', 'fare_quotes', 'promotions', 'promotion_redemptions', 'referrals'],
   'Drivers and vehicles': ['driver_profiles', 'driver_documents', 'document_requirements', 'driver_status_history', 'vehicles', 'driver_locations', 'driver_badge_grants', 'driver_quests', 'driver_quest_awards'],
   'Abasare (own-car hire)': ['customer_vehicles', 'abasare_handovers', 'handover_photos', 'booking_deposits', 'deposit_attempts', 'claims', 'claim_events', 'claim_evidence'],
@@ -18,7 +18,7 @@ const MODULES = {
   'Bookings and dispatch': ['bookings', 'booking_events', 'dispatch_offers', 'trip_shares', 'trip_messages', 'ratings', 'safety_blocks', 'request_codes', 'fixed_routes'],
   'Money': ['payments', 'payment_provider_events', 'ledger_accounts', 'ledger_entries', 'driver_earnings', 'payouts', 'refunds', 'passenger_debts', 'reconciliation_runs', 'reconciliation_items'],
   'Support and safety': ['support_cases', 'case_events', 'safety_incidents', 'safety_alerts', 'support_categories', 'faq_entries'],
-  'Platform': ['notifications', 'notification_templates', 'feature_flags', 'system_settings', 'audit_logs', 'client_errors', 'schema_migrations'],
+  'Platform': ['admin_alerts', 'risk_events', 'stored_files', 'notifications', 'notification_templates', 'feature_flags', 'system_settings', 'audit_logs', 'client_errors', 'schema_migrations'],
 };
 const moduleOf = {}; for (const [m, ts] of Object.entries(MODULES)) for (const t of ts) moduleOf[t] = m;
 

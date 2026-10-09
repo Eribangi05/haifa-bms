@@ -275,13 +275,14 @@ export const baseEn = {
   'prof.export.done': 'We received your request and will send you a copy of your data.',
   'prof.signout.confirm': 'Sign out of this phone?',
 } as const;
-import { r1en } from './r1.en';
-import { r2en } from './r2.en';
-import { r3en } from './r3.en';
-import { r4en } from './r4.en';
-import { r5en } from './r5.en';
-import { r6en } from './r6.en';
+import { trustEn } from './features/trust.en';
+import { growthEn } from './features/growth.en';
+import { moneyEn } from './features/money.en';
+import { tabsEn } from './features/tabs.en';
+import { driversEn } from './features/drivers.en';
+import { brandEn } from './features/brand.en';
+import { socialEn } from './features/social.en';
 /** Full English dictionary = base + one module per feature round (so parallel work never edits the same file). */
-export const en = { ...baseEn, ...r1en, ...r2en, ...r3en, ...r4en, ...r5en, ...r6en } as const;
+export const en = { ...baseEn, ...trustEn, ...growthEn, ...moneyEn, ...tabsEn, ...driversEn, ...brandEn, ...socialEn } as const;
 export type K = keyof typeof en;
 export type BaseK = keyof typeof baseEn;
