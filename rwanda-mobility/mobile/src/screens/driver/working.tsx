@@ -80,6 +80,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
           <StatTile testID="dh-earned" glyph="💰" value={fmtRwf(today.net || today.fares)} unit="RWF" label={`${t('dh.today')} · ${t('dh.stat.earned')}`} tint={C.warnBg} />
           <StatTile testID="dh-rating" glyph="⭐" value={Number(status.profile.rating_avg) > 0 ? Number(status.profile.rating_avg).toFixed(1) : '—'} label={t('dh.stat.rating')} tint={C.goldBg} />
         </StatRow>
+        <Btn testID="claims-about-me" kind="ghost" title={t('cl.title.about')} onPress={() => nav.push('claims')} />
         {rideOk || absOk ? <Btn testID="r1-feedback-open" kind="ghost" title={t('r1.fb.open')} onPress={() => nav.push('r1feedback')} /> : null}
         {rideOk || absOk ? <QuestsCard onOpen={() => nav.push('quests')} /> : null}
         {isOnline && rideOk ? <Btn testID="r2-heat-open" kind="ghost" title={t('r2.heat.entry')} onPress={() => nav.push('heatmap')} /> : null}

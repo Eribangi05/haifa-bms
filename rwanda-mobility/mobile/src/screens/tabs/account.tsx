@@ -57,7 +57,7 @@ export function AccountTab() {
 
       <MenuGroup title={t('acc.g.money')}>
         {!driverMode ? <MenuRow testID="open-credit" glyph="💳" title={t('cr.title')} sub={t('wal.credit.sub')} onPress={() => nav.push('credit')} /> : null}
-        <MenuRow testID="open-claims" glyph="🛟" title={t('cl.title')} sub={t('cl.entry.sub')} onPress={() => nav.push('claims')} last />
+        <MenuRow testID="open-claims" glyph="🛟" title={driverMode ? t('cl.title.about') : t('cl.title')} sub={t('cl.entry.sub')} onPress={() => nav.push('claims')} last />
       </MenuGroup>
 
       <MenuGroup title={t('acc.g.app')}>
