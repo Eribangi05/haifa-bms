@@ -278,7 +278,8 @@ export const baseEn = {
 import { r1en } from './r1.en';
 import { r2en } from './r2.en';
 import { r3en } from './r3.en';
+import { r4en } from './r4.en';
 /** Full English dictionary = base + one module per feature round (so parallel work never edits the same file). */
-export const en = { ...baseEn, ...r1en, ...r2en, ...r3en } as const;
+export const en = { ...baseEn, ...r1en, ...r2en, ...r3en, ...r4en } as const;
 export type K = keyof typeof en;
 export type BaseK = keyof typeof baseEn;

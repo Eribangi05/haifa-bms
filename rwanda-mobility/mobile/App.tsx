@@ -5,11 +5,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/lib/app';
 import { Welcome, Phone, Otp } from './src/screens/auth';
 import { Scan } from './src/screens/scan';
-import { Home, Options, Track } from './src/screens/passenger';
+import { Options, Track } from './src/screens/passenger';
+import { PassengerShell, DriverShell } from './src/screens/tabs/shells';
 import { History } from './src/screens/history';
 import { Profile } from './src/screens/profile';
 import { Support } from './src/screens/support';
-import { DriverHome } from './src/screens/driver';
 import { DriverTracker } from './src/lib/driverTracking';
 import { InsetsGate } from './src/ui/insets';
 import { Cars } from './src/screens/cars';
@@ -84,7 +84,7 @@ function Router() {
     case 'welcome': screen = <Welcome />; break;
     case 'phone': screen = <Phone />; break;
     case 'otp': screen = <Otp params={route.params} />; break;
-    case 'home': screen = <Home key={route.params?.venue?.code ?? 'home'} params={route.params} />; break;
+    case 'home': screen = <PassengerShell params={route.params} />; break;
     case 'scan': screen = <Scan params={route.params} />; break;
     case 'options': screen = <Options params={route.params} />; break;
     case 'track': screen = <Track key={route.params?.id ?? 'pending'} params={route.params ?? {}} />; break;
@@ -103,13 +103,13 @@ function Router() {
     case 'schedules': screen = <Schedules />; break;
     case 'quests': screen = <Quests />; break;
     case 'heatmap': screen = <Heatmap />; break;
-    case 'driverHome': screen = <DriverHome />; break;
-    default: screen = <Home />;
+    case 'driverHome': screen = <DriverShell />; break;
+    default: screen = <PassengerShell />;
   }
   return (
     <View key={ap.version} style={{ flex: 1, backgroundColor: C.bg }}>
       {screen}
-      <Toast text={toast} />
+      <Toast text={toast} lift={route.name === 'home' || route.name === 'driverHome' ? 58 : 0} />
     </View>
   );
 }

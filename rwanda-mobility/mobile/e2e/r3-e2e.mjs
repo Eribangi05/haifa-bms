@@ -6,6 +6,7 @@
 // Usage: node e2e/r3-e2e.mjs <screenshot-dir>     (env: API_ORIGIN, WEB_ORIGIN, DATABASE_URL, CHROMIUM_PATH, JPG)
 // Staff steps (review/decision/settlement) and credit/loyalty seeding run through the backend services via e2e/r3-seed.mts.
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -18,7 +19,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const db = new pg.Client({ connectionString: DBURL }); await db.connect();
 
 // ---- strings straight from the locale modules (so the script follows the wording)
-const load = (lang) => { const m = {}; for (const f of [`${lang}.ts`, `r3.${lang}.ts`]) { const txt = fs.readFileSync(path.join(HERE, '../src/lib/locales/' + f), 'utf8'); for (const mm of txt.matchAll(/'([\w.]+)': '((?:[^'\\]|\\.)*)'/g)) m[mm[1]] = mm[2].replace(/\\'/g, "'").replace(/\\\\/g, '\\'); } return m; };
+const load = (lang) => { const m = {}; for (const f of [`${lang}.ts`, `r3.${lang}.ts`, `r4.${lang}.ts`]) { const txt = fs.readFileSync(path.join(HERE, '../src/lib/locales/' + f), 'utf8'); for (const mm of txt.matchAll(/'([\w.]+)': '((?:[^'\\]|\\.)*)'/g)) m[mm[1]] = mm[2].replace(/\\'/g, "'").replace(/\\\\/g, '\\'); } return m; };
 const D = { en: load('en'), rw: load('rw'), fr: load('fr') };
 const tr = (lang, key, vars = {}) => { let s = D[lang][key]; if (s == null) throw new Error('no string ' + key); for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v)); return s; };
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -63,7 +64,7 @@ const errors = []; let failed = 0;
 const open = async (u, lang, name, mode) => {
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] });
   await ctx.addInitScript(([tok, l, m]) => { try { localStorage.setItem('rm_tokens', JSON.stringify({ access_token: tok.t, refresh_token: tok.r })); localStorage.setItem('rm_lang', l); localStorage.setItem('rm_loc_consent', '1'); if (m) localStorage.setItem('rm_mode', m); } catch { /* */ } }, [u, lang, mode ?? null]);
-  const page = await ctx.newPage(); page.on('pageerror', (e) => errors.push(name + ' pageerror: ' + e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push(name + ' console: ' + m.text().slice(0, 200)); });
+  const page = visibleOnly(await ctx.newPage()); page.on('pageerror', (e) => errors.push(name + ' pageerror: ' + e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push(name + ' console: ' + m.text().slice(0, 200)); });
   page.on('dialog', (d) => d.accept());   // window.confirm used by showAlert on web
   await page.goto(WEB); return { page, ctx, name, lang };
 };
@@ -75,7 +76,7 @@ const text = (w, key, vars) => w.page.getByText(T(w, key, vars), { exact: true }
 const waitText = (w, key, vars, ms = 20000) => text(w, key, vars).first().waitFor({ timeout: ms });
 /** No English from the r3 module may show on a rw/fr screen (long strings only; shared words/numbers excluded). */
 const noEnglish = async (w) => { if (w.lang === 'en') return; const body = await w.page.locator('body').innerText(); for (const [k, v] of Object.entries(D.en)) if (/^(cr|dp|cl|us)\./.test(k) && v.length > 18 && !v.includes('{') && D[w.lang][k] !== v && body.includes(v)) throw new Error('English leaked: ' + k); };
-const goHome = async (w) => { await w.page.getByTestId('cta').first().waitFor({ timeout: 25000 }); };
+const goHome = async (w) => { await w.page.getByTestId('tab-book').click({ timeout: 25000 }); await w.page.getByTestId('cta').first().waitFor({ timeout: 25000 }); };
 const popular = async (lang) => (await call('GET', `/places/popular?lang=${lang}`, {})).j;
 const driverTrip = async (drv, bid, { cash } = {}) => {
   for (let i = 0; i < 30; i++) { const r = await call('GET', '/drivers/me/offers', { t: drv.t }); if (r.j?.offers?.some((o) => o.booking_id === bid)) break; await sleep(500); if (i === 29) throw new Error('driver never got the offer'); }
@@ -265,7 +266,7 @@ try {
   await step('staff decision (partly accepted) is visible to the owner in the app and via the API', async () => {
     seed({ claims: [{ action: 'review', id: claimId, staff_id: abd.id, mode: 'start' }, { action: 'decide', id: claimId, staff_id: abd.id, outcome: 'partially_accepted', amount: 15000, reason: 'Part of the damage was already noted at pickup' }] });
     const full = (await call('GET', `/claims/${claimId}`, { t: O.t })).j; must(full.status === 'partially_accepted' && full.decision?.amount === 15000, 'API ' + JSON.stringify(full.decision) + full.status);
-    await wo.page.reload(); await wo.page.getByText(D.rw['home.profile'], { exact: true }).first().click(); await wo.page.getByTestId('open-claims').click();
+    await wo.page.reload(); await wo.page.getByTestId('tab-account').click(); await wo.page.getByTestId('open-claims').click();
     await wo.page.getByTestId('claim-row').first().waitFor({ timeout: 20000 }); await wo.page.getByText(T(wo, 'cl.st.partially_accepted'), { exact: true }).first().waitFor();
     await wo.page.getByTestId('claim-row').first().click(); await wo.page.getByTestId('decision-amount').waitFor({ timeout: 20000 });
     must(/15,000/.test(await wo.page.getByTestId('decision-amount').innerText()), 'amount'); must((await wo.page.getByTestId('decision-reason').innerText()).includes('already noted'), 'reason');
@@ -275,17 +276,17 @@ try {
     const before = (await call('GET', '/wallet', { t: O.t })).j.available;
     seed({ claims: [{ action: 'settle', id: claimId, staff_id: abd.id, amount: 15000 }] });
     const after = (await call('GET', '/wallet', { t: O.t })).j.available; must(after - before === 15000, `credit ${after - before}`);
-    await wo.page.reload(); await wo.page.getByText(D.rw['home.profile'], { exact: true }).first().click(); await wo.page.getByTestId('open-claims').click(); await wo.page.getByTestId('claim-row').first().click();
+    await wo.page.reload(); await wo.page.getByTestId('tab-account').click(); await wo.page.getByTestId('open-claims').click(); await wo.page.getByTestId('claim-row').first().click();
     await waitText(wo, 'cl.settlement.credit', { n: '15,000' }, 20000); await shot(wo, '8-settled');
   }, wo);
   await step('rw: USSD card in Profile (no shortcode in /config -> generic text)', async () => {
-    await wo.page.reload(); await wo.page.getByText(D.rw['home.profile'], { exact: true }).first().click(); await wo.page.getByTestId('ussd-card').waitFor({ timeout: 15000 });
+    await wo.page.reload(); await wo.page.getByTestId('tab-account').click(); await wo.page.getByTestId('ussd-card').waitFor({ timeout: 15000 });
     const cfg = (await call('GET', '/config', {})).j; must(!cfg.ussd?.shortcode, 'unexpected shortcode in config');
     await waitText(wo, 'us.code.generic'); await noEnglish(wo); await shot(wo, '9-ussd-profile');
   }, wo);
   await step('rw: History shows credit used on the credit trip and a report link', async () => {
     await w1.page.getByTestId('back').click().catch(() => {}); await w1.page.reload(); await goHome(w1);
-    await w1.page.getByText(D.rw['home.history'], { exact: true }).first().click(); await w1.page.getByText(/Credit [\d,]+ RWF/).first().waitFor({ timeout: 20000 });
+    await w1.page.getByTestId('tab-trips').click(); await w1.page.getByText(/Credit [\d,]+ RWF/).first().waitFor({ timeout: 20000 });
     await waitText(w1, 'cl.history.report'); await shot(w1, '6-history');
   }, w1);
 } catch (e) { failed++; console.log('FATAL', e.stack?.split('\n').slice(0, 3).join(' | ')); }

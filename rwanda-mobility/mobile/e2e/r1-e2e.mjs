@@ -4,6 +4,7 @@
 // Prerequisites: backend (OTP_DEV_ECHO=true, MOMO_MODE=simulator) on a migrated + seeded DB, and the web export served (see docs/MOBILE_ROUND1.md).
 // Usage: node e2e/r1-e2e.mjs <screenshot-dir> [langs, e.g. rw,fr]
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
 import { readFileSync } from 'node:fs';
 const API = (process.env.API_ORIGIN ?? 'http://localhost:8101') + '/api/v1', WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8111', OUT = process.argv[2] ?? '/tmp', LANGS = (process.argv[3] ?? 'rw,fr').split(',');
@@ -32,7 +33,7 @@ const mkDriver = async (plate, lang) => {
 const newCtx = async (user, lang, mode = 'passenger', extra = {}) => {
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: KCC.lat, longitude: KCC.lng }, permissions: ['geolocation', 'clipboard-read', 'clipboard-write'], ...extra });
   await ctx.addInitScript(([tk, lg, md]) => { try { if (!localStorage.getItem('rm_tokens')) { localStorage.setItem('rm_tokens', JSON.stringify(tk)); localStorage.setItem('rm_lang', lg); localStorage.setItem('rm_loc_consent', '1'); localStorage.setItem('rm_mode', md); localStorage.setItem('rm_drv_consent', '1'); } } catch { /* ignore */ } }, [{ access_token: user.t, refresh_token: user.r }, lang, mode]);
-  const page = await ctx.newPage(); page.on('dialog', (d) => d.accept()); page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push('console: ' + m.text().slice(0, 200)));
+  const page = visibleOnly(await ctx.newPage()); page.on('dialog', (d) => d.accept()); page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push('console: ' + m.text().slice(0, 200)));
   return { ctx, page };
 };
 const ok = (r, n) => { if (r.s >= 300) throw new Error(n + ' ' + JSON.stringify(r.j)); return r; };
@@ -62,7 +63,7 @@ for (const lang of LANGS) {
   // ---------------------------------------------------------------- 1. trusted contacts
   await step(L + 'trusted contacts: explanation, per-contact switch + language, master switch, add', async () => {
     await pp.goto(WEB); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 });
-    await pp.getByText(t('home.profile'), { exact: true }).first().click(); await pp.getByText(t('r1.tc.title'), { exact: true }).waitFor({ timeout: 20000 });
+    await pp.getByTestId('tab-account').click(); await pp.getByTestId('acc-edit').click(); await pp.getByText(t('r1.tc.title'), { exact: true }).waitFor({ timeout: 20000 });
     await pp.getByText(t('r1.tc.what'), { exact: true }).waitFor();
     const row = async () => (await db.query('select notify_on_trip, lang from emergency_contacts where id=$1', [c1.id])).rows[0];
     const first = (await row()); if (!first.notify_on_trip) throw new Error('default should be notify on? ' + JSON.stringify(first));
@@ -173,11 +174,11 @@ for (const lang of LANGS) {
     if (hasId) { await pp.getByTestId('pref-fav').click(); await pp.waitForTimeout(800); }
     else { console.log('     GAP: booking view has no driver id, so the completed-trip buttons are hidden (backend change needed); seeding the preference by API'); ok(await call('PUT', `/users/me/drivers/${D.id}`, { t: P.t, body: { kind: 'favourite' } }), 'fav'); }
     await pp.goto(WEB); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 });
-    await pp.getByText(t('home.profile'), { exact: true }).first().click(); await pp.getByTestId('open-mydrivers').click();
+    await pp.getByTestId('tab-account').click(); await pp.getByTestId('open-mydrivers').click();
     await pp.getByText(t('r1.md.fav'), { exact: true }).first().waitFor({ timeout: 15000 }); await pp.getByText(/★/).first().waitFor();
     await pp.screenshot({ path: `${OUT}/r1-${lang}-mydrivers.png` });
     // switch to blocked via API and show the blocked section, then remove through the UI
-    ok(await call('PUT', `/users/me/drivers/${D.id}`, { t: P.t, body: { kind: 'blocked' } }), 'block'); await pp.goto(WEB); await pp.getByText(t('home.profile'), { exact: true }).first().click(); await pp.getByTestId('open-mydrivers').click();
+    ok(await call('PUT', `/users/me/drivers/${D.id}`, { t: P.t, body: { kind: 'blocked' } }), 'block'); await pp.goto(WEB); await pp.getByTestId('tab-account').click(); await pp.getByTestId('open-mydrivers').click();
     await pp.getByText(t('r1.md.blocked'), { exact: true }).first().waitFor({ timeout: 20000 });
     await pp.getByTestId(`md-remove-${D.id}`).click(); await pp.waitForTimeout(500);
     const left = (await db.query('select 1 from passenger_driver_prefs where passenger_id=$1', [P.id])).rowCount; if (left !== 0) throw new Error('not removed (confirm dialog is window.confirm on web)');
@@ -204,14 +205,14 @@ for (const lang of LANGS) {
   // ---------------------------------------------------------------- 8. appearance, privacy, low-data
   await step(L + 'settings: dark mode, large text, app lock inert on web', async () => {
     await pp.goto(WEB); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 });
-    await pp.getByText(t('home.profile'), { exact: true }).first().click(); await pp.getByTestId('open-settings').click(); await pp.getByText(t('r1.set.theme'), { exact: true }).waitFor();
+    await pp.getByTestId('tab-account').click(); await pp.getByTestId('open-settings').click(); await pp.getByText(t('r1.set.theme'), { exact: true }).waitFor();
     const bg = () => pp.getByTestId('header').evaluate((e) => getComputedStyle(e).backgroundColor);
     const light = await bg(); await pp.screenshot({ path: `${OUT}/r1-${lang}-settings-light.png` });
     await pp.getByRole('radio', { name: t('r1.set.theme.dark') }).click(); await pp.getByText(t('r1.set.theme'), { exact: true }).waitFor();
     const dark = await bg(); if (light === dark || dark !== 'rgb(21, 31, 51)') throw new Error(`header bg ${light} -> ${dark}`);
     await pp.screenshot({ path: `${OUT}/r1-${lang}-settings-dark.png` });
     await pp.goto(WEB); await pp.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 }); await pp.screenshot({ path: `${OUT}/r1-${lang}-home-dark.png` });   // persisted across reload
-    await pp.getByText(t('home.profile'), { exact: true }).first().click(); await pp.getByTestId('open-settings').click();
+    await pp.getByTestId('tab-account').click(); await pp.getByTestId('open-settings').click();
     const fs = () => pp.getByText(t('r1.set.large'), { exact: true }).first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
     const f0 = await fs(); await pp.getByRole('switch', { name: t('r1.set.large') }).click(); await pp.waitForTimeout(500); const f1 = await fs(); if (!(f1 / f0 > 1.15 && f1 / f0 <= 1.4)) throw new Error(`font ${f0} -> ${f1}`);
     await pp.screenshot({ path: `${OUT}/r1-${lang}-settings-large.png` });

@@ -1,6 +1,6 @@
-# Abasare 0.6.0: test guide
+# Abasare 0.7.0: test guide
 
-**File:** `Abasare-0.6.0-arm64-v8a.apk` (one file, about 17 MB, for 64-bit Android 7 or newer: almost every phone made in the last six years). **Server:** staging only, so **no real money moves and no real SMS is sent**.
+**File:** `Abasare-0.7.0-arm64-v8a.apk` (one file, about 17 MB, for 64-bit Android 7 or newer: almost every phone made in the last six years). **Server:** staging only, so **no real money moves and no real SMS is sent**.
 
 ## Install
 1. Copy the `.apk` to the phone (USB cable, WhatsApp, Bluetooth or a Drive link).
@@ -12,10 +12,14 @@
 Choose the language (Kinyarwanda, Français or English), enter your mobile number. The one-time code **appears on screen** in a yellow box (no SMS is sent in this build).
 
 ## What to try (tick as you go)
+**New in 0.7.0: one screen per job.** A bar at the bottom switches between the main areas. Riders: **Home** (overview and statistics), **Book** (map), **Trips**, **Wallet**, **Account** (language, profile, settings, help). Drivers: **Work**, **Trips**, **Earnings**, **Vehicle** (driving record and documents), **Account**.
+
 **Everyone**
+- [ ] Every tab opens its own screen, the active tab is highlighted, nothing is hidden behind the bottom bar or the phone's buttons
+- [ ] Account > Language switches the whole app at once
 - [ ] Back arrow on every screen except Home; Android back/gesture goes back one step; on Home it asks to press again to exit
 - [ ] Buttons are fully visible above the phone's bottom buttons; nothing hidden under the top bar or notch; the keyboard never hides the field you type in
-- [ ] Profile > Settings: dark mode, large text, low-data mode, app lock (fingerprint/PIN)
+- [ ] Account > Settings: dark mode, large text, low-data mode, app lock (fingerprint/PIN)
 - [ ] Switch language and check no screen mixes two languages
 
 **Passenger**
@@ -23,14 +27,15 @@ Choose the language (Kinyarwanda, Français or English), enter your mobile numbe
 - [ ] Repeat a ride (recurring), then pause, skip and end it
 - [ ] Track: driver card with badges, live ETA, share this trip (hide destination, revoke), "Are you OK?" prompts
 - [ ] After a trip: stars, tags, tip, add to favourites or block the driver
-- [ ] Profile: Trusted contacts (notify when my trip starts), My drivers, My credit and loyalty, My claims
+- [ ] Account > Edit profile: saved places, Trusted contacts (notify when my trip starts). Account: My drivers, My credit and loyalty, My claims. Wallet: spending and payment history
 - [ ] Pay with credit (all or part), cash, or MTN Mobile Money sandbox number (ask the owner)
-- [ ] Scan a venue QR code (Home > Scan a code) or type the code
+- [ ] Scan a venue QR code (Home > Scan QR code) or type the code
 
 **Abasare (owner)**
 - [ ] Add a car, book Drive me home or By the hour, review the car check photos, rate with Abasare tags, pay a deposit if the owner enabled it, file a claim
 
 **Driver** (the owner approves your application in the admin console first)
+- [ ] Vehicle tab: your driving record, vehicle and document status; Earnings tab: totals and payouts
 - [ ] Go online (location sharing continues with the screen locked), accept an offer, navigation buttons (Google Maps / Waze), PIN start
 - [ ] Quests and bonuses, "Where to go" demand map, My feedback, Claims about me
 

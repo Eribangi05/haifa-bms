@@ -21,6 +21,8 @@ type Ctx = {
   client: Client; outbox: Outbox; me: Me | null; refreshMe: () => Promise<void>; signedIn: (roles?: string[]) => Promise<void>; signOut: () => Promise<void>;
   online: boolean; cfg: AppConfig | null; toast: string | null; say: (m: string) => void; errMsg: (e: unknown) => string;
   nav: Nav; mode: 'passenger' | 'driver'; setMode: (m: 'passenger' | 'driver') => void; pendingOutbox: number;
+  /** Active bottom tab of the current mode ('home' is always the first). `goTab` also closes any pushed screens. */
+  tab: string; setTab: (k: string) => void; goTab: (k: string) => void;
   /** Register a handler for the system back gesture/button (modals, sheets, wizard steps). Return true when handled. Latest registration runs first. */
   registerBack: (fn: () => boolean) => () => void;
 };
@@ -45,6 +47,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [stack, setStack] = useState<Route[]>([{ name: 'boot' }]);
   const [mode, setModeState] = useState<'passenger' | 'driver'>('passenger');
   const [pendingOutbox, setPending] = useState(0);
+  const [tab, setTabState] = useState('home');
   const langRef = useRef<Lang>('rw'); const deviceRef = useRef('dev');
   const authLost = useRef<() => void>(() => {});
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -66,7 +69,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     replace: (name, params) => setStack((s) => [...s.slice(0, -1), { name, params }]),
   }), [stack]);
 
-  const setMode = useCallback((m: 'passenger' | 'driver') => { setModeState(m); void kv.set('rm_mode', m); setStack([{ name: m === 'driver' ? 'driverHome' : 'home' }]); }, []);
+  const setMode = useCallback((m: 'passenger' | 'driver') => { setModeState(m); setTabState('home'); void kv.set('rm_mode', m); setStack([{ name: m === 'driver' ? 'driverHome' : 'home' }]); }, []);
+  const setTab = useCallback((k: string) => setTabState(k), []);
+  const goTab = useCallback((k: string) => { setTabState(k); setStack([{ name: mode === 'driver' ? 'driverHome' : 'home' }]); }, [mode]);
   const registerBack = useCallback((fn: () => boolean) => { backs.current.push(fn); return () => { backs.current = backs.current.filter((x) => x !== fn); }; }, []);
 
   // Android back / gesture: overlays first, then pop, then sensible roots (never a silent exit from the middle of a flow).
@@ -77,6 +82,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const top = stack[0]?.name;
       if (top === 'welcome' || top === 'boot') return false;
       if (top === 'phone') { nav.replace('welcome'); return true; }
+      if ((top === 'home' || top === 'driverHome') && tab !== 'home') { setTabState('home'); return true; }   // back from another tab returns to the Home tab first
       if (top === 'home' || top === 'driverHome') {   // never leave driver mode (and go offline) by accident: press twice to exit the app
         if (Date.now() - lastBack.current < EXIT_WINDOW_MS) return false;   // second press inside the window exits
         lastBack.current = Date.now(); say(translate(langRef.current, 'exit.again')); return true;
@@ -84,7 +90,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       nav.reset(mode === 'driver' ? 'driverHome' : 'home'); return true;
     });
     return () => h.remove();
-  }, [stack, nav, mode, say, setMode]);
+  }, [stack, nav, mode, say, setMode, tab]);
 
   const setLang = useCallback((l: Lang) => {
     langRef.current = l; setLangState(l); void kv.set('rm_lang', l);
@@ -100,7 +106,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await stopBgLocation(); await unregisterPush(client);
     try { await client.post('/auth/logout', undefined, { timeoutMs: 5000 }); } catch { /* ignore */ }
     client.clearCache(); await tokenStore.set(null); await kv.del('rm_me'); await outbox.clear();   // never let a queued request of this user run as the next user
-    setMe(null); setModeState('passenger'); setStack([{ name: 'welcome' }]);
+    setMe(null); setModeState('passenger'); setTabState('home'); setStack([{ name: 'welcome' }]);
   }, [client, outbox]);
   // Refresh token rejected (revoked / expired session): drop to the welcome screen and say why.
   authLost.current = () => { void stopBgLocation(); void kv.del('rm_me'); setMe(null); setModeState('passenger'); setStack([{ name: 'welcome' }]); say(translate(langRef.current, 'err.session')); };
@@ -142,8 +148,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { unsub(); sub.remove(); off(); clearInterval(iv); };
   }, [outbox, refreshMe]);
 
-  const value: Ctx = useMemo(() => ({ ready, lang, setLang, t, client, outbox, me, refreshMe: () => refreshMe(), signedIn, signOut, online, cfg, toast, say, errMsg, nav, mode, setMode, pendingOutbox, registerBack }),
-    [ready, lang, setLang, t, client, outbox, me, refreshMe, signedIn, signOut, online, cfg, toast, say, errMsg, nav, mode, setMode, pendingOutbox, registerBack]);
+  const value: Ctx = useMemo(() => ({ ready, lang, setLang, t, client, outbox, me, refreshMe: () => refreshMe(), signedIn, signOut, online, cfg, toast, say, errMsg, nav, mode, setMode, pendingOutbox, registerBack, tab, setTab, goTab }),
+    [ready, lang, setLang, t, client, outbox, me, refreshMe, signedIn, signOut, online, cfg, toast, say, errMsg, nav, mode, setMode, pendingOutbox, registerBack, tab, setTab, goTab]);
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
 

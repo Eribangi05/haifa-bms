@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useApp, useAsync, usePoll } from '../../lib/app';
 import { DICTS, label, type TKey } from '../../lib/i18n';
@@ -9,21 +9,24 @@ import { kv } from '../../lib/storage';
 import type { Booking, DriverStatus, Offer } from '../../lib/types';
 import { Banner, Btn, Card, Chip, EmptyState, LinkBtn, PermissionCard, Screen, Spinner, Text, useProportionalHeight } from '../../ui/components';
 import { MapBox } from '../../ui/MapView';
-import { showAlert } from '../../ui/dialog';
-import { S, SP } from '../../ui/theme';
+import { C, S, SP } from '../../ui/theme';
 import { SosButton } from '../sos';
 import { ActiveTrip } from './activeTrip';
-import { Earnings } from './earnings';
 import { OfferCard } from './offer';
 import { QuestsCard } from './r2Quests';
+import { driverToday } from '../../lib/stats';
+import { fmtRwf } from '../../lib/format';
+import { useTripFeed } from '../../lib/tripFeed';
+import { StatRow, StatTile } from '../../ui/dash';
+import { leaveDriverMode } from './leave';
 
 const GPS_STALE_MS = 45_000;
 
 /** Approved driver: online/offline, accepting modes, offers, the active job and earnings. Location sharing itself lives in DriverTracker (survives navigation). */
 export function Working({ status, reload }: { status: DriverStatus; reload: () => void }) {
-  const { t, lang, client, setMode, nav, online, say } = useApp(); const { busy, run } = useAsync(); const loc = useLocate(); const tr = useDriverTracking();
+  const { t, lang, client, setMode, nav, online, say } = useApp(); const feed = useTripFeed(); const { busy, run } = useAsync(); const loc = useLocate(); const tr = useDriverTracking();
   const [isOnline, setIsOnline] = useState<boolean>(!!status.profile.is_online); const [consent, setConsent] = useState(false);
-  const [tab, setTab] = useState<'work' | 'earn'>('work'); const [tick, setTick] = useState(Date.now());
+  const [tick, setTick] = useState(Date.now());
   const absPerm = status.abasare?.permission; const rideOk = !!status.permission?.can_work; const absOk = !!absPerm?.can_work;
   const [accepting, setAccepting] = useState<string[]>(() => (status.profile.accepting ?? ['ride']).filter((x) => (x === 'ride' ? rideOk : absOk)));
   const mapH = useProportionalHeight(0.2, 150, 240);
@@ -43,11 +46,6 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
     try { await client.patch('/drivers/me/availability', on ? { online: true, accepting: accepting.length ? accepting : [rideOk ? 'ride' : 'abasare'] } : { online: false }); setIsOnline(on); reload(); }
     catch (e) { if ((e as { code?: string })?.code === 'not_permitted_to_work') { say(t('drv.notallowed')); reload(); } else throw e; }
   });
-  const leave = () => {
-    if (!isOnline && !trip) { setMode('passenger'); return; }
-    if (trip) { showAlert(t('drv.leave.title'), t('drv.leave.trip'), [{ text: t('common.close'), style: 'cancel' }]); return; }   // finish or cancel the job first
-    showAlert(t('drv.leave.title'), t('drv.leave.body'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.confirm'), onPress: () => { void (async () => { await toggle(false); setMode('passenger'); })(); } }]);
-  };
   const reasonText = (r: string) => { const k = `rs.${r}`; return k in DICTS[lang] ? t(k as TKey) : t('rs.other'); };
   const blockedText = () => {
     const ps = [(status.vehicle || status.abasare?.status === 'none') ? status.permission : null, status.abasare?.status !== 'none' ? absPerm : null].filter(Boolean) as NonNullable<DriverStatus['permission']>[];
@@ -55,25 +53,30 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
     const docs = [...new Set(ps.flatMap((p) => [...(p.expired_documents ?? []), ...(p.missing_documents ?? [])]))].map((d) => label(lang, 'doc', d));
     return `${t('drv.notallowed')}: ${[...reasons, ...docs].join(' · ')}`;
   };
+  const today = useMemo(() => driverToday(feed.trips ?? []), [feed.trips]);
   const gpsLost = isOnline && tr.lastFixAt > 0 && tick - tr.lastFixAt > GPS_STALE_MS;
   const expiring = status.documents.filter((d) => d.expiry_date && new Date(d.expiry_date).getTime() - Date.now() < 30 * 86400000 && d.review_status === 'approved');
   const both = (rideOk && absOk) || absOk;
   const flip = (id: 'ride' | 'abasare') => setAccepting((a) => (a.includes(id) ? (a.length > 1 ? a.filter((x) => x !== id) : a) : [...a, id]));
 
   return (
-    <Screen title={t('drv.mode')} onBack={leave} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />}
+    <Screen title={t('drv.mode')} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />}
       onRefresh={async () => { reload(); active.reload(); offers.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
-      <View style={S.row}><Chip text={t('drv.mode')} on={tab === 'work'} onPress={() => setTab('work')} /><Chip text={t('drv.earnings')} on={tab === 'earn'} onPress={() => setTab('earn')} /><LinkBtn title={t('cl.title.about')} onPress={() => nav.push('claims')} /></View>
-      {tab === 'earn' ? <Earnings /> : <>
+      <>
         <Card>
           <View style={S.between}><View style={{ flex: 1, paddingRight: SP.sm }}><Text style={S.h2}>{isOnline ? t('drv.online') : t('drv.offline')}</Text><Text style={S.muted}>★ {Number(status.profile.rating_avg).toFixed(1)} · {status.profile.completed_count} {t('drv.trips')}</Text></View>
             <Btn testID="cta" kind={isOnline ? 'danger' : 'primary'} title={isOnline ? t('drv.gooffline') : t('drv.goonline')} onPress={() => toggle(!isOnline)} loading={busy} disabled={(!rideOk && !absOk && !isOnline) || (!isOnline && !consent)} /></View>
           {both ? <View style={{ marginTop: 10 }}><Text style={S.muted}>{t('ab.accepting')}</Text><View style={[S.wrap, { marginTop: 6 }]}>
             {rideOk ? <Chip text={t('ab.accepting.ride')} on={accepting.includes('ride')} onPress={() => flip('ride')} /> : null}
             {absOk ? <Chip text={t('ab.accepting.abasare')} on={accepting.includes('abasare')} onPress={() => flip('abasare')} /> : null}</View></View> : null}
-          {!rideOk && !absOk ? <Banner kind="bad" text={blockedText()} /> : null}
+          {!rideOk && !absOk ? <View style={{ marginTop: SP.md }}><Banner kind="bad" text={blockedText()} /></View> : null}
         </Card>
+        <StatRow>
+          <StatTile testID="dh-trips" glyph="🧾" value={String(today.trips)} label={`${t('dh.today')} · ${t('dh.stat.trips')}`} />
+          <StatTile testID="dh-earned" glyph="💰" value={fmtRwf(today.net || today.fares)} unit="RWF" label={`${t('dh.today')} · ${t('dh.stat.earned')}`} tint={C.warnBg} />
+          <StatTile testID="dh-rating" glyph="⭐" value={Number(status.profile.rating_avg) > 0 ? Number(status.profile.rating_avg).toFixed(1) : '—'} label={t('dh.stat.rating')} tint={C.goldBg} />
+        </StatRow>
         {rideOk || absOk ? <Btn testID="r1-feedback-open" kind="ghost" title={t('r1.fb.open')} onPress={() => nav.push('r1feedback')} /> : null}
         {rideOk || absOk ? <QuestsCard onOpen={() => nav.push('quests')} /> : null}
         {isOnline && rideOk ? <Btn testID="r2-heat-open" kind="ghost" title={t('r2.heat.entry')} onPress={() => nav.push('heatmap')} /> : null}
@@ -91,7 +94,8 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
           {!offers.data ? <Spinner /> : offers.data.offers.length ? offers.data.offers.map((o) => <OfferCard key={o.booking_id} o={o} done={() => { offers.reload(); active.reload(); }} />) : <EmptyState glyph="🕐" title={t('drv.nooffers.title')} body={t('drv.nooffers')} />}
         </> : null}
         <Text style={[S.muted, { textAlign: 'center', marginTop: 12 }]}>{t('drv.safety.stationary')}</Text>
-      </>}
+        <Btn testID="dh-switch" kind="ghost" title={t('dh.switch')} onPress={() => void leaveDriverMode({ client, setMode, say, t })} />
+      </>
     </Screen>
   );
 }

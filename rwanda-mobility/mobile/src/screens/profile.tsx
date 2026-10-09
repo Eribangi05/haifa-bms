@@ -8,14 +8,12 @@ import type { SavedPlace } from '../lib/types';
 import { R1TrustedContacts } from './r1Contacts';
 import { Banner, Btn, Card, Field, IconBadge, LangPicker, Pill, Screen, SectionTitle, Text, useFormFocus } from '../ui/components';
 import { showAlert } from '../ui/dialog';
-import { UssdCard } from './r3/ussd';
-import { C, R, S, SP } from '../ui/theme';
+import { C, S, SP } from '../ui/theme';
 
-const RW_PHONE = /^(?:\+?250|0)?7[2389]\d{7}$/;
 const initials = (s: string) => (s.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('') || '👤').toUpperCase();
 
 export function Profile() {
-  const { t, lang, setLang, me, refreshMe, client, nav, signOut, setMode, say } = useApp(); const { busy, run } = useAsync();
+  const { t, lang, setLang, me, refreshMe, client, nav, say } = useApp(); const { busy, run } = useAsync();
   const [name, setName] = useState(me?.display_name ?? ''); const [prefs, setPrefs] = useState<Record<string, boolean>>(me?.notif_prefs ?? {});
   const [ref, setRef] = useState<{ code: string; rewarded: number; total: number } | null>(null); const [biz, setBiz] = useState<{ id: string; legal_name: string; role: string; status: string }[]>([]);
   const [places, setPlaces] = useState<SavedPlace[]>([]); const [push, setPush] = useState<string>('granted');
@@ -29,7 +27,6 @@ export function Profile() {
   }, [client, loadPlaces]);
   const save = () => run(async () => { await client.patch('/users/me', { display_name: name.trim() || undefined, notif_prefs: prefs }); await refreshMe(); say(t('prof.saved')); });
   const priv = (kind: 'deletion' | 'access') => run(async () => { await client.post('/users/me/privacy-requests', { kind }); showAlert(t('prof.privacy'), kind === 'access' ? t('prof.export.done') : t('prof.delete.confirm')); });
-  const becomeDriver = () => run(async () => { await client.post('/drivers/enroll'); await client.refresh(); await refreshMe(); setMode('driver'); });
   return (
     <Screen title={t('prof.title')} onBack={() => nav.pop()}>
       <Card>
@@ -61,19 +58,10 @@ export function Profile() {
 
       <R1TrustedContacts />
 
-      <Card><Text style={S.h2}>{t('r2.sch.title')}</Text><View style={{ height: 8 }} /><Btn kind="ghost" title={t('r2.sch.title')} onPress={() => nav.push('schedules')} /></Card>
-      <Card><Text style={S.h2}>{t('r1.md.title')}</Text><Text style={S.muted}>{t('r1.md.open')}</Text><View style={{ height: 8 }} /><Btn testID="open-mydrivers" kind="ghost" title={t('r1.md.title')} onPress={() => nav.push('r1drivers')} /></Card>
-      <Card><Text style={S.h2}>{t('r1.set.title')}</Text><Text style={S.muted}>{t('r1.set.open')}</Text><View style={{ height: 8 }} /><Btn testID="open-settings" kind="ghost" title={t('r1.set.title')} onPress={() => nav.push('r1settings')} /></Card>
-      <Card><Text style={S.h2}>{t('cr.title')}</Text><View style={{ height: 8 }} /><Btn testID="open-credit" kind="ghost" title={t('cr.entry.open')} onPress={() => nav.push('credit')} /></Card>
-      <Card><Text style={S.h2}>{t('cl.entry')}</Text><Text style={S.muted}>{t('cl.entry.sub')}</Text><View style={{ height: 8 }} /><Btn testID="open-claims" kind="ghost" title={t('cl.title')} onPress={() => nav.push('claims')} /></Card>
-      <UssdCard />
-      <Card><Text style={S.h2}>{t('ab.cars.title')}</Text><Text style={S.muted}>{t('ab.home.sub')}</Text><View style={{ height: 8 }} /><Btn kind="ghost" title={t('ab.cars.title')} onPress={() => nav.push('cars')} /></Card>
       {ref ? <Card><Text style={S.h2}>{t('prof.referral')}</Text><Text style={S.muted}>{t('prof.referral.code')}</Text><Text selectable style={{ fontSize: 28, fontWeight: '800', letterSpacing: 3, color: C.primary }}>{ref.code}</Text><Text style={S.muted}>{ref.rewarded}/{ref.total}</Text></Card> : null}
       {biz.length ? <Card><Text style={S.h2}>{t('prof.business')}</Text>{biz.map((b) => <View key={b.id} style={{ marginTop: 6 }}><Text style={S.body}>{b.legal_name} · {label(lang, 'role', b.role)}</Text>{b.status !== 'active' ? <Pill tone="warn" text={t('biz.pending')} /> : <Pill text={t('biz.active')} />}</View>)}</Card> : null}
-      {!me?.roles.includes('driver') ? <Card><Text style={S.h2}>{t('prof.driver')}</Text><Text style={S.muted}>{t('drv.become.sub')}</Text><View style={{ height: 8 }} /><Btn kind="gold" title={t('drv.enroll')} onPress={becomeDriver} loading={busy} /></Card> : <Btn kind="ghost" title={t('drv.mode')} onPress={() => setMode('driver')} />}
       <View style={{ height: 10 }} />
       <Card><Text style={S.h2}>{t('prof.privacy')}</Text><Btn kind="ghost" title={t('prof.export')} onPress={() => priv('access')} /><View style={{ height: 8 }} /><Btn kind="ghost" title={t('prof.delete')} onPress={() => showAlert(t('prof.delete'), t('prof.delete.confirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.confirm'), style: 'destructive', onPress: () => priv('deletion') }])} /></Card>
-      <Btn kind="ghost" title={t('common.signout')} onPress={() => showAlert(t('common.signout'), t('prof.signout.confirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.signout'), style: 'destructive', onPress: () => void signOut() }])} />
     </Screen>
   );
 }

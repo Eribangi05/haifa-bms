@@ -1,6 +1,7 @@
 // Driver-side end-to-end test through the real React Native screens (react-native-web). See app-e2e.mjs for prerequisites.
 // Usage: node e2e/driver-e2e.mjs <screenshot-dir> <path-to-a-small.jpg>
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
 const API = (process.env.API_ORIGIN ?? 'http://localhost:8080') + '/api/v1', WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8081', OUT = process.argv[2] ?? '/tmp', JPG = process.argv[3] ?? '/tmp/doc.jpg';
 const call = async (m, p, { t, body, h } = {}) => { const r = await fetch(API + p, { method: m, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(t ? { authorization: 'Bearer ' + t } : {}), ...(h || {}) }, body: body ? JSON.stringify(body) : undefined }); return { s: r.status, j: await r.json().catch(() => null) }; };
@@ -14,7 +15,7 @@ const passenger = await reg(pphone);
 
 const br = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] });
-const page = await ctx.newPage(); const errors = [];
+const page = visibleOnly(await ctx.newPage()); const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push('console: ' + m.text().slice(0, 200)));
 const shot = (n) => page.screenshot({ path: `${OUT}/drv-${n}.png` });
 const step = async (name, fn) => { try { await fn(); console.log('OK  ', name); } catch (e) { console.log('FAIL', name, '-', e.message.split('\n')[0]); await shot('FAIL-' + name.replace(/\W+/g, '_')); throw e; } };
@@ -24,9 +25,9 @@ await step('sign up through the UI (English)', async () => {
   await page.getByPlaceholder('07X XXX XXXX').fill('0' + dphone.slice(4)); await page.getByText('Send code', { exact: true }).click();
   const code = (await page.getByText(/Test build: code: \d{6}/).textContent()).match(/\d{6}/)[0];
   await page.getByPlaceholder('••••••').fill(code); await page.getByText('Verify', { exact: true }).click();
-  await page.getByText('Location permission').waitFor(); await page.getByText('Allow location', { exact: true }).click(); await page.getByText('Where to?').waitFor();
+  await page.getByTestId('tabbar').waitFor({ timeout: 20000 });
 });
-await step('profile -> Start driver application', async () => { await page.getByText('Profile', { exact: true }).click(); await page.getByText('Start driver application', { exact: true }).click(); await page.getByText('Driver application', { exact: true }).first().waitFor({ timeout: 20000 }); await shot('1-application'); });
+await step('profile -> Start driver application', async () => { await page.getByTestId('tab-account').click(); await page.getByTestId('acc-become').click(); await page.getByText('Driver application', { exact: true }).first().waitFor({ timeout: 20000 }); await shot('1-application'); });
 const plate = 'RD' + (100 + Math.floor(Math.random() * 899)) + 'C';
 await step('fill and save application', async () => {
   await page.getByText('Drive with my own vehicle', { exact: true }).first().click(); await page.getByLabel('Full legal name').fill('Alice Uwimana'); await page.getByLabel('National ID number').fill('1199080012345678');
@@ -75,6 +76,6 @@ await step('wrong PIN is refused, correct PIN starts the trip', async () => {
 await step('complete and confirm cash', async () => { await page.getByText('Complete trip', { exact: true }).click(); await page.getByText('Confirm cash received', { exact: true }).waitFor({ timeout: 20000 }); await shot('10-collect'); await page.getByText('Confirm cash received', { exact: true }).click(); await page.waitForTimeout(2500);
   const b = (await db.query('select status from bookings where id=$1', [bid])).rows[0].status; if (b !== 'PAYMENT_COMPLETED') throw new Error('status ' + b); });
 await step('earnings tab shows the trip, commission and wallet', async () => { await page.getByText('Earnings', { exact: true }).first().click(); await page.getByText('Net earnings').waitFor({ timeout: 20000 }); await page.getByText('Wallet', { exact: true }).first().waitFor(); await shot('11-earnings'); });
-await step('go offline', async () => { await page.getByRole('radio', { name: 'Driver', exact: true }).click(); await page.getByText('Go offline', { exact: true }).click(); await page.getByText('Offline', { exact: true }).first().waitFor({ timeout: 15000 }); });
+await step('go offline', async () => { await page.getByTestId('tab-home').click(); await page.getByText('Go offline', { exact: true }).click(); await page.getByText('Offline', { exact: true }).first().waitFor({ timeout: 15000 }); });
 console.log('browser errors (excluding map tiles / third-party):', JSON.stringify(errors.filter((e) => !/tile|leaflet|unpkg|ERR_|Failed to load resource|net::|Access-Control|CORS/i.test(e))));
 await br.close(); await db.end();

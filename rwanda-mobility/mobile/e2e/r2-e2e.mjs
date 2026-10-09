@@ -4,6 +4,7 @@
 // Prerequisites: backend running with OTP_DEV_ECHO=true on a migrated + seeded DB, and the web export served (see docs/MOBILE_ROUND2.md).
 // Usage: node e2e/r2-e2e.mjs <screenshot-dir> [langs, e.g. rw,fr]
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
 import { readFileSync } from 'node:fs';
 const API = (process.env.API_ORIGIN ?? 'http://localhost:8102') + '/api/v1', WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8112', OUT = process.argv[2] ?? '/tmp', LANGS = (process.argv[3] ?? 'rw,fr').split(',');
@@ -33,14 +34,14 @@ const mkDriver = async (plate, lang) => {
 const newCtx = async (user, lang, mode = 'passenger') => {
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: KCC.lat, longitude: KCC.lng }, permissions: ['geolocation'] });
   await ctx.addInitScript(([tk, lg, md]) => { try { if (!localStorage.getItem('rm_tokens')) { localStorage.setItem('rm_tokens', JSON.stringify(tk)); localStorage.setItem('rm_lang', lg); localStorage.setItem('rm_loc_consent', '1'); localStorage.setItem('rm_mode', md); localStorage.setItem('rm_drv_consent', '1'); } } catch { /* ignore */ } }, [{ access_token: user.t, refresh_token: user.r }, lang, mode]);
-  const page = await ctx.newPage(); page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push('console: ' + m.text().slice(0, 200)));
+  const page = visibleOnly(await ctx.newPage()); page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push('console: ' + m.text().slice(0, 200)));
   await page.goto(WEB); return { ctx, page };
 };
 const popular = async (lang) => (await (await fetch(API + '/places/popular?lang=' + lang)).json()).places.find((p) => /Nyabugogo/.test(p.name));
 const cancelOpen = async () => { await db.query("update bookings set status='CANCELLED_BY_SYSTEM' where status in ('SEARCHING_DRIVER','REQUESTED','SCHEDULED','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS','PAYMENT_PENDING')"); };
 /** Home -> pick the Nyabugogo chip -> See prices (options screen). */
 const toOptions = async (page, t, place, { guest = false } = {}) => {
-  await page.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 });
+  await page.getByTestId('tab-book').click({ timeout: 25000 }); await page.getByText(t('home.where'), { exact: true }).first().waitFor({ timeout: 25000 });
   if (guest) await page.getByText(t('r2.guest.home'), { exact: true }).click();
   await page.getByText(place.name, { exact: true }).first().click(); await page.getByTestId('cta').click();
   await page.getByText(t('opt.breakdown'), { exact: true }).waitFor({ timeout: 25000 });
@@ -111,7 +112,7 @@ for (const lang of LANGS) {
     const late = await call('POST', `/bookings/${bookingId}/guest-contact`, { t: D.t, body: {} }); if (late.s !== 409 || late.j.error?.code !== 'guest_contact_unavailable') throw new Error('late contact ' + JSON.stringify(late));
   });
   await step(L + 'guest: history shows who the ride was for', async () => {
-    await pp.goto(WEB); await pp.getByText(t('home.history'), { exact: true }).click(); await pp.getByText(t('r2.guest.hist', { name: guestName }), { exact: false }).first().waitFor({ timeout: 20000 });
+    await pp.goto(WEB); await pp.getByTestId('tab-trips').click(); await pp.getByText(t('r2.guest.hist', { name: guestName }), { exact: false }).first().waitFor({ timeout: 20000 });
   }, pp);
 
   await step(L + 'quests: card on Working, progress 50 percent after one trip', async () => {
@@ -154,7 +155,7 @@ for (const lang of LANGS) {
   await step(L + 'recurring: price-changed warning and accept new price', async () => {
     const sid = (await db.query('select id from ride_schedules where user_id=$1', [P.id])).rows[0].id;
     await db.query("insert into ride_schedule_runs(schedule_id, occurrence_date, scheduled_for, status, quoted_total) values ($1, current_date + 3, now() + interval '3 days', 'price_changed', 3333)", [sid]);
-    await pp.goto(WEB); await pp.getByText(t('r2.sch.title'), { exact: true }).last().click(); await pp.getByTestId('r2-accept-price').waitFor({ timeout: 25000 }); await pp.screenshot({ path: `${OUT}/r2-${lang}-price-warning.png` });
+    await pp.goto(WEB); await pp.getByTestId('qa-schedule').click(); await pp.getByTestId('r2-accept-price').waitFor({ timeout: 25000 }); await pp.screenshot({ path: `${OUT}/r2-${lang}-price-warning.png` });
     await pp.getByTestId('r2-accept-price').click(); await pp.getByText(t('r2.sch.accepted'), { exact: true }).waitFor({ timeout: 15000 });
     const e = (await db.query('select expected_total from ride_schedules where id=$1', [sid])).rows[0].expected_total; if (Number(e) !== 3333) throw new Error('expected_total ' + e);
   }, pp);
@@ -175,7 +176,7 @@ for (const lang of LANGS) {
   }, dp);
 
   await step(L + 'marketing: opt-in switch in Profile saves notif_prefs.marketing', async () => {
-    await pp.goto(WEB); await pp.getByText(t('home.profile'), { exact: true }).first().click(); await pp.getByText(t('r2.mkt.title'), { exact: true }).waitFor({ timeout: 20000 });
+    await pp.goto(WEB); await pp.getByTestId('tab-account').click(); await pp.getByTestId('acc-edit').click(); await pp.getByText(t('r2.mkt.title'), { exact: true }).waitFor({ timeout: 20000 });
     await pp.getByText(t('r2.mkt.body'), { exact: true }).waitFor();
     const before = (await db.query('select notif_prefs from users where id=$1', [P.id])).rows[0].notif_prefs; if (before?.marketing) throw new Error('marketing should default to off');
     await pp.getByRole('switch', { name: t('r2.mkt.title') }).click(); await pp.getByText(t('prof.saved'), { exact: true }).waitFor({ timeout: 15000 });

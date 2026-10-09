@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
 // Layout / insets / navigation audit across phone sizes. Loads the main passenger, driver and Abasare screens at several viewports, with and without
 // simulated system insets (web-only `?insets=top:44,bottom:48,left:0,right:0` override of the safe-area provider), and asserts:
@@ -23,16 +24,25 @@ const INSETS = [{ top: 0, bottom: 0 }, { top: 44, bottom: 48 }];
 const br = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 let bad = 0;
 
-function audit({ inset, expectBack, expectFooter }) {
+function audit({ inset, expectBack, expectFooter, expectTabs }) {
   const vw = innerWidth, vh = innerHeight, issues = [];
-  const r = (sel) => { const e = document.querySelector(`[data-testid="${sel}"]`); return e ? e.getBoundingClientRect() : null; };
+  // tabs keep hidden copies of their screens: only elements that are really laid out count
+  const vis = (sel) => [...document.querySelectorAll(`[data-testid="${sel}"]`)].find((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0; }) ?? null;
+  const r = (sel) => { const e = vis(sel); return e ? e.getBoundingClientRect() : null; };
   if (document.documentElement.scrollWidth > vw + 1) issues.push(`horizontal overflow ${document.documentElement.scrollWidth}>${vw}`);
-  const hel = document.querySelector('[data-testid="header"]'); if (hel) { const top = hel.getBoundingClientRect().top + parseFloat(getComputedStyle(hel).paddingTop || '0'); if (top < inset.top - 0.5) issues.push(`header content top ${top} < inset ${inset.top}`); }
+  const hel = vis('header'); if (hel) { const top = hel.getBoundingClientRect().top + parseFloat(getComputedStyle(hel).paddingTop || '0'); if (top < inset.top - 0.5) issues.push(`header content top ${top} < inset ${inset.top}`); }
   if (expectBack) { const b = r('back'); if (!b) issues.push('no back control'); else { if (b.height < 43.5 || b.width < 43.5) issues.push(`back too small ${b.width}x${b.height}`); if (b.top < inset.top - 0.5 || b.left < 0) issues.push('back outside safe area'); } }
   const f = r('footer'); const c = r('cta');
   if (expectFooter && !c) issues.push('no primary CTA');
   if (f && f.bottom > vh + 0.5) issues.push(`footer bottom ${f.bottom} > viewport ${vh}`);
   if (c) { if (c.bottom > vh - inset.bottom + 0.5) issues.push(`CTA bottom ${Math.round(c.bottom)} under bottom inset (limit ${vh - inset.bottom})`); if (c.top < 0 || c.right > vw + 0.5 || c.left < -0.5) issues.push('CTA outside viewport'); }
+  const tb = r('tabbar'); if (expectTabs && !tb) issues.push('no tab bar');
+  if (tb) {
+    if (tb.bottom > vh + 0.5) issues.push(`tab bar bottom ${Math.round(tb.bottom)} > viewport ${vh}`);
+    for (const e of document.querySelectorAll('[data-testid^="tab-"]')) { const b = e.getBoundingClientRect(); if (b.height < 43.5) issues.push(`tab ${e.dataset.testid} too short ${Math.round(b.height)}`); if (b.bottom > vh - inset.bottom + 0.5) issues.push(`tab ${e.dataset.testid} under bottom inset`); if (b.right > vw + 0.5 || b.left < -0.5) issues.push(`tab ${e.dataset.testid} outside viewport`); if (b.width < 40) issues.push(`tab ${e.dataset.testid} too narrow ${Math.round(b.width)}`); }
+    if (c && c.bottom > tb.top + 0.5) issues.push(`CTA overlaps tab bar (${Math.round(c.bottom)} > ${Math.round(tb.top)})`);
+    if (f && f.bottom > tb.top + 0.5) issues.push('footer overlaps tab bar');
+  }
   if (vw > 700) { const first = document.querySelector('[data-testid="footer"] > div'); if (first && first.getBoundingClientRect().width > 645) issues.push('footer content not capped on tablet'); }
   return issues;
 }
@@ -42,7 +52,7 @@ for (const [w, h] of VIEWPORTS) for (const inset of INSETS) {
   const mk = async (tok) => {
     const ctx = await br.newContext({ viewport: { width: w, height: h }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] });
     if (tok) await ctx.addInitScript(([t]) => { localStorage.setItem('rm_tokens', JSON.stringify(t)); localStorage.setItem('rm_lang', 'en'); localStorage.setItem('rm_loc_consent', '1'); localStorage.setItem('rm_drv_loc_consent', '1'); localStorage.setItem('rm_ab_how', '1'); }, [tok]);
-    const page = await ctx.newPage(); return { ctx, page };
+    const page = visibleOnly(await ctx.newPage()); return { ctx, page };
   };
   const check = async (page, name, opt) => {
     await page.waitForTimeout(500);
@@ -57,29 +67,33 @@ for (const [w, h] of VIEWPORTS) for (const inset of INSETS) {
     await ctx.close(); }
   // passenger
   { const { ctx, page } = await mk(pax.tok);
-    await page.goto(WEB + q); await page.getByText('Where to?').first().waitFor({ timeout: 20000 }); await check(page, 'home', { expectBack: false, expectFooter: true });
-    await page.getByText('Isoko rya Kimironko', { exact: true }).or(page.getByRole('radio').nth(5)).first().click({ timeout: 3000 }).catch(() => {});
-    await page.getByText('Profile', { exact: true }).first().click(); await page.getByText('Trusted contacts', { exact: true }).first().waitFor(); await check(page, 'profile', { expectBack: true });
-    await page.getByLabel('Back').first().click(); await page.getByText('Help', { exact: true }).first().click(); await page.getByText('Contact support').first().waitFor(); await check(page, 'support', { expectBack: true, expectFooter: true });
-    await page.getByLabel('Back').first().click(); await page.getByText('My trips', { exact: true }).first().click(); await page.getByLabel('Back').first().waitFor(); await check(page, 'history', { expectBack: true });
-    await page.getByLabel('Back').first().click(); await page.getByText('Scan a code').first().click(); await page.getByPlaceholder('Code, e.g. K7M2QX').waitFor(); await check(page, 'scan', { expectBack: true, expectFooter: true });
+    await page.goto(WEB + q); await page.getByText('Where to?').first().waitFor({ timeout: 20000 }); await page.waitForTimeout(800); await check(page, 'home', { expectBack: false, expectTabs: true });
+    await page.getByTestId('tab-book').click(); await page.getByPlaceholder('Search place or landmark').waitFor({ timeout: 20000 }).catch(() => {}); await check(page, 'book', { expectBack: false, expectFooter: true, expectTabs: true });
+    await page.getByTestId('tab-trips').click(); await check(page, 'trips', { expectBack: false, expectTabs: true });
+    await page.getByTestId('tab-wallet').click(); await check(page, 'wallet', { expectBack: false, expectTabs: true });
+    await page.getByTestId('tab-account').click(); await check(page, 'account', { expectBack: false, expectTabs: true });
+    await page.getByTestId('acc-edit').click(); await page.getByText('Trusted contacts', { exact: true }).first().waitFor(); await check(page, 'profile', { expectBack: true });
+    await page.getByLabel('Back').first().click(); await page.getByTestId('open-help').click(); await page.getByText('Contact support').first().waitFor(); await check(page, 'support', { expectBack: true, expectFooter: true });
+    await page.getByLabel('Back').first().click(); await page.getByTestId('tab-home').click(); await page.getByTestId('qa-scan').click(); await page.getByPlaceholder('Code, e.g. K7M2QX').waitFor(); await check(page, 'scan', { expectBack: true, expectFooter: true });
     await page.getByLabel('Back').first().click();
+    await page.getByTestId('tab-book').click();
     if (await page.getByText('Abasare', { exact: true }).first().isVisible().catch(() => false)) {
-      await page.getByText('Abasare', { exact: true }).first().click(); await page.waitForTimeout(500); await check(page, 'abasare-home', { expectBack: false, expectFooter: true });
+      await page.getByText('Abasare', { exact: true }).first().click(); await page.waitForTimeout(500); await check(page, 'abasare-home', { expectBack: false, expectFooter: true, expectTabs: true });
       await page.getByText('Add a car', { exact: true }).first().click(); await page.getByText('My cars').first().waitFor(); await check(page, 'cars', { expectBack: true, expectFooter: true });
       await page.getByText('Add a car', { exact: true }).last().click(); await page.getByLabel('Plate number').waitFor(); await check(page, 'cars-form', { expectBack: true, expectFooter: true });
     }
     await ctx.close(); }
   // options (needs a destination)
   { const { ctx, page } = await mk(pax.tok);
-    await page.goto(WEB + q); await page.getByText('Where to?').first().waitFor({ timeout: 20000 }); await page.waitForTimeout(1200);
+    await page.goto(WEB + q); await page.getByTestId('tab-book').click(); await page.getByText('Where to?').first().waitFor({ timeout: 20000 }); await page.waitForTimeout(1200);
     await page.getByText('Isoko rya Kimironko', { exact: true }).or(page.getByText('Kimironko Market', { exact: true })).first().click({ timeout: 8000 }).catch(() => {});
     await page.getByText('See prices', { exact: true }).click({ timeout: 8000 }).catch(() => {}); await page.getByText('Fare breakdown').waitFor({ timeout: 20000 }).catch(() => {});
     await check(page, 'options', { expectBack: true, expectFooter: true }); await ctx.close(); }
   // driver application + working
   { const { ctx, page } = await mk(drv.tok);
     await page.addInitScript(() => localStorage.setItem('rm_mode', 'driver'));
-    await page.goto(WEB + q); await page.getByText('Driver', { exact: true }).first().waitFor({ timeout: 20000 }); await page.waitForTimeout(800); await check(page, 'driver-home', { expectBack: true });
+    await page.goto(WEB + q); await page.getByTestId('tabbar').waitFor({ timeout: 20000 }); await page.waitForTimeout(800); await check(page, 'driver-home', { expectBack: false, expectTabs: true });
+    for (const k of ['trips', 'earn', 'car', 'account']) { await page.getByTestId('tab-' + k).click(); await check(page, 'driver-' + k, { expectBack: false, expectTabs: true }); }
     await ctx.close(); }
 }
 console.log(bad ? `${bad} layout problems` : 'layout: all clean'); await br.close(); await db.end(); process.exit(bad ? 1 : 0);

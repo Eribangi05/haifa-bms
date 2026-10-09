@@ -9,14 +9,14 @@ import { KIGALI } from '../../config';
 import { Banner, Btn, Card, Chip, Field, IconBadge, LinkBtn, PermissionCard, Screen, SectionTitle, Text, useProportionalHeight } from '../../ui/components';
 import { MapBox } from '../../ui/MapView';
 import { C, S, SP } from '../../ui/theme';
-import { HowItWorks, PromoBanner, RecentTrips, SavedShortcuts, ServiceCards, StatusChip } from './homeParts';
+import { HowItWorks, RecentTrips, SavedShortcuts, ServiceCards, StatusChip } from './homeParts';
 import { usePlaces } from './usePlaces';
 import { CreditChip } from '../r3/credit';
 
 let resumedOnce = false;   // auto-open the active trip only once per app launch (resume after the app was killed)
 
-export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
-  const { t, lang, client, nav, me, online, mode, setMode, say, cfg } = useApp();
+export function Home({ params, intent, onActive }: { params?: { venue?: Venue; svc?: Svc }; intent?: { dest?: Place | Pt; svc?: Svc; n: number } | null; onActive?: (b: Booking | null) => void }) {
+  const { t, lang, client, nav, online, mode, say, cfg } = useApp();
   const loc = useLocate(); const places = usePlaces();
   const [pickup, setPickup] = useState<Pt | null>(null); const [dest, setDest] = useState<Pt | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null); const [note, setNote] = useState('');
@@ -25,9 +25,9 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
   const [svc, setSvcState] = useState<Svc>('ride'); const [cars, setCars] = useState<CustomerCar[]>([]); const [carId, setCarId] = useState<string | null>(null);
   const [forOther, setForOther] = useState(false);
   const [hire, setHire] = useState<'p2p' | 'hourly'>('p2p'); const [hours, setHours] = useState(2);
-  const [trips, setTrips] = useState<Booking[]>([]); const [refCode, setRefCode] = useState<string | undefined>();
+  const [trips, setTrips] = useState<Booking[]>([]);
   const setSvc = (v: Svc) => { setSvcState(v); void kv.set('rm_svc', v); };
-  const mapH = useProportionalHeight(0.28, 180, 320);
+  const mapH = useProportionalHeight(0.34, 200, 380);
   // Arrived from a scanned request code: pickup = the venue, service = its default (or the link's choice), destination empty.
   const [reqCode, setReqCode] = useState<string | null>(params?.venue?.code ?? null);
   const fromCode = useRef(!!params?.venue);
@@ -43,7 +43,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
   useEffect(() => { if (!abasareOn && svc === 'abasare') setSvcState('ride'); }, [abasareOn, svc]);
 
   useEffect(() => { kv.get('rm_loc_consent').then((v) => setConsent(v === '1')).catch(() => setConsent(false)); }, []);
-  useEffect(() => { client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}); client.get('/users/me/referral').then((r) => setRefCode(r.code)).catch(() => {}); }, [client]);
+  useEffect(() => { client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}); }, [client]);
 
   const locate = useCallback(async () => {
     const fix = await loc.locate();
@@ -66,12 +66,16 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
   const active = usePoll(() => client.get<{ booking: Booking | null }>('/bookings/active?role=passenger'), 6000, [mode]);
   const activeB = active.data?.booking && isOpen(active.data.booking.status) ? active.data.booking : null;
   useEffect(() => { if (activeB && !resumedOnce && !params?.venue && nav.stack.length === 1) { resumedOnce = true; nav.push('track', { id: activeB.id }); } }, [activeB, params, nav]);
-  useEffect(() => { if (active.loaded) resumedOnce = true; }, [active.loaded]);   // only the very first answer after launch may auto-open
+  useEffect(() => { if (active.loaded) resumedOnce = true; }, [active.loaded]);
+  useEffect(() => { onActive?.(activeB ?? null); }, [activeB?.id, activeB?.status]); // eslint-disable-line react-hooks/exhaustive-deps   // only the very first answer after launch may auto-open
 
   const pickDest = (p: Place | Pt) => {
     const name = (p as Place).name ?? places.nearest(p) ?? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
     setDest({ lat: p.lat, lng: p.lng, name }); setQ(''); setResults([]); places.pushRecent({ lat: p.lat, lng: p.lng, name });
   };
+  // A destination (or service) chosen on the Home tab: apply it once per tap.
+  const seenIntent = useRef(0);
+  useEffect(() => { if (!intent || intent.n === seenIntent.current) return; seenIntent.current = intent.n; if (intent.svc) setSvc(intent.svc); if (intent.dest) pickDest(intent.dest); }, [intent]); // eslint-disable-line react-hooks/exhaustive-deps
   const saveDest = (label: 'home' | 'work') => { if (!dest) return; client.post('/users/me/places', { label, name: dest.name ?? `${dest.lat.toFixed(4)}, ${dest.lng.toFixed(4)}`, lat: dest.lat, lng: dest.lng }).then(() => { places.reloadSaved(); say(t('prof.saved')); }).catch(() => say(t('common.error'))); };
   const markers = dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' }] : [];
   const needsDest = svc === 'ride' || hire === 'p2p';
@@ -91,11 +95,10 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
     </Screen>
   );
 
-  const name = (me?.display_name ?? '').trim().split(/\s+/)[0];
   return (
     <Screen
-      title={`${t('home.hello')}${name ? `, ${name}` : ''}`}
-      right={<View style={S.row}>{me?.roles.includes('driver') ? <Chip text={t('drv.mode')} onPress={() => setMode('driver')} /> : null}<LinkBtn title={t('home.help')} onPress={() => nav.push('support')} /><LinkBtn title={t('home.profile')} onPress={() => nav.push('profile')} /></View>}
+      title={t('book.title')}
+      right={<LinkBtn title={t('home.help')} onPress={() => nav.push('support')} />}
       onRefresh={async () => { active.reload(); await Promise.all([client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}), new Promise((r) => setTimeout(r, 500))]); }}
       footer={<Btn testID="cta" big title={t('home.seeprices')} onPress={go} disabled={!ready} />}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
@@ -104,7 +107,13 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
         <Card style={{ borderColor: C.primary, borderWidth: 2 }}>
           <View style={S.between}><View style={{ flex: 1, paddingRight: SP.sm }}><Text style={S.h2}>{t('home.active')}</Text><Text style={S.muted}>{activeB.ref}</Text><View style={{ marginTop: 4 }}><StatusChip status={activeB.status} /></View></View><Btn title={t('home.resume')} onPress={() => nav.push('track', { id: activeB.id })} /></View>
         </Card>) : null}
-      <PromoBanner code={refCode} onOpen={() => nav.push('profile')} />
+            {loc.perm === 'blocked' || loc.perm === 'denied' ? <PermissionCard title={t('perm.loc.title')} body={loc.perm === 'blocked' ? t('perm.loc.blocked') : t('home.nolocation')} actionLabel={loc.perm === 'blocked' ? t('perm.settings') : t('loc.allow')} onAction={loc.perm === 'blocked' ? loc.openSettings : () => { resetPickupSource(); void locate(); }} /> : null}
+      {loc.perm === 'off' ? <PermissionCard title={t('perm.gps.title')} body={t('perm.gps.body')} actionLabel={t('perm.settings')} onAction={loc.openSettings} /> : null}
+
+      {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => { resetPickupSource(); setPickup({ lat, lng, name: places.nearest({ lat, lng }) ?? t('home.mylocation') }); }} onTap={(lat, lng) => pickDest({ lat, lng })} onStatus={setMapOk} height={mapH} />
+        : <Banner text={t('home.map.off')} />}
+      <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
+
       <ServiceCards svc={svc} setSvc={setSvc} abasareOn={abasareOn} onScan={() => nav.push('scan')} />
 
       {svc === 'abasare' ? <HowItWorks /> : null}
@@ -117,13 +126,6 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
         {hire === 'hourly' ? <><Text style={S.muted}>{t('ab.hours')}</Text><View style={[S.wrap, { marginTop: 6 }]}>{(cfg?.abasare?.packages ?? [2, 4, 8, 12]).map((h) => <Chip key={h} text={`${h} ${t('ab.h')}`} on={hours === h} onPress={() => setHours(h)} />)}</View></> : null}
         <Text style={[S.muted, { marginTop: 4 }]}>{t('ab.night')}</Text>
       </Card> : null}
-
-      {loc.perm === 'blocked' || loc.perm === 'denied' ? <PermissionCard title={t('perm.loc.title')} body={loc.perm === 'blocked' ? t('perm.loc.blocked') : t('home.nolocation')} actionLabel={loc.perm === 'blocked' ? t('perm.settings') : t('loc.allow')} onAction={loc.perm === 'blocked' ? loc.openSettings : () => { resetPickupSource(); void locate(); }} /> : null}
-      {loc.perm === 'off' ? <PermissionCard title={t('perm.gps.title')} body={t('perm.gps.body')} actionLabel={t('perm.settings')} onAction={loc.openSettings} /> : null}
-
-      {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => { resetPickupSource(); setPickup({ lat, lng, name: places.nearest({ lat, lng }) ?? t('home.mylocation') }); }} onTap={(lat, lng) => pickDest({ lat, lng })} onStatus={setMapOk} height={mapH} />
-        : <Banner text={t('home.map.off')} />}
-      <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
 
       <Card>
         <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><LinkBtn title={t('home.mylocation')} onPress={() => { resetPickupSource(); void locate(); }} /></View>
@@ -152,7 +154,7 @@ export function Home({ params }: { params?: { venue?: Venue; svc?: Svc } }) {
         <RecentTrips trips={trips} onAgain={pickDest} />
         {places.popular.length ? <><SectionTitle text={t('home.popular')} /><View style={S.wrap}>{places.popular.map((p) => <Chip key={p.id ?? p.name} text={p.name} onPress={() => pickDest(p)} />)}</View></> : null}
       </> : null}
-      <View style={{ height: 8 }} /><Btn kind="ghost" title={t('home.history')} onPress={() => nav.push('history')} /><View style={{ height: 8 }} /><Btn testID="r2-sch-open" kind="ghost" title={t('r2.sch.title')} onPress={() => nav.push('schedules')} />
+      
     </Screen>
   );
 }

@@ -283,10 +283,10 @@ export const Sheet = ({ children, style }: { children: React.ReactNode; style?: 
 export const Money = ({ n, style }: { n: number | null | undefined; style?: StyleProp<TextStyle> }) => <Text style={style}>{n == null ? '-' : Math.round(n).toLocaleString('en-US')} RWF</Text>;
 
 /** Transient message above the bottom inset (gesture bar / nav buttons never cover it). */
-export function Toast({ text }: { text: string | null }) {
+export function Toast({ text, lift = 0 }: { text: string | null; lift?: number }) {
   const insets = useSafeAreaInsets();
   if (!text) return null;
-  return <View pointerEvents="none" accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ position: 'absolute', left: SP.lg + insets.left, right: SP.lg + insets.right, bottom: insets.bottom + SP.xl, alignItems: 'center' }}><View style={{ backgroundColor: C.toast, borderRadius: R.md - 2, padding: SP.md, maxWidth: MAX_W, ...SHADOW.raised }}><Text style={{ color: '#fff' }}>{text}</Text></View></View>;
+  return <View pointerEvents="none" accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ position: 'absolute', left: SP.lg + insets.left, right: SP.lg + insets.right, bottom: insets.bottom + SP.xl + lift, alignItems: 'center' }}><View style={{ backgroundColor: C.toast, borderRadius: R.md - 2, padding: SP.md, maxWidth: MAX_W, ...SHADOW.raised }}><Text style={{ color: '#fff' }}>{text}</Text></View></View>;
 }
 
 /** Remote image whose signed URL changes on every poll: keeps one URL for ~4 minutes so it does not reload (flicker) every few seconds. */

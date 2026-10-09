@@ -2,6 +2,7 @@
 // the driver checks the car in and out with photos, the owner confirms, PIN start, completion and cash. See app-e2e.mjs for prerequisites.
 // Usage: node e2e/abasare-e2e.mjs <screenshot-dir> <small.jpg>
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 import pg from 'pg';
 const WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8081', OUT = process.argv[2] ?? '/tmp', JPG = process.argv[3] ?? '/tmp/doc.jpg';
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL ?? 'postgres://rm:rm@localhost:5432/rwanda_mobility' }); await db.connect();
@@ -9,7 +10,7 @@ await db.query('delete from otp_challenges'); await db.query("update bookings se
 const rnd = () => String(10000 + Math.floor(Math.random() * 89999)).slice(0, 5);
 const dph = '+2507884' + rnd(), oph = '+2507883' + rnd();
 const br = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-const mk = async (name) => { const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] }); const page = await ctx.newPage(); const errors = []; page.on('pageerror', (e) => errors.push(name + ' pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(name + ' console: ' + m.text().slice(0, 200))); return { ctx, page, errors }; };
+const mk = async (name) => { const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] }); const page = visibleOnly(await ctx.newPage()); const errors = []; page.on('pageerror', (e) => errors.push(name + ' pageerror: ' + e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(name + ' console: ' + m.text().slice(0, 200))); return { ctx, page, errors }; };
 const D = await mk('driver'), O = await mk('owner');
 const shot = (who, n) => who.page.screenshot({ path: `${OUT}/ab-${n}.png` });
 const step = async (name, fn, who) => { try { await fn(); console.log('OK  ', name); } catch (e) { console.log('FAIL', name, '-', e.message.split('\n')[0]); if (who) await shot(who, 'FAIL-' + name.replace(/\W+/g, '_').slice(0, 40)); throw e; } };
@@ -18,13 +19,13 @@ const signUp = async ({ page }, phone) => {
   await page.getByPlaceholder('07X XXX XXXX').fill('0' + phone.slice(4)); await page.getByText('Send code', { exact: true }).click();
   const code = (await page.getByText(/Test build: code: \d{6}/).textContent()).match(/\d{6}/)[0];
   await page.getByPlaceholder('••••••').fill(code); await page.getByText('Verify', { exact: true }).click();
-  await page.getByText('Location permission').waitFor(); await page.getByText('Allow location', { exact: true }).click(); await page.getByText('Where to?').waitFor();
+  await page.getByTestId('tabbar').waitFor({ timeout: 20000 }); await page.getByTestId('tab-book').click(); await page.getByText('Location permission').waitFor(); await page.getByText('Allow location', { exact: true }).click(); await page.getByText('Where to?').waitFor();
 };
 const chooseFile = async (page, label) => { const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.getByText(label, { exact: true }).first().click()]); await fc.setFiles(JPG); await page.waitForTimeout(1200); };
 
 // ---------------- driver applies ----------------
 await step('driver signs up and opens the Abasare application', async () => {
-  await signUp(D, dph); await D.page.getByText('Profile', { exact: true }).click(); await D.page.getByText('Start driver application', { exact: true }).click();
+  await signUp(D, dph); await D.page.getByTestId('tab-account').click(); await D.page.getByTestId('acc-become').click();
   await D.page.getByText('Abasare: drive customers\' cars', { exact: true }).first().waitFor({ timeout: 20000 }); await shot(D, '1-chooser');
 }, D);
 await step('choose Abasare, fill skills, save', async () => {

@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 // End-to-end test of the real React Native screens (via react-native-web) against a running backend.
 // Prereqs: backend running with OTP_DEV_ECHO=true MOMO_MODE=simulator on $API_ORIGIN (default http://localhost:8080),
 //          web build served on $WEB_ORIGIN (default http://localhost:8081):
@@ -27,7 +28,7 @@ await call('POST', '/drivers/me/location', { t: drv.t, body: { lat: -1.954, lng:
 
 const br = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.954, longitude: 30.0927 }, permissions: ['geolocation'] });
-const page = await ctx.newPage(); const errors = [];
+const page = visibleOnly(await ctx.newPage()); const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
 const shot = (n) => page.screenshot({ path: `${OUT}/app-${n}.png` });
 const step = async (name, fn) => { try { await fn(); console.log('OK  ', name); } catch (e) { console.log('FAIL', name, '-', e.message.split('\n')[0]); await shot('FAIL-' + name.replace(/\W+/g, '_')); throw e; } };
@@ -37,8 +38,8 @@ await step('switch language to English and back', async () => { await page.getBy
 await step('phone screen', async () => { await page.getByText('Komeza', { exact: true }).click(); await page.getByText('Nomero ya telefone').first().waitFor(); await page.getByPlaceholder('07X XXX XXXX').fill('0' + phone.slice(4)); await page.getByText('Ohereza kode', { exact: true }).click(); });
 let code;
 await step('otp screen shows test code and verifies', async () => { const t = await page.getByText(/Ikizamini: kode: \d{6}/).textContent(); code = t.match(/\d{6}/)[0]; await shot('2-otp'); await page.getByPlaceholder('••••••').fill(code); await page.getByText('Emeza', { exact: true }).click(); });
-await step('location consent then home', async () => { await page.getByText('Uruhushya rwo kumenya aho uri').waitFor(); await shot('3-consent'); await page.getByText('Emera', { exact: true }).click(); await page.getByText('Ujya he?').waitFor(); await page.waitForTimeout(1500); await shot('4-home'); });
-await step('pick destination from popular landmarks', async () => { await page.getByText('Isoko rya Kimironko', { exact: true }).click(); await page.waitForTimeout(400); await shot('5-dest'); });
+await step('location consent then home', async () => { await page.getByTestId('tabbar').waitFor({ timeout: 20000 }); await shot('3a-home-overview'); await page.getByTestId('tab-book').click(); await page.getByText('Uruhushya rwo kumenya aho uri').waitFor(); await shot('3-consent'); await page.getByText('Emera', { exact: true }).click(); await page.getByText('Ujya he?').waitFor(); await page.waitForTimeout(1500); await shot('4-home'); });
+await step('pick destination from popular landmarks', async () => { await page.getByText('Isoko rya Kimironko', { exact: true }).last().click(); await page.waitForTimeout(400); await shot('5-dest'); });
 await step('prices screen: moto available, honest unavailability for car, breakdown', async () => { await page.getByText('Reba ibiciro', { exact: true }).click(); await page.getByText('Hitamo urugendo').waitFor(); await page.getByText('Uko igiciro kigizwe').waitFor({ timeout: 20000 }); await page.getByText('Nta mushoferi uboneka').first().waitFor(); await shot('6-options'); });
 await step('confirm request -> searching', async () => { await page.getByText('Emeza ubusabe', { exact: true }).click(); await page.getByText('Turimo gushaka umushoferi…').waitFor({ timeout: 20000 }); await shot('7-searching'); });
 let bookingId;
@@ -51,12 +52,12 @@ let fare;
 await step('driver completes; passenger sees final fare and cash due', async () => { const c = await call('POST', `/bookings/${bookingId}/complete`, { t: drv.t, body: {} }); if (c.s !== 200) throw new Error('complete ' + JSON.stringify(c.j)); fare = c.j.final_fare; await page.getByText('Igiciro cya nyuma').waitFor({ timeout: 15000 }); await page.getByText(/Ugomba kwishyura/).waitFor(); await shot('11-pay'); });
 await step('driver confirms cash; passenger sees receipt and rates', async () => { const cs = await call('POST', `/bookings/${bookingId}/cash-collected`, { t: drv.t, body: { amount: fare } }); if (cs.j.status !== 'SUCCESS') throw new Error('cash ' + JSON.stringify(cs.j)); await page.getByText('Ubwishyu bwakiriwe').waitFor({ timeout: 15000 }); await page.getByLabel('Inyenyeri 5').click(); await page.getByTestId('cta').click(); await page.getByText('Murakoze! Amanota yawe yabitswe.').waitFor({ timeout: 15000 }); await shot('12-rated'); await page.getByLabel('Subira inyuma').first().click(); });
 await step('rating reached the server through the outbox', async () => { await page.waitForTimeout(1500); const r = await db.query("select score from ratings where booking_id=$1", [bookingId]); if (r.rows[0]?.score !== 5) throw new Error('rating missing'); });
-await step('history lists the trip', async () => { await page.getByText('Ongera usabe urugendo', { exact: true }).click(); await page.getByText('Ujya he?').waitFor(); await page.getByText('Ingendo zanjye', { exact: true }).click(); await page.getByText(/RM-/).first().waitFor({ timeout: 15000 }); await shot('13-history'); });
-await step('profile and support screens render', async () => { await page.getByLabel('Subira inyuma').click().catch(() => {}); await page.getByText('Umwirondoro', { exact: true }).first().click(); await page.getByText('Abantu wizeye').waitFor(); await shot('14-profile'); });
+await step('history lists the trip', async () => { await page.getByText('Ongera usabe urugendo', { exact: true }).click(); await page.getByTestId('tabbar').waitFor(); await page.getByTestId('tab-trips').click(); await page.getByText(/RM-/).first().waitFor({ timeout: 15000 }); await shot('13-history'); });
+await step('wallet and account tabs; profile screen renders', async () => { await page.getByTestId('tab-wallet').click(); await page.getByTestId('wal-row').first().waitFor({ timeout: 15000 }); await shot('14a-wallet'); await page.getByTestId('tab-account').click(); await page.getByTestId('acc-edit').click(); await page.getByText('Abantu wizeye').waitFor(); await shot('14-profile'); });
 // offline recovery: booking submitted while the API is unreachable is queued and sent once
 await step('offline: booking is queued as "not confirmed", then sent exactly once on reconnect', async () => {
-  await page.getByLabel('Subira inyuma').click().catch(() => {}); await page.getByText('Ujya he?').waitFor();
-  await page.getByText('Isoko rya Kimironko', { exact: true }).first().click(); await page.getByText('Reba ibiciro', { exact: true }).click(); await page.getByText('Uko igiciro kigizwe').waitFor({ timeout: 20000 });
+  await page.getByLabel('Subira inyuma').click().catch(() => {}); await page.getByTestId('tab-book').click(); await page.getByText('Ujya he?').last().waitFor();
+  await page.getByText('Isoko rya Kimironko', { exact: true }).last().click(); await page.getByText('Reba ibiciro', { exact: true }).click(); await page.getByText('Uko igiciro kigizwe').waitFor({ timeout: 20000 });
   await ctx.route('**/api/v1/bookings', (r) => (r.request().method() === 'POST' ? r.abort('failed') : r.continue()));
   await page.getByText('Emeza ubusabe', { exact: true }).click();
   await page.getByText(/Ntibiremezwa/).first().waitFor({ timeout: 30000 }); await shot('15-offline-pending');

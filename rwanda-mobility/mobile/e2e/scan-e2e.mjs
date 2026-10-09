@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { visibleOnly } from './visible.mjs';
 // E2E for QR request codes (web build; the camera and the Android deep link are NOT exercised here, only the flow after a code is known).
 // Prereqs as app-e2e.mjs (backend with OTP_DEV_ECHO=true MOMO_MODE=simulator on :8080, web build served on :8081).
 // Usage: node e2e/scan-e2e.mjs <screenshot-dir> [rw|fr|en]     (env: DATABASE_URL, CHROMIUM_PATH, API_ORIGIN, WEB_ORIGIN)
@@ -6,7 +7,7 @@ import { chromium } from 'playwright-core';
 import pg from 'pg';
 import fs from 'node:fs';
 // The locale modules import each other without file extensions (fine for the bundler, not for node), so read the strings from the files.
-const loadDict = (lang) => { const m = {}; for (const f of [`${lang}.ts`, `r1.${lang}.ts`, `r2.${lang}.ts`, `r3.${lang}.ts`]) { const p = new URL('../src/lib/locales/' + f, import.meta.url); if (!fs.existsSync(p)) continue; for (const mm of fs.readFileSync(p, 'utf8').matchAll(/'([\w.]+)': '((?:[^'\\]|\\.)*)'/g)) m[mm[1]] = mm[2].replace(/\\'/g, "'"); } return m; };
+const loadDict = (lang) => { const m = {}; for (const f of [`${lang}.ts`, `r1.${lang}.ts`, `r2.${lang}.ts`, `r3.${lang}.ts`, `r4.${lang}.ts`]) { const p = new URL('../src/lib/locales/' + f, import.meta.url); if (!fs.existsSync(p)) continue; for (const mm of fs.readFileSync(p, 'utf8').matchAll(/'([\w.]+)': '((?:[^'\\]|\\.)*)'/g)) m[mm[1]] = mm[2].replace(/\\'/g, "'"); } return m; };
 const en = loadDict('en'), rw = loadDict('rw'), fr = loadDict('fr');
 const OUT = process.argv[2] ?? '/tmp', LANG = process.argv[3] ?? 'rw'; const T = { en, rw, fr }[LANG]; const t = (k) => T[k];
 const API = (process.env.API_ORIGIN ?? 'http://localhost:8080') + '/api/v1', WEB = process.env.WEB_ORIGIN ?? 'http://localhost:8081';
@@ -34,7 +35,7 @@ const popular = (await call('GET', `/places/popular?lang=${LANG}`)).j.places[0].
 const br = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, geolocation: { latitude: -1.99, longitude: 30.2 }, permissions: ['geolocation'] });   // GPS deliberately far away: the venue must win
 await ctx.addInitScript((l) => { try { if (!localStorage.getItem('rm_lang')) localStorage.setItem('rm_lang', l); } catch {} }, LANG);
-const page = await ctx.newPage(); const errors = [];
+const page = visibleOnly(await ctx.newPage()); const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
 const shot = (n) => page.screenshot({ path: `${OUT}/scan-${LANG}-${n}.png` });
 const step = async (name, fn) => { try { await fn(); console.log('OK  ', `[${LANG}]`, name); } catch (e) { console.log('FAIL', `[${LANG}]`, name, '-', e.message.split('\n')[0]); await shot('FAIL-' + name.replace(/\W+/g, '_')); throw e; } };
