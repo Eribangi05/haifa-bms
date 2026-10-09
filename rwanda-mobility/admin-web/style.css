@@ -14,14 +14,14 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.
 /* ---- shell ---- */
 .shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
 nav#sidenav{background:#0b4d70;border-top:5px solid;border-image:linear-gradient(90deg,#00a1de 50%,#fad201 50%,#fad201 75%,#20603d 75%) 1;color:#fff;padding:12px 10px 16px;position:sticky;top:0;height:100vh;overflow:auto;display:flex;flex-direction:column;gap:2px}
-nav .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;padding:6px 10px 14px}nav .brand img{border-radius:7px}nav .brand small{font-weight:500;opacity:.7;font-size:12px;margin-left:2px}
+nav .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;padding:6px 10px 14px}nav .brand .bmark{padding:3px 5px}nav .brand img{display:block}nav .brand small{font-weight:500;opacity:.7;font-size:12px;margin-left:2px}
 .navgroup{margin-bottom:8px}.navhead{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#9cc7de;padding:8px 10px 4px}
 nav button{display:block;width:100%;text-align:left;background:none;border:0;color:#d7e9f3;padding:7px 10px;border-radius:8px;cursor:pointer;font:inherit;border-left:3px solid transparent}
 nav button:hover{background:#ffffff1a;color:#fff}nav button.on{background:#ffffff26;color:#fff;font-weight:600;border-left-color:var(--gold)}
 nav button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 .navfoot{margin-top:auto;border-top:1px solid #ffffff2a;padding-top:8px}
 .content{min-width:0;display:flex;flex-direction:column}
-.topbar{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;min-height:52px}
+.topbar{border-bottom:3px solid var(--gold)!important;display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;min-height:52px}
 .topbar .grow{flex:1}
 .crumbs{display:flex;gap:8px;list-style:none;margin:0;padding:0;color:var(--mut);font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .crumbs li+li::before{content:"/";margin-right:8px;opacity:.5}.crumbs li[aria-current]{color:var(--ink);font-weight:600}
@@ -29,7 +29,15 @@ nav button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 .iconbtn{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:16px;line-height:1}.iconbtn:hover{background:var(--hover)}
 [data-nav-toggle],.scrim{display:none}
 main{padding:20px 24px 40px;width:100%;max-width:1440px;min-width:0;outline:none}
-.loginpage{display:grid;place-items:start center;padding:8vh 16px}
+.loginpage{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);min-height:100vh;padding:0}
+.loginhero{background:radial-gradient(circle at 20% 15%,#1b7fc0 0,#0069a8 45%,#0b4d70 100%);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;padding:48px clamp(24px,6vw,84px);position:relative;overflow:hidden}
+.loginhero:before,.loginhero:after{content:"";position:absolute;border-radius:50%;pointer-events:none}.loginhero:before{width:340px;height:340px;right:-110px;top:-90px;background:#fad2011f}.loginhero:after{width:260px;height:260px;left:-80px;bottom:60px;background:#20603d55}
+.loginhero>*{position:relative}.herologo{border-radius:28px;background:#fff;padding:6px;box-shadow:0 10px 30px #0006;margin-bottom:10px}
+.herotitle{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1}.herotag{font-size:18px;font-weight:600;color:var(--gold);letter-spacing:.04em}.loginhero p{max-width:420px;opacity:.9;font-size:15px;margin:6px 0 0}
+.flagbands{position:absolute!important;left:0;right:0;bottom:0;display:flex;height:10px}.flagbands i{flex:2}.flagbands i:nth-child(1){background:var(--blue)}.flagbands i:nth-child(2){background:var(--gold);flex:1}.flagbands i:nth-child(3){background:var(--flag-green);flex:1}
+.loginside{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 16px;gap:10px}.loginfoot{font-size:12px}
+.bmark{display:inline-flex;align-items:center;justify-content:center;background:#fff;border-radius:9px;padding:3px 5px;box-shadow:0 1px 3px #0003}
+@media (max-width:820px){.loginpage{grid-template-columns:1fr}.loginhero{padding:28px 20px 34px;gap:4px}.herologo{width:84px;height:84px;margin-bottom:6px}.herotitle{font-size:28px}.loginhero p{display:none}.loginside{padding:20px 16px 40px}}
 /* ---- cards, KPIs ---- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
 .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin-bottom:6px}
@@ -77,7 +85,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* ---- pills, banners ---- */
 .pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:550;background:var(--line);color:var(--ink);white-space:nowrap}
 .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}.pill.info{background:var(--info-bg);color:var(--info)}
-.login{width:100%;max-width:400px;margin:0}.login input{width:100%;margin:6px 0}.login .brand.big{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;margin-bottom:14px}.login .brand img{border-radius:9px}
+.login{width:100%;max-width:400px;margin:0}.login input{width:100%;margin:6px 0}.login .brand.big{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;margin-bottom:14px}.login .brand .bmark{box-shadow:0 0 0 1px var(--line)}.login .brand img{display:block}
 .err{color:var(--bad);margin:6px 0}.ok{color:var(--ok)}.late{color:var(--bad);font-weight:600}
 .banner{background:var(--warn-bg);border:1px solid #f2b70588;border-radius:10px;padding:9px 12px;margin:0 0 12px}
 .banner.warn{background:var(--warn-bg)}

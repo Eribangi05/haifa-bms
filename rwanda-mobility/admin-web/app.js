@@ -74,7 +74,7 @@ function buildShell(root, tabs) {
   const groups = [...new Set(tabs.map((t) => t[3]))];
   const email = store.get('rm_email');
   const nav = h('nav', { id: 'sidenav', 'aria-label': 'Main navigation' },
-    h('div', { class: 'brand' }, h('img', { src: 'logo.png', alt: '', width: 28, height: 28 }), h('span', {}, 'Abasare'), h('small', {}, 'Operations')),
+    h('div', { class: 'brand' }, h('span', { class: 'bmark' }, h('img', { src: 'brand-mark.png', alt: '', width: 30, height: 25 })), h('span', {}, 'Abasare'), h('small', {}, 'Operations')),
     groups.map((g) => h('div', { class: 'navgroup', role: 'group', 'aria-label': g }, h('div', { class: 'navhead' }, g), tabs.filter((t) => t[3] === g).map(([k, l]) => h('button', { 'data-tab': k, onclick: () => go(k) }, l)))),
     h('div', { class: 'navfoot' }, h('button', { onclick: logout }, 'Sign out')));
   const themeBtn = h('button', { class: 'iconbtn', 'aria-label': 'Switch between light and dark theme', title: 'Light / dark', onclick: () => { const t = effectiveTheme() === 'dark' ? 'light' : 'dark'; applyTheme(t); pref.set('rm_theme', t); themeBtn.textContent = t === 'dark' ? '☀' : '☾'; } }, effectiveTheme() === 'dark' ? '☀' : '☾');
@@ -103,9 +103,14 @@ function loginView(root) {
       save(j); store.set('rm_email', email.value.trim()); S.notice = ''; S.tabSet = false; S.tab = 'dashboard'; S.state = {}; if (!tabFromHash()) history.replaceState(null, '', location.pathname); render();
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Sign in'; }
   };
-  root.append(h('main', { class: 'loginpage' }, h('form', { class: 'card login', onsubmit: submit, novalidate: true },
-    h('div', { class: 'brand big' }, h('img', { src: 'logo.png', alt: '', width: 40, height: 40 }), h('span', {}, 'Abasare Operations')), h('h1', {}, 'Staff sign-in'),
-    S.notice ? h('div', { class: 'alert warn', role: 'alert' }, S.notice) : null, email, pw, totp, err, btn, h('p', { class: 'muted' }, 'Staff accounts require two-factor authentication. Lost your authenticator? Ask a super admin.'))));
+  root.append(h('main', { class: 'loginpage' },
+    h('section', { class: 'loginhero', 'aria-hidden': 'true' },
+      h('img', { class: 'herologo', src: 'logo.png', alt: '', width: 168, height: 168 }), h('div', { class: 'herotitle' }, 'Abasare'), h('div', { class: 'herotag' }, 'Ride \u00b7 Work \u00b7 Explore'),
+      h('p', {}, 'Operations console for the Abasare team: bookings, drivers, support and safety in one place.'), h('div', { class: 'flagbands' }, h('i'), h('i'), h('i'))),
+    h('div', { class: 'loginside' }, h('form', { class: 'card login', onsubmit: submit, novalidate: true },
+      h('div', { class: 'brand big' }, h('span', { class: 'bmark' }, h('img', { src: 'brand-mark.png', alt: '', width: 40, height: 33 })), h('span', {}, 'Abasare Operations')), h('h1', {}, 'Staff sign-in'),
+      S.notice ? h('div', { class: 'alert warn', role: 'alert' }, S.notice) : null, email, pw, totp, err, btn, h('p', { class: 'muted' }, 'Staff accounts require two-factor authentication. Lost your authenticator? Ask a super admin.')),
+      h('p', { class: 'muted loginfoot' }, 'Abasare \u00b7 Kigali, Rwanda'))));
   email.focus();
 }
 
