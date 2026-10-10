@@ -46,4 +46,8 @@ export const pickFr: Record<keyof typeof pickEn, string> = {
   'ph.number': 'Numéro de téléphone',
   'ph.invalid': 'Saisissez un numéro valide pour ce pays',
   'ph.change': 'Changer de pays',
+  'nb.count': '{n} chauffeurs à proximité · environ {m} min',
+  'nb.one': '1 chauffeur à proximité · environ {m} min',
+  'nb.none': 'Aucun chauffeur à proximité pour le moment. Vous pouvez quand même demander une course.',
+  'nb.hint': 'Les positions des véhicules sont approximatives.',
 };

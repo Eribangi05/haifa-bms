@@ -124,6 +124,7 @@
 | POST | `/drivers/me/vehicle-application` |
 | POST | `/drivers/me/vehicle-application/submit` |
 | GET | `/drivers/me/wallet` |
+| GET | `/drivers/nearby` |
 | GET | `/files/*` |
 
 ## Payments

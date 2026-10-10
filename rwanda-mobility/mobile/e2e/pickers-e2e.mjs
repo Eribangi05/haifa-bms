@@ -39,4 +39,16 @@ await step('the clock can show 12-hour time and the text size can be larger (sto
   await page.getByTestId('when-pick').waitFor({ timeout: 25000 }); await page.getByTestId('when-pick').click(); await page.getByTestId('when-time').click(); const t = await page.getByTestId('time-shown').innerText(); if (!/AM|PM|--:--/.test(t)) throw new Error('not 12-hour: ' + t);
   await page.screenshot({ path: `${OUT}/pk-12h-large.png` });
 });
+await step('online drivers near the pickup are counted on the rider home screen (blurred, no names)', async () => {
+  const dphone = '+2507887' + String(10000 + Math.floor(Math.random() * 89999)).slice(0, 5); await db.query('delete from otp_challenges');
+  const call = async (m, p2, body, t) => (await fetch((process.env.API_ORIGIN ?? 'http://localhost:8080') + '/api/v1' + p2, { method: m, headers: { 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}), 'x-device-id': 'nb-' + Math.random() }, body: body ? JSON.stringify(body) : undefined })).json();
+  const o = await call('POST', '/auth/otp/request', { phone: dphone }); const v = await call('POST', '/auth/otp/verify', { phone: dphone, code: o.dev_code, role: 'driver' });
+  await db.query("update driver_profiles set status='APPROVED', legal_name='Near Driver', zone_id='kigali' where user_id=$1", [v.user.id]);
+  await db.query("insert into vehicles(driver_id,vehicle_type,make,model,color,plate,capacity,status) values ($1,'moto','TVS','HLX','Blue',$2,1,'approved')", [v.user.id, 'RNB' + Math.floor(100 + Math.random() * 899) + 'X']);
+  for (const r of (await db.query("select doc_type, requires_expiry from document_requirements where vehicle_type='moto' and mandatory")).rows) await db.query("insert into driver_documents(driver_id,doc_type,file_key,mime,size,expiry_date,review_status) values ($1,$2,'docs/00000000-0000-0000-0000-000000000000.jpg','image/jpeg',10,$3,'approved')", [v.user.id, r.doc_type, r.requires_expiry ? '2099-01-01' : null]);
+  await call('PATCH', '/drivers/me/availability', { online: true }, v.access_token); await call('POST', '/drivers/me/location', { lat: -1.9545, lng: 30.0930 }, v.access_token);
+  await page.reload(); await page.getByTestId('tabbar').waitFor({ timeout: 25000 }); await page.getByTestId('tab-book').click();
+  await page.getByTestId('nearby-line').waitFor({ timeout: 30000 }); const txt = await page.getByTestId('nearby-line').innerText(); if (!/drivers? nearby/.test(txt)) throw new Error('no nearby line: ' + txt);
+  await page.waitForTimeout(2500); let icons = 0; for (const f of page.frames()) icons += await f.locator('.i').count().catch(() => 0); if (!icons) throw new Error('no car icon on the map'); await page.screenshot({ path: `${OUT}/pk-nearby.png` });
+});
 console.log(errors.length ? 'page errors: ' + errors.slice(0, 3).join(' | ') : 'no page errors'); await br.close(); await db.end();

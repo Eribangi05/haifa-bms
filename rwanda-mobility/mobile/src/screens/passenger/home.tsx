@@ -14,6 +14,8 @@ import { HowItWorks, RecentTrips, SavedShortcuts, ServiceCards, StatusChip } fro
 import { usePlaces } from './usePlaces';
 import { CreditChip } from '../money/credit';
 import { DateTimeField, NumberStepper } from '../../ui/Pickers';
+import { carIcon, useNearbyCars } from '../../lib/nearby';
+import type { Marker } from '../../ui/MapView';
 import { instantAllowed } from '../../lib/calendar';
 
 let resumedOnce = false;   // auto-open the active trip only once per app launch (resume after the app was killed)
@@ -85,7 +87,8 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   const seenIntent = useRef(0);
   useEffect(() => { if (!intent || intent.n === seenIntent.current) return; seenIntent.current = intent.n; if (intent.svc) setSvc(intent.svc); if (intent.dest) pickDest(intent.dest); }, [intent]); // eslint-disable-line react-hooks/exhaustive-deps
   const saveDest = (label: 'home' | 'work') => { if (!dest) return; client.post('/users/me/places', { label, name: dest.name ?? `${dest.lat.toFixed(4)}, ${dest.lng.toFixed(4)}`, lat: dest.lat, lng: dest.lng }).then(() => { places.reloadSaved(); say(t('prof.saved')); }).catch(() => say(t('common.error'))); };
-  const markers = dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' }] : [];
+  const nearby = useNearbyCars(pickup, svc === 'ride' && consent === true);
+  const markers = [...(dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' } as Marker] : []), ...nearby.cars.map((c) => ({ lat: c.lat, lng: c.lng, icon: carIcon(c.type) } as Marker))];
   const needsDest = svc === 'ride' || hire === 'p2p';
   const ready = !!pickup && (svc === 'ride' ? !!dest : !!carId && (hire !== 'p2p' || !!dest));
   const go = () => {
@@ -121,6 +124,12 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
 
       {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => { resetPickupSource(); setPickup({ lat, lng, name: places.nearest({ lat, lng }) ?? t('home.mylocation') }); }} onTap={(lat, lng) => pickDest({ lat, lng })} onStatus={setMapOk} height={mapH} />
         : <Banner text={t('home.map.off')} />}
+      {svc === 'ride' && nearby.loaded ? (
+        <View testID="nearby-line" accessibilityLiveRegion="polite" style={{ marginTop: 4 }}>
+          <Text style={[S.muted, { color: nearby.count ? C.green : C.muted }]}>{nearby.count ? t(nearby.count === 1 ? 'nb.one' : 'nb.count', { n: nearby.count, m: nearby.etaMin ?? 1 }) : t('nb.none')}</Text>
+          {nearby.count ? <Text style={[S.muted, { fontSize: 11 }]}>{t('nb.hint')}</Text> : null}
+        </View>
+      ) : null}
       <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
 
       <ServiceCards svc={svc} setSvc={setSvc} abasareOn={abasareOn} onScan={() => nav.push('scan')} />

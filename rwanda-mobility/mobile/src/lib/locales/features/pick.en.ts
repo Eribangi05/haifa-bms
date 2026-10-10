@@ -45,4 +45,8 @@ export const pickEn = {
   'ph.number': 'Phone number',
   'ph.invalid': 'Enter a valid number for this country',
   'ph.change': 'Change country',
+  'nb.count': '{n} drivers nearby · about {m} min away',
+  'nb.one': '1 driver nearby · about {m} min away',
+  'nb.none': 'No drivers nearby right now. You can still request a ride.',
+  'nb.hint': 'Car positions are approximate.',
 } as const;

@@ -290,3 +290,21 @@ test('R5-23 live map: a driver whose phone stopped reporting is listed as online
   assert.ok(r.json.drivers.some((d: any) => d.user_id === fresh.id), 'the reporting driver is on the map'); assert.ok(!r.json.drivers.some((d: any) => d.user_id === silent.id));
   assert.ok(r.json.not_reporting.some((d: any) => d.user_id === silent.id), 'the silent driver is listed'); assert.equal(typeof r.json.fresh_within_s, 'number');
 });
+
+test('R5-24 rider map shows nearby online drivers without identities; positions are blurred; silent, far, busy drivers and a switched-off flag show nothing', async () => {
+  const p = await t.register('passenger'); const a = await t.driver(); const silent = await t.driver();
+  const go = async (d: any, lat: number, lng: number) => { await t.api('PATCH', '/drivers/me/availability', { token: d.token, body: { online: true } }); await t.api('POST', '/drivers/me/location', { token: d.token, body: { lat, lng } }); };
+  await go(a, -1.9545, 30.0930); await go(silent, -1.9550, 30.0925);
+  await t.db.q("update driver_profiles set last_seen_at = now() - interval '10 minutes', last_location_at = now() - interval '10 minutes' where user_id=$1", [silent.id]);
+  const r = await t.api('GET', '/drivers/nearby?lat=-1.954&lng=30.0927', { token: p.token }); assert.equal(r.status, 200, JSON.stringify(r.json));
+  assert.equal(r.json.count, 1, 'only the close, reporting driver'); assert.equal(r.json.cars.length, 1); assert.deepEqual(Object.keys(r.json.cars[0]).sort(), ['k', 'lat', 'lng', 'type'], 'no id, name or plate');
+  assert.ok(r.json.nearest_eta_min >= 1); assert.notEqual(r.json.cars[0].lat, -1.9545, 'the position is blurred');
+  assert.ok(Math.abs(r.json.cars[0].lat - -1.9545) < 0.003 && Math.abs(r.json.cars[0].lng - 30.0930) < 0.003, 'but still close to the real place');
+  assert.equal((await t.api('GET', '/drivers/nearby?lat=0&lng=30', { token: p.token })).json.count, 0, 'nobody in the mountains');
+  const { blurPoint } = await import('../src/services/nearbyDrivers.ts');
+  const x = { lat: -1.9545, lng: 30.093 }; assert.deepEqual(blurPoint(x, 0, 'a'), x); const b1 = blurPoint(x, 120, 'a', 0), b2 = blurPoint(x, 120, 'a', 40_000);
+  assert.notDeepEqual(b1, b2, 'the shift changes every 30 seconds'); assert.deepEqual(blurPoint(x, 120, 'a', 0), b1, 'but is stable inside a bucket');
+  await t.db.q("update feature_flags set enabled=false where key='map.nearby_drivers'");
+  try { const off = await t.api('GET', '/drivers/nearby?lat=-1.954&lng=30.0927', { token: p.token }); assert.equal(off.json.count, 0); assert.equal(off.json.disabled, true); }
+  finally { await t.db.q("update feature_flags set enabled=true where key='map.nearby_drivers'"); }
+});

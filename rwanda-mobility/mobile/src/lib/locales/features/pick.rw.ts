@@ -46,4 +46,8 @@ export const pickRw: Record<keyof typeof pickEn, string> = {
   'ph.number': 'Nimero ya telefone',
   'ph.invalid': 'Andika nimero ya telefone yemewe y\'iki gihugu',
   'ph.change': 'Hindura igihugu',
+  'nb.count': 'Abashoferi {n} bari hafi · hafi y\'iminota {m}',
+  'nb.one': 'Umushoferi 1 ari hafi · hafi y\'iminota {m}',
+  'nb.none': 'Nta bashoferi bari hafi ubu. Ushobora gusaba urugendo.',
+  'nb.hint': 'Aho imodoka ziri harerekanwa hafi.',
 };
