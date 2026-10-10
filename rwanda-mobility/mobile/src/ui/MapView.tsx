@@ -8,7 +8,7 @@ import { useApp } from '../lib/app';
 import { useAppearance } from '../lib/appearance';
 import { LiteMap } from './liteMap';
 export type HeatCircle = { lat: number; lng: number; r: number; color: string; o: number };
-export type Marker = { lat: number; lng: number; label?: string; color?: string; icon?: string };      // icon: an emoji drawn instead of a dot (nearby cars); icons are not counted when the map fits its markers
+export type Marker = { lat: number; lng: number; label?: string; color?: string; icon?: string; bubble?: number };      // icon: an emoji drawn instead of a dot (nearby cars); icons are not counted when the map fits its markers
 type Props = {
   center: { lat: number; lng: number }; zoom?: number; markers?: Marker[]; pin?: { lat: number; lng: number } | null;
   onPin?: (lat: number, lng: number) => void; onTap?: (lat: number, lng: number) => void; zones?: [number, number][][]; height?: number | string;
@@ -30,7 +30,7 @@ function MapBoxFull({ center, zoom, markers, pin, onPin, onTap, zones, height = 
   const state = () => {
     const key = `${center.lat.toFixed(4)},${center.lng.toFixed(4)}`;
     const recenter = key !== lastCenter.current; lastCenter.current = key;
-    const pts = [...(markers ?? []).filter((m) => !m.icon), ...(pin ? [pin] : [])];
+    const pts = [...(markers ?? []).filter((m) => !m.icon && !m.bubble), ...(pin ? [pin] : [])];
     return { c: center, z: zoom, h: heat ?? [], m: markers ?? [], p: pin ?? null, zones, recenter, route: route ?? [], follow: follow ?? null, fit: !follow && pts.length > 1 ? pts : undefined };
   };
   useEffect(() => { const id = setTimeout(() => { if (!ready) { setOk(false); onStatus?.(false); } }, 8000); return () => clearTimeout(id); /* eslint-disable-next-line */ }, [ready]);

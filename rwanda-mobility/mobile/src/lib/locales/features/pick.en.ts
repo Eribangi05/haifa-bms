@@ -62,4 +62,7 @@ export const pickEn = {
   'pu.guest.choose': 'Choose where your guest will be picked up: search a place, pick a saved place, tap the map, or use your own location if they are with you.',
   'pu.far': 'This pickup is {km} km from where you are now. The driver will come to the pickup point, not to you.',
   'pu.need': 'Choose a pickup place to continue.',
+  'nb.wide.chip': 'See all available drivers',
+  'nb.wide.count': '{n} drivers available on the map',
+  'nb.wide.hint': 'A number shows how many drivers are in that area. Zoom in to see them closer.',
 } as const;

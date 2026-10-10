@@ -63,4 +63,7 @@ export const pickFr: Record<keyof typeof pickEn, string> = {
   'pu.guest.choose': 'Choisissez où votre invité sera pris en charge : cherchez un lieu, choisissez un lieu enregistré, touchez la carte, ou utilisez votre position s\'il est avec vous.',
   'pu.far': 'Ce point de prise en charge est à {km} km de votre position. Le chauffeur viendra au point de prise en charge, pas vers vous.',
   'pu.need': 'Choisissez un lieu de prise en charge pour continuer.',
+  'nb.wide.chip': 'Voir tous les chauffeurs disponibles',
+  'nb.wide.count': '{n} chauffeurs disponibles sur la carte',
+  'nb.wide.hint': 'Un nombre indique combien de chauffeurs sont dans la zone. Zoomez pour les voir de plus près.',
 };

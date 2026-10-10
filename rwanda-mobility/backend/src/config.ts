@@ -103,6 +103,7 @@ export const SETTING_DEFAULTS = {
   'map.nearby_radius_km': 4,
   'map.nearby_max': 10,
   'map.nearby_blur_m': 120,
+  'map.wide_radius_km': 80,
   'abasare.quick_hours': [2, 4, 8, 12],
   'payout.min_amount': 5000,
   'payout.fee': 0,

@@ -21,7 +21,7 @@ function MapBoxFull({ center, zoom, markers, pin, onPin, onTap, zones, height = 
   const src = useMemo(() => URL.createObjectURL(new Blob([MAP_HTML], { type: 'text/html' })), []);
   useEffect(() => () => URL.revokeObjectURL(src), [src]);
   const ref = useRef<HTMLIFrameElement>(null); const [ready, setReady] = useState(false); const [ok, setOk] = useState(true); const last = useRef('');
-  const state = () => { const key = `${center.lat.toFixed(4)},${center.lng.toFixed(4)}`; const recenter = key !== last.current; last.current = key; const pts = [...(markers ?? []).filter((m) => !m.icon), ...(pin ? [pin] : [])]; return { c: center, z: zoom, h: heat ?? [], m: markers ?? [], p: pin ?? null, zones, recenter, route: route ?? [], follow: follow ?? null, fit: !follow && pts.length > 1 ? pts : undefined }; };
+  const state = () => { const key = `${center.lat.toFixed(4)},${center.lng.toFixed(4)}`; const recenter = key !== last.current; last.current = key; const pts = [...(markers ?? []).filter((m) => !m.icon && !m.bubble), ...(pin ? [pin] : [])]; return { c: center, z: zoom, h: heat ?? [], m: markers ?? [], p: pin ?? null, zones, recenter, route: route ?? [], follow: follow ?? null, fit: !follow && pts.length > 1 ? pts : undefined }; };
   useEffect(() => {
     const h = (e: MessageEvent) => {
       if (e.source !== ref.current?.contentWindow) return;

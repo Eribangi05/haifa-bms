@@ -308,3 +308,15 @@ test('R5-24 rider map shows nearby online drivers without identities; positions 
   try { const off = await t.api('GET', '/drivers/nearby?lat=-1.954&lng=30.0927', { token: p.token }); assert.equal(off.json.count, 0); assert.equal(off.json.disabled, true); }
   finally { await t.db.q("update feature_flags set enabled=true where key='map.nearby_drivers'"); }
 });
+
+test('R5-25 wide view: all available drivers within the wide range are counted and drawn, grouped into numbered bubbles where they are close together', async () => {
+  const p = await t.register('passenger'); const a = await t.driver(); const b = await t.driver(); const far = await t.driver();
+  const go = async (d: any, lat: number, lng: number) => { await t.api('PATCH', '/drivers/me/availability', { token: d.token, body: { online: true } }); await t.api('POST', '/drivers/me/location', { token: d.token, body: { lat, lng } }); };
+  await go(a, -1.9545, 30.0930); await go(b, -1.9550, 30.0935); await go(far, -1.9545, 30.0932);
+  await t.db.q("update driver_profiles set last_lat=-1.50, last_lng=29.63 where user_id=$1", [far.id]);       // about 65 km away (Musanze)
+  const near = await t.api('GET', '/drivers/nearby?lat=-1.954&lng=30.0927', { token: p.token }); assert.equal(near.json.count, 2, 'the normal view stays local');
+  const wide = await t.api('GET', '/drivers/nearby?lat=-1.954&lng=30.0927&wide=1', { token: p.token }); assert.equal(wide.status, 200);
+  assert.equal(wide.json.count, 3, 'every available driver in the wide range'); assert.ok(wide.json.radius_km >= 80);
+  assert.equal(wide.json.cars.reduce((s: number, c: any) => s + (c.n ?? 1), 0), 3, 'bubbles add up to the count'); assert.ok(wide.json.cars.some((c: any) => c.n === 2), 'two close drivers form one bubble');
+  assert.ok(wide.json.cars.every((c: any) => !('user_id' in c) && !('id' in c)), 'still no identities');
+});

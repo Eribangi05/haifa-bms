@@ -8,7 +8,7 @@ export const MAP_BASE = (process.env.EXPO_PUBLIC_MAP_BASE ?? `${API_URL}/map`).r
 // Map docs: docs/MAP.md. Message protocol with the parent is unchanged from the old Leaflet page.
 export const MAP_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="stylesheet" href="${MAP_BASE}/lib/maplibre-gl.css"/>
-<style>html,body,#m{height:100%;margin:0}.i{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px #0006);transition:transform .8s linear}.l{font:600 12px sans-serif;background:#fff;color:#0F3554;padding:2px 6px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 3px #0003;transform:translateY(-18px)}
+<style>html,body,#m{height:100%;margin:0}.b{min-width:30px;height:30px;border-radius:15px;background:#0077B0;color:#fff;font:700 13px sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px #0005;padding:0 4px}.i{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px #0006);transition:transform .8s linear}.l{font:600 12px sans-serif;background:#fff;color:#0F3554;padding:2px 6px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 3px #0003;transform:translateY(-18px)}
 .d{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px #0006}.pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#E5384B;border:3px solid #fff;box-shadow:0 1px 5px #0006}
 .maplibregl-ctrl-attrib{font-size:10px}</style></head><body><div id="m"></div>
 <script src="${MAP_BASE}/lib/maplibre-gl.js"></script><script src="${MAP_BASE}/lib/pmtiles.js"></script>
@@ -115,7 +115,7 @@ function apply(s){
   markers.forEach(function(m){m.remove()});markers=[];
   map.getSource('zones').setData({type:'FeatureCollection',features:(s.zones||[]).map(function(r){return{type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[r.concat([r[0]])]}}})});
   map.getSource('heat').setData({type:'FeatureCollection',features:(s.h||[]).map(function(c){return{type:'Feature',properties:{color:c.color,o:c.o},geometry:{type:'Polygon',coordinates:circle(c.lat,c.lng,c.r||250)}}})});
-  (s.m||[]).forEach(function(k){if(k.icon){var ic=el('i');ic.textContent=k.icon;markers.push(new maplibregl.Marker({element:ic}).setLngLat([k.lng,k.lat]).addTo(map));return}var e=el('d',k.color||'#1A5FB4');markers.push(new maplibregl.Marker({element:e}).setLngLat([k.lng,k.lat]).addTo(map));
+  (s.m||[]).forEach(function(k){if(k.bubble){var bb=el('b');bb.textContent=String(k.bubble);markers.push(new maplibregl.Marker({element:bb}).setLngLat([k.lng,k.lat]).addTo(map));return}if(k.icon){var ic=el('i');ic.textContent=k.icon;markers.push(new maplibregl.Marker({element:ic}).setLngLat([k.lng,k.lat]).addTo(map));return}var e=el('d',k.color||'#1A5FB4');markers.push(new maplibregl.Marker({element:e}).setLngLat([k.lng,k.lat]).addTo(map));
     if(k.label){var t=el('l');t.textContent=k.label;markers.push(new maplibregl.Marker({element:t}).setLngLat([k.lng,k.lat]).addTo(map))}});
   var rs=map.getSource('route');if(rs)rs.setData({type:'FeatureCollection',features:s.route&&s.route.length>1?[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:s.route.map(function(p){return[p[1],p[0]]})}}]:[]});
   if(pin){pin.remove();pin=null}

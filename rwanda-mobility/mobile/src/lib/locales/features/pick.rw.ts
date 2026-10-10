@@ -63,4 +63,7 @@ export const pickRw: Record<keyof typeof pickEn, string> = {
   'pu.guest.choose': 'Hitamo aho umushyitsi wawe azamukira: shakisha ahantu, hitamo ahantu wabitse, kanda ku ikarita, cyangwa koresha aho uri niba muri kumwe.',
   'pu.far': 'Aho uzamukira hari ku birometero {km} uvuye aho uri ubu. Umushoferi azaza aho uzamukira, ntazaza aho uri.',
   'pu.need': 'Hitamo aho uzamukira kugira ngo ukomeze.',
+  'nb.wide.chip': 'Reba abashoferi bose bahari',
+  'nb.wide.count': 'Abashoferi {n} bahari ku ikarita',
+  'nb.wide.hint': 'Umubare werekana abashoferi bari muri ako gace. Zamura ikarita ubabone neza.',
 };

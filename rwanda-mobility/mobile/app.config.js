@@ -10,7 +10,7 @@ module.exports = () => ({
     name: 'Abasare',
     slug: 'abasare',
     scheme: 'abasare',
-    version: '0.9.5',
+    version: '0.9.6',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',   // follows the system; the in-app Settings can force light/dark (system bars follow the resolved theme)
@@ -19,14 +19,14 @@ module.exports = () => ({
     ios: {
       supportsTablet: false,
       bundleIdentifier: 'rw.abasare.app',
-      buildNumber: '19',                       // bump with every App Store / TestFlight upload
+      buildNumber: '20',                       // bump with every App Store / TestFlight upload
       config: { usesNonExemptEncryption: false },   // HTTPS only: standard encryption, exempt from export documentation
       // The app opens wa.me / sms: / tel: / mailto: links itself; no private URL schemes are queried.
       infoPlist: { CFBundleAllowMixedLocalizations: true, UIBackgroundModes: ['location'] },   // drivers share their position while online with the screen locked
     },
     android: {
       package: 'rw.abasare.app',
-      versionCode: 19,
+      versionCode: 20,
       adaptiveIcon: {
         backgroundColor: '#FFFFFF',
         foregroundImage: './assets/android-icon-foreground.png',

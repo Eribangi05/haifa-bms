@@ -42,9 +42,9 @@ export async function catalogRoutes(app: FastifyInstance) {
   });
   // Online drivers around a point for the rider map: blurred positions, no identities (see services/nearbyDrivers.ts). Remote off-switch: flag map.nearby_drivers.
   app.get('/drivers/nearby', { config: routeLimit('NEARBY_RATE_MAX', 30), preHandler: anyAuth }, async (req) => {
-    const b = parse(z.object({ lat: z.coerce.number().min(-3).max(0), lng: z.coerce.number().min(28).max(32) }), req.query);
+    const b = parse(z.object({ lat: z.coerce.number().min(-3).max(0), lng: z.coerce.number().min(28).max(32), wide: z.enum(['0', '1']).optional() }), req.query);
     if (!(await flagFor('map.nearby_drivers', req.auth!.id))) return { cars: [], count: 0, nearest_eta_min: null, radius_km: 0, disabled: true };
-    return nearbyDrivers({ lat: b.lat, lng: b.lng });
+    return nearbyDrivers({ lat: b.lat, lng: b.lng }, { wide: b.wide === '1' });
   });
   // Name for a point: "Near {place}" in the apps (offline data, no external service)
   app.get('/places/reverse', { config: routeLimit('PLACES_RATE_MAX', 60), preHandler: anyAuth }, async (req) => {

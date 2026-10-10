@@ -49,6 +49,8 @@ await step('online drivers near the pickup are counted on the rider home screen 
   await call('PATCH', '/drivers/me/availability', { online: true }, v.access_token); await call('POST', '/drivers/me/location', { lat: -1.9545, lng: 30.0930 }, v.access_token);
   await page.reload(); await page.getByTestId('tabbar').waitFor({ timeout: 25000 }); await page.getByTestId('tab-book').click();
   await page.getByTestId('nearby-line').waitFor({ timeout: 30000 }); const txt = await page.getByTestId('nearby-line').innerText(); if (!/drivers? nearby/.test(txt)) throw new Error('no nearby line: ' + txt);
+  await page.getByTestId('wide-toggle').click(); await page.waitForFunction(() => /drivers? available on the map/.test(document.body.innerText), null, { timeout: 20000 });
+  await page.getByTestId('wide-toggle').click(); await page.waitForFunction(() => /drivers? nearby/.test(document.body.innerText), null, { timeout: 20000 });
   await page.waitForTimeout(2500); let icons = 0; for (const f of page.frames()) icons += await f.locator('.i').count().catch(() => 0); if (!icons) throw new Error('no car icon on the map'); await page.screenshot({ path: `${OUT}/pk-nearby.png` });
 });
 await step('pickup stays flexible: a ride for someone else never assumes your own location; any place can be searched and chosen', async () => {

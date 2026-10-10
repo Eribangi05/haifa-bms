@@ -99,8 +99,9 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   const seenIntent = useRef(0);
   useEffect(() => { if (!intent || intent.n === seenIntent.current) return; seenIntent.current = intent.n; if (intent.svc) setSvc(intent.svc); if (intent.dest) pickDest(intent.dest); }, [intent]); // eslint-disable-line react-hooks/exhaustive-deps
   const saveDest = (label: 'home' | 'work') => { if (!dest) return; client.post('/users/me/places', { label, name: dest.name ?? `${dest.lat.toFixed(4)}, ${dest.lng.toFixed(4)}`, lat: dest.lat, lng: dest.lng }).then(() => { places.reloadSaved(); say(t('prof.saved')); }).catch(() => say(t('common.error'))); };
-  const nearby = useNearbyCars(pickup, svc === 'ride' && consent === true);
-  const markers = [...(dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' } as Marker] : []), ...nearby.cars.map((c) => ({ lat: c.lat, lng: c.lng, icon: carIcon(c.type) } as Marker))];
+  const [wide, setWide] = useState(false); useEffect(() => { void kv.get('rm_wide').then((v) => setWide(v === '1')).catch(() => {}); }, []);
+  const nearby = useNearbyCars(pickup, svc === 'ride' && consent === true, wide);
+  const markers = [...(dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' } as Marker] : []), ...nearby.cars.map((c) => (c.n && c.n > 1 ? { lat: c.lat, lng: c.lng, bubble: c.n } : { lat: c.lat, lng: c.lng, icon: carIcon(c.type) }) as Marker)];
   const needsDest = svc === 'ride' || hire === 'p2p';
   const guestNeedsPick = svc === 'ride' && forOther && !pickupChosen;      // booking for someone else: the phone's own location is never assumed to be where the guest is
   const ready = !!pickup && !guestNeedsPick && (svc === 'ride' ? !!dest : !!carId && (hire !== 'p2p' || !!dest));
@@ -147,14 +148,15 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
             {loc.perm === 'blocked' || loc.perm === 'denied' ? <PermissionCard title={t('perm.loc.title')} body={loc.perm === 'blocked' ? t('perm.loc.blocked') : t('home.nolocation')} actionLabel={loc.perm === 'blocked' ? t('perm.settings') : t('loc.allow')} onAction={loc.perm === 'blocked' ? loc.openSettings : () => { resetPickupSource(); void locate(); }} /> : null}
       {loc.perm === 'off' ? <PermissionCard title={t('perm.gps.title')} body={t('perm.gps.body')} actionLabel={t('perm.settings')} onAction={loc.openSettings} /> : null}
 
-      {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => choosePickup({ lat, lng }, 'pin')} onTap={(lat, lng) => (tapPickup ? choosePickup({ lat, lng }, 'pin') : pickDest({ lat, lng }))} onStatus={setMapOk} height={mapH} />
+      {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={wide ? 10 : 14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => choosePickup({ lat, lng }, 'pin')} onTap={(lat, lng) => (tapPickup ? choosePickup({ lat, lng }, 'pin') : pickDest({ lat, lng }))} onStatus={setMapOk} height={mapH} />
         : <Banner text={t('home.map.off')} />}
       {svc === 'ride' && nearby.loaded ? (
         <View testID="nearby-line" accessibilityLiveRegion="polite" style={{ marginTop: 4 }}>
-          <Text style={[S.muted, { color: nearby.count ? C.green : C.muted }]}>{nearby.count ? t(nearby.count === 1 ? 'nb.one' : 'nb.count', { n: nearby.count, m: nearby.etaMin ?? 1 }) : t('nb.none')}</Text>
-          {nearby.count ? <Text style={[S.muted, { fontSize: 11 }]}>{t('nb.hint')}</Text> : null}
+          <Text style={[S.muted, { color: nearby.count ? C.green : C.muted }]}>{nearby.count ? (wide ? t('nb.wide.count', { n: nearby.count }) : t(nearby.count === 1 ? 'nb.one' : 'nb.count', { n: nearby.count, m: nearby.etaMin ?? 1 })) : t('nb.none')}</Text>
+          {nearby.count ? <Text style={[S.muted, { fontSize: 11 }]}>{wide ? t('nb.wide.hint') : t('nb.hint')}</Text> : null}
         </View>
       ) : null}
+      {svc === 'ride' ? <View style={S.wrap}><Chip testID="wide-toggle" glyph="🗺️" text={t('nb.wide.chip')} on={wide} onPress={() => { const v = !wide; setWide(v); void kv.set('rm_wide', v ? '1' : '0').catch(() => {}); }} /></View> : null}
       <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy && pickupSrc === 'gps' ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
 
       <ServiceCards svc={svc} setSvc={setSvc} abasareOn={abasareOn} onScan={() => nav.push('scan')} />
