@@ -57,7 +57,7 @@ V.dashboard = async (el, state = {}) => {
     h('h2', {}, 'Needs attention'), allClear ? h('div', { class: 'alert ok' }, 'Nothing needs attention right now.') : null,
     h('div', { class: 'grid' }, attention.filter((a) => a[1] || !allClear).map(([l, v, tab, tone, show]) => kpi(l, nfmt(v), { tone, to: show ? tab : null }))),
     h('h2', {}, 'Right now'),
-    h('div', { class: 'grid' }, kpi('Drivers online', nfmt(d.drivers.online), { hint: 'seen in the last 60 s' }), kpi('Active bookings', nfmt(b.active), { hint: 'created in this period and not finished' }), kpi('Avg. time to assign a driver', secs(b.avg_assign_s)), kpi('Avg. driver arrival', secs(b.avg_arrival_s))),
+    h('div', { class: 'grid' }, kpi('Drivers online', nfmt(d.drivers.online), { hint: 'position received in the last 1.5 min' }), kpi('Active bookings', nfmt(b.active), { hint: 'created in this period and not finished' }), kpi('Avg. time to assign a driver', secs(b.avg_assign_s)), kpi('Avg. driver arrival', secs(b.avg_arrival_s))),
     h('h2', {}, 'Demand and fulfilment'),
     h('div', { class: 'grid' }, kpi('Requests', nfmt(b.requested), { delta: pctDelta(b.requested, pb.requested), spark: spark('requested') }), kpi('Completed trips', nfmt(b.completed), { delta: pctDelta(b.completed, pb.completed), spark: spark('completed') }),
       kpi('Cancelled', nfmt(b.cancelled), { delta: pctDelta(b.cancelled, pb.cancelled), spark: spark('cancelled') }), kpi('Fulfilment rate', b.fulfilment_rate_pct == null ? '-' : b.fulfilment_rate_pct + '%', { hint: 'completed / requested' }),
@@ -111,10 +111,13 @@ V.live = async (el) => {
         table([{ h: 'Ref', f: (x) => h('a', { href: '#', onclick: (e) => { e.preventDefault(); bookingDetail(x.id).catch((er) => toast(er.message, true)); } }, x.ref), s: (x) => x.ref }, { h: 'Status', f: (x) => pill(x.status), s: (x) => x.status }, { h: 'Service', f: (x) => svcLabel(x.service_id), s: (x) => svcLabel(x.service_id) },
           { h: 'Driver', f: (x) => (x.driver_id ? names[x.driver_id] || short(x.driver_id) : '-'), s: (x) => names[x.driver_id] || '' }, { h: 'Pickup', f: (x) => osmLink(x.pickup_lat, x.pickup_lng) }], data.bookings, null, 'No active bookings.', { csv: 'live-bookings' }),
         h('h2', {}, `Drivers online (${data.drivers.length})`),
-        table([{ h: 'Driver', f: (x) => names[x.user_id] || short(x.user_id), s: (x) => names[x.user_id] || '' }, { h: 'Last seen', f: (x) => ago(x.last_seen_at), s: (x) => -Date.parse(x.last_seen_at) }, { h: 'Position', f: (x) => osmLink(x.lat, x.lng) }], data.drivers, null, 'No drivers online.', { csv: 'live-drivers' }));
+        table([{ h: 'Driver', f: (x) => names[x.user_id] || short(x.user_id), s: (x) => names[x.user_id] || '' }, { h: 'Last seen', f: (x) => ago(x.last_seen_at), s: (x) => -Date.parse(x.last_seen_at) }, { h: 'Position', f: (x) => osmLink(x.lat, x.lng) }], data.drivers, null, 'No drivers online.', { csv: 'live-drivers' }),
+        (data.not_reporting || []).length ? h('div', {}, h('h2', {}, `Online but not reporting (${data.not_reporting.length})`), note(`These drivers pressed "go online" but their phone has not sent a position in the last ${data.fresh_within_s} seconds (app closed or in the background, no signal, or location turned off). They are not offered trips until the position arrives.`, 'warn'),
+          table([{ h: 'Driver', f: (x) => names[x.user_id] || short(x.user_id), s: (x) => names[x.user_id] || '' }, { h: 'Last seen', f: (x) => (x.last_seen_at ? ago(x.last_seen_at) : '-'), s: (x) => -Date.parse(x.last_seen_at || 0) }, { h: 'Last position', f: (x) => (x.lat != null ? osmLink(x.lat, x.lng) : '-') }], data.not_reporting, null, '', { csv: 'live-not-reporting' })) : null);
       if (layer) {
         layer.clearLayers(); const pts = [];
         data.drivers.forEach((x) => { pts.push([x.lat, x.lng]); L.circleMarker([x.lat, x.lng], { radius: 7, color: '#005a87', fillColor: '#00a1de', fillOpacity: 0.9, weight: 2 }).bindTooltip('Driver: ' + (names[x.user_id] || short(x.user_id))).addTo(layer); });
+        (data.not_reporting || []).forEach((x) => { if (x.lat == null) return; pts.push([x.lat, x.lng]); L.circleMarker([x.lat, x.lng], { radius: 7, color: '#6b7a86', fillColor: '#b7c2cb', fillOpacity: 0.7, weight: 2, dashArray: '3 3' }).bindTooltip('Not reporting: ' + (names[x.user_id] || short(x.user_id)) + (x.last_seen_at ? ' · last seen ' + ago(x.last_seen_at) : '')).addTo(layer); });
         data.bookings.forEach((x) => { pts.push([x.pickup_lat, x.pickup_lng]); L.circleMarker([x.pickup_lat, x.pickup_lng], { radius: 7, color: '#8a6500', fillColor: '#fad201', fillOpacity: 0.95, weight: 2 }).bindTooltip(`${x.ref} · ${human(x.status)} · ${svcLabel(x.service_id)}`).addTo(layer); });
         if (!fitted && pts.length) { fitted = true; m.fitBounds(pts, { padding: [40, 40], maxZoom: 15 }); }
       }
@@ -123,7 +126,7 @@ V.live = async (el) => {
       if (token !== S.nav) { m?.remove(); return; }                         // user left the tab: stop polling
       if (!document.hidden) {
         try { const data = await api('GET', '/admin/live'); if (token !== S.nav) { m?.remove(); return; }
-          info.replaceChildren(h('span', {}, h('b', {}, data.drivers.length), ' drivers online · ', h('b', {}, data.bookings.length), ' active bookings'), h('span', { class: 'muted' }, 'Updated ' + clock() + ' · refreshes every ' + liveSecs() + ' s')); draw(data); }
+          info.replaceChildren(h('span', {}, h('b', {}, data.drivers.length), ' drivers online · ', (data.not_reporting || []).length ? h('span', {}, h('b', {}, data.not_reporting.length), ' online but not reporting (grey) · ') : null, h('b', {}, data.bookings.length), ' active bookings'), h('span', { class: 'muted' }, 'Updated ' + clock() + ' · refreshes every ' + liveSecs() + ' s')); draw(data); }
         catch (e) { if (token === S.nav) info.replaceChildren(h('span', { class: 'err' }, e.message + ' Retrying…')); }
       }
       timer = setTimeout(tick, liveSecs() * 1000);

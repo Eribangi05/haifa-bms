@@ -178,3 +178,7 @@ The service exposes only `/health` and `/ready` and writes JSON logs (pino) to s
 * **Capacity**: database connections (`DB_POOL_MAX` per instance), database disk, documents volume, and p95 latency from the load balancer. One instance is supported today because jobs run in-process (`SETUP_AND_DEPLOYMENT.md`, section 5).
 * **Release health**: `/admin/client-errors` count per day by app version.
 * **Costs and abuse**: provider-side spend caps on SMS (OTP pumping is only rate limited in the app), alerts on OTP request spikes.
+
+## Drivers missing from the Live map
+
+The Live map and the "Drivers online" figure count a driver only when he or she is online **and** the phone sent a position within the last `dispatch.heartbeat_max_age_s` seconds (Settings, default 90). Drivers who are online but silent are listed on the Live map under "Online but not reporting" (grey on the map) for 30 minutes. Check in this order: (1) the driver app is open (or background location is allowed all the time) and location is on; (2) the driver is approved with valid documents (the app says why when it cannot go online); (3) the phone does not use a mock-location app (such positions are discarded); (4) the API is awake and was redeployed from the latest branch (a free Render instance sleeps after 15 minutes idle and needs about a minute to wake); (5) Drivers page: status, Online column and last seen.

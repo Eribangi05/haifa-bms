@@ -68,7 +68,10 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get('/admin/live', { preHandler: requirePerm('bookings.view_all') }, async () => ({
     bookings: await q(`select b.id, b.ref, b.status, b.pickup_lat, b.pickup_lng, b.dest_lat, b.dest_lng, b.service_id, b.driver_id from bookings b where b.status in ('SEARCHING_DRIVER','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS') order by b.created_at desc limit 1000`),
-    drivers: await q(`select user_id, last_lat lat, last_lng lng, last_seen_at from driver_profiles where is_online and last_seen_at > now() - interval '60 seconds' and last_lat is not null limit 2000`),
+    drivers: await q(`select user_id, last_lat lat, last_lng lng, last_seen_at from driver_profiles where is_online and last_seen_at > now() - make_interval(secs => $1) and last_lat is not null limit 2000`, [await getSetting('dispatch.heartbeat_max_age_s')]),
+    // drivers who say they are online but whose phone has not reported a position lately (app closed, no signal, location off): shown greyed so staff can tell "nobody online" from "online but silent"
+    not_reporting: await q(`select user_id, last_lat lat, last_lng lng, last_seen_at from driver_profiles where is_online and (last_seen_at is null or last_seen_at <= now() - make_interval(secs => $1)) and last_seen_at > now() - interval '30 minutes' limit 500`, [await getSetting('dispatch.heartbeat_max_age_s')]),
+    fresh_within_s: await getSetting('dispatch.heartbeat_max_age_s'),
   }));
 
   // ---------- drivers ----------

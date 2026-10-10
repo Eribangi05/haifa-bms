@@ -1,3 +1,4 @@
+import { getSetting } from './settings.js';
 import { q, q1 } from '../db.js';
 
 export async function dashboard(filter: { from?: string; to?: string; service_id?: string; zone_id?: string } = {}) {
@@ -8,7 +9,7 @@ export async function dashboard(filter: { from?: string; to?: string; service_id
   const users = await q1<any>(`select count(*) filter (where exists (select 1 from user_roles r where r.user_id=u.id and r.role='passenger'))::int passengers from users u`);
   const drivers = await q1<any>(`select count(*)::int total, count(*) filter (where status='APPROVED')::int verified,
       count(*) filter (where status in ('DOCUMENTS_SUBMITTED','UNDER_REVIEW','INFO_REQUIRED'))::int pending,
-      count(*) filter (where is_online and last_seen_at > now() - interval '60 seconds')::int online from driver_profiles`);
+      count(*) filter (where is_online and last_seen_at > now() - make_interval(secs => ${Number(await getSetting('dispatch.heartbeat_max_age_s'))}))::int online from driver_profiles`);
   const b = await q1<any>(`select
       count(*) filter (where status in ('REQUESTED','SEARCHING_DRIVER','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','AWAITING_PASSENGER_VERIFICATION','IN_PROGRESS'))::int active,
       count(*) filter (where status in ('COMPLETED','PAYMENT_PENDING','PAYMENT_COMPLETED','PARTIALLY_REFUNDED','REFUNDED'))::int completed,

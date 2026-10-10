@@ -146,4 +146,8 @@ const L_EXTRA = {
   'Send at, Kigali time (empty = as soon as allowed)': { rw: 'Igihe cyo kohereza, isaha ya Kigali (ubusa = vuba bishoboka)', fr: 'Envoi à, heure de Kigali (vide = dès que possible)' },
   'The server reports at most the last 31 days, so the start was moved forward.': { rw: 'Raporo igera ku minsi 31 ishize gusa, ni yo mpamvu itariki yo gutangiriraho yigijwe imbere.', fr: 'Le serveur ne fournit au plus que les 31 derniers jours ; le début a donc été avancé.' },
   'Updated {0} · refreshes every {1} s': { rw: 'Vuguruwe {0} · ivugururwa buri masegonda {1}', fr: 'Mis à jour {0} · actualisation toutes les {1} s' },
+  'Online but not reporting ({0})': { rw: 'Bari ku murongo ariko ntibohereza aho bari ({0})', fr: 'En ligne mais sans position ({0})' },
+  'These drivers pressed "go online" but their phone has not sent a position in the last {0} seconds (app closed or in the background, no signal, or location turned off). They are not offered trips until the position arrives.': { rw: 'Aba bashoferi bakanze "Ari ku murongo" ariko telefone zabo ntizohereje aho ziri mu masegonda {0} ashize (porogaramu ifunze cyangwa ntikora inyuma, nta murongo, cyangwa aho uri hazimye). Nta rugendo bahabwa kugeza aho bari bagaragaye.', fr: 'Ces chauffeurs ont appuyé sur « en ligne » mais leur téléphone n\'a envoyé aucune position depuis {0} secondes (application fermée ou en arrière-plan, pas de réseau, ou localisation désactivée). Aucune course ne leur est proposée tant que la position n\'arrive pas.' },
+  'Last position': { rw: 'Aho bari bagaragaye', fr: 'Dernière position' },
+  'position received in the last 1.5 min': { rw: 'aho bari hageze mu minota 1,5 ishize', fr: 'position reçue il y a moins de 1,5 min' },
 };

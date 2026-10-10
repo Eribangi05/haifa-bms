@@ -280,3 +280,13 @@ test('R5-22 phone numbers from any country: sign-in, trusted contacts and the gu
   const list = await t.api('GET', '/users/me/emergency-contacts', { token: v.json.access_token }); assert.equal(list.json.contacts[0].phone, '+33612345678');
   assert.equal((await t.api('POST', '/users/me/emergency-contacts', { token: v.json.access_token, body: { name: 'X', phone: '+999 1', notify_on_trip: false, lang: 'en' } })).status, 409);
 });
+
+test('R5-23 live map: a driver whose phone stopped reporting is listed as online-but-not-reporting, not silently missing', async () => {
+  const admin = await t.staff('super_admin'); const fresh = await t.driver(); const silent = await t.driver();
+  await t.api('PATCH', '/drivers/me/availability', { token: fresh.token, body: { online: true } }); await t.api('POST', '/drivers/me/location', { token: fresh.token, body: { lat: -1.954, lng: 30.0927 } });
+  await t.api('PATCH', '/drivers/me/availability', { token: silent.token, body: { online: true } }); await t.api('POST', '/drivers/me/location', { token: silent.token, body: { lat: -1.95, lng: 30.1 } });
+  await t.db.q("update driver_profiles set last_seen_at = now() - interval '10 minutes' where user_id=$1", [silent.id]);
+  const r = await t.api('GET', '/admin/live', { token: admin.token }); assert.equal(r.status, 200);
+  assert.ok(r.json.drivers.some((d: any) => d.user_id === fresh.id), 'the reporting driver is on the map'); assert.ok(!r.json.drivers.some((d: any) => d.user_id === silent.id));
+  assert.ok(r.json.not_reporting.some((d: any) => d.user_id === silent.id), 'the silent driver is listed'); assert.equal(typeof r.json.fresh_within_s, 'number');
+});
