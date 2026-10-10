@@ -1,7 +1,8 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { UPLOAD_JPEG_QUALITY, shrinkTo } from './photoCheck';
+import { UPLOAD_JPEG_QUALITY, UPLOAD_TIMEOUT_MS, shrinkTo } from './photoCheck';
+import { ApiError, type Client } from './net';
 
 export type Picked = { uri: string; name: string; type: string; width?: number; height?: number; size?: number };
 
@@ -28,6 +29,29 @@ export async function shrinkPhoto(f: Picked): Promise<Picked> {
     if (to) r = await ImageManipulator.manipulateAsync(f.uri, [{ resize: to.width >= to.height ? { width: to.width } : { height: to.height } }], { compress: UPLOAD_JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG });
     return { ...f, uri: r.uri, type: 'image/jpeg', name: f.name.replace(/\.\w+$/, '') + '.jpg', width: r.width, height: r.height, size: undefined };
   } catch { return f; }
+}
+
+/** The file as base64 text (for the JSON fallback of an upload). Works for file:// and content:// uris and in the browser. */
+export async function readBase64(uri: string): Promise<string> {
+  const blob = await (await fetch(uri)).blob();
+  return await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onerror = () => reject(r.error); r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, '')); r.readAsDataURL(blob); });
+}
+
+/**
+ * Uploads one file. First as a normal multipart request. If the phone loses the connection in the middle of it (which some phones and networks do with multipart
+ * bodies even when ordinary requests work), the same file is sent again as JSON (base64), which takes the same road as every other call of the app.
+ * The server accepts both forms on the upload routes and applies the same checks and the 5 MB limit.
+ */
+export async function uploadFile<T = any>(client: Client, path: string, fields: Record<string, string | undefined>, f: Picked, timeoutMs = UPLOAD_TIMEOUT_MS): Promise<T> {
+  const clean: Record<string, string> = {}; for (const [k, v] of Object.entries(fields)) if (v) clean[k] = v;
+  try {
+    const fd = new FormData(); for (const [k, v] of Object.entries(clean)) fd.append(k, v); await appendFile(fd, 'file', f);
+    return await client.post<T>(path, undefined, { form: fd, timeoutMs, retry: true, maxRetries: 1 });
+  } catch (e) {
+    if (!(e instanceof ApiError) || (e.code !== 'network' && e.code !== 'timeout')) throw e;
+    const data = await readBase64(f.uri);
+    return await client.post<T>(path, { ...clean, mime: f.type, data_base64: data }, { timeoutMs, retry: true, maxRetries: 1 });
+  }
 }
 
 export async function pickPhoto(source: 'camera' | 'gallery'): Promise<PickResult> {

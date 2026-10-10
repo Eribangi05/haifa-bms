@@ -203,3 +203,14 @@ test('DOC-02 a file over the size limit gets our translated file_too_large answe
   const r = await t.api('POST', '/drivers/documents', { token: d.token, ...m, headers: { ...(m as any).headers, 'accept-language': 'rw' } });
   assert.equal(r.status, 413); assert.equal(r.json.error.code, 'file_too_large'); assert.match(r.json.error.message, /5 MB/);
 });
+
+test('DOC-03 a photo can also be sent as JSON (base64): the fallback for phones whose multipart upload is cut off; same checks and limits', async () => {
+  const d = await t.driver();
+  const jpeg = Buffer.from(JPEG as any);   // the small fixture used by the other upload tests
+  const ok = await t.api('POST', '/drivers/documents', { token: d.token, body: { doc_type: 'national_id', expiry_date: '2040-01-01', mime: 'image/jpeg', data_base64: jpeg.toString('base64') } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.json)); assert.equal(ok.json.doc_type, 'national_id');
+  assert.equal((await t.api('POST', '/drivers/documents', { token: d.token, body: { doc_type: 'national_id', expiry_date: '2040-01-01', mime: 'image/jpeg' } })).json.error.code, 'file_required');
+  const big = Buffer.alloc(5 * 1024 * 1024 + 4096, 1); big[0] = 0xff; big[1] = 0xd8; big[2] = 0xff;
+  const tooBig = await t.api('POST', '/drivers/documents', { token: d.token, body: { doc_type: 'national_id', expiry_date: '2040-01-01', data_base64: big.toString('base64') } }); assert.equal(tooBig.json.error.code, 'file_too_large');
+  assert.equal((await t.api('POST', '/drivers/documents', { token: d.token, body: { doc_type: 'national_id', expiry_date: '2040-01-01', data_base64: Buffer.from('<script>alert(1)</script>').toString('base64'), mime: 'image/jpeg' } })).json.error.code, 'unsupported_file', 'content is still checked');
+});

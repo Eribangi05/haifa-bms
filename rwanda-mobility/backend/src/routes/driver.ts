@@ -7,6 +7,7 @@ import { badRequest, conflict, notFound, forbidden } from '../errors.js';
 import { normalizePhone } from '../util/phone.js';
 import { encrypt, verifyFileToken } from '../util/crypto.js';
 import { inspectDocument, expiryTooFar } from '../services/docCheck.js';
+import { readUpload, UPLOAD_BODY_LIMIT } from '../util/upload.js';
 import { saveFile, readFileByKey } from '../services/storage.js';
 import * as Dr from '../services/drivers.js';
 import { driverBalance } from '../services/ledger.js';
@@ -60,13 +61,8 @@ export async function driverRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  app.post('/drivers/documents', { ...drv, config: routeLimit('UPLOAD_RATE_MAX', 20) }, async (req) => {
-    const parts = req.parts({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
-    const f: Record<string, string> = {}; let buf: Buffer | null = null; let declared: string | undefined;
-    for await (const p of parts) {
-      if (p.type === 'file') { declared = p.mimetype; buf = await p.toBuffer(); if ((p as any).file.truncated) throw badRequest('file_too_large', 'Maximum file size is 5 MB'); }
-      else f[p.fieldname] = String(p.value);
-    }
+  app.post('/drivers/documents', { ...drv, bodyLimit: UPLOAD_BODY_LIMIT, config: routeLimit('UPLOAD_RATE_MAX', 20) }, async (req) => {
+    const up = await readUpload(req); const f = up.fields; const buf: Buffer | null = up.buf; const declared = up.mime;
     const body = parse(z.object({ doc_type: z.enum(KNOWN_DOCS as [string, ...string[]]), expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((d) => !Number.isNaN(Date.parse(d)) && new Date(d).toISOString().startsWith(d), 'Not a real calendar date').optional() }), f);
     if (!buf) throw badRequest('file_required');
     const veh = await q1<any>("select vehicle_type from vehicles where driver_id=$1 order by created_at desc limit 1", [req.auth!.id]);

@@ -1,9 +1,8 @@
-import { UPLOAD_TIMEOUT_MS } from '../../lib/photoCheck';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
 import { explainCameraDenied } from '../../lib/hooks';
-import { appendFile, pickPhoto } from '../../lib/upload';
+import { uploadFile, pickPhoto } from '../../lib/upload';
 import type { Booking } from '../../lib/types';
 import { Banner, Btn, Chip, Field, ProgressBar, Text } from '../../ui/components';
 import { S } from '../../ui/theme';
@@ -22,8 +21,7 @@ export function HandoverForm({ trip, phase, reload }: { trip: Booking; phase: 'p
     if ('denied' in r) { explainCameraDenied(t, r.blocked); return; }
     if (!('file' in r)) return;
     try {
-      const fd = new FormData(); await appendFile(fd, 'file', r.file);
-      await client.post(`/bookings/${trip.id}/handover/photos?phase=${phase}`, undefined, { form: fd, timeoutMs: UPLOAD_TIMEOUT_MS, retry: true, maxRetries: 1 }); reload();
+      await uploadFile(client, `/bookings/${trip.id}/handover/photos?phase=${phase}`, {}, r.file); reload();
     } catch (e) { setPhotoFailed(true); throw e; }
   });
   const save = () => run(async () => { await client.post(`/bookings/${trip.id}/handover`, { phase, odometer_km: Number(odo), fuel_percent: fuel, notes: notes.trim() || undefined, damage_noted: damage }); reload(); });

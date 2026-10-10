@@ -1,3 +1,4 @@
+import { readUpload, UPLOAD_BODY_LIMIT } from '../util/upload.js';
 import type { FastifyInstance } from 'fastify';
 import { config } from '../config.js';
 import { raiseAlert } from '../services/alerts.js';
@@ -62,15 +63,13 @@ export async function supportRoutes(app: FastifyInstance) {
     await q("update support_cases set updated_at=now(), status = case when status in ('awaiting_user','resolved') then 'open' else status end where id=$1", [id]);
     return { ok: true };
   });
-  app.post('/support/cases/:id/evidence', { ...pre, config: routeLimit('UPLOAD_RATE_MAX', 20) }, async (req) => {
+  app.post('/support/cases/:id/evidence', { ...pre, bodyLimit: UPLOAD_BODY_LIMIT, config: routeLimit('UPLOAD_RATE_MAX', 20) }, async (req) => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const c = await q1<any>('select id from support_cases where id=$1 and reporter_id=$2', [id, req.auth!.id]);
     if (!c) throw notFound('case');
     const have = await q1<{ n: number }>("select count(*)::int n from case_events where case_id=$1 and kind='evidence'", [id]);
     if (have!.n >= 20) throw conflict('limit', 'Too many attachments on this case');
-    let buf: Buffer | null = null;
-    for await (const p of req.parts({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } })) if (p.type === 'file') buf = await p.toBuffer();
-    if (!buf) throw badRequest('file_required');
+    const { buf } = await readUpload(req);
     const s = await saveFile(buf, 'evidence');
     await q("insert into case_events(case_id, author_id, kind, body, file_key) values ($1,$2,'evidence','Evidence attached',$3)", [id, req.auth!.id, s.key]);
     return { ok: true };

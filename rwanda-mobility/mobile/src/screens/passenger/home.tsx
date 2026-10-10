@@ -28,6 +28,10 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   const [accuracy, setAccuracy] = useState<number | null>(null); const [note, setNote] = useState('');
   const [q, setQ] = useState(''); const [results, setResults] = useState<Place[]>([]); const [searching, setSearching] = useState(false);
   const [custom, setCustom] = useState(false);
+  // Where the pickup came from, and whether the person chose it (the phone's location is only a starting suggestion): see "pickup" card below.
+  const [pickupSrc, setPickupSrc] = useState<'gps' | 'place' | 'pin' | 'venue' | null>(null); const [pickupChosen, setPickupChosen] = useState(false);
+  const [editPickup, setEditPickup] = useState(false); const [q2, setQ2] = useState(''); const [results2, setResults2] = useState<Place[]>([]); const [tapPickup, setTapPickup] = useState(false);
+  const gpsAt = useRef<{ lat: number; lng: number } | null>(null);
   const [mapOk, setMapOk] = useState(true); const [consent, setConsent] = useState<boolean | null>(null); const [skipped, setSkipped] = useState(false); const [when, setWhen] = useState<string | null>(null);
   const [svc, setSvcState] = useState<Svc>('ride'); const [cars, setCars] = useState<CustomerCar[]>([]); const [carId, setCarId] = useState<string | null>(null);
   const [forOther, setForOther] = useState(false);
@@ -40,7 +44,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   const fromCode = useRef(!!params?.venue);
   useEffect(() => {
     const v = params?.venue; if (!v) return;
-    setPickup({ lat: v.lat, lng: v.lng, name: v.name }); setNote(v.note ?? ''); setDest(null); setAccuracy(null);
+    setPickup({ lat: v.lat, lng: v.lng, name: v.name }); setPickupSrc('venue'); setPickupChosen(true); setNote(v.note ?? ''); setDest(null); setAccuracy(null);
     if (params?.svc) setSvc(params.svc);
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!params?.svc) kv.get('rm_svc').then((v) => v === 'abasare' && setSvcState('abasare')).catch(() => {}); kv.get('rm_car').then((v) => v && setCarId(v)).catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,15 +57,23 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   useEffect(() => { kv.get('rm_loc_consent').then((v) => setConsent(v === '1')).catch(() => setConsent(false)); }, []);
   useEffect(() => { client.get('/bookings?role=passenger&limit=3').then((r) => setTrips(r.bookings)).catch(() => {}); }, [client]);
 
-  const locate = useCallback(async () => {
+  const chosenRef = useRef(false); chosenRef.current = pickupChosen;
+  /** `force` = the person asked for their location; the automatic first look never replaces a pickup they chose themselves. */
+  const locate = useCallback(async (force = true) => {
     const fix = await loc.locate();
-    if (fix) { setAccuracy(fix.accuracy); setPickup({ lat: fix.lat, lng: fix.lng, name: t('home.mylocation') });
+    if (fix && !force && chosenRef.current) { gpsAt.current = { lat: fix.lat, lng: fix.lng }; return; }
+    if (fix) { setAccuracy(fix.accuracy); gpsAt.current = { lat: fix.lat, lng: fix.lng }; setPickupSrc('gps'); setPickup({ lat: fix.lat, lng: fix.lng, name: t('home.mylocation') });
       // name the spot ("Near Gihara") from the server's offline village list; keep "My location" when nothing is close or offline
       client.get(`/places/reverse?lat=${fix.lat.toFixed(5)}&lng=${fix.lng.toFixed(5)}&lang=${lang}`).then((r) => { const n = r?.place?.name as string | undefined; if (n) setPickup((cur) => (cur && cur.lat === fix.lat && cur.lng === fix.lng ? { ...cur, name: t('home.near', { place: n }) } : cur)); }).catch(() => {}); }
     else if (loc.perm === 'granted' || loc.perm === 'unknown') say(t('home.nolocation'));
   }, [loc, say, t, client, lang]);
   const locateRef = useRef(locate); locateRef.current = locate;
-  useEffect(() => { if (consent && !skipped && !fromCode.current) void locateRef.current(); }, [consent, skipped]);
+  useEffect(() => { if (consent && !skipped && !fromCode.current) void locateRef.current(false); }, [consent, skipped]);
+  useEffect(() => {          // search for a PICKUP place (same index as the destination search)
+    const term = q2.trim(); if (term.length < 2) { setResults2([]); return; } let live = true;
+    const id = setTimeout(() => { client.get(`/places/search?q=${encodeURIComponent(term)}&lang=${lang}${pickup ? `&lat=${pickup.lat.toFixed(4)}&lng=${pickup.lng.toFixed(4)}` : ''}`).then((r) => live && setResults2(r.places)).catch(() => live && setResults2(places.popular.filter((p) => p.name.toLowerCase().includes(term.toLowerCase())))); }, 350);
+    return () => { live = false; clearTimeout(id); };
+  }, [q2, client, lang, places.popular]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // search (debounced); falls back to the local landmark list when offline
   useEffect(() => {
@@ -90,13 +102,26 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
   const nearby = useNearbyCars(pickup, svc === 'ride' && consent === true);
   const markers = [...(dest ? [{ lat: dest.lat, lng: dest.lng, label: dest.name, color: '#C0392B' } as Marker] : []), ...nearby.cars.map((c) => ({ lat: c.lat, lng: c.lng, icon: carIcon(c.type) } as Marker))];
   const needsDest = svc === 'ride' || hire === 'p2p';
-  const ready = !!pickup && (svc === 'ride' ? !!dest : !!carId && (hire !== 'p2p' || !!dest));
+  const guestNeedsPick = svc === 'ride' && forOther && !pickupChosen;      // booking for someone else: the phone's own location is never assumed to be where the guest is
+  const ready = !!pickup && !guestNeedsPick && (svc === 'ride' ? !!dest : !!carId && (hire !== 'p2p' || !!dest));
   const go = () => {
     if (!ready || !pickup) return;
     if (svc === 'abasare') nav.push('options', { pickup, request_code: reqCode ?? undefined, dest: hire === 'p2p' ? dest : undefined, note, scheduled_for: when ?? undefined, abasare: { customer_vehicle_id: carId, hours: hire === 'hourly' ? hours : undefined } });
     else nav.push('options', { pickup, request_code: reqCode ?? undefined, dest, note, scheduled_for: when ?? undefined, guest: forOther || undefined });
   };
   const resetPickupSource = () => { fromCode.current = false; setReqCode(null); };
+  /** The person chose a pickup: a searched or saved place, a pin or a tap on the map, or their own location on purpose. */
+  const choosePickup = (p: Place | Pt, src: 'place' | 'pin') => {
+    resetPickupSource(); const name = (p as Place).name ?? places.nearest(p) ?? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
+    setPickup({ lat: p.lat, lng: p.lng, name }); setPickupSrc(src); setPickupChosen(true); setAccuracy(null); setEditPickup(false); setTapPickup(false); setQ2(''); setResults2([]);
+  };
+  const useMyLocation = () => { resetPickupSource(); setPickupChosen(true); setEditPickup(false); setTapPickup(false); void locate(); };
+  const toggleOther = () => {
+    const on = !forOther; setForOther(on);
+    if (on) { if (pickupSrc === 'gps') { setPickup(null); setPickupSrc(null); setPickupChosen(false); } setEditPickup(true); }
+    else { setPickupChosen(true); if (!pickup) { resetPickupSource(); void locate(); } }
+  };
+  const farKm = (() => { const g = gpsAt.current; if (!g || !pickup || pickupSrc === 'gps' || forOther) return 0; const R = 6371, dLa = ((pickup.lat - g.lat) * Math.PI) / 180, dLo = ((pickup.lng - g.lng) * Math.PI) / 180; const a = Math.sin(dLa / 2) ** 2 + Math.cos((g.lat * Math.PI) / 180) * Math.cos((pickup.lat * Math.PI) / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(a)); })();
 
   if (consent === null) return <Screen scroll={false}><View /></Screen>;
   if (consent === false) return (
@@ -122,7 +147,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
             {loc.perm === 'blocked' || loc.perm === 'denied' ? <PermissionCard title={t('perm.loc.title')} body={loc.perm === 'blocked' ? t('perm.loc.blocked') : t('home.nolocation')} actionLabel={loc.perm === 'blocked' ? t('perm.settings') : t('loc.allow')} onAction={loc.perm === 'blocked' ? loc.openSettings : () => { resetPickupSource(); void locate(); }} /> : null}
       {loc.perm === 'off' ? <PermissionCard title={t('perm.gps.title')} body={t('perm.gps.body')} actionLabel={t('perm.settings')} onAction={loc.openSettings} /> : null}
 
-      {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => { resetPickupSource(); setPickup({ lat, lng, name: places.nearest({ lat, lng }) ?? t('home.mylocation') }); }} onTap={(lat, lng) => pickDest({ lat, lng })} onStatus={setMapOk} height={mapH} />
+      {mapOk ? <MapBox center={pickup ?? KIGALI} zoom={14} pin={pickup} markers={markers} zones={places.zones} onPin={(lat, lng) => choosePickup({ lat, lng }, 'pin')} onTap={(lat, lng) => (tapPickup ? choosePickup({ lat, lng }, 'pin') : pickDest({ lat, lng }))} onStatus={setMapOk} height={mapH} />
         : <Banner text={t('home.map.off')} />}
       {svc === 'ride' && nearby.loaded ? (
         <View testID="nearby-line" accessibilityLiveRegion="polite" style={{ marginTop: 4 }}>
@@ -130,7 +155,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
           {nearby.count ? <Text style={[S.muted, { fontSize: 11 }]}>{t('nb.hint')}</Text> : null}
         </View>
       ) : null}
-      <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
+      <Text style={[S.muted, { marginVertical: 6 }]}>{t('home.adjust')}{accuracy && pickupSrc === 'gps' ? ` · ${t('home.gps.accuracy')} ±${Math.round(accuracy)} m` : ''}</Text>
 
       <ServiceCards svc={svc} setSvc={setSvc} abasareOn={abasareOn} onScan={() => nav.push('scan')} />
 
@@ -146,8 +171,24 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
       </Card> : null}
 
       <Card>
-        <View style={S.between}><Text style={S.muted}>{t('home.pickup')}</Text><LinkBtn title={t('home.mylocation')} onPress={() => { resetPickupSource(); void locate(); }} /></View>
-        <Text style={[S.bold, { marginBottom: 8 }]}>{loc.busy ? t('common.loading') : pickup ? pickup.name ?? `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}` : t('home.nolocation')}</Text>
+        <Text style={S.muted}>{t('home.pickup')}</Text>
+        <Text testID="pickup-name" style={[S.bold, { marginBottom: 2 }]}>{loc.busy ? t('common.loading') : pickup ? pickup.name ?? `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}` : t('home.nolocation')}</Text>
+        {pickup && pickupSrc ? <Text style={[S.muted, { fontSize: 12, marginBottom: 6 }]}>{t(pickupSrc === 'gps' ? 'pu.src.gps' : pickupSrc === 'pin' ? 'pu.src.pin' : pickupSrc === 'venue' ? 'pu.src.venue' : 'pu.src.place')}</Text> : null}
+        <View style={S.wrap}>
+          <Chip testID="pickup-mine" glyph="📍" text={t('home.mylocation')} on={pickupSrc === 'gps' && pickupChosen} onPress={useMyLocation} />
+          <Chip testID="pickup-edit" glyph="🔎" text={t('pu.search')} on={editPickup} onPress={() => { setEditPickup(!editPickup); setTapPickup(false); }} />
+          <Chip testID="pickup-tap" glyph="🗺️" text={t('pu.map')} on={tapPickup} onPress={() => { setTapPickup(!tapPickup); setEditPickup(false); }} />
+        </View>
+        {tapPickup ? <Text style={[S.muted, { marginTop: 4 }]}>{t('pu.map.hint')}</Text> : null}
+        {guestNeedsPick ? <Banner kind="warn" text={t('pu.guest.choose')} /> : null}
+        {farKm > 1 ? <Banner text={t('pu.far', { km: farKm.toFixed(1) })} /> : null}
+        {editPickup ? <View style={{ marginTop: 6 }}>
+          <Field testID="pickup-q" value={q2} onChangeText={setQ2} placeholder={t('pu.search')} returnKeyType="search" autoCorrect={false} autoFocus />
+          {q2.trim().length >= 2 && !results2.length ? <Text style={S.muted}>{t('home.noresults')}</Text> : null}
+          {results2.map((r) => <Pressable key={(r.id ?? '') + r.name + r.lat} testID="pickup-result" onPress={() => choosePickup(r, 'place')} accessibilityRole="button" accessibilityLabel={t('a11y.chooseplace', { name: r.name })} style={{ minHeight: 48, justifyContent: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.line }}><Text style={S.body}>📍  {r.name}</Text></Pressable>)}
+          {!q2.trim() && (places.saved.length || places.recents.length) ? <View style={[S.wrap, { marginTop: 6 }]}>{places.saved.map((p, i) => <Chip key={'s' + i} glyph="⭐" text={p.name ?? ''} onPress={() => choosePickup(p, 'place')} />)}{places.recents.map((p, i) => <Chip key={'r' + i} glyph="🕘" text={p.name ?? ''} onPress={() => choosePickup(p, 'place')} />)}</View> : null}
+        </View> : null}
+        <View style={{ height: SP.sm }} />
         <Field value={note} onChangeText={setNote} placeholder={t('home.pickupnote')} maxLength={280} returnKeyType="done" />
         {needsDest ? <Text accessibilityRole="header" style={[S.h2, { marginBottom: 6 }]}>{t('home.where')}</Text> : null}
         {needsDest ? <Text style={S.muted}>{t('home.dest')}</Text> : null}
@@ -160,7 +201,7 @@ export function Home({ params, intent, onActive }: { params?: { venue?: Venue; s
         {needsDest && dest && !places.saved.some((p) => p.name === dest.name) ? <View style={[S.wrap, { marginTop: SP.sm }]}><Chip glyph="🏠" text={`${t('prof.places.saveHere')} ${t('prof.places.home')}`} onPress={() => saveDest('home')} /><Chip glyph="💼" text={`${t('prof.places.saveHere')} ${t('prof.places.work')}`} onPress={() => saveDest('work')} /></View> : null}
       </Card>
 
-      {svc === 'ride' ? <View style={S.wrap}><Chip glyph="👥" text={t('r2.guest.home')} on={forOther} onPress={() => setForOther(!forOther)} /></View> : null}
+      {svc === 'ride' ? <View style={S.wrap}><Chip glyph="👥" text={t('r2.guest.home')} on={forOther} onPress={toggleOther} /></View> : null}
       <SectionTitle text={t('opt.when')} />
       <View style={S.wrap}>
         <Chip text={t('home.now')} on={!when} onPress={() => setWhen(null)} />

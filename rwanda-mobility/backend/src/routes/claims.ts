@@ -1,3 +1,4 @@
+import { readUpload, UPLOAD_BODY_LIMIT } from '../util/upload.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
@@ -7,15 +8,7 @@ import * as C from '../services/claims.js';
 
 const idp = z.object({ id: z.string().uuid() });
 
-async function readUpload(req: any): Promise<{ buf: Buffer; caption?: string }> {
-  let buf: Buffer | undefined, caption: string | undefined;
-  for await (const p of req.parts({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } })) {
-    if (p.type === 'file') { buf = await p.toBuffer(); if (p.file.truncated) throw badRequest('file_too_large', 'Maximum file size is 5 MB'); }
-    else if (p.fieldname === 'caption' && typeof p.value === 'string') caption = p.value;
-  }
-  if (!buf) throw badRequest('file_required', 'Attach a photo or PDF');
-  return { buf, caption };
-}
+async function claimUpload(req: any): Promise<{ buf: Buffer; caption?: string }> { const u = await readUpload(req); return { buf: u.buf, caption: u.fields.caption }; }
 
 /** Damage / loss / injury claims for the parties of a trip (owner, driver, passenger) and for staff. */
 export async function claimRoutes(app: FastifyInstance) {
@@ -31,8 +24,8 @@ export async function claimRoutes(app: FastifyInstance) {
   app.get('/claims/:id', { preHandler: anyAuth }, async (req) => C.claimForParty(req.auth!.id, parse(idp, req.params).id));
   app.post('/claims/:id/messages', { config: routeLimit('CLAIM_RATE_MAX', 30), preHandler: anyAuth }, async (req) =>
     C.postMessage(req.auth!.id, parse(idp, req.params).id, parse(z.object({ body: z.string().min(2).max(2000) }), req.body).body));
-  app.post('/claims/:id/evidence', { config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: anyAuth }, async (req) => {
-    const u = await readUpload(req);
+  app.post('/claims/:id/evidence', { bodyLimit: UPLOAD_BODY_LIMIT, config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: anyAuth }, async (req) => {
+    const u = await claimUpload(req);
     return C.addEvidence({ id: req.auth!.id }, parse(idp, req.params).id, u.buf, u.caption);
   });
   app.post('/claims/:id/withdraw', { preHandler: anyAuth }, async (req) => C.withdrawClaim(req.auth!.id, parse(idp, req.params).id));
@@ -53,8 +46,8 @@ export async function claimRoutes(app: FastifyInstance) {
     const b = parse(z.object({ action: z.enum(['start', 'request_info']), message: z.string().max(1000).optional() }), req.body);
     return C.reviewClaim(actorOf(req), parse(idp, req.params).id, b.action, b.message);
   });
-  app.post('/admin/claims/:id/evidence', { config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: handle }, async (req) => {
-    const u = await readUpload(req);
+  app.post('/admin/claims/:id/evidence', { bodyLimit: UPLOAD_BODY_LIMIT, config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: handle }, async (req) => {
+    const u = await claimUpload(req);
     return C.addEvidence({ id: req.auth!.id, staff: true }, parse(idp, req.params).id, u.buf, u.caption);
   });
   app.post('/admin/claims/:id/decision', { preHandler: decide }, async (req) => {

@@ -87,7 +87,7 @@ export function createClient(o: ClientOpts) {
         res = await once(method, path, ro, t);
       } catch (e: any) {
         if (safeToRetry && attempt < retries) { await sleep(backoffMs(attempt, rnd)); continue; }
-        throw e?.name === 'AbortError' ? new ApiError(0, 'timeout', 'Request timed out') : new ApiError(0, 'network', 'No connection');
+        throw e?.name === 'AbortError' ? new ApiError(0, 'timeout', 'Request timed out') : new ApiError(0, 'network', 'No connection', { cause: String(e?.message ?? e).slice(0, 120) });      // the platform's own wording (for example "Network request failed") travels with the error, for support and error reports
       }
       if (res.status === 401 && ro.auth !== false && !refreshed) {
         refreshed = true;

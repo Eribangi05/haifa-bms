@@ -5,9 +5,10 @@ import { useApp, useAsync } from '../../lib/app';
 import { label } from '../../lib/i18n';
 import { explainCameraDenied } from '../../lib/hooks';
 import { isIsoDate } from '../../lib/format';
-import { appendFile, photoProblem, pickPhoto, shrinkPhoto, type Picked } from '../../lib/upload';
-import { MAX_UPLOAD_BYTES, UPLOAD_TIMEOUT_MS } from '../../lib/photoCheck';
+import { uploadFile, photoProblem, pickPhoto, shrinkPhoto, type Picked } from '../../lib/upload';
+import { MAX_UPLOAD_BYTES } from '../../lib/photoCheck';
 import { ApiError } from '../../lib/net';
+import { reportError } from '../../lib/report';
 import type { DriverDoc, Requirement } from '../../lib/types';
 import { Banner, Btn, Pill, Text } from '../../ui/components';
 import { DateField } from '../../ui/Pickers';
@@ -24,11 +25,12 @@ export function DocRow({ req, docs, reload, editable }: { req: Requirement; docs
     setFailMsg(null);
     const bad = photoProblem(f); if (bad) { say(t(bad === 'small' ? 'drv.photo.small' : 'drv.photo.blurry')); return; }      // retake before wasting data
     try {
-      const fd = new FormData(); fd.append('doc_type', req.doc_type); if (expiry) fd.append('expiry_date', expiry); await appendFile(fd, 'file', f);
-      const r = await client.post('/drivers/documents', undefined, { form: fd, timeoutMs: UPLOAD_TIMEOUT_MS, retry: true, maxRetries: 1 }); setOpen(false); say(t(r?.warnings?.length ? 'drv.uploaded.warn' : 'drv.uploaded')); reload();
+      const r = await uploadFile(client, '/drivers/documents', { doc_type: req.doc_type, expiry_date: expiry || undefined }, f); setOpen(false); say(t(r?.warnings?.length ? 'drv.uploaded.warn' : 'drv.uploaded')); reload();
     } catch (e) {                   // keep the form open: tapping the same button again retries. Say WHY it failed: a slow link, no connection, or the server's own answer (file too big, wrong type...)
       const code = e instanceof ApiError ? e.code : '';
-      setFailMsg(code === 'timeout' ? t('drv.upload.timeout') : code === 'network' ? t('drv.upload.network') : errMsg(e));
+      const why = e instanceof ApiError && typeof (e.details as { cause?: string } | undefined)?.cause === 'string' ? ` [${(e.details as { cause: string }).cause}]` : '';       // the phone's own reason, to tell support
+      setFailMsg((code === 'timeout' ? t('drv.upload.timeout') : code === 'network' ? t('drv.upload.network') : errMsg(e)) + (code === 'network' ? why : ''));
+      if (code === 'network' || code === 'timeout') reportError(new Error(`document upload failed (${code})${why}`));
     }
   };
   const fromCamera = () => run(async () => {

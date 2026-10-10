@@ -1,3 +1,4 @@
+import { readUpload, UPLOAD_BODY_LIMIT } from '../util/upload.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse } from '../util/validate.js';
@@ -52,12 +53,10 @@ export async function abasareRoutes(app: FastifyInstance) {
   });
 
   // ---- check-in / check-out of the customer's car ----
-  app.post('/bookings/:id/handover/photos', { config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: requireRole('driver') }, async (req) => {
+  app.post('/bookings/:id/handover/photos', { bodyLimit: UPLOAD_BODY_LIMIT, config: routeLimit('UPLOAD_RATE_MAX', 20), preHandler: requireRole('driver') }, async (req) => {
     const { id } = parse(idp, req.params);
     const { phase: ph } = parse(z.object({ phase }), req.query);
-    let buf: Buffer | null = null;
-    for await (const p of req.parts({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } })) if (p.type === 'file') { buf = await p.toBuffer(); if ((p as any).file.truncated) throw badRequest('file_too_large', 'Maximum file size is 5 MB'); }
-    if (!buf) throw badRequest('file_required');
+    const { buf } = await readUpload(req);
     return A.addHandoverPhoto(req.auth!.id, id, ph, buf);
   });
   app.post('/bookings/:id/handover', { preHandler: requireRole('driver') }, async (req) => {

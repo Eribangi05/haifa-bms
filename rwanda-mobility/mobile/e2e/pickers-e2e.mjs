@@ -51,4 +51,16 @@ await step('online drivers near the pickup are counted on the rider home screen 
   await page.getByTestId('nearby-line').waitFor({ timeout: 30000 }); const txt = await page.getByTestId('nearby-line').innerText(); if (!/drivers? nearby/.test(txt)) throw new Error('no nearby line: ' + txt);
   await page.waitForTimeout(2500); let icons = 0; for (const f of page.frames()) icons += await f.locator('.i').count().catch(() => 0); if (!icons) throw new Error('no car icon on the map'); await page.screenshot({ path: `${OUT}/pk-nearby.png` });
 });
+await step('pickup stays flexible: a ride for someone else never assumes your own location; any place can be searched and chosen', async () => {
+  await page.reload(); await page.getByTestId('tabbar').waitFor({ timeout: 25000 }); await page.getByTestId('tab-book').click(); await page.getByTestId('pickup-name').waitFor({ timeout: 25000 });
+  await page.waitForFunction(() => /Near|My location|Hafi|Aho ndi|Près|Ma position/.test(document.body.innerText), null, { timeout: 20000 });      // the phone's location was taken as a first suggestion
+  await page.getByText('someone else', { exact: false }).first().click(); await page.getByText(/Choose where your guest will be picked up/).waitFor({ timeout: 10000 });
+  const cleared = await page.getByTestId('pickup-name').innerText(); if (/Near|My location/.test(cleared)) throw new Error('own location was kept for a guest: ' + cleared);
+  await page.getByTestId('pickup-q').fill('Kigali'); await page.getByTestId('pickup-result').first().waitFor({ timeout: 20000 });
+  const picked = (await page.getByTestId('pickup-result').first().innerText()).replace('📍', '').trim(); await page.getByTestId('pickup-result').first().click();
+  const shown = await page.getByTestId('pickup-name').innerText(); if (!shown.includes(picked.slice(0, 8))) throw new Error('pickup not changed: ' + shown + ' vs ' + picked);
+  if (await page.getByText(/Choose where your guest will be picked up/).count()) throw new Error('the notice stays after a place was chosen');
+  if (!(await page.getByText('Chosen place').count())) throw new Error('source label missing');
+  await page.screenshot({ path: `${OUT}/pk-pickup.png` });
+});
 console.log(errors.length ? 'page errors: ' + errors.slice(0, 3).join(' | ') : 'no page errors'); await br.close(); await db.end();
