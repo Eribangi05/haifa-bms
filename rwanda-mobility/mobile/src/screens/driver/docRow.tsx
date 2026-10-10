@@ -5,7 +5,9 @@ import { useApp, useAsync } from '../../lib/app';
 import { label } from '../../lib/i18n';
 import { explainCameraDenied } from '../../lib/hooks';
 import { isIsoDate } from '../../lib/format';
-import { appendFile, photoProblem, pickPhoto, type Picked } from '../../lib/upload';
+import { appendFile, photoProblem, pickPhoto, shrinkPhoto, type Picked } from '../../lib/upload';
+import { MAX_UPLOAD_BYTES, UPLOAD_TIMEOUT_MS } from '../../lib/photoCheck';
+import { ApiError } from '../../lib/net';
 import type { DriverDoc, Requirement } from '../../lib/types';
 import { Banner, Btn, Pill, Text } from '../../ui/components';
 import { DateField } from '../../ui/Pickers';
@@ -14,23 +16,30 @@ import { C, S } from '../../ui/theme';
 
 /** One required document: status chip, review note, and upload (camera / gallery / PDF). Each upload is independent, so a failure never loses the others. */
 export function DocRow({ req, docs, reload, editable }: { req: Requirement; docs: DriverDoc[]; reload: () => void; editable?: boolean }) {
-  const { t, lang, client, say } = useApp(); const { busy, run } = useAsync(); const [open, setOpen] = useState(false); const [expiry, setExpiry] = useState(''); const [failed, setFailed] = useState(false);
+  const { t, lang, client, say, errMsg } = useApp(); const { busy, run } = useAsync(); const [open, setOpen] = useState(false); const [expiry, setExpiry] = useState(''); const [failMsg, setFailMsg] = useState<string | null>(null);
   const last = docs[0];
   const expiryOk = !req.requires_expiry || isIsoDate(expiry, { future: true });
   // Called from inside run() below (run ignores nested calls, so this is a plain async function).
   const upload = async (f: Picked) => {
-    setFailed(false);
+    setFailMsg(null);
     const bad = photoProblem(f); if (bad) { say(t(bad === 'small' ? 'drv.photo.small' : 'drv.photo.blurry')); return; }      // retake before wasting data
     try {
       const fd = new FormData(); fd.append('doc_type', req.doc_type); if (expiry) fd.append('expiry_date', expiry); await appendFile(fd, 'file', f);
-      const r = await client.post('/drivers/documents', undefined, { form: fd, timeoutMs: 40000 }); setOpen(false); say(t(r?.warnings?.length ? 'drv.uploaded.warn' : 'drv.uploaded')); reload();
-    } catch (e) { setFailed(true); throw e; }   // keep the form open: tapping the same button again retries
+      const r = await client.post('/drivers/documents', undefined, { form: fd, timeoutMs: UPLOAD_TIMEOUT_MS, retry: true, maxRetries: 1 }); setOpen(false); say(t(r?.warnings?.length ? 'drv.uploaded.warn' : 'drv.uploaded')); reload();
+    } catch (e) {                   // keep the form open: tapping the same button again retries. Say WHY it failed: a slow link, no connection, or the server's own answer (file too big, wrong type...)
+      const code = e instanceof ApiError ? e.code : '';
+      setFailMsg(code === 'timeout' ? t('drv.upload.timeout') : code === 'network' ? t('drv.upload.network') : errMsg(e));
+    }
   };
   const fromCamera = () => run(async () => {
     const r = await pickPhoto('camera'); if ('denied' in r) { explainCameraDenied(t, r.blocked); return; } if ('file' in r) await upload(r.file);
   });
   const fromGallery = () => run(async () => { const r = await pickPhoto('gallery'); if ('file' in r) await upload(r.file); });
-  const fromPdf = () => run(async () => { const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'] }); if (!r.canceled) await upload({ uri: r.assets[0].uri, name: r.assets[0].name, type: r.assets[0].mimeType ?? 'application/pdf' }); });
+  const fromPdf = () => run(async () => {
+    const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'] }); if (r.canceled) return; const a = r.assets[0];
+    if (a.size && a.size > MAX_UPLOAD_BYTES && !(a.mimeType ?? '').startsWith('image/')) { setFailMsg(t('drv.upload.toobig')); return; }       // a PDF over 5 MB: say so before sending
+    await upload(await shrinkPhoto({ uri: a.uri, name: a.name, type: a.mimeType ?? 'application/pdf' }));
+  });
   const tone = !last ? 'warn' : last.review_status === 'approved' ? 'ok' : last.review_status === 'pending' ? 'warn' : 'bad';
   return (
     <View style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line }}>
@@ -43,7 +52,7 @@ export function DocRow({ req, docs, reload, editable }: { req: Requirement; docs
         {editable ? <Btn kind="ghost" title={last ? t('drv.replace') : t('drv.upload')} onPress={() => setOpen(!open)} /> : null}
       </View>
       {open ? <View style={{ marginTop: 8, gap: 8 }}>
-        {failed ? <Banner kind="bad" text={t('drv.upload.failed')} /> : null}
+        {failMsg ? <Banner kind="bad" text={failMsg} /> : null}
         {req.requires_expiry ? <DateField testID="doc-expiry" label={t('drv.expiry')} value={expiry} onChange={setExpiry} min={todayKigali()} startAt={addDays(todayKigali(), 365)} error={expiry.length === 10 && !expiryOk ? t('drv.expiry.bad') : undefined} /> : null}
         <Btn title={t('drv.photo.take')} onPress={fromCamera} loading={busy} disabled={!expiryOk} />
         <Btn kind="ghost" title={t('drv.photo.pick')} onPress={fromGallery} disabled={!expiryOk || busy} />

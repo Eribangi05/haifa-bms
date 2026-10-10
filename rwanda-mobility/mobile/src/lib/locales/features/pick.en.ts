@@ -49,4 +49,7 @@ export const pickEn = {
   'nb.one': '1 driver nearby · about {m} min away',
   'nb.none': 'No drivers nearby right now. You can still request a ride.',
   'nb.hint': 'Car positions are approximate.',
+  'drv.upload.timeout': 'The upload took too long: the connection is slow or weak. Move to a place with better signal and tap again.',
+  'drv.upload.network': 'The upload was interrupted: the phone lost its connection to the server. Check your data or Wi-Fi and tap again.',
+  'drv.upload.toobig': 'This file is too big (the limit is 5 MB). Take the photo again or choose a smaller file.',
 } as const;

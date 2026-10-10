@@ -22,3 +22,9 @@ test('instants split and join in Kigali time, and the allowed window is enforced
   const now = new Date('2026-10-09T10:00:00Z');
   assert.equal(instantAllowed('2026-10-09T10:10:00Z', 20, 14, now), false, 'only 10 minutes ahead'); assert.equal(instantAllowed('2026-10-09T11:00:00Z', 20, 14, now), true); assert.equal(instantAllowed('2026-11-09T11:00:00Z', 20, 14, now), false);
 });
+
+import { shrinkTo, UPLOAD_MAX_SIDE } from '../src/lib/photoCheck.ts';
+test('photos are scaled down to 1600 px on the longest side and never enlarged', () => {
+  assert.deepEqual(shrinkTo(4000, 3000), { width: 1600, height: 1200 }); assert.deepEqual(shrinkTo(3000, 4000), { width: 1200, height: 1600 });
+  assert.equal(shrinkTo(1200, 900), null); assert.equal(shrinkTo(0, 0), null); assert.equal(UPLOAD_MAX_SIDE, 1600);
+});

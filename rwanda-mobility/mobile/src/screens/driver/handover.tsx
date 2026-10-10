@@ -1,3 +1,4 @@
+import { UPLOAD_TIMEOUT_MS } from '../../lib/photoCheck';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
@@ -22,7 +23,7 @@ export function HandoverForm({ trip, phase, reload }: { trip: Booking; phase: 'p
     if (!('file' in r)) return;
     try {
       const fd = new FormData(); await appendFile(fd, 'file', r.file);
-      await client.post(`/bookings/${trip.id}/handover/photos?phase=${phase}`, undefined, { form: fd, timeoutMs: 40000 }); reload();
+      await client.post(`/bookings/${trip.id}/handover/photos?phase=${phase}`, undefined, { form: fd, timeoutMs: UPLOAD_TIMEOUT_MS, retry: true, maxRetries: 1 }); reload();
     } catch (e) { setPhotoFailed(true); throw e; }
   });
   const save = () => run(async () => { await client.post(`/bookings/${trip.id}/handover`, { phase, odometer_km: Number(odo), fuel_percent: fuel, notes: notes.trim() || undefined, damage_noted: damage }); reload(); });

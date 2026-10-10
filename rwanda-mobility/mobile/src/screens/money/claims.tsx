@@ -1,3 +1,4 @@
+import { UPLOAD_TIMEOUT_MS } from '../../lib/photoCheck';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, View, useWindowDimensions } from 'react-native';
 import { API_URL } from '../../config';
@@ -90,7 +91,7 @@ export function ClaimNew({ params }: { params: { booking_id: string; ref?: strin
       if (!id) { const r = await client.post<{ id: string; ref: string }>(`/bookings/${params.booking_id}/claims`, { type, description: desc.trim(), claimed_amount: Number(amount) }, { retry: false }); id = r.id; keyDone.current = id; say(t('cl.sent', { ref: r.ref })); }
       let failed = 0;
       for (const p of photos.splice(0, photos.length)) {
-        try { const fd = new FormData(); await appendFile(fd, 'file', p); await client.post(`/claims/${id}/evidence`, undefined, { form: fd, timeoutMs: 40000 }); } catch { failed++; }
+        try { const fd = new FormData(); await appendFile(fd, 'file', p); await client.post(`/claims/${id}/evidence`, undefined, { form: fd, timeoutMs: UPLOAD_TIMEOUT_MS, retry: true, maxRetries: 1 }); } catch { failed++; }
       }
       if (failed) say(t('cl.sent.photos', { n: failed }));
       nav.replace('claimDetail', { id });
@@ -141,7 +142,7 @@ export function ClaimDetail({ params }: { params: { id: string } }) {
       {poll.error ? <Banner kind="bad" text={errMsg(poll.error)} action={<Btn kind="ghost" title={t('common.retry')} onPress={poll.reload} />} /> : <SkeletonCard />}
     </Screen>);
   const send = (kind: 'reply' | 'info') => act(async () => { await client.post(`/claims/${c.id}/messages`, { body: msg.trim() }, { retry: false }); setMsg(''); say(t(kind === 'reply' ? 'cl.reply.sent' : 'cl.info.sent')); poll.reload(); });
-  const addPhoto = async (f: Picked) => { setUpBusy(true); try { await act(async () => { const fd = new FormData(); await appendFile(fd, 'file', f); await client.post(`/claims/${c.id}/evidence`, undefined, { form: fd, timeoutMs: 40000 }); say(t('cl.evidence.uploaded')); poll.reload(); }); } finally { setUpBusy(false); } };
+  const addPhoto = async (f: Picked) => { setUpBusy(true); try { await act(async () => { const fd = new FormData(); await appendFile(fd, 'file', f); await client.post(`/claims/${c.id}/evidence`, undefined, { form: fd, timeoutMs: UPLOAD_TIMEOUT_MS, retry: true, maxRetries: 1 }); say(t('cl.evidence.uploaded')); poll.reload(); }); } finally { setUpBusy(false); } };
   const withdraw = () => showAlert(t('cl.withdraw'), t('cl.withdraw.confirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('common.confirm'), style: 'destructive', onPress: () => void act(async () => { await client.post(`/claims/${c.id}/withdraw`, {}, { retry: false }); say(t('cl.withdrawn')); poll.reload(); }) }]);
   const reply = claimCanReply(c); const info = claimCanAddInfo(c);
   const dueReply = c.you_are === 'respondent' && !c.replied ? dueIn(c.reply_due_at) : null; const dueInfo = info ? dueIn(c.info_due_at) : null;

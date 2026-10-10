@@ -50,4 +50,7 @@ export const pickFr: Record<keyof typeof pickEn, string> = {
   'nb.one': '1 chauffeur à proximité · environ {m} min',
   'nb.none': 'Aucun chauffeur à proximité pour le moment. Vous pouvez quand même demander une course.',
   'nb.hint': 'Les positions des véhicules sont approximatives.',
+  'drv.upload.timeout': 'L\'envoi a pris trop de temps : la connexion est lente ou faible. Allez où le signal est meilleur et réessayez.',
+  'drv.upload.network': 'L\'envoi a été interrompu : le téléphone a perdu la connexion au serveur. Vérifiez vos données ou le Wi-Fi et réessayez.',
+  'drv.upload.toobig': 'Ce fichier est trop volumineux (limite : 5 Mo). Reprenez la photo ou choisissez un fichier plus petit.',
 };

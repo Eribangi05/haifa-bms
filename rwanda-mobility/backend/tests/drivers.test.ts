@@ -196,3 +196,10 @@ test('DOC-01 document pre-check: reads the image size, warns about small or blur
   assert.deepEqual(inspectDocument(Buffer.from('%PDF-1.4'), 'application/pdf').warnings, []);
   assert.equal(expiryTooFar('2208-01-01'), true); assert.equal(expiryTooFar('2029-06-30'), false);
 });
+
+test('DOC-02 a file over the size limit gets our translated file_too_large answer, not a bare framework error', async () => {
+  const d = await t.driver(); const big = Buffer.alloc(5 * 1024 * 1024 + 2048, 1); big[0] = 0xff; big[1] = 0xd8; big[2] = 0xff;
+  const m = multipart({ doc_type: 'profile_photo' }, { name: 'big.jpg', data: big, type: 'image/jpeg' });
+  const r = await t.api('POST', '/drivers/documents', { token: d.token, ...m, headers: { ...(m as any).headers, 'accept-language': 'rw' } });
+  assert.equal(r.status, 413); assert.equal(r.json.error.code, 'file_too_large'); assert.match(r.json.error.message, /5 MB/);
+});

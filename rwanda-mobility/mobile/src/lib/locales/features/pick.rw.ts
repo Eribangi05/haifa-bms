@@ -50,4 +50,7 @@ export const pickRw: Record<keyof typeof pickEn, string> = {
   'nb.one': 'Umushoferi 1 ari hafi · hafi y\'iminota {m}',
   'nb.none': 'Nta bashoferi bari hafi ubu. Ushobora gusaba urugendo.',
   'nb.hint': 'Aho imodoka ziri harerekanwa hafi.',
+  'drv.upload.timeout': 'Kohereza byatwaye igihe kirekire: interineti ni ntoya cyangwa irananiwe. Jya ahari interineti nziza maze ukande ukundi.',
+  'drv.upload.network': 'Kohereza byahagaze: telefone yabuze umurongo w\'interineti. Reba amakuru ya interineti cyangwa Wi-Fi maze ukande ukundi.',
+  'drv.upload.toobig': 'Iyi dosiye ni nini cyane (igipimo ntarengwa ni 5 MB). Ongera ufate ifoto cyangwa uhitemo dosiye ntoya.',
 };

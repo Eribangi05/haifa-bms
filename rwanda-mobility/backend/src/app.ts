@@ -110,8 +110,8 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     if (err instanceof AppError) return reply.code(err.status).send({ error: { code: err.code, message: localizeError(err.code, lang, err.message, err.details), details: err.details } });
     if (err instanceof ZodError) return reply.code(400).send({ error: { code: 'validation_error', message: localizeError('validation_error', lang, 'Invalid input') } });
     if (err.statusCode && err.statusCode < 500) {
-      const code = err.statusCode === 429 ? 'rate_limited' : (err.code ?? 'bad_request');
-      return reply.code(err.statusCode).send({ error: { code: err.code ?? (err.statusCode === 429 ? 'rate_limited' : 'bad_request'), message: localizeError(code, lang, err.message) } });
+      const code = err.statusCode === 429 ? 'rate_limited' : err.code === 'FST_REQ_FILE_TOO_LARGE' ? 'file_too_large' : (err.code ?? 'bad_request');      // an upload over the size limit gets our own, translated message
+      return reply.code(err.statusCode).send({ error: { code, message: localizeError(code, lang, err.message) } });
     }
     req.log.error({ err, reqId: req.id }, 'unhandled error');
     return reply.code(500).send({ error: { code: 'internal_error', message: localizeError('internal_error', lang, 'Something went wrong.') + ({ en: ' Reference: ', rw: ' Nimero y\'ikibazo: ', fr: ' Référence : ' } as const)[lang] + req.id } });
