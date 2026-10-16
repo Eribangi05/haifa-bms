@@ -7,6 +7,7 @@ import { fmtDate, fmtRwf } from '../../lib/format';
 import type { EarningsView } from '../../lib/types';
 import { Btn, Card, Chip, EmptyState, Field, Money, Pill, SkeletonCard, Text } from '../../ui/components';
 import { C, S } from '../../ui/theme';
+import { WeeklyStatement } from './statement';
 
 type Payout = { id: string; requested_at: string; amount: number; status: string };
 type Txn = { id: string; memo: string; credit?: number; debit?: number };
@@ -33,6 +34,7 @@ export function Earnings() {
         {bal.owed_to_platform > 0 ? <View style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{t('drv.owed')}</Text><Money n={bal.owed_to_platform} style={{ color: C.danger, fontWeight: '700' }} /></View> : null}
         <Field label={t('drv.payout.amount')} value={amt} onChangeText={(x) => setAmt(x.replace(/\D/g, ''))} keyboardType="number-pad" returnKeyType="done" error={tooMuch ? t('drv.payout.toomuch') : undefined} />
         <Btn title={t('drv.payout.request')} loading={busy} disabled={!amount || tooMuch} onPress={() => run(async () => { await client.post('/drivers/me/payouts', { amount }); setAmt(''); w.reload(); po.reload(); e.reload(); })} /></Card> : null}
+      <WeeklyStatement />
       {!d && !bal && e.error ? <EmptyState glyph="📡" title={t('common.error')} action={<Btn title={t('common.retry')} onPress={e.reload} />} /> : null}
       {po.data?.payouts?.length ? <Card><Text style={S.h2}>{t('drv.payout.history')}</Text>{po.data.payouts.map((p) => <View key={p.id} style={[S.between, { paddingVertical: 4, gap: 6 }]}><Text style={S.body}>{fmtDate(p.requested_at)}</Text><Money n={p.amount} /><Pill tone={p.status === 'PAID' ? 'ok' : p.status === 'REJECTED' || p.status === 'FAILED' ? 'bad' : 'warn'} text={label(lang, 'po', p.status)} /></View>)}</Card> : null}
       {w.data?.transactions?.length ? <Card><Text style={S.h2}>{t('drv.activity')}</Text>{w.data.transactions.slice(0, 12).map((x) => <View key={x.id} style={[S.between, { paddingVertical: 3 }]}><Text style={[S.muted, { flex: 1 }]} numberOfLines={1}>{x.memo}</Text><Text style={{ color: x.credit ? C.primary : C.danger }}>{x.credit ? '+' + x.credit : '−' + x.debit}</Text></View>)}</Card> : null}

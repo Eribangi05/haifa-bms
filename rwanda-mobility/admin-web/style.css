@@ -232,3 +232,4 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,su
 .pager select{min-height:30px;padding:3px 8px}
 .iconbtn.aa{font-size:.8125rem;font-weight:700}
 @media (max-width:700px){.dispanel{position:fixed;left:8px;right:8px;top:60px;width:auto}}
+.hourchart .ax.mut{fill:var(--muted, #5a6b78);opacity:.8}

@@ -33,7 +33,7 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
     return q<Cand>(
       `select dp.user_id, dp.last_lat, dp.last_lng, dp.fleet_id, null::uuid vehicle_id, 'moto'::text vehicle_type, dp.accepted_count, dp.rejected_count, dp.offers_count, dp.last_trip_at
        from driver_profiles dp
-       join users u on u.id = dp.user_id and u.status = 'active'
+       join users u on u.id = dp.user_id and u.status = 'active' and u.device_fingerprint is distinct from 'demo'
        where dp.status = 'APPROVED' and dp.abasare_status = 'approved' and 'abasare' = any(dp.accepting) and dp.is_online
          and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1)
          and (dp.zone_id is null or dp.zone_id = $2)
@@ -50,7 +50,7 @@ export async function findCandidates(c: PoolClient, b: BookingRow, svc: any, hea
   return q<Cand>(
     `select dp.user_id, dp.last_lat, dp.last_lng, dp.fleet_id, v.id vehicle_id, v.vehicle_type, dp.accepted_count, dp.rejected_count, dp.offers_count, dp.last_trip_at
      from driver_profiles dp
-     join users u on u.id = dp.user_id and u.status = 'active'
+     join users u on u.id = dp.user_id and u.status = 'active' and u.device_fingerprint is distinct from 'demo'
      join vehicles v on v.driver_id = dp.user_id and v.status = 'approved'
      where dp.status = 'APPROVED' and dp.is_online and 'ride' = any(dp.accepting)
        and dp.last_seen_at > now() - make_interval(secs => $1) and dp.last_location_at > now() - make_interval(secs => $1)

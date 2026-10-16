@@ -77,6 +77,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 | Doc | Purpose |
 |---|---|
 | [`docs/ADMIN_FLEXIBILITY.md`](docs/ADMIN_FLEXIBILITY.md) | Staff lifecycle, editable roles and permissions, places, zones, help centre and other admin-editable configuration, with safeguards. |
+| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | Five-minute client demo script, preparation checklist, demo data and what to do when something goes wrong. |
 | [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md) | Daily checks, backups and restore, secret rotation, staff accounts and MFA reset, rollback, payment and SOS incidents, monitoring. For the engineer on call. |
 | [`docs/SUPPORT_OPERATIONS_GUIDE.md`](docs/SUPPORT_OPERATIONS_GUIDE.md) | For support, dispatch, verification and finance staff: roles, daily routine, common cases, how to change prices. |
 | [`docs/EMERGENCY_RESPONSE_PLAYBOOK.md`](docs/EMERGENCY_RESPONSE_PLAYBOOK.md) | What to do when an SOS arrives. |

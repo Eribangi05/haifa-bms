@@ -102,6 +102,8 @@ const T: Record<string, Pair> = {
   invalid_transition: ['Ibi ntibishoboka kuko imiterere y\'urugendo yahindutse.', 'Action impossible : l\'état de la course a changé.'],
   not_ratable: ['Ushobora gutanga amanota ku ngendo zarangiye gusa.', 'Seules les courses terminées peuvent être notées.'],
   already_rated: ['Wamaze gutanga amanota kuri uru rugendo.', 'Vous avez déjà noté cette course.'],
+  bad_range: ['Itariki yo gutangira iri nyuma y\'iyo kurangiriraho.', 'La date de début est postérieure à la date de fin.'],
+  range_too_long: ['Hitamo igihe kitarenze umwaka umwe.', 'Choisissez une période d\'un an au maximum.'],
   no_receipt: ['Inyemezabwishyu iboneka urugendo rumaze kurangira.', 'Le reçu est disponible une fois la course terminée.'],
   already_open: ['Usanzwe ufite ubusabe bumeze nk\'ubu butararangira.', 'Vous avez déjà une demande ouverte de ce type.'],
   not_resolved: ['Ushobora gutanga igitekerezo ikibazo kimaze gukemurwa.', 'Vous pourrez donner votre avis une fois la demande résolue.'],

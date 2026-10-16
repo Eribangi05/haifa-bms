@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { sharedView, contactOptOut } from '../services/safety.js';
 import { routeLimit } from '../guards.js';
 import { SUPPORTED_LANGS, type Lang } from '../services/i18n.js';
+import { renderReceipt, badReceiptPage } from '../services/receipts.js';
 
 /** Language of the public share page: ?lang= wins, then the first supported Accept-Language tag, else Kinyarwanda (product default). */
 export function shareLang(query: unknown, acceptLanguage: unknown): Lang {
@@ -72,6 +73,15 @@ export async function shareRoutes(app: FastifyInstance) {
     const lang = shareLang(req.query, req.headers['accept-language']);
     reply.header('content-type', 'text/html; charset=utf-8').header('vary', 'accept-language').header('content-language', lang);
     return reply.send(renderSharePage(lang, token));
+  });
+  // public, signed trip receipt (link made by the rider from the app; expires after 30 days)
+  app.get('/receipt/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const lang = shareLang(req.query, req.headers['accept-language']) as 'rw' | 'fr' | 'en';
+    reply.header('content-type', 'text/html; charset=utf-8').header('cache-control', 'no-store').header('content-language', lang);
+    const html = /^[0-9a-f-]{36}$/.test(id) ? await renderReceipt(id, String((req.query as any)?.token ?? ''), lang) : null;
+    if (!html) reply.code(404);
+    return reply.send(html ?? badReceiptPage(lang));
   });
   // a trusted contact can stop the automatic messages (and this link) for their number
   app.post('/share/:token/stop', { config: routeLimit('SHARE_STOP_RATE_MAX', 10) }, async (req, reply) => {

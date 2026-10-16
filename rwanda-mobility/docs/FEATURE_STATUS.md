@@ -243,3 +243,14 @@ Labels (assigned by evidence, not intent):
 ## Wide view of available drivers (0.9.6)
 
 * A "See all available drivers" switch under the rider map (remembered) widens the view from the local radius (4 km) to `map.wide_radius_km` (default 80 km; 300 covers Rwanda): every available driver in range is counted, and where drivers are close together they are drawn as one numbered bubble (cells of about a tenth of the range), so a busy city stays readable. Positions stay blurred and anonymous. The map zooms out when the switch is on. TESTED: R5-25 and the browser run (`e2e/pickers-e2e.mjs`). In low-data mode the plain map hides the icons but the count stays.
+
+## Owner reports, demo data, statements and receipts (0.9.8)
+
+* **Revenue page** (console, Money; `analytics.view` or `finance.view`): trips, platform revenue (commission), customer spend, paid to drivers, active drivers and riders, new riders, average fare, cash versus mobile money, rating, trend by day or week, by service, by payment method, busiest hours and top drivers, each compared with the previous period of the same length. **Download CSV** and **Print / Save as PDF** (the report opens in the console language: rw, fr or en). Endpoints `GET /admin/revenue`, `/admin/revenue/csv`, `/admin/revenue/report`. (TESTED: `tests/demo.test.ts`, browser check of the page)
+* **Ratings page** (console, Operations): spread of stars, recent low ratings with comments and reasons, drivers flagged for a coaching call. Settings `ratings.low_score` (2), `ratings.flag_avg_x10` (42 = 4.2), `ratings.flag_min_count` (5), `ratings.flag_window_days` (30). Endpoint `GET /admin/ratings`.
+* **Demo data** (console, Administration; administrators only): loads about 14 days of believable activity (40 drivers, 90 riders by default, trips, payments, earnings, balanced ledger entries, ratings, three scheduled rides) and removes exactly that later. Demo drivers that are online move on the Live map and the rider map, but never receive trip offers. Endpoints `GET /admin/demo`, `POST /admin/demo/load`, `POST /admin/demo/clear`. See `docs/DEMO_SCRIPT.md`.
+* **Driver weekly statement** (app, Earnings): Monday to Sunday in Kigali days, per day and in total, **Share statement** as text. Endpoint `GET /drivers/me/statement?week=0|1|...`. (TESTED: `tests/statement.test.ts`, `mobile/e2e/demo-e2e.mjs`)
+* **Shareable trip receipt** (app, Trips): **Share receipt** makes a signed link (30 days) to a printable page in the rider language, with no phone numbers. Endpoints `POST /bookings/:id/receipt/link`, public `GET /receipt/:id?token=...`. (TESTED)
+* **Already in place, shown in the demo script**: scheduled rides (`booking.scheduled`, booking in advance, repeat rides), airport fee, live trip-share link, ratings with tags and tips.
+* Console texts for the new pages and for the map, scheduling and ratings settings added in Kinyarwanda and French (they were missing for the 0.9.x map settings).
+

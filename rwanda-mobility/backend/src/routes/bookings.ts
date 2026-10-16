@@ -11,6 +11,7 @@ import { flagFor } from '../services/settings.js';
 import { turnByTurn } from '../services/navigation.js';
 import { can } from '../rbac.js';
 import { pickLang, reqLang } from '../services/errmsg.js';
+import { receiptLink } from '../services/receipts.js';
 import { isLite, liteBooking, liteOffers, sendConditional } from '../services/lowdata.js';
 
 const idp = z.object({ id: z.string().uuid() });
@@ -82,6 +83,11 @@ export async function bookingRoutes(app: FastifyInstance) {
         fr: 'Le prix final est égal à l\'estimation acceptée, sauf temps d\'attente signalé ou suppléments autorisés.',
         rw: 'Igiciro cya nyuma kingana n\'icyo wemeye mbere, uretse igihe cyo gutegereza cyatangajwe cyangwa ibyongeweho byemewe.' }),
     };
+  });
+
+  app.post('/bookings/:id/receipt/link', { config: routeLimit('SHARE_RATE_MAX', 20), preHandler: anyAuth }, async (req) => {
+    const { id } = parse(idp, req.params);
+    return receiptLink(req.auth!.id, id, reqLang(req.headers['accept-language'] as string | undefined));
   });
 
   app.post('/bookings/:id/cancel', { preHandler: anyAuth }, async (req) => {

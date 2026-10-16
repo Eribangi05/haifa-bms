@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useApp } from '../../lib/app';
+import { shareText } from '../../lib/shareText';
 import { label } from '../../lib/i18n';
 import { receiptParts } from '../../lib/moneyFmt';
 import type { Booking } from '../../lib/types';
@@ -26,11 +27,16 @@ export function PaidLines({ b }: { b: Booking }) {
 
 /** History card extras: credit used on the trip, and a way to report a problem on a finished trip. */
 export function HistoryExtras({ b }: { b: Booking }) {
-  const { t, nav } = useApp(); const p = receiptParts(b);
+  const { t, nav, client, say } = useApp(); const p = receiptParts(b);
+  const shareReceipt = async () => {
+    try { const r = await client.post<{ url: string }>(`/bookings/${b.id}/receipt/link`, {}); const out = await shareText(t('rc.share.msg', { ref: b.ref, url: r.url })); if (out === 'copied') say(t('rc.copied')); }
+    catch { say(t('rc.share.fail')); }
+  };
   const done = ['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(b.status);
   return (
     <View>
       {p.credit > 0 || p.deposit > 0 ? <Text style={[S.muted, { marginTop: 4 }]}>{p.credit > 0 ? t('cr.hist.credit', { n: p.credit.toLocaleString('en-US') }) : ''}{p.credit > 0 && p.deposit > 0 ? ' · ' : ''}{p.deposit > 0 ? `${t('cr.deposit.used')} ${p.deposit.toLocaleString('en-US')} RWF` : ''}</Text> : null}
+      {done ? <Pressable testID={`receipt-share-${b.ref}`} onPress={shareReceipt} accessibilityRole="button" accessibilityLabel={t('rc.share')} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={[S.body, { color: C.primary, fontWeight: '700' }]}>{t('rc.share')}</Text></Pressable> : null}
       {done ? <Pressable onPress={() => nav.push('claimNew', { booking_id: b.id, ref: b.ref })} accessibilityRole="button" accessibilityLabel={t('cl.history.report')} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: C.primary, fontWeight: '700' }}>{t('cl.history.report')}</Text></Pressable> : null}
     </View>
   );

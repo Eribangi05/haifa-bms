@@ -154,6 +154,23 @@ export async function driverRoutes(app: FastifyInstance) {
     const dp = await q1<any>('select completed_count, cancel_count, accepted_count, rating_avg from driver_profiles where user_id=$1', [req.auth!.id]);
     return { period: b.period, ...t, daily, completed_trips: dp.completed_count, cancellations: dp.cancel_count, rating: Number(dp.rating_avg), balance: await driverBalance(req.auth!.id) };
   });
+  // weekly statement (Monday to Sunday, Kigali days): the driver can read it in the app and share it as text
+  app.get('/drivers/me/statement', drv, async (req) => {
+    const { week } = parse(z.object({ week: z.coerce.number().int().min(0).max(52).default(0) }), req.query);
+    const id = req.auth!.id;
+    const win = await q1<any>(`select to_char(d, 'YYYY-MM-DD') from_day, to_char(d + 6, 'YYYY-MM-DD') to_day, (d::timestamp at time zone 'Africa/Kigali') a, ((d + 7)::timestamp at time zone 'Africa/Kigali') b
+      from (select (date_trunc('week', now() at time zone 'Africa/Kigali') - make_interval(weeks => $1))::date d) x`, [week]);
+    const days = await q<any>(`select to_char(created_at at time zone 'Africa/Kigali','YYYY-MM-DD') as day, count(*)::int trips, coalesce(sum(fare_subtotal+tax-discount),0)::int fares,
+        coalesce(sum(commission),0)::int commission, coalesce(sum(fleet_share),0)::int fleet_share, coalesce(sum(net),0)::int net,
+        coalesce(sum(fare_subtotal+tax-discount) filter (where payment_method='cash'),0)::int cash
+      from driver_earnings where driver_id=$1 and created_at >= $2 and created_at < $3 group by 1 order by 1`, [id, win.a, win.b]);
+    const paid = await q1<any>("select coalesce(sum(amount),0)::int amount, count(*)::int n from payouts where owner_user_id=$1 and status='PAID' and paid_at >= $2 and paid_at < $3", [id, win.a, win.b]);
+    const sum = (k: string) => days.reduce((a: number, d: any) => a + d[k], 0);
+    const who = await q1<any>('select u.display_name name, dp.rating_avg::float rating from users u join driver_profiles dp on dp.user_id=u.id where u.id=$1', [id]);
+    const rt = await q1<any>('select coalesce(avg(score),0)::float avg, count(*)::int n from ratings where reviewee_id=$1 and created_at >= $2 and created_at < $3', [id, win.a, win.b]);
+    return { statement_no: `${win.from_day.replace(/-/g, '')}-${id.slice(0, 4).toUpperCase()}`, week, from: win.from_day, to: win.to_day, driver: who?.name ?? '', days,
+      totals: { trips: sum('trips'), fares: sum('fares'), commission: sum('commission'), fleet_share: sum('fleet_share'), net: sum('net'), cash: sum('cash') }, paid_out: paid, rating: { avg: Math.round(rt.avg * 100) / 100, count: rt.n } };
+  });
   app.get('/drivers/me/wallet', drv, async (req) => ({
     balance: await driverBalance(req.auth!.id),
     transactions: await q(`select e.id, e.account_code, e.debit, e.credit, e.memo, e.created_at from ledger_entries e where e.owner_user_id=$1 and e.account_code in ('DRIVER_PAYABLE','CASH_WITH_DRIVERS') order by e.id desc limit 100`, [req.auth!.id]),
