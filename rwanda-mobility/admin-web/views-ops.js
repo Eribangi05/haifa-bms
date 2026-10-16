@@ -101,7 +101,7 @@ V.live = async (el) => {
     const token = S.nav; let tileErrors = 0, m = null, layer = null, fitted = false, timer = null;
     if (window.L) {
       m = L.map(mapEl).setView([-1.9536, 30.0927], 12);
-      const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 }).addTo(m);
+      const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { referrerPolicy: 'origin', attribution: '© OpenStreetMap contributors', maxZoom: 19 }).addTo(m);
       tiles.on('tileerror', () => { if (++tileErrors === 3) notice.replaceChildren(note('Map tiles could not be loaded (offline, or tile.openstreetmap.org is blocked on this network). Driver and booking positions are still listed below.', 'warn')); });
       tiles.on('tileload', () => { if (tileErrors >= 3) { tileErrors = 0; notice.replaceChildren(); } });
       layer = L.layerGroup().addTo(m);

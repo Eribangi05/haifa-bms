@@ -7,7 +7,7 @@
 function pickMap(center, zoom, onClick) {
   const el = h('div', { class: 'mappick', role: 'application', 'aria-label': 'Map. Click to choose a point.' });
   const map = L.map(el).setView(center, zoom);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { referrerPolicy: 'origin', attribution: '© OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
   map.on('click', (e) => onClick(+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)));
   setTimeout(() => map.invalidateSize(), 150); setTimeout(() => map.invalidateSize(), 600);
   return { map, el };

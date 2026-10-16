@@ -182,3 +182,7 @@ The service exposes only `/health` and `/ready` and writes JSON logs (pino) to s
 ## Drivers missing from the Live map
 
 The Live map and the "Drivers online" figure count a driver only when he or she is online **and** the phone sent a position within the last `dispatch.heartbeat_max_age_s` seconds (Settings, default 90). Drivers who are online but silent are listed on the Live map under "Online but not reporting" (grey on the map) for 30 minutes. Check in this order: (1) the driver app is open (or background location is allowed all the time) and location is on; (2) the driver is approved with valid documents (the app says why when it cannot go online); (3) the phone does not use a mock-location app (such positions are discarded); (4) the API is awake and was redeployed from the latest branch (a free Render instance sleeps after 15 minutes idle and needs about a minute to wake); (5) Drivers page: status, Online column and last seen.
+
+## Console maps show "Access blocked / 403 tile usage policy"
+
+The Live map and the zone editor draw OpenStreetMap tiles. OpenStreetMap refuses tile requests that carry no Referer, and the API sends `Referrer-Policy: no-referrer` on every page. The two tile layers (`views-ops.js`, `views-config.js`) therefore set `referrerPolicy: 'origin'` for their own tile images only (the site name is sent, nothing else). Staff use is light, which is within OpenStreetMap's tile policy; the attribution stays visible. If the volume ever grows, serve the console map from the self-hosted Rwanda map file instead (as the app does).
