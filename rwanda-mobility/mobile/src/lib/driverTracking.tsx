@@ -8,8 +8,8 @@ import { kv } from './storage';
 import { shouldTrack } from './trip';
 import { BG_TASK, bgSupported, startBgLocation, stopBgLocation } from './bgLocation';
 
-type State = { online: boolean; onTrip: boolean; pos: { lat: number; lng: number } | null; lastFixAt: number; forbiddenAt: number; bgDenied: boolean };
-let state: State = { online: false, onTrip: false, pos: null, lastFixAt: 0, forbiddenAt: 0, bgDenied: false };
+type State = { online: boolean; onTrip: boolean; pos: { lat: number; lng: number } | null; lastFixAt: number; forbiddenAt: number; bgDenied: boolean; lastSentAt: number; lastReject: string };
+let state: State = { online: false, onTrip: false, pos: null, lastFixAt: 0, forbiddenAt: 0, bgDenied: false, lastSentAt: 0, lastReject: '' };
 const subs = new Set<() => void>();
 const set = (p: Partial<State>) => { state = { ...state, ...p }; subs.forEach((f) => f()); };
 export const setDriverTracking = (p: Partial<Pick<State, 'online' | 'onTrip'>>) => set(p);
@@ -33,8 +33,8 @@ export function DriverTracker() {
         const p = await Location.requestForegroundPermissionsAsync(); if (p.status !== 'granted' || cancelled) return;
         const s = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 15 }, (l) => {
           set({ pos: { lat: l.coords.latitude, lng: l.coords.longitude }, lastFixAt: Date.now() });
-          if (bgOn.current) return;   // the background task is already posting
-          client.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, mocked: (l as any).mocked === true ? true : undefined, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false }).catch((e) => { if (e instanceof ApiError && e.status === 403) set({ forbiddenAt: Date.now() }); });
+          // posts even when the background service runs: the server drops duplicates and out-of-order fixes, and a silent service must not leave the driver invisible
+          client.post('/drivers/me/location', { lat: l.coords.latitude, lng: l.coords.longitude, mocked: (l as any).mocked === true ? true : undefined, accuracy: l.coords.accuracy ?? undefined, speed: l.coords.speed != null && l.coords.speed >= 0 ? l.coords.speed : undefined, recorded_at: new Date(l.timestamp).toISOString() }, { retry: false }).then((r: any) => { set(r && r.accepted === false ? { lastReject: String(r.reason ?? 'rejected') } : { lastSentAt: Date.now(), lastReject: '' }); }).catch((e) => { if (e instanceof ApiError && e.status === 403) set({ forbiddenAt: Date.now() }); });
         });
         if (cancelled) s.remove(); else sub.current = s;
       } catch { /* location unavailable: the driver home shows a "no GPS" banner */ }
