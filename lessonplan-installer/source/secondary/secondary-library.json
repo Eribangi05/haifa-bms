@@ -1961,6 +1961,70 @@
    "file": "teacher-docs/secondary/S6_PES_TG_F_2026-2027.pdf",
    "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/TG/S6%20PES%20TG%20F%202026-2027.pdf?forcedownload=1",
    "mb": 29.9
+  },
+  {
+   "id": "sg_9767",
+   "type": "guide",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Science scripted lessons S1-S3 - Biology",
+   "file": "teacher-docs/secondary/ScriptedLessons_S1-S3_Biology.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38905/mod_resource/content/1/Biology%20Scripted%20Lesson.pdf?forcedownload=1",
+   "mb": 12.1
+  },
+  {
+   "id": "sg_9768",
+   "type": "guide",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Science scripted lessons S1-S3 - Chemistry",
+   "file": "teacher-docs/secondary/ScriptedLessons_S1-S3_Chemistry.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38906/mod_resource/content/1/Chemistry%20scripted%20lessons.pdf?forcedownload=1",
+   "mb": 9.9
+  },
+  {
+   "id": "sg_9769",
+   "type": "guide",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Science scripted lessons S1-S3 - Physics",
+   "file": "teacher-docs/secondary/ScriptedLessons_S1-S3_Physics.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38907/mod_resource/content/1/Physics%20Scripted%20lessons.pdf?forcedownload=1",
+   "mb": 9.6
+  },
+  {
+   "id": "sg_9771",
+   "type": "guide",
+   "subject": "maths",
+   "subjectName": "Mathematics",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Scripted lessons S1-S3 - Mathematics",
+   "file": "teacher-docs/secondary/ScriptedLessons_S1-S3_Mathematics.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38909/mod_resource/content/1/Sample%20scripted%20lessons-MATHEMATICS%20S1-S3.pdf?forcedownload=1",
+   "mb": 5.9
   }
  ]
 }
