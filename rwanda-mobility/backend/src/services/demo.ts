@@ -4,6 +4,8 @@ import { encode as gh } from '../util/geohash.js';
 import { computeFare, activeRule, kigaliHour, kigaliDow, type Rule, type Breakdown } from './pricing.js';
 import { resolveCommission, calcCommission } from './commission.js';
 import { haversineM } from '../util/geo.js';
+import { createHash } from 'node:crypto';
+import { loadExtras } from './demoExtras.js';
 
 /**
  * Demo data for presentations: about a week of believable activity (drivers, riders, trips, payments, earnings, ledger entries, ratings, a few scheduled
@@ -73,7 +75,7 @@ export async function loadDemo(opts: DemoOptions = {}): Promise<DemoSummary> {
   const earliest = new Date(now - (days + 25) * DAY).toISOString();
   for (let i = 0; i < nDrivers; i++) {
     const id = randomUUID(), kind: 'moto' | 'car' = i % 5 < 2 ? 'moto' : 'car', abasare = kind === 'car' && i % 9 === 0, area = pick(AREAS), weak = i % 17 === 5;
-    const online = rnd() < 0.5, lat = area[1] + jitter(0.012), lng = area[2] + jitter(0.012);
+    const online = createHash('md5').update(id).digest('hex')[0] < '8', lat = area[1] + jitter(0.012), lng = area[2] + jitter(0.012);
     driverRows.push({ id, kind, activity: 0.45 + rnd() * 1.1, weak, abasare, area, online });
     users.push({ id, phone: `+25078899${1001 + i}`, device_fingerprint: DEMO_TAG, display_name: name(), preferred_language: pick(['rw', 'rw', 'fr', 'en']), created_at: new Date(now - (days + 20 - Math.floor(rnd() * 14)) * DAY).toISOString() });
     roles.push({ user_id: id, role: 'driver' }, { user_id: id, role: 'passenger' });
@@ -103,18 +105,18 @@ export async function loadDemo(opts: DemoOptions = {}): Promise<DemoSummary> {
   const midnight0 = kigaliMidnight(now) - (days - 1) * DAY;
   let completed = 0, ratingN = 0, commissionSum = 0, seq = 0;
 
-  const trip = (reqAt: number, svc: string, status: 'PAYMENT_COMPLETED' | 'CANCELLED_BY_PASSENGER' | 'CANCELLED_BY_DRIVER' | 'NO_DRIVER_FOUND' | 'SCHEDULED') => {
-    const rule = rules.get(svc)!, a = pick(AREAS); let b = pick(AREAS); while (b === a) b = pick(AREAS);
-    const p = { lat: a[1] + jitter(0.006), lng: a[2] + jitter(0.006) }, d = { lat: b[1] + jitter(0.006), lng: b[2] + jitter(0.006) };
+  const trip = (reqAt: number, svc: string, status: 'PAYMENT_COMPLETED' | 'CANCELLED_BY_PASSENGER' | 'CANCELLED_BY_DRIVER' | 'NO_DRIVER_FOUND' | 'SCHEDULED' | 'IN_PROGRESS' | 'SEARCHING_DRIVER', o: { area?: [string, number, number]; jit?: number; passenger?: string; driver?: (typeof driverRows)[number] } = {}) => {
+    const rule = rules.get(svc)!, a = o.area ?? pick(AREAS); let b = pick(AREAS); while (b === a) b = pick(AREAS);
+    const jt = o.jit ?? 0.006, p = { lat: a[1] + jitter(jt), lng: a[2] + jitter(jt) }, d = { lat: b[1] + jitter(0.006), lng: b[2] + jitter(0.006) };
     const distance_m = Math.round(Math.max(900, haversineM(p, d) * 1.3)), duration_s = Math.round(distance_m / (svc === 'moto' ? 8.2 : 6.4)) + 120;
     const when = new Date(reqAt);
     let bd: Breakdown;
     try { bd = computeFare(rule, { distance_m, duration_s, local_hour: kigaliHour(when), local_dow: kigaliDow(when), airport: svc === 'airport', hours: svc === 'abasare_hourly' ? 3 : undefined }); }
     catch { const sub = Math.max(rule.minimum_fare, Math.round((rule.base_fare + (rule.per_km * distance_m) / 1000) / 100) * 100); bd = { lines: [{ code: 'fare', label_en: 'Fare', label_rw: 'Igiciro', label_fr: 'Tarif', amount: sub }], subtotal: sub, discount: 0, tax: 0, total: sub, passthrough: 0, commissionable: sub, currency: 'RWF' }; }
-    const passenger = riderIds[Math.min(riderIds.length - 1, Math.floor(rnd() ** 1.6 * riderIds.length))];
+    const passenger = o.passenger ?? riderIds[Math.min(riderIds.length - 1, Math.floor(rnd() ** 1.6 * riderIds.length))];
     const quoteId = randomUUID(), bookingId = randomUUID(), ref = newRef();
     const pool = svc === 'moto' ? motoDrivers : svc === 'abasare' && abasareDrivers.length ? abasareDrivers : carDrivers;
-    const drv = status === 'NO_DRIVER_FOUND' || status === 'SCHEDULED' ? null : weightedDriver(pool.length ? pool : driverRows);
+    const drv = status === 'NO_DRIVER_FOUND' || status === 'SCHEDULED' || status === 'SEARCHING_DRIVER' ? null : o.driver ?? weightedDriver(pool.length ? pool : driverRows);
     const veh = drv ? vehicles.find((v) => v.driver_id === drv.id) : null;
     const iso = (ms: number) => new Date(ms).toISOString();
     const method = rnd() < 0.55 ? 'cash' : 'mtn_momo';
@@ -123,13 +125,18 @@ export async function loadDemo(opts: DemoOptions = {}): Promise<DemoSummary> {
       breakdown: bd, total: bd.total, expires_at: iso(reqAt + 600000), used_booking_id: bookingId, created_at: iso(reqAt - 20000) });
     const row: any = { id: bookingId, ref, passenger_id: passenger, driver_id: drv?.id ?? null, vehicle_id: veh?.id ?? null, service_id: svc, zone_id: 'kigali', status, pickup_lat: p.lat, pickup_lng: p.lng, pickup_name: a[0], dest_lat: d.lat, dest_lng: d.lng, dest_name: b[0],
       quote_id: quoteId, estimated_fare: bd.total, final_fare: null, fare_breakdown: null, distance_m, duration_s, payment_method: method, idempotency_key: `demo-${++seq}-${ref}`, requested_at: iso(reqAt), created_at: iso(reqAt), updated_at: iso(reqAt),
-      scheduled_for: null, assigned_at: null, arrived_at: null, started_at: null, completed_at: null, cancelled_at: null, cancel_by: null, cancel_reason: null };
+      scheduled_for: null, safety_checks: false, auto_share: false, assigned_at: null, arrived_at: null, started_at: null, completed_at: null, cancelled_at: null, cancel_by: null, cancel_reason: null };
     if (status === 'SCHEDULED') { row.scheduled_for = iso(reqAt); row.requested_at = iso(now - rnd() * 3 * 3600e3); row.created_at = row.requested_at; row.updated_at = row.requested_at; }
     else if (status === 'NO_DRIVER_FOUND') { row.updated_at = iso(reqAt + 90000); }
+    else if (status === 'SEARCHING_DRIVER') { row.updated_at = iso(reqAt + 20000); }
+    else if (status === 'IN_PROGRESS') {
+      Object.assign(row, { assigned_at: iso(reqAt + 40000), arrived_at: iso(reqAt + 6 * 60000), started_at: iso(reqAt + 8 * 60000) }); row.updated_at = row.started_at;
+      const pf = profiles.find((q) => q.user_id === drv!.id); if (pf) { pf.last_lat = (p.lat + d.lat) / 2; pf.last_lng = (p.lng + d.lng) / 2; pf.gh6 = gh(pf.last_lat, pf.last_lng, 6); pf.gh5 = gh(pf.last_lat, pf.last_lng, 5); pf.gh4 = gh(pf.last_lat, pf.last_lng, 4); pf.is_online = true; }
+    }
     else if (status.startsWith('CANCELLED')) {
       Object.assign(row, { assigned_at: iso(assigned), cancelled_at: iso(assigned + (1 + rnd() * 4) * 60000), cancel_by: status.endsWith('PASSENGER') ? 'passenger' : 'driver', cancel_reason: status.endsWith('PASSENGER') ? 'changed_my_mind' : 'vehicle_problem' });
       row.updated_at = row.cancelled_at; if (status === 'CANCELLED_BY_DRIVER') stat.get(drv!.id)!.cancels += 1;
-    } else {
+    } else if (status === 'PAYMENT_COMPLETED') {
       Object.assign(row, { final_fare: bd.total, fare_breakdown: bd, assigned_at: iso(assigned), arrived_at: iso(arrived), started_at: iso(started), completed_at: iso(done), pin_verified_at: iso(started) });
       row.updated_at = row.completed_at;
       const rule2 = comm.get(svc), commission = calcCommission(rule2, bd.commissionable), net = bd.subtotal - commission, paid = bd.subtotal + bd.tax - bd.discount;
@@ -168,6 +175,18 @@ export async function loadDemo(opts: DemoOptions = {}): Promise<DemoSummary> {
   const tomorrow = kigaliMidnight(now) + DAY; let scheduled = 0;
   for (const hh of [6.5, 8, 14.25]) { trip(tomorrow + hh * 3600e3, rules.has('standard') ? 'standard' : services[0], 'SCHEDULED'); scheduled++; }
 
+  // busy right now: the last hour has requests clustered in three areas (feeds the demand map), four trips are on the road and two riders are waiting for a driver
+  const hot = [AREAS[1], AREAS[2], AREAS[8]];
+  for (const [ai, area] of hot.entries()) for (let k = 0; k < 7; k++) {
+    trip(now - (14 + k * 6 + ai) * 60000, ai === 2 ? 'moto' : 'standard', 'PAYMENT_COMPLETED', { area, jit: 0.0018, passenger: riderIds[(ai * 9 + k * 4 + 2) % riderIds.length] });
+    trip(now - 7 * DAY - (8 + k * 6 + ai) * 60000, ai === 2 ? 'moto' : 'standard', 'PAYMENT_COMPLETED', { area, jit: 0.0018, passenger: riderIds[(ai * 9 + k * 4 + 3) % riderIds.length] });
+  }
+  const onlineRows = driverRows.filter((d) => d.online), busy = new Set<string>();
+  for (const [i, d] of onlineRows.filter((q) => q.kind === 'car').slice(0, 2).concat(onlineRows.filter((q) => q.kind === 'moto').slice(0, 2)).entries()) {
+    trip(now - (6 + i * 2) * 60000, d.kind === 'moto' ? 'moto' : 'standard', 'IN_PROGRESS', { driver: d, passenger: riderIds[riderIds.length - 1 - i] }); busy.add(d.id);
+  }
+  for (let i = 0; i < 2; i++) trip(now - 25000 - i * 15000, 'standard', 'SEARCHING_DRIVER', { passenger: riderIds[riderIds.length - 10 - i] });
+
   // ---- write everything in one transaction ----
   const c = await pool.connect();
   try {
@@ -184,13 +203,15 @@ export async function loadDemo(opts: DemoOptions = {}): Promise<DemoSummary> {
     await bulk(c, 'bookings', [['id', 'uuid'], ['ref', 'text'], ['passenger_id', 'uuid'], ['driver_id', 'uuid'], ['vehicle_id', 'uuid'], ['service_id', 'text'], ['zone_id', 'text'], ['status', 'text'], ['pickup_lat', 'float8'], ['pickup_lng', 'float8'], ['pickup_name', 'text'],
       ['dest_lat', 'float8'], ['dest_lng', 'float8'], ['dest_name', 'text'], ['quote_id', 'uuid'], ['estimated_fare', 'int'], ['final_fare', 'int'], ['fare_breakdown', 'jsonb'], ['distance_m', 'int'], ['duration_s', 'int'], ['payment_method', 'text'], ['idempotency_key', 'text'],
       ['scheduled_for', 'timestamptz'], ['requested_at', 'timestamptz'], ['assigned_at', 'timestamptz'], ['arrived_at', 'timestamptz'], ['started_at', 'timestamptz'], ['completed_at', 'timestamptz'], ['cancelled_at', 'timestamptz'], ['cancel_by', 'text'], ['cancel_reason', 'text'],
-      ['created_at', 'timestamptz'], ['updated_at', 'timestamptz']], bookings);
+      ['safety_checks', 'boolean'], ['auto_share', 'boolean'], ['created_at', 'timestamptz'], ['updated_at', 'timestamptz']], bookings);
     await bulk(c, 'payments', [['id', 'uuid'], ['booking_id', 'uuid'], ['payer_user_id', 'uuid'], ['method', 'text'], ['provider', 'text'], ['amount', 'int'], ['status', 'text'], ['reference', 'text'], ['provider_reference', 'text'], ['msisdn_masked', 'text'], ['amount_collected', 'int'],
       ['settlement_status', 'text'], ['created_at', 'timestamptz'], ['completed_at', 'timestamptz']], payments);
     await bulk(c, 'driver_earnings', [['booking_id', 'uuid'], ['driver_id', 'uuid'], ['fare_subtotal', 'int'], ['discount', 'int'], ['tax', 'int'], ['passthrough', 'int'], ['commissionable', 'int'], ['commission', 'int'], ['fleet_share', 'int'], ['net', 'int'], ['commission_rule_id', 'uuid'],
       ['payment_method', 'text'], ['collected_by', 'text'], ['created_at', 'timestamptz']], earnings);
     await bulk(c, 'ledger_entries', [['txn_id', 'uuid'], ['account_code', 'text'], ['owner_user_id', 'uuid'], ['booking_id', 'uuid'], ['payment_id', 'uuid'], ['debit', 'bigint'], ['credit', 'bigint'], ['memo', 'text'], ['created_at', 'timestamptz']], ledger.filter((e) => e.debit > 0 || e.credit > 0));
     await bulk(c, 'ratings', [['booking_id', 'uuid'], ['reviewer_id', 'uuid'], ['reviewee_id', 'uuid'], ['score', 'int'], ['comment', 'text'], ['tags', 'text'], ['created_at', 'timestamptz']], ratings, { tags: "array(select jsonb_array_elements_text(x.tags::jsonb))" });
+    await loadExtras(c, { now, rnd, pick, name, riders: riderIds, drivers: driverRows.map((d) => ({ id: d.id, kind: d.kind, abasare: d.abasare })), tag: DEMO_TAG,
+      done: bookings.filter((b) => b.status === 'PAYMENT_COMPLETED').map((b) => ({ id: b.id, ref: b.ref, passenger_id: b.passenger_id, driver_id: b.driver_id, fare: b.final_fare, payment_id: payments.find((pm) => pm.booking_id === b.id)!.id })) });
     for (const [id, s] of stat) {
       await c.query(`update driver_profiles set completed_count=$2, cancel_count=$3, accepted_count=$4, offers_count=$5, rating_count=$6, rating_avg=$7, last_trip_at=nullif($8,'')::timestamptz where user_id=$1`,
         [id, s.done, s.cancels, s.done + s.cancels, s.done + s.cancels + Math.round(s.done * 0.25), s.n, s.n ? Math.round((s.sum / s.n) * 100) / 100 : 0, s.last]);
@@ -220,7 +241,7 @@ async function purge(c: { query: (t: string, v?: any[]) => Promise<any> }, table
 /** Remove exactly the demo rows. Ledger entries are append-only, so the delete briefly lifts that guard inside one transaction (no-op when nothing is tagged). */
 export async function clearDemo(): Promise<{ removed_users: number; ledger_removed: boolean }> {
   const ids = (await q<any>('select id from users where device_fingerprint=$1', [DEMO_TAG])).map((r) => r.id);
-  if (!ids.length) return { removed_users: 0, ledger_removed: true };
+  if (!ids.length && !(await q1("select 1 from promotions where code like 'DEMO-%'"))) return { removed_users: 0, ledger_removed: true };
   let ledgerRemoved = true;
   const c = await pool.connect();
   try {
@@ -231,6 +252,11 @@ export async function clearDemo(): Promise<{ removed_users: number; ledger_remov
       await c.query("delete from ledger_entries where memo like 'demo:%'");
       await c.query('alter table ledger_entries enable trigger ledger_immutable');
     } catch { await c.query('rollback to savepoint lg'); ledgerRemoved = false; }
+    await c.query('delete from admin_alerts where actor_id = any($1::uuid[]) or acknowledged_by = any($1::uuid[])', [ids]);
+    await c.query('delete from risk_events where user_id = any($1::uuid[])', [ids]);
+    for (const t of ['request_codes', 'partners', 'campaigns', 'driver_quests', 'fixed_routes', 'corporate_accounts']) await purge(c, t, 'created_by = any($1::uuid[])', [ids], new Map());
+    await purge(c, 'fleets', 'owner_user_id = any($1::uuid[])', [ids], new Map());
+    await purge(c, 'promotions', "code like 'DEMO-%'", [], new Map());
     await purge(c, 'users', 'id = any($1::uuid[])', [ids], new Map());
     await c.query('commit');
   } catch (e) { await c.query('rollback').catch(() => {}); throw e; } finally { c.release(); }
@@ -239,7 +265,7 @@ export async function clearDemo(): Promise<{ removed_users: number; ledger_remov
 
 /** Background job: keeps the online demo drivers "fresh" and drifting on the live map while demo data exists (so the Live map and the rider map are alive during a presentation). */
 export async function keepDemoDriversAlive() {
-  await q(`update driver_profiles d set last_seen_at=now(), last_location_at=now(),
+  await q(`update driver_profiles d set is_online=true, last_seen_at=now(), last_location_at=now(),
       last_lat = d.last_lat + (random() - 0.5) * 0.0008, last_lng = d.last_lng + (random() - 0.5) * 0.0008
-    from users u where u.id=d.user_id and u.device_fingerprint=$1 and d.is_online`, [DEMO_TAG]);
+    from users u where u.id=d.user_id and u.device_fingerprint=$1 and d.status='APPROVED' and left(md5(d.user_id::text),1) < '8'`, [DEMO_TAG]);
 }

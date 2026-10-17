@@ -12,12 +12,12 @@ test('demo data: loads a week of activity, feeds revenue / ratings / statement /
   const ld = await t.api('POST', '/admin/demo/load', { token: sa.token, body: { drivers: 12, riders: 25, days: 5 } });
   assert.equal(ld.status, 200, JSON.stringify(ld.json));
   assert.ok(ld.json.trips > 40 && ld.json.completed > 25 && ld.json.ratings > 10 && ld.json.scheduled === 3, JSON.stringify(ld.json));
-  assert.equal(ld.json.status.drivers, 12);
+  assert.equal(ld.json.status.drivers, 20, '12 drivers plus 8 applicants');
   const bal = await q1<any>('select coalesce(sum(debit),0)::bigint d, coalesce(sum(credit),0)::bigint c from ledger_entries');
   assert.equal(String(bal.d), String(bal.c), 'demo ledger entries are real double entries');
 
   // owner revenue
-  const rv = await t.api('GET', '/admin/revenue?group=day', { token: fo.token });
+  const from = new Date(Date.now() - 12 * 864e5 + 2 * 3600e3).toISOString().slice(0, 10), rv = await t.api('GET', `/admin/revenue?group=day&from=${from}`, { token: fo.token });
   assert.equal(rv.status, 200, JSON.stringify(rv.json));
   assert.ok(rv.json.totals.commission >= ld.json.revenue_commission && rv.json.totals.completed >= ld.json.completed);
   assert.ok(rv.json.totals.commission > 0 && rv.json.totals.commission < rv.json.totals.gross);
@@ -58,13 +58,18 @@ test('demo data: loads a week of activity, feeds revenue / ratings / statement /
   assert.equal((await t.api('GET', path.replace(/token=[^&]+/, 'token=1.abc'))).status, 404);
   assert.equal((await t.api('POST', `/bookings/${r.id}/receipt/link`, { token: (await t.register()).token })).status, 403, 'only the rider who booked');
 
+  // the people-and-operations side is filled too, and the busy-now trips exist
+  const n = await q1<any>(`select (select count(*) from support_cases)::int sc, (select count(*) from promotions where code like 'DEMO-%')::int pr, (select count(*) from admin_alerts where kind='mass_view')::int al, (select count(*) from safety_incidents)::int si, (select count(*) from admin_alerts)::int al, (select count(*) from claims)::int cl,
+    (select count(*) from driver_profiles where status='DOCUMENTS_SUBMITTED')::int pend, (select count(*) from bookings where status='IN_PROGRESS')::int live, (select count(*) from partners)::int pa, (select count(*) from payouts where status='REQUESTED')::int po`);
+  assert.ok(n.sc >= 16 && n.si >= 4 && n.al >= 5 && n.cl >= 3 && n.pend >= 4 && n.live >= 1 && n.pa >= 2 && n.po >= 3, JSON.stringify(n));
+  assert.equal((await t.api('GET', '/admin/support/cases', { token: sa.token })).status, 200);
   // clearing removes every demo row; loading twice does not duplicate
   const again = await t.api('POST', '/admin/demo/load', { token: sa.token, body: { drivers: 6, riders: 12, days: 2 } });
-  assert.equal(again.status, 200); assert.equal(again.json.status.drivers, 6);
+  assert.equal(again.status, 200); assert.equal(again.json.status.drivers, 14);
   const cl = await t.api('POST', '/admin/demo/clear', { token: sa.token });
   assert.equal(cl.status, 200, JSON.stringify(cl.json)); assert.equal(cl.json.status.loaded, false); assert.equal(cl.json.ledger_removed, true);
-  const left = await q1<any>("select (select count(*) from users where device_fingerprint='demo')::int u, (select count(*) from ledger_entries where memo like 'demo:%')::int l, (select count(*) from bookings where ref like 'DM-%')::int b, (select count(*) from vehicles where plate in (select plate from vehicles where false))::int v");
-  assert.deepEqual([left.u, left.l, left.b], [0, 0, 0]);
+  const left = await q1<any>("select (select count(*) from users where device_fingerprint='demo')::int u, (select count(*) from ledger_entries where memo like 'demo:%')::int l, (select count(*) from bookings where ref like 'DM-%')::int b, (select count(*) from support_cases)::int sc, (select count(*) from promotions where code like 'DEMO-%')::int pr, (select count(*) from admin_alerts where kind='mass_view')::int al, (select count(*) from partners where created_by is not null and name like 'Hotel Serena%')::int pa");
+  assert.deepEqual([left.u, left.l, left.b, left.pa, left.pr, left.al], [0, 0, 0, 0, 0, 0]);
   const bal2 = await q1<any>('select coalesce(sum(debit),0)::bigint d, coalesce(sum(credit),0)::bigint c from ledger_entries');
   assert.equal(String(bal2.d), String(bal2.c));
   assert.equal(await q('select 1 from audit_logs where action=$1', ['demo_load']).then((x) => x.length > 0), true);
