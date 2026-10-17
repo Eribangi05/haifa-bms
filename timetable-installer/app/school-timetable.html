@@ -1065,7 +1065,7 @@ const ALL_DAYS=Object.keys(DAY_LABELS);
 const REB_DAY={dayStart:'08:30',assemblyMins:15,periodsPerDay:10,periodMins:40,shortBreakMins:15,breaksAfter:[3,8],lunchAfterPeriod:5,lunchMins:65,days:['Mon','Tue','Wed','Thu','Fri']};
 /* ----------------------------------------------------------------------------------------------------------------
    REB subject hours. Every figure carries its source:
-     syl25  = REB 2025 revised primary syllabi, appendix "Subjects and weekly time allocation" (period = 40 minutes)
+     syl25  = REB 2026-2027 revised primary syllabi, appendix "Subjects and weekly time allocation" (period = 40 minutes)
      cd26   = REB content-distribution files 2026-27 published on elearning.reb.rw (the header of each file states the
               weekly periods for that subject)
      news26 = a news-site report of the 2026-27 REB timetable (NOT an official REB document, and not always consistent)
@@ -1073,7 +1073,7 @@ const REB_DAY={dayStart:'08:30',assemblyMins:15,periodsPerDay:10,periodMins:40,s
    verified=0 means it is an assumption or comes only from news reports and must be confirmed with REB.
    ---------------------------------------------------------------------------------------------------------------- */
 const SRC={
-  syl25:{ok:true, label:'REB 2025 revised primary syllabi (weekly time allocation appendix)'},
+  syl25:{ok:true, label:'REB 2026-2027 revised primary syllabi (weekly time allocation appendix)'},
   cd26:{ok:true, label:'REB content-distribution files 2026-27 (elearning.reb.rw)'},
   news26:{ok:false,label:'News reports of the REB 2026-27 timetable (not an official REB document)'}};
 const SUBJECT_LIB=[
@@ -1136,9 +1136,9 @@ const LEVELS=[
  {id:'pre',name:'Pre-primary',grades:['Nursery 1','Nursery 2','Nursery 3'],periods:7,src:'news26',tmpl:()=>refTemplate('pre'),
   note:'No official weekly table was available. These hours come from news reports of the 2026-27 REB pre-primary timetable (7 activity blocks a day of 20-30 minutes). Confirm with REB.'},
  {id:'plow',name:'Lower primary (P1-P3)',grades:['Primary 1','Primary 2','Primary 3'],periods:5,src:'syl25',tmpl:()=>refTemplate('plow'),
-  note:'REB 2025 syllabi: 25 periods a week (5 a day, 40 minutes each), stated for double-shift schools. If your school runs a full day, raise "Periods used each day" and adjust the lessons.'},
+  note:'REB 2026-2027 syllabi (English, Mathematics, PES and Social & Religious Education all print the same table): 25 periods a week (5 a day, 40 minutes each), stated for double-shift schools. If your school runs a full day, raise "Periods used each day" and adjust the lessons.'},
  {id:'primary',name:'Upper primary (P4-P6)',grades:['Primary 4','Primary 5','Primary 6'],periods:10,src:'syl25',tmpl:()=>refTemplate('primary'),
-  note:'REB 2025 syllabi: 50 periods a week (10 a day, 40 minutes each). Note: the Social Studies & Religious Education P4-P6 syllabus still prints an older 30-period table; five other syllabi agree on 50.'},
+  note:'REB 2026-2027 syllabi: the English, Kinyarwanda, PES and Science (SET) P4-P6 syllabi state 50 periods a week (10 a day, 40 minutes each). Two syllabi differ: the Mathematics P4-P6 syllabus prints 48 (8, 8, 8, 6, 6, 4, 2, 2, 4) and the Social & Religious Education syllabus prints an older table. This tool follows the four that agree; confirm with REB or your school\'s circular.'},
  {id:'lower',name:'Lower secondary (S1-S3)',grades:['S1','S2','S3'],periods:10,src:'cd26',tmpl:()=>refTemplate('lower'),
   note:'Weekly periods per subject are from the header of each REB 2026-27 content-distribution file. Not stated in the files I could read: Chemistry (4 assumed, like Physics and Biology) and ICT (2 assumed) - marked with a warning sign.'},
  {id:'upper',name:'Upper secondary (S4-S6)',grades:[],periods:10,src:'cd26',tmpl:upperTemplate,
@@ -1278,7 +1278,7 @@ function vClasses(){
 }
 function sourcesCard(){ return `<div class="card"><h2>Where the REB figures come from</h2><p class="h">The weekly periods are starting points taken from REB documents. They are not a substitute for your own copy of REB's current timetable circular, so please check them.</p>
   <ul style="margin:0 0 0 18px;font-size:14px">
-  <li><b>P1-P6:</b> the "Subjects and weekly time allocation" table in REB's 2025 revised primary syllabi (a period is 40 minutes). Lower primary is stated for double-shift schools.</li>
+  <li><b>P1-P6:</b> the "Subjects and weekly time allocation" table in REB's 2026-2027 revised primary syllabi (a period is 40 minutes). Lower primary is stated for double-shift schools. For P4-P6, four syllabi print 50 periods a week and the Mathematics syllabus prints 48.</li>
   <li><b>S1-S6:</b> the header of each REB 2026-27 content-distribution file on elearning.reb.rw, which states that subject's periods a week.</li>
   <li><b>Not confirmed:</b> pre-primary (news reports only), Chemistry and ICT in S1-S3, ICT and General &amp; Religious Studies in S4-S6, and which subjects belong to each S4-S6 pathway. These are marked with a warning sign or "Not official".</li>
   <li><b>Known disagreement:</b> one SRE syllabus (P4-P6) still prints an older 30-period table, and a news report of the 2026-27 timetable gives different P.E. and co-curricular hours for P1-P3. This tool follows the syllabi that agree.</li></ul></div>`; }

@@ -8,7 +8,7 @@ cd timetable-installer
 npm install
 npm run dist
 ```
-The installer is `dist\EduSmart-School-Timetable-Setup-1.0.0.exe` (unsigned: SmartScreen shows "More info > Run anyway").
+The installer is `dist\EduSmart-School-Timetable-Setup-1.1.0.exe` (unsigned: SmartScreen shows "More info > Run anyway").
 
 ## Try it without installing
 ```powershell
