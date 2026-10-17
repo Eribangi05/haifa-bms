@@ -47,7 +47,8 @@
     "typecheck": "tsc --noEmit",
     "e2e:web": "node e2e/app-e2e.mjs",
     "web:export": "expo export --platform web --output-dir /tmp/rm-web",
-    "web:pwa": "expo export --platform web --output-dir dist && node scripts/pwa.mjs dist"
+    "web:pwa": "expo export --platform web --output-dir dist && node scripts/pwa.mjs dist",
+    "build:web": "EXPO_PUBLIC_API_URL=self EXPO_PUBLIC_ALLOW_CLEARTEXT=0 expo export --platform web --output-dir ../backend/web-app && node scripts/pwa.mjs ../backend/web-app"
   },
   "private": true
 }

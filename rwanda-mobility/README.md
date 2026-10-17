@@ -52,6 +52,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 |---|---|
 | [`docs/SETUP_AND_DEPLOYMENT.md`](docs/SETUP_AND_DEPLOYMENT.md) | Local setup, tests, production checklist, jobs and retention. |
 | [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md) | Every environment variable and runtime setting, with defaults. Checked against the code in CI. |
+| [`docs/WEB_APP.md`](docs/WEB_APP.md) | The installable web app served at the root address: install, limits, build, caching. |
 | [`docs/ANDROID_BUILD.md`](docs/ANDROID_BUILD.md) | Building the APK/AAB, EAS, push set-up, Play Console declarations, device test plan. |
 | [`docs/TESTER_GUIDE.md`](docs/TESTER_GUIDE.md) | One-page guide to hand to people testing the staging APK. |
 | [`store/LISTING.md`](store/LISTING.md) | Google Play listing copy (English, Kinyarwanda, French) and asset list. |

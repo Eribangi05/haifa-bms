@@ -149,6 +149,16 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await app.register(fstatic, { root: adminDir, prefix: '/admin/', decorateReply: false });
     app.get('/admin', async (_r, reply) => reply.redirect('/admin/'));
   }
+  // The Abasare web app (the same app as the phone, built for the browser by mobile/scripts: `npm run web:pwa`), installable on a phone or a laptop.
+  // Served from the root so it shares the API's origin: no CORS, one address. Files with a hash in the name never change and are cached for a year; the page, the
+  // service worker and the manifest are always revalidated so a new release shows at once.
+  const webDir = join(here, '..', 'web-app');
+  if (existsSync(join(webDir, 'index.html'))) {
+    await app.register(fstatic, {
+      root: webDir, prefix: '/', decorateReply: false, cacheControl: false, dotfiles: 'ignore',
+      setHeaders: (res: any, path: string) => { res.header('cache-control', /[\\/]_expo[\\/]static[\\/]|[\\/]assets[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'no-cache'); },
+    });
+  }
   // Rwanda base map (OpenStreetMap vector tiles as one PMTiles file + map libraries + fonts). Static, public, HTTP range requests supported.
   const mapDir = join(here, '..', 'map');
   if (existsSync(mapDir)) {
