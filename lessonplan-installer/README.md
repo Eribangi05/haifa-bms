@@ -8,7 +8,7 @@ cd lessonplan-installer
 npm install
 npm run dist
 ```
-The installer is `dist\EduSmart-Lesson-Plan-Generator-Setup-1.0.0.exe` (unsigned: SmartScreen shows "More info > Run anyway"). Try without installing: `npm start`.
+The installer is `dist\EduSmart-Lesson-Plan-Generator-Setup-1.1.0.exe` (unsigned: SmartScreen shows "More info > Run anyway"). Try without installing: `npm start`.
 
 ## Refresh the data (new REB documents, new content update)
 The app bundles `app/lesson-plan-generator.html` (about 4.4 MB: 48 schemes of work, 4,105 book and teacher's-guide lessons, the generator and the logo). To rebuild it from the Smart School content tree and generator:
@@ -18,6 +18,14 @@ python make_data.py "C:\path\to\smart-school-app-android\app\src\main\assets\con
 python build.py "C:\path\to\smart-school-app-android\app\src\main\assets\renderer\lessonplan.js"
 ```
 Defaults: both read the sibling `smart-school-app-android` folder. Needs Python 3 with `pillow`. Then raise `version` in `package.json` and run `npm run dist`.
+
+## What is in the generator (learned from the 20 tools reviewed)
+- **Teaching approaches** (like Eduaide's 5E and MagicSchool's structures): REB participatory, I do - We do - You do, 5E, inquiry, cooperative learning, direct instruction. Each writes the Development as three timed steps that add up to the lesson time, keeping the REB scheme's own activity.
+- **Learning strategies** (think-pair-share, role play, gallery walk, practical work ...), **plan language** (English, French, Kinyarwanda, chosen per plan), **SEN accommodations** added to Differentiation for each ticked category.
+- **Success criteria ("I can ..."), key terms, previous/next lesson, exit ticket with answers, homework and a 4-level rubric**, drafted from the scheme and the exact pupil-book lesson (exercises are used only when the book lesson matches exactly).
+- **REB plan check**: scores the plan out of 100 with REB's own model-lesson criteria (competences 15, SMART objective 10, activities 30, ICT 40, assessment 5) and says what to fix.
+- **Worksheet + answer key** from the pupil-book exercises, **Word (.doc)**, **copy as text** (WhatsApp), and **Improve with AI**: a ready prompt with all REB context for ChatGPT, Claude or Gemini (optional; the app itself needs no internet).
+- **Library**: search, filters, favourites, week planner, print week, CSV list, backup and restore.
 
 ## What the user sees
 - A welcome screen, then a 4-step setup guide (school, teacher and usual class, how plans are built, finish). Reopen it with **Setup guide**.

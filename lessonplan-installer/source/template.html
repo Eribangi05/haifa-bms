@@ -178,11 +178,11 @@ const App={ schemeCache:{}, catalogCache:{}, classId:'P4', teacherClass:null };
 const NAMES_FALLBACK={pes:'Physical Education and Sports',arts:'Creative Arts'};
 /* catalogue: rebuild the arrays lessonplan.js reads from the compact bundle */
 (function(){
-  const KIND={n:'number',c:'choice',o:'order',m:'match',t:'text',x:'other'};
+  const KIND={n:'number',c:'choice',o:'order',m:'match',t:'text',d:'draw',x:'other'};
   Object.keys(DATA.catalog).forEach(cls=>{
     const books=DATA.catalog[cls].books.map(b=>({id:b.id,title:b.title,units:b.units.map(u=>({id:u.id,title:u.title,stories:u.stories.map(s=>{
       const pages=[]; if(s.pg&&s.pg[2]){ for(let i=0;i<s.pg[2];i++) pages.push('page_'+String(i===s.pg[2]-1?s.pg[1]:s.pg[0]).padStart(3,'0')+'.webp'); }
-      const tasks=(s.tk||'').split('').map((c,i)=>({kind:KIND[c]||'other',prompt:(s.tp&&s.tp[i])||''}));
+      const tasks=(s.t||[]).map(([k,p,a,w,ex],i)=>{ const o={kind:KIND[k]||'other',prompt:p,answer:a,why:w,id:s.id+'_x'+i}; if(ex){ if(k==='c') o.options=ex; else if(k==='o') o.items=ex; else if(k==='m') o.pairs=ex; else if(k==='d') o.rubric=ex; } return o; });
       return {id:s.id,title:s.title,topic:s.topic||'',pages,tasks};
     })}))}));
     /* scheme-only subjects (for example P.E., or Creative Arts in P1-P3) have no pupil book: list them so a plan can still be made from the scheme */
@@ -240,6 +240,7 @@ function onbGo(n){ ONB.step=Math.max(0,Math.min(4,n)); onbRender(); $('onb').scr
 function onbFinish(act){ onbClose(); if(act==='new') lpNew(); }
 function onbBackup(){ $('imp').click(); }
 function onbSet(group,k,v){ const s=Accounts.root.settings; s[group]=s[group]||{}; s[group][k]=v; Accounts.save(); }
+function onbIct(k){ const s=Accounts.root.settings; s.defaults=s.defaults||{}; s.defaults.ictTools=s.defaults.ictTools||{}; s.defaults.ictTools[k]=!s.defaults.ictTools[k]; Accounts.save(); }
 function onbClass(c){ onbSet('defaults','classId',c); onbRender(); }
 function onbLogo(inp){ const f=inp.files[0]; inp.value=''; if(!f) return; const r=new FileReader();
   r.onload=()=>{ const img=new Image(); img.onload=()=>{ const h=Math.min(160,img.height), w=Math.max(1,Math.round(img.width*h/img.height)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); onbSet('school','logo',cv.toDataURL('image/png')); onbRender(); }; img.onerror=()=>toast('Could not read that image.'); img.src=r.result; };
@@ -263,7 +264,9 @@ function onbBody(){
   if(s===2) return `<h2 id="onbH" tabindex="-1">About you</h2><p class="sub">Your name is filled into each plan, and your usual class is chosen first when you start a plan.</p>
     <div class="fgrid"><div><label for="o_tname">Teacher's name</label><input type="text" id="o_tname" value="${esc(tc.name)}" autocomplete="off" oninput="onbSet('teacher','name',this.value)"></div></div>
     <label style="display:block;font-size:12px;color:var(--mute);font-weight:600;margin:14px 0 6px">The class you teach most</label>
-    <div class="class-choose">${['P1','P2','P3','P4','P5','P6'].map(c=>`<button type="button" class="class-pick ${df.classId===c?'on':''}" onclick="onbClass('${c}')"><b>${c}</b><span>${classMeta(c).name}</span></button>`).join('')}</div>`;
+    <div class="class-choose">${['P1','P2','P3','P4','P5','P6'].map(c=>`<button type="button" class="class-pick ${df.classId===c?'on':''}" onclick="onbClass('${c}')"><b>${c}</b><span>${classMeta(c).name}</span></button>`).join('')}</div>
+    <label style="display:block;font-size:12px;color:var(--mute);font-weight:600;margin:16px 0 6px">ICT you usually have in class (used as the default in new plans; REB scores ICT use)</label>
+    <div class="lp-checks">${Object.keys(PLUS_ICT).map(k=>`<label class="lp-chk"><input type="checkbox" ${(df.ictTools||{})[k]?'checked':''} onchange="onbIct('${k}')"> ${esc(PLUS_ICT[k].name)}</label>`).join('')}</div>`;
   if(s===3){ const cv=onbCoverage();
     return `<h2 id="onbH" tabindex="-1">How your plans are built</h2><p class="sub">Choose a class, subject, unit and lesson. The plan is filled in the official REB template from the REB 2026-2027 scheme of work, then you edit it, print it or save it as a PDF.</p>
     <div class="msg ok"><b>${cv.nS}</b> schemes of work and <b>${cv.nL.toLocaleString('en')}</b> lessons are built in, for Primary 1 to 6. Plans are written in English, French or Kinyarwanda to match the subject.</div>

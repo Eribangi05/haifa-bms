@@ -24,8 +24,13 @@ rep("function lpSchemeLesson(){","/* the printed plan has its own Lesson No colu
 rep("LP.objectives=s.objectives||LP.objectives;","LP.objectives=s.objectives||LP.objectives||lpDefaultObjective(title,lang);",1)
 rep("LP.contentSummary=s.content||LP.contentSummary;","LP.contentSummary=s.content||LP.contentSummary||title;",1)
 rep("function lpSchemeLesson(){","function lpDefaultObjective(t,lang){ return lang==='fr'?'\\u00c0 la fin de la le\\u00e7on, les \\u00e9l\\u00e8ves seront capables d\\'expliquer et d\\'appliquer correctement \\u00ab '+t+' \\u00bb.':(lang==='rw'?'Ku iherezo ry\\'isomo, abanyeshuri bazashobora gusobanura no gukoresha neza \\u00ab '+t+' \\u00bb.':'By the end of the lesson, learners will be able to explain and apply \"'+t+'\" correctly.'); }\nfunction lpSchemeLesson(){",1)
+old_lang="function lpLang(subj){ const s=(subj!==undefined ? subj : (LP&&LP.subject)); return s==='french'?'fr':s==='kinyarwanda'?'rw':'en'; }"
+rep(old_lang,"function lpLangSubject(p){ return p&&p.lang==='fr'?'french':p&&p.lang==='rw'?'kinyarwanda':p&&p.lang==='en'?'english':(p&&p.subject); }\nfunction lpLang(subj){ const s=(subj!==undefined ? subj : (LP&&lpLangSubject(LP))); return s==='french'?'fr':s==='kinyarwanda'?'rw':'en'; }",1)
+rep("const fr=p.subject;","const fr=lpLangSubject(p);",1)
 # drop the node-only export line (module is undefined in a page, harmless, but keep the file clean)
 src=re.sub(r"\n// Node-testable pure helpers.*$","\n",src,flags=re.S)
+plus=''.join(open(f,encoding='utf-8').read() for f in ['plus1.js','plus2.js','plus3.js','plus4.js','plus5.js','plus6.js'])
+src=src+'\n'+plus
 data=open('data.json',encoding='utf-8').read().replace('</','<\\/')
 def b64(img,fmt,**kw):
     buf=io.BytesIO(); img.save(buf,fmt,**kw); return base64.b64encode(buf.getvalue()).decode()
