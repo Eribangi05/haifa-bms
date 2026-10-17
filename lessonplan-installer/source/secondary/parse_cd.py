@@ -15,7 +15,7 @@ PER = re.compile(r'\(?\s*(?:periods?\s*[:=]?\s*(?:\d+\s*/\s*)?(\d+)|(?:\d+\s*/\s
 KUC = re.compile(r'key\s*unit\s*competence\s*:?\s*(.*)', re.I)
 PWK = re.compile(r'(?:periods?\s*per\s*week|umubare\s*w.amasaha\s*mu\s*cyumweru|nombre\s*de\s*p.riodes\s*par\s*semaine|idadi\s*ya\s*vipindi\s*kwa\s*wiki)\s*:?\s*(\d+)', re.I)
 KUC2 = re.compile(r'^\s*(?:key\s*unit\s*competence|ubushobozi\s*bw.ingenzi[^:]*|comp[ée]tence\s*cl[ée]|umahiri\s*mkuu[^:]*)\s*:?\s*(.*)$', re.I)
-PER2 = re.compile(r'(?:amasaha|nombre\s*des?\s*p.riodes|idadi\s*ya\s*vipindi)\s*:?\s*(\d+)', re.I)
+PER2 = re.compile(r'(?:amasaha|amasomo|nombre\s*des?\s*p.riodes|idadi\s*ya\s*vipindi)\s*:?\s*(\d+)', re.I)
 MADA = re.compile(r'^\s*MADA\s*NDOGO\s*:\s*(.*)$', re.I)
 
 def clean(s):
@@ -43,6 +43,8 @@ def items(page):
 def class_of(line):
     m = re.search(r'umwaka\s+wa\s+(mbere|kabiri|gatatu|kane|gatanu|gatandatu)', line, re.I)
     if m: return 'S%d' % RWN[m.group(1).lower()]
+    m = re.search(r'classe\s*:\s*([1-6])\s*(?:\u00e8me|e|\u00e8re|re)?\s*ann', line, re.I)
+    if m: return 'S' + m.group(1)
     m = re.search(r'classe\s*:\s*(\w+)', line, re.I)
     if m and m.group(1).lower() in FRCLS: return 'S%d' % FRCLS[m.group(1).lower()]
     m = re.search(r'(?:kidato\s*cha|darasa)\s*:?\s*(?:kidato\s*cha\s*)?:?\s*([1-6])\b', line, re.I)
@@ -106,7 +108,7 @@ def parse(path):
             title = m.group(2); per = perval(PER.search(title))
             title = clean(PER.sub('', title)).strip(' ()')
             c = cls_obj(); n = int(m.group(1))
-            u = next((x for x in c['units'] if x['n'] == n and (not title or x['title'][:15].lower() == title[:15].lower() or not x['title'])), None)
+            u = next((x for x in c['units'] if x['n'] == n and (not title or x['title'][:15].lower() == title[:15].lower() or not x['title'] or re.search(r'cont', title, re.I))), None)
             if u is None:
                 u = {'n': n, 'title': title, 'term': cur['term'], 'periods': per, 'kuc': '', 'lessons': []}
                 c['units'].append(u)
@@ -140,7 +142,7 @@ def parse(path):
             u = {'n': 0, 'title': '', 'term': cur['term'], 'periods': None, 'kuc': '', 'lessons': []}
             c['units'].append(u); cur['unit'] = u
         cur['unit']['lessons'].append({'week': int(cur['week']) if cur['week'] else None, 'title': content, 'points': main[0] if main else '', 'periods': per})
-    only = len(set(m0)) == 1
+    only = len(set(m0)) == 1 and not re.search(r'S\s*\d\s*-\s*S\s*\d', os.path.basename(path))
     for page in d:
         for y, kind, pl in items(page):
             if kind == 'text':
