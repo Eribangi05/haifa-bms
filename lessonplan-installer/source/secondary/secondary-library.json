@@ -1,0 +1,1966 @@
+{
+ "version": "2026-27",
+ "source": "REB elearning.reb.rw (public)",
+ "files": [
+  {
+   "id": "sb_s4_french_minor_4549d8",
+   "type": "sbook",
+   "subject": "french_minor",
+   "subjectName": "Français (options non littéraires)",
+   "classes": [
+    "S4"
+   ],
+   "lang": "fr",
+   "title": "Senior 4 Français (options non littéraires) - Student's book",
+   "file": "teacher-docs/secondary/S4_Franc_ais_Guide_de_lenseignant_Options_non_litte_raires_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/S4%20Franc%CC%A7ais%20Guide%20de%20lenseignant%20Options%20non%20litte%CC%81raires%202026-2027.pdf?forcedownload=1",
+   "mb": 6.5
+  },
+  {
+   "id": "sb_s1_agriculture_efb70d",
+   "type": "sbook",
+   "subject": "agriculture",
+   "subjectName": "Agriculture",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Agriculture - Student's book",
+   "file": "teacher-docs/secondary/S1_Agriculture_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Agriculture%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 34.4
+  },
+  {
+   "id": "sb_s1_biology_2512ab",
+   "type": "sbook",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Biology and Health Sciences - Student's book",
+   "file": "teacher-docs/secondary/S1_Biology_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Biology%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 40.3
+  },
+  {
+   "id": "sb_s1_chemistry_c9f0d1",
+   "type": "sbook",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Chemistry - Student's book",
+   "file": "teacher-docs/secondary/S1_Chemistry_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Chemistry%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 25.3
+  },
+  {
+   "id": "sb_s1_english_f8782e",
+   "type": "sbook",
+   "subject": "english",
+   "subjectName": "English",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 English - Student's book",
+   "file": "teacher-docs/secondary/S1_English_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20English%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 15.4
+  },
+  {
+   "id": "sb_s1_entrepreneurship_bb3d5c",
+   "type": "sbook",
+   "subject": "entrepreneurship",
+   "subjectName": "Entrepreneurship",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Entrepreneurship - Student's book",
+   "file": "teacher-docs/secondary/S1_Entrepreneurship_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Entrepreneurship%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 18.4
+  },
+  {
+   "id": "sb_s1_fine_arts_b29f7a",
+   "type": "sbook",
+   "subject": "fine_arts",
+   "subjectName": "Fine Arts and Crafts",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Fine Arts and Crafts - Student's book",
+   "file": "teacher-docs/secondary/S1_Fine_Arts_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Fine%20Arts%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 17.0
+  },
+  {
+   "id": "sb_s1_french_11d3d2",
+   "type": "sbook",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S1"
+   ],
+   "lang": "fr",
+   "title": "Senior 1 Français - Student's book",
+   "file": "teacher-docs/secondary/S1_Franc_ais_Livre_de_l_e_le_ve_2026-2027_.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Franc%CC%A7ais%20Livre%20de%20l%E2%80%99e%CC%81le%CC%80ve%202026-2027%20.pdf?forcedownload=1",
+   "mb": 29.0
+  },
+  {
+   "id": "sb_s1_geography_d4d7ce",
+   "type": "sbook",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Geography and Environment - Student's book",
+   "file": "teacher-docs/secondary/S1_Geography_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Geography%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 25.1
+  },
+  {
+   "id": "sb_s1_history_4bb123",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S1_History_SB_experimental_version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20History%20SB%20experimental%20version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 16.6
+  },
+  {
+   "id": "sb_s1_home_science_93d938",
+   "type": "sbook",
+   "subject": "home_science",
+   "subjectName": "Home Science",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Home Science - Student's book",
+   "file": "teacher-docs/secondary/S1_Home_Science_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Home%20Science%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 48.7
+  },
+  {
+   "id": "sb_s1_ict_14b8fb",
+   "type": "sbook",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 ICT - Student's book",
+   "file": "teacher-docs/secondary/S1_ICT_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20ICT%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 16.0
+  },
+  {
+   "id": "sb_s1_kinyarwanda_2e7627",
+   "type": "sbook",
+   "subject": "kinyarwanda",
+   "subjectName": "Ikinyarwanda",
+   "classes": [
+    "S1"
+   ],
+   "lang": "rw",
+   "title": "Senior 1 Ikinyarwanda - Student's book",
+   "file": "teacher-docs/secondary/S1_Kinyarwanda_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Kinyarwanda%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 14.0
+  },
+  {
+   "id": "sb_s1_kiswahili_2b511c",
+   "type": "sbook",
+   "subject": "kiswahili",
+   "subjectName": "Kiswahili",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Kiswahili - Student's book",
+   "file": "teacher-docs/secondary/S1_Kiswahili_SB_F_2026-2027_.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Kiswahili%20SB%20F%202026-2027%20.pdf?forcedownload=1",
+   "mb": 25.2
+  },
+  {
+   "id": "sb_s1_maths_88b401",
+   "type": "sbook",
+   "subject": "maths",
+   "subjectName": "Mathematics",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S1_Math_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Math%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 18.6
+  },
+  {
+   "id": "sb_s1_music_86198c",
+   "type": "sbook",
+   "subject": "music",
+   "subjectName": "Music, Dance and Drama",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Music, Dance and Drama - Student's book",
+   "file": "teacher-docs/secondary/S1_Music_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Music%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 14.4
+  },
+  {
+   "id": "sb_s1_physics_92ff0e",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Physics - Student's book",
+   "file": "teacher-docs/secondary/S1_Physics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Physics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 25.2
+  },
+  {
+   "id": "sb_s1_religion_ethics_a19b82",
+   "type": "sbook",
+   "subject": "religion_ethics",
+   "subjectName": "Religion and Ethics",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Religion and Ethics - Student's book",
+   "file": "teacher-docs/secondary/S1_Religion_and_Ethics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/SB/S1%20Religion%20and%20Ethics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 10.0
+  },
+  {
+   "id": "sb_s2_agriculture_be769b",
+   "type": "sbook",
+   "subject": "agriculture",
+   "subjectName": "Agriculture",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Agriculture - Student's book",
+   "file": "teacher-docs/secondary/S2_Agriculture_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Agriculture%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 59.6
+  },
+  {
+   "id": "sb_s2_biology_167c0d",
+   "type": "sbook",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Biology and Health Sciences - Student's book",
+   "file": "teacher-docs/secondary/S2_Biology_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Biology%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 14.5
+  },
+  {
+   "id": "sb_s2_chemistry_4a0c15",
+   "type": "sbook",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Chemistry - Student's book",
+   "file": "teacher-docs/secondary/S2_Chemistry_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Chemistry%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 18.3
+  },
+  {
+   "id": "sb_s2_english_b22858",
+   "type": "sbook",
+   "subject": "english",
+   "subjectName": "English",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 English - Student's book",
+   "file": "teacher-docs/secondary/S2_English_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20English%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 26.2
+  },
+  {
+   "id": "sb_s2_entrepreneurship_ec00bd",
+   "type": "sbook",
+   "subject": "entrepreneurship",
+   "subjectName": "Entrepreneurship",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Entrepreneurship - Student's book",
+   "file": "teacher-docs/secondary/S2_Entrepreneurship_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Entrepreneurship%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 13.0
+  },
+  {
+   "id": "sb_s2_fine_arts_85a626",
+   "type": "sbook",
+   "subject": "fine_arts",
+   "subjectName": "Fine Arts and Crafts",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Fine Arts and Crafts - Student's book",
+   "file": "teacher-docs/secondary/S2_Fine_Arts_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Fine%20Arts%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 19.9
+  },
+  {
+   "id": "sb_s2_french_6ef6e0",
+   "type": "sbook",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S2"
+   ],
+   "lang": "fr",
+   "title": "Senior 2 Français - Student's book",
+   "file": "teacher-docs/secondary/S2_Franc_ais_Livre_de_l_e_le_ve_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Franc%CC%A7ais%2C%20Livre%20de%20l%E2%80%99e%CC%81le%CC%80ve%202026-2027.pdf?forcedownload=1",
+   "mb": 42.6
+  },
+  {
+   "id": "sb_s2_geography_11f5b0",
+   "type": "sbook",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Geography and Environment - Student's book",
+   "file": "teacher-docs/secondary/S2_Geography_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Geography%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 43.9
+  },
+  {
+   "id": "sb_s2_history_b08a8c",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S2_History_SB_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20History%20SB%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 26.3
+  },
+  {
+   "id": "sb_s2_home_science_98f6b2",
+   "type": "sbook",
+   "subject": "home_science",
+   "subjectName": "Home Science",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Home Science - Student's book",
+   "file": "teacher-docs/secondary/S2_Home_Science_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Home%20Science%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 47.1
+  },
+  {
+   "id": "sb_s2_ict_65292c",
+   "type": "sbook",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 ICT - Student's book",
+   "file": "teacher-docs/secondary/S2_ICT_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20ICT%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 22.6
+  },
+  {
+   "id": "sb_s2_kinyarwanda_959353",
+   "type": "sbook",
+   "subject": "kinyarwanda",
+   "subjectName": "Ikinyarwanda",
+   "classes": [
+    "S2"
+   ],
+   "lang": "rw",
+   "title": "Senior 2 Ikinyarwanda - Student's book",
+   "file": "teacher-docs/secondary/S2_Kinyarwanda_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Kinyarwanda%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 13.3
+  },
+  {
+   "id": "sb_s2_kiswahili_150292",
+   "type": "sbook",
+   "subject": "kiswahili",
+   "subjectName": "Kiswahili",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Kiswahili - Student's book",
+   "file": "teacher-docs/secondary/S2_Kiswahili_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Kiswahili%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 17.1
+  },
+  {
+   "id": "sb_s2_maths_10be59",
+   "type": "sbook",
+   "subject": "maths",
+   "subjectName": "Mathematics",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S2_Math_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Math%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 33.8
+  },
+  {
+   "id": "sb_s2_music_a9d7af",
+   "type": "sbook",
+   "subject": "music",
+   "subjectName": "Music, Dance and Drama",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Music, Dance and Drama - Student's book",
+   "file": "teacher-docs/secondary/S2_Music_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Music%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 10.3
+  },
+  {
+   "id": "sb_s2_physics_eba81a",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Physics - Student's book",
+   "file": "teacher-docs/secondary/S2_Physics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Physics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 22.1
+  },
+  {
+   "id": "sb_s2_religion_ethics_865e90",
+   "type": "sbook",
+   "subject": "religion_ethics",
+   "subjectName": "Religion and Ethics",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Religion and Ethics - Student's book",
+   "file": "teacher-docs/secondary/S2_Religion_and_Ethics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/SB/S2%20Religion%20and%20Ethics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 6.9
+  },
+  {
+   "id": "sb_s3_agriculture_7e0092",
+   "type": "sbook",
+   "subject": "agriculture",
+   "subjectName": "Agriculture",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Agriculture - Student's book",
+   "file": "teacher-docs/secondary/S3_Agriculture_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Agriculture%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 197.6
+  },
+  {
+   "id": "sb_s3_chemistry_12a707",
+   "type": "sbook",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Chemistry - Student's book",
+   "file": "teacher-docs/secondary/S3_Chemistry_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Chemistry%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 12.8
+  },
+  {
+   "id": "sb_s3_english_e4ef7a",
+   "type": "sbook",
+   "subject": "english",
+   "subjectName": "English",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 English - Student's book",
+   "file": "teacher-docs/secondary/S3_English_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20English%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 16.3
+  },
+  {
+   "id": "sb_s3_entrepreneurship_5c2db3",
+   "type": "sbook",
+   "subject": "entrepreneurship",
+   "subjectName": "Entrepreneurship",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Entrepreneurship - Student's book",
+   "file": "teacher-docs/secondary/S3_Entrepreneurship_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Entrepreneurship%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 36.8
+  },
+  {
+   "id": "sb_s3_fine_arts_bda0c9",
+   "type": "sbook",
+   "subject": "fine_arts",
+   "subjectName": "Fine Arts and Crafts",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Fine Arts and Crafts - Student's book",
+   "file": "teacher-docs/secondary/S3_Fine_Arts_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Fine%20Arts%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 27.6
+  },
+  {
+   "id": "sb_s3_french_a8578c",
+   "type": "sbook",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S3"
+   ],
+   "lang": "fr",
+   "title": "Senior 3 Français - Student's book",
+   "file": "teacher-docs/secondary/S3_Franc_ais_Livre_de_l_e_le_ve_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Franc%CC%A7ais%2C%20Livre%20de%20l%E2%80%99e%CC%81le%CC%80ve%202026-2027.pdf?forcedownload=1",
+   "mb": 27.9
+  },
+  {
+   "id": "sb_s3_geography_b4d806",
+   "type": "sbook",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Geography and Environment - Student's book",
+   "file": "teacher-docs/secondary/S3_Geography_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Geography%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 21.4
+  },
+  {
+   "id": "sb_s3_history_958432",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S3_History_SB_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20History%20SB%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 29.2
+  },
+  {
+   "id": "sb_s3_ict_8664c5",
+   "type": "sbook",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 ICT - Student's book",
+   "file": "teacher-docs/secondary/S3_ICT_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20ICT%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 19.1
+  },
+  {
+   "id": "sb_s3_kinyarwanda_118c27",
+   "type": "sbook",
+   "subject": "kinyarwanda",
+   "subjectName": "Ikinyarwanda",
+   "classes": [
+    "S3"
+   ],
+   "lang": "rw",
+   "title": "Senior 3 Ikinyarwanda - Student's book",
+   "file": "teacher-docs/secondary/S3_Kinyarwanda_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Kinyarwanda%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 26.8
+  },
+  {
+   "id": "sb_s3_kiswahili_2f05bc",
+   "type": "sbook",
+   "subject": "kiswahili",
+   "subjectName": "Kiswahili",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Kiswahili - Student's book",
+   "file": "teacher-docs/secondary/S3_Kiswahili_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Kiswahili%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 13.3
+  },
+  {
+   "id": "sb_s3_maths_818a29",
+   "type": "sbook",
+   "subject": "maths",
+   "subjectName": "Mathematics",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S3_Mathematics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Mathematics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 29.7
+  },
+  {
+   "id": "sb_s3_music_99e768",
+   "type": "sbook",
+   "subject": "music",
+   "subjectName": "Music, Dance and Drama",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Music, Dance and Drama - Student's book",
+   "file": "teacher-docs/secondary/S3_Music_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Music%202026-2027.pdf?forcedownload=1",
+   "mb": 6.4
+  },
+  {
+   "id": "sb_s3_religion_ethics_565340",
+   "type": "sbook",
+   "subject": "religion_ethics",
+   "subjectName": "Religion and Ethics",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Religion and Ethics - Student's book",
+   "file": "teacher-docs/secondary/S3_Religion_and_Ethics_SB-v2_2_.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20Religion%20and%20Ethics%20SB-v2%20%282%29.pdf?forcedownload=1",
+   "mb": 27.8
+  },
+  {
+   "id": "sb_s3_home_science_ac2026",
+   "type": "sbook",
+   "subject": "home_science",
+   "subjectName": "Home Science",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Home Science - Student's book",
+   "file": "teacher-docs/secondary/S3_SB_Home_Science_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/S3%20SB%20Home%20Science%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 25.6
+  },
+  {
+   "id": "sb_s4_maths_basic_306560",
+   "type": "sbook",
+   "subject": "maths_basic",
+   "subjectName": "Basic Mathematics",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Basic Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S4_Basic_Mathematics_SB_FV_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Basic%20Mathematics%20SB%20FV%202026-2027.pdf?forcedownload=1",
+   "mb": 13.5
+  },
+  {
+   "id": "sb_s4_chemistry_f7748c",
+   "type": "sbook",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Chemistry - Student's book",
+   "file": "teacher-docs/secondary/S4_Chemistry_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Chemistry%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 29.0
+  },
+  {
+   "id": "sb_s4_maths_core_8843b8",
+   "type": "sbook",
+   "subject": "maths_core",
+   "subjectName": "Core Mathematics",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Core Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S4_Core_Mathematics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Core%20Mathematics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 21.0
+  },
+  {
+   "id": "sb_s4_economics_bc18d6",
+   "type": "sbook",
+   "subject": "economics",
+   "subjectName": "Economics",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Economics - Student's book",
+   "file": "teacher-docs/secondary/S4_Economics_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Economics%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 18.0
+  },
+  {
+   "id": "sb_s4_english_a9deba",
+   "type": "sbook",
+   "subject": "english",
+   "subjectName": "English",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 English - Student's book",
+   "file": "teacher-docs/secondary/S4_English_Languages_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20English%20Languages%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 28.8
+  },
+  {
+   "id": "sb_s4_english_minor_17517a",
+   "type": "sbook",
+   "subject": "english_minor",
+   "subjectName": "English (non-language options)",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 English (non-language options) - Student's book",
+   "file": "teacher-docs/secondary/S4_English_SB_non_language.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20English%20SB%20non_language.pdf?forcedownload=1",
+   "mb": 12.9
+  },
+  {
+   "id": "sb_s4_entrepreneurship_67adf2",
+   "type": "sbook",
+   "subject": "entrepreneurship",
+   "subjectName": "Entrepreneurship",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Entrepreneurship - Student's book",
+   "file": "teacher-docs/secondary/S4_Entrepreneurship_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Entrepreneurship%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 18.8
+  },
+  {
+   "id": "sb_s4_french_minor_4cbef7",
+   "type": "sbook",
+   "subject": "french_minor",
+   "subjectName": "Français (options non littéraires)",
+   "classes": [
+    "S4"
+   ],
+   "lang": "fr",
+   "title": "Senior 4 Français (options non littéraires) - Student's book",
+   "file": "teacher-docs/secondary/S4_Franc_ais_Manuel_de_l_e_le_ve_Options_non_litte_raires_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Franc%CC%A7ais%20Manuel%20de%20l_e%CC%81le%CC%80ve%20Options%20non%20litte%CC%81raires%202026-2027.pdf?forcedownload=1",
+   "mb": 24.5
+  },
+  {
+   "id": "sb_s4_french_4deaaf",
+   "type": "sbook",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S4"
+   ],
+   "lang": "fr",
+   "title": "Senior 4 Français - Student's book",
+   "file": "teacher-docs/secondary/S4_Franc_ais_Manuel_de_l_eleve_options_litteraires.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Franc%CC%A7ais%2C%20Manuel%20de%20l_eleve%20options%20litteraires.pdf?forcedownload=1",
+   "mb": 35.0
+  },
+  {
+   "id": "sb_s4_gs_religion_1dda12",
+   "type": "sbook",
+   "subject": "gs_religion",
+   "subjectName": "General Studies and Religious Studies",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 General Studies and Religious Studies - Student's book",
+   "file": "teacher-docs/secondary/S4_General_and_Religious_Studies_SB-v4.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20General%20and%20Religious%20Studies%20SB-v4.pdf?forcedownload=1",
+   "mb": 44.4
+  },
+  {
+   "id": "sb_s4_geography_4d208e",
+   "type": "sbook",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Geography and Environment - Student's book",
+   "file": "teacher-docs/secondary/S4_Geography_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Geography%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 34.9
+  },
+  {
+   "id": "sb_s4_history_36427a",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S4_History_SB_Humanity_pathway_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20History%20SB%20Humanity%20pathway%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 28.5
+  },
+  {
+   "id": "sb_s4_history_de2ec2",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S4_History_SB_Language_pathway_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20History%20SB%20Language%20pathway%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 13.8
+  },
+  {
+   "id": "sb_s4_ict_afefac",
+   "type": "sbook",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 ICT - Student's book",
+   "file": "teacher-docs/secondary/S4_ICT_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20ICT%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 9.4
+  },
+  {
+   "id": "sb_s4_kinyarwanda_minor_7e7721",
+   "type": "sbook",
+   "subject": "kinyarwanda_minor",
+   "subjectName": "Ikinyarwanda (amashami atari indimi)",
+   "classes": [
+    "S4"
+   ],
+   "lang": "rw",
+   "title": "Senior 4 Ikinyarwanda (amashami atari indimi) - Student's book",
+   "file": "teacher-docs/secondary/S4_Ikinyarwanda_SB_Amashami_atari_indimi_2026.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Ikinyarwanda%20SB%20Amashami%20atari%20indimi%202026.pdf?forcedownload=1",
+   "mb": 3.1
+  },
+  {
+   "id": "sb_s4_kiswahili_08acb4",
+   "type": "sbook",
+   "subject": "kiswahili",
+   "subjectName": "Kiswahili",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Kiswahili - Student's book",
+   "file": "teacher-docs/secondary/S4_Kiswahili_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Kiswahili%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 22.1
+  },
+  {
+   "id": "sb_s4_literature_2751fc",
+   "type": "sbook",
+   "subject": "literature",
+   "subjectName": "Literature in English",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Literature in English - Student's book",
+   "file": "teacher-docs/secondary/S4_Literature_English_SB_F_2026-202.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Literature%20English%20SB%20F%202026-202.pdf?forcedownload=1",
+   "mb": 43.9
+  },
+  {
+   "id": "sb_s4_physics_835b55",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Physics - Student's book",
+   "file": "teacher-docs/secondary/S4_Physics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Physics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 34.0
+  },
+  {
+   "id": "sb_s4_psychology_arts_e58510",
+   "type": "sbook",
+   "subject": "psychology_arts",
+   "subjectName": "Psychology (arts and humanities pathway)",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Psychology (arts and humanities pathway) - Student's book",
+   "file": "teacher-docs/secondary/S4_Psychology_Art_and_humanities_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Psychology%20Art%20and%20humanities%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 49.5
+  },
+  {
+   "id": "sb_s4_psychology_languages_adb006",
+   "type": "sbook",
+   "subject": "psychology_languages",
+   "subjectName": "Psychology (languages pathway)",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Psychology (languages pathway) - Student's book",
+   "file": "teacher-docs/secondary/S4_Psychology_Languages_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/SB/S4%20Psychology%20Languages%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 29.5
+  },
+  {
+   "id": "sb_s5_kinyarwanda_e834d4",
+   "type": "sbook",
+   "subject": "kinyarwanda",
+   "subjectName": "Ikinyarwanda",
+   "classes": [
+    "S5"
+   ],
+   "lang": "rw",
+   "title": "Senior 5 Ikinyarwanda - Student's book",
+   "file": "teacher-docs/secondary/S5_Ikinyarwanda_SB_Ishami_ry_indimi_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20%20Ikinyarwanda%20SB%20Ishami%20ry%20indimi%202026-2027.pdf?forcedownload=1",
+   "mb": 4.4
+  },
+  {
+   "id": "sb_s5_kinyarwanda_minor_2fca37",
+   "type": "sbook",
+   "subject": "kinyarwanda_minor",
+   "subjectName": "Ikinyarwanda (amashami atari indimi)",
+   "classes": [
+    "S5"
+   ],
+   "lang": "rw",
+   "title": "Senior 5 Ikinyarwanda (amashami atari indimi) - Student's book",
+   "file": "teacher-docs/secondary/S5_Ikinyarwanda_SB_amashami_atari_indimi_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20%20Ikinyarwanda%20SB%20amashami%20atari%20indimi%202026-2027.pdf?forcedownload=1",
+   "mb": 3.3
+  },
+  {
+   "id": "sb_s5_maths_basic_60a43e",
+   "type": "sbook",
+   "subject": "maths_basic",
+   "subjectName": "Basic Mathematics",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Basic Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S5_Basic_Mathematics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Basic%20Mathematics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 10.9
+  },
+  {
+   "id": "sb_s5_biology_8e5a44",
+   "type": "sbook",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Biology and Health Sciences - Student's book",
+   "file": "teacher-docs/secondary/S5_Biology_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Biology%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 51.2
+  },
+  {
+   "id": "sb_s5_chemistry_e642eb",
+   "type": "sbook",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Chemistry - Student's book",
+   "file": "teacher-docs/secondary/S5_Chemistry_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Chemistry%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 19.3
+  },
+  {
+   "id": "sb_s5_maths_core_85a96a",
+   "type": "sbook",
+   "subject": "maths_core",
+   "subjectName": "Core Mathematics",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Core Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S5_Core_Mathematics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Core%20%20Mathematics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 25.9
+  },
+  {
+   "id": "sb_s5_economics_73d46b",
+   "type": "sbook",
+   "subject": "economics",
+   "subjectName": "Economics",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Economics - Student's book",
+   "file": "teacher-docs/secondary/S5_Economics_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Economics%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 23.8
+  },
+  {
+   "id": "sb_s5_english_bfd023",
+   "type": "sbook",
+   "subject": "english",
+   "subjectName": "English",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 English - Student's book",
+   "file": "teacher-docs/secondary/S5_English_Languages_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20English%20Languages%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 13.7
+  },
+  {
+   "id": "sb_s5_english_minor_c9dfe7",
+   "type": "sbook",
+   "subject": "english_minor",
+   "subjectName": "English (non-language options)",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 English (non-language options) - Student's book",
+   "file": "teacher-docs/secondary/S5_English_Non_language_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20English%20Non%20language%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 22.3
+  },
+  {
+   "id": "sb_s5_entrepreneurship_e53e0e",
+   "type": "sbook",
+   "subject": "entrepreneurship",
+   "subjectName": "Entrepreneurship",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Entrepreneurship - Student's book",
+   "file": "teacher-docs/secondary/S5_Entrepreneurship_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Entrepreneurship%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 22.6
+  },
+  {
+   "id": "sb_s5_french_minor_4ac18c",
+   "type": "sbook",
+   "subject": "french_minor",
+   "subjectName": "Français (options non littéraires)",
+   "classes": [
+    "S5"
+   ],
+   "lang": "fr",
+   "title": "Senior 5 Français (options non littéraires) - Student's book",
+   "file": "teacher-docs/secondary/S5_Franc_ais_Manuel_de_le_le_ve_Options_non_litte_raires_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Franc%CC%A7ais%20Manuel%20de%20le%CC%81le%CC%80ve%20Options%20non%20litte%CC%81raires%20%202026-2027.pdf?forcedownload=1",
+   "mb": 26.0
+  },
+  {
+   "id": "sb_s5_french_7a6bda",
+   "type": "sbook",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S5"
+   ],
+   "lang": "fr",
+   "title": "Senior 5 Français - Student's book",
+   "file": "teacher-docs/secondary/S5_Franc_ais_Manuel_de_l_eleve_options_litteraires_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Franc%CC%A7ais%2C%20Manuel%20de%20l_eleve%20options%20litteraires%202026-2027.pdf?forcedownload=1",
+   "mb": 20.8
+  },
+  {
+   "id": "sb_s5_gs_religion_fa272b",
+   "type": "sbook",
+   "subject": "gs_religion",
+   "subjectName": "General Studies and Religious Studies",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 General Studies and Religious Studies - Student's book",
+   "file": "teacher-docs/secondary/S5_General_and_Religious_Studies_SB-v3_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20General%20and%20Religious%20Studies%20SB-v3%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 40.1
+  },
+  {
+   "id": "sb_s5_geography_69348f",
+   "type": "sbook",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Geography and Environment - Student's book",
+   "file": "teacher-docs/secondary/S5_Geography_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Geography%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 43.2
+  },
+  {
+   "id": "sb_s5_history_6da392",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S5_History_SB_Humanity_pathway_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20History%20SB%20Humanity%20pathway%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 20.1
+  },
+  {
+   "id": "sb_s5_history_ead4c3",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S5_History_SB_Language_pathway_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20History%20SB%20Language%20pathway%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 16.7
+  },
+  {
+   "id": "sb_s5_ict_955764",
+   "type": "sbook",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 ICT - Student's book",
+   "file": "teacher-docs/secondary/S5_ICT_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20ICT%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 16.1
+  },
+  {
+   "id": "sb_s5_kiswahili_43a738",
+   "type": "sbook",
+   "subject": "kiswahili",
+   "subjectName": "Kiswahili",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Kiswahili - Student's book",
+   "file": "teacher-docs/secondary/S5_Kiswahili_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Kiswahili%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 21.9
+  },
+  {
+   "id": "sb_s5_literature_649ac8",
+   "type": "sbook",
+   "subject": "literature",
+   "subjectName": "Literature in English",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Literature in English - Student's book",
+   "file": "teacher-docs/secondary/S5_Literature_English_F_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Literature%20English%20F%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 17.8
+  },
+  {
+   "id": "sb_s5_physics_8a6b75",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Physics - Student's book",
+   "file": "teacher-docs/secondary/S5_Physics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Physics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 35.9
+  },
+  {
+   "id": "sb_s5_psychology_arts_398b7d",
+   "type": "sbook",
+   "subject": "psychology_arts",
+   "subjectName": "Psychology (arts and humanities pathway)",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Psychology (arts and humanities pathway) - Student's book",
+   "file": "teacher-docs/secondary/S5_Psychology_Art_and_humanities_SB_F_2026-202.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Psychology%20Art%20and%20humanities%20SB%20F%202026-202.pdf?forcedownload=1",
+   "mb": 14.4
+  },
+  {
+   "id": "sb_s5_psychology_languages_fb93bd",
+   "type": "sbook",
+   "subject": "psychology_languages",
+   "subjectName": "Psychology (languages pathway)",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Psychology (languages pathway) - Student's book",
+   "file": "teacher-docs/secondary/S5_Psychology_Languages_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/SB/S5%20Psychology%20Languages%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 18.3
+  },
+  {
+   "id": "sb_s6_maths_basic_ddf0f5",
+   "type": "sbook",
+   "subject": "maths_basic",
+   "subjectName": "Basic Mathematics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Basic Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S6_Basic_Mathematics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Basic%20Mathematics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 9.9
+  },
+  {
+   "id": "sb_s6_chemistry_582986",
+   "type": "sbook",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Chemistry - Student's book",
+   "file": "teacher-docs/secondary/S6_Chemistry_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Chemistry%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 26.9
+  },
+  {
+   "id": "sb_s6_economics_13ab90",
+   "type": "sbook",
+   "subject": "economics",
+   "subjectName": "Economics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Economics - Student's book",
+   "file": "teacher-docs/secondary/S6_Economics_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Economics%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 12.4
+  },
+  {
+   "id": "sb_s6_english_minor_9c0ede",
+   "type": "sbook",
+   "subject": "english_minor",
+   "subjectName": "English (non-language options)",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 English (non-language options) - Student's book",
+   "file": "teacher-docs/secondary/S6_English_Non_languages_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20English%20Non%20languages%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 16.3
+  },
+  {
+   "id": "sb_s6_english_52cfa1",
+   "type": "sbook",
+   "subject": "english",
+   "subjectName": "English",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 English - Student's book",
+   "file": "teacher-docs/secondary/S6_English_SB_languages_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20English%20SB%20languages%202026-2027.pdf?forcedownload=1",
+   "mb": 23.9
+  },
+  {
+   "id": "sb_s6_entrepreneurship_1b18c1",
+   "type": "sbook",
+   "subject": "entrepreneurship",
+   "subjectName": "Entrepreneurship",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Entrepreneurship - Student's book",
+   "file": "teacher-docs/secondary/S6_Entrepreneurship_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Entrepreneurship%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 11.3
+  },
+  {
+   "id": "sb_s6_french_9169c1",
+   "type": "sbook",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S6"
+   ],
+   "lang": "fr",
+   "title": "Senior 6 Français - Student's book",
+   "file": "teacher-docs/secondary/S6_Franc_ais_Manuel_de_le_le_ve_options_litteraires_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Franc%CC%A7ais%20Manuel%20de%20%20le%CC%81le%CC%80ve%20options%20litteraires%202026-2027.pdf?forcedownload=1",
+   "mb": 39.0
+  },
+  {
+   "id": "sb_s6_french_minor_a80ee4",
+   "type": "sbook",
+   "subject": "french_minor",
+   "subjectName": "Français (options non littéraires)",
+   "classes": [
+    "S6"
+   ],
+   "lang": "fr",
+   "title": "Senior 6 Français (options non littéraires) - Student's book",
+   "file": "teacher-docs/secondary/S6_Franc_ais_Manuel_de_le_le_ve_Options_non_litte_raires_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Franc%CC%A7ais%20Manuel%20de%20le%CC%81le%CC%80ve%20Options%20non%20litte%CC%81raires%202026-2027.pdf?forcedownload=1",
+   "mb": 13.0
+  },
+  {
+   "id": "sb_s6_gs_religion_2211c4",
+   "type": "sbook",
+   "subject": "gs_religion",
+   "subjectName": "General Studies and Religious Studies",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 General Studies and Religious Studies - Student's book",
+   "file": "teacher-docs/secondary/S6_General_and_Religious_Studies_SB-v4_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20General%20and%20Religious%20Studies%20SB-v4%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 40.3
+  },
+  {
+   "id": "sb_s6_geography_e0109d",
+   "type": "sbook",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Geography and Environment - Student's book",
+   "file": "teacher-docs/secondary/S6_Geography_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Geography%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 37.0
+  },
+  {
+   "id": "sb_s6_history_407659",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S6_History_SB_Humanity_pathway_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20History%20SB%20Humanity%20pathway%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 47.3
+  },
+  {
+   "id": "sb_s6_history_466504",
+   "type": "sbook",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 History and Citizenship - Student's book",
+   "file": "teacher-docs/secondary/S6_History_SB_Languages_Pathway_Experimental_Version_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20History%20SB%20Languages%20Pathway%20Experimental%20Version%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 21.3
+  },
+  {
+   "id": "sb_s6_ict_4cd073",
+   "type": "sbook",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 ICT - Student's book",
+   "file": "teacher-docs/secondary/S6_ICT_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20ICT%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 14.6
+  },
+  {
+   "id": "sb_s6_kinyarwanda_3e0b85",
+   "type": "sbook",
+   "subject": "kinyarwanda",
+   "subjectName": "Ikinyarwanda",
+   "classes": [
+    "S6"
+   ],
+   "lang": "rw",
+   "title": "Senior 6 Ikinyarwanda - Student's book",
+   "file": "teacher-docs/secondary/S6_Ikinyarwanda_SB_Ishami_ryindimi_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Ikinyarwanda%20SB%20Ishami%20ryindimi%202026-2027.pdf?forcedownload=1",
+   "mb": 4.9
+  },
+  {
+   "id": "sb_s6_kinyarwanda_minor_728fa6",
+   "type": "sbook",
+   "subject": "kinyarwanda_minor",
+   "subjectName": "Ikinyarwanda (amashami atari indimi)",
+   "classes": [
+    "S6"
+   ],
+   "lang": "rw",
+   "title": "Senior 6 Ikinyarwanda (amashami atari indimi) - Student's book",
+   "file": "teacher-docs/secondary/S6_Ikinyarwanda_SB_amashami_atari_indimi_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Ikinyarwanda%20SB%20amashami%20atari%20indimi%202026-2027.pdf?forcedownload=1",
+   "mb": 11.6
+  },
+  {
+   "id": "sb_s6_kiswahili_a65534",
+   "type": "sbook",
+   "subject": "kiswahili",
+   "subjectName": "Kiswahili",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Kiswahili - Student's book",
+   "file": "teacher-docs/secondary/S6_Kiswahili_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Kiswahili%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 18.9
+  },
+  {
+   "id": "sb_s6_literature_693b88",
+   "type": "sbook",
+   "subject": "literature",
+   "subjectName": "Literature in English",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Literature in English - Student's book",
+   "file": "teacher-docs/secondary/S6_Literature_English_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Literature%20English%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 26.8
+  },
+  {
+   "id": "sb_s6_maths_core_3b1834",
+   "type": "sbook",
+   "subject": "maths_core",
+   "subjectName": "Core Mathematics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Core Mathematics - Student's book",
+   "file": "teacher-docs/secondary/S6_Mathematics_SB_Science_Pathway_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Mathematics%20SB%20Science%20Pathway%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 26.3
+  },
+  {
+   "id": "sb_s6_physics_beb0c3",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Physics - Student's book",
+   "file": "teacher-docs/secondary/S6_Physics_SB_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Physics%20SB%202026-2027.pdf?forcedownload=1",
+   "mb": 28.3
+  },
+  {
+   "id": "sb_s6_physics_1f050a",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Physics - Student's book",
+   "file": "teacher-docs/secondary/S6_Physics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Physics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 28.6
+  },
+  {
+   "id": "sb_s6_psychology_arts_c5cb1d",
+   "type": "sbook",
+   "subject": "psychology_arts",
+   "subjectName": "Psychology (arts and humanities pathway)",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Psychology (arts and humanities pathway) - Student's book",
+   "file": "teacher-docs/secondary/S6_Psychology_Art_and_humanities_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Psychology%20Art%20and%20humanities%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 25.8
+  },
+  {
+   "id": "sb_s6_psychology_languages_6d578e",
+   "type": "sbook",
+   "subject": "psychology_languages",
+   "subjectName": "Psychology (languages pathway)",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Psychology (languages pathway) - Student's book",
+   "file": "teacher-docs/secondary/S6_Psychology_languages_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/SB/S6%20Psychology%20languages%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 15.4
+  },
+  {
+   "id": "sb_s3_physics_9205ab",
+   "type": "sbook",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Physics - Student's book",
+   "file": "teacher-docs/secondary/s3_Physics_SB_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/SB/s3%20Physics%20SB%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 32.6
+  },
+  {
+   "id": "tg_s1_french_11a04b",
+   "type": "tguide",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S1"
+   ],
+   "lang": "fr",
+   "title": "Senior 1 Français - Teacher's guide",
+   "file": "teacher-docs/secondary/S1_Franc_ais_Guide_de_l_enseignant_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/TG/S1%20Franc%CC%A7ais%2C%20Guide%20de%20l_enseignant%202026-2027.pdf?forcedownload=1",
+   "mb": 5.2
+  },
+  {
+   "id": "tg_s1_geography_a63f43",
+   "type": "tguide",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Geography and Environment - Teacher's guide",
+   "file": "teacher-docs/secondary/S1_Geography_and_Environment_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/TG/S1%20Geography%20and%20Environment%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 6.3
+  },
+  {
+   "id": "tg_s1_history_e31fc9",
+   "type": "tguide",
+   "subject": "history",
+   "subjectName": "History and Citizenship",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 History and Citizenship - Teacher's guide",
+   "file": "teacher-docs/secondary/S1_History_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/TG/S1%20History%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 9.1
+  },
+  {
+   "id": "tg_s1_ict_c6d3e9",
+   "type": "tguide",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 ICT - Teacher's guide",
+   "file": "teacher-docs/secondary/S1_ICT_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/TG/S1%20ICT%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 3.5
+  },
+  {
+   "id": "tg_s1_maths_eb5487",
+   "type": "tguide",
+   "subject": "maths",
+   "subjectName": "Mathematics",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Mathematics - Teacher's guide",
+   "file": "teacher-docs/secondary/S1_Mathematics_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/TG/S1%20Mathematics%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 10.4
+  },
+  {
+   "id": "tg_s1_pes_a6968f",
+   "type": "tguide",
+   "subject": "pes",
+   "subjectName": "Physical Education and Sports",
+   "classes": [
+    "S1"
+   ],
+   "lang": "en",
+   "title": "Senior 1 Physical Education and Sports - Teacher's guide",
+   "file": "teacher-docs/secondary/S1_PES_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275110/mod_folder/content/0/TG/S1%20PES%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 18.0
+  },
+  {
+   "id": "tg_s2_geography_9fa35d",
+   "type": "tguide",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Geography and Environment - Teacher's guide",
+   "file": "teacher-docs/secondary/S2_Geography_and_Environment_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/TG/S2%20%20Geography%20and%20Environment%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 10.5
+  },
+  {
+   "id": "tg_s2_ict_dc30a6",
+   "type": "tguide",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 ICT - Teacher's guide",
+   "file": "teacher-docs/secondary/S2_ICT_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/TG/S2%20%20ICT%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 3.5
+  },
+  {
+   "id": "tg_s2_french_79fc24",
+   "type": "tguide",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S2"
+   ],
+   "lang": "fr",
+   "title": "Senior 2 Français - Teacher's guide",
+   "file": "teacher-docs/secondary/S2_Franc_ais_Guide_de_lenseignant_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/TG/S2%20Franc%CC%A7ais%2C%20Guide%20de%20lenseignant%202026-2027.pdf?forcedownload=1",
+   "mb": 8.1
+  },
+  {
+   "id": "tg_s2_pes_e32c00",
+   "type": "tguide",
+   "subject": "pes",
+   "subjectName": "Physical Education and Sports",
+   "classes": [
+    "S2"
+   ],
+   "lang": "en",
+   "title": "Senior 2 Physical Education and Sports - Teacher's guide",
+   "file": "teacher-docs/secondary/S2_PES_TG_F_2026-2027...pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275111/mod_folder/content/0/TG/S2%20PES%20TG%20F%202026-2027...pdf?forcedownload=1",
+   "mb": 19.0
+  },
+  {
+   "id": "tg_s3_french_3bde27",
+   "type": "tguide",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S3"
+   ],
+   "lang": "fr",
+   "title": "Senior 3 Français - Teacher's guide",
+   "file": "teacher-docs/secondary/S3_Franc_ais_Guide_de_l_enseignant_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/TG/S3%20Franc%CC%A7ais%2C%20Guide%20de%20l_enseignant%202026-2027.pdf?forcedownload=1",
+   "mb": 4.9
+  },
+  {
+   "id": "tg_s3_geography_7a1139",
+   "type": "tguide",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Geography and Environment - Teacher's guide",
+   "file": "teacher-docs/secondary/S3_Geography_and_Environment_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/TG/S3%20Geography%20and%20Environment%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 7.4
+  },
+  {
+   "id": "tg_s3_ict_724ade",
+   "type": "tguide",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 ICT - Teacher's guide",
+   "file": "teacher-docs/secondary/S3_ICT_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/TG/S3%20ICT%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 2.8
+  },
+  {
+   "id": "tg_s3_pes_3bde7f",
+   "type": "tguide",
+   "subject": "pes",
+   "subjectName": "Physical Education and Sports",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Physical Education and Sports - Teacher's guide",
+   "file": "teacher-docs/secondary/S3_PES_TG_F_2026-2027...pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/TG/S3%20PES%20TG%20F%202026-2027...pdf?forcedownload=1",
+   "mb": 21.2
+  },
+  {
+   "id": "tg_s3_religion_ethics_cb73e1",
+   "type": "tguide",
+   "subject": "religion_ethics",
+   "subjectName": "Religion and Ethics",
+   "classes": [
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Senior 3 Religion and Ethics - Teacher's guide",
+   "file": "teacher-docs/secondary/S3_Religion_and_Ethics_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275112/mod_folder/content/0/TG/S3%20Religion%20and%20Ethics%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 7.0
+  },
+  {
+   "id": "tg_s4_french_567928",
+   "type": "tguide",
+   "subject": "french",
+   "subjectName": "Français",
+   "classes": [
+    "S4"
+   ],
+   "lang": "fr",
+   "title": "Senior 4 Français - Teacher's guide",
+   "file": "teacher-docs/secondary/S4_Franc_ais_Guide_de_l_enseignant_Options_litte_raires.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/TG/S4%20Franc%CC%A7ais%2C%20Guide%20de%20l_enseignant%2C%20Options%20litte%CC%81raires.pdf?forcedownload=1",
+   "mb": 7.5
+  },
+  {
+   "id": "tg_s4_geography_56e35f",
+   "type": "tguide",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Geography and Environment - Teacher's guide",
+   "file": "teacher-docs/secondary/S4_Geography_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/TG/S4%20Geography%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 9.8
+  },
+  {
+   "id": "tg_s4_ict_8933b3",
+   "type": "tguide",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 ICT - Teacher's guide",
+   "file": "teacher-docs/secondary/S4_ICT_TG_20.26-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/TG/S4%20ICT%20TG%20%2020.26-2027.pdf?forcedownload=1",
+   "mb": 4.2
+  },
+  {
+   "id": "tg_s4_pes_8a74f0",
+   "type": "tguide",
+   "subject": "pes",
+   "subjectName": "Physical Education and Sports",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Senior 4 Physical Education and Sports - Teacher's guide",
+   "file": "teacher-docs/secondary/S4_PES_TG_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275114/mod_folder/content/0/TG/S4%20PES%20TG%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 30.0
+  },
+  {
+   "id": "tg_s5_geography_38a805",
+   "type": "tguide",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Geography and Environment - Teacher's guide",
+   "file": "teacher-docs/secondary/S5_Geography_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/TG/S5%20Geography%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 7.2
+  },
+  {
+   "id": "tg_s5_ict_a52493",
+   "type": "tguide",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 ICT - Teacher's guide",
+   "file": "teacher-docs/secondary/S5_ICT_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/TG/S5%20ICT%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 4.0
+  },
+  {
+   "id": "tg_s5_pes_1b0b8a",
+   "type": "tguide",
+   "subject": "pes",
+   "subjectName": "Physical Education and Sports",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Senior 5 Physical Education and Sports - Teacher's guide",
+   "file": "teacher-docs/secondary/S5_PES_TG_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275855/mod_folder/content/0/TG/S5%20PES%20TG%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 31.4
+  },
+  {
+   "id": "tg_s6_geography_54eba8",
+   "type": "tguide",
+   "subject": "geography",
+   "subjectName": "Geography and Environment",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Geography and Environment - Teacher's guide",
+   "file": "teacher-docs/secondary/S6_Geography_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/TG/S6%20Geography%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 9.4
+  },
+  {
+   "id": "tg_s6_ict_d1ff09",
+   "type": "tguide",
+   "subject": "ict",
+   "subjectName": "ICT",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 ICT - Teacher's guide",
+   "file": "teacher-docs/secondary/S6_ICT_TG_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/TG/S6%20ICT%20TG%202026-2027.pdf?forcedownload=1",
+   "mb": 3.9
+  },
+  {
+   "id": "tg_s6_pes_0f1436",
+   "type": "tguide",
+   "subject": "pes",
+   "subjectName": "Physical Education and Sports",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Senior 6 Physical Education and Sports - Teacher's guide",
+   "file": "teacher-docs/secondary/S6_PES_TG_F_2026-2027.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/275856/mod_folder/content/0/TG/S6%20PES%20TG%20F%202026-2027.pdf?forcedownload=1",
+   "mb": 29.9
+  }
+ ]
+}

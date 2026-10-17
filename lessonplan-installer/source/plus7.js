@@ -15,9 +15,14 @@ function plusClassIds(){ return ['P1','P2','P3','P4','P5','P6'].concat(typeof SE
   function secScheme(cls,subj){
     const k=cls+'-'+subj; if(expanded.hasOwnProperty(k)) return expanded[k];
     const s=SEC_DATA.classes[cls]&&SEC_DATA.classes[cls].subjects[subj]; if(!s){ expanded[k]=null; return null; }
-    const sc=s.scheme, ref=sc.references||'';
+    const sc=s.scheme, ref=sc.references||'', bk=s.books||{};
+    function rng(a,b,off){ const x=off!=null?[a-off,b-off]:null; const pdf=a===b?'PDF page '+a:'PDF pages '+a+'-'+b; if(!x||x[0]<1) return pdf; return (a===b?'p. '+x[0]:'pp. '+x[0]+'-'+x[1])+' ('+pdf+')'; }
+    function cite(u,l,kind,label){ const r=u[kind]; if(!r||!bk[kind]) return ''; const off=bk[kind].off; const lp=l[kind+'p'];
+      return label+' (Senior '+cls[1]+' '+s.name+'), Unit '+u.no+', '+rng(r[0],r[1],off)+(lp?'; this lesson is near '+(off!=null&&lp-off>=1?'p. '+(lp-off)+' (PDF page '+lp+')':'PDF page '+lp):''); }
     expanded[k]={class:sc.class,subject:sc.subject,subjectName:sc.subjectName,units:sc.units.map(u=>({no:u.no,title:u.title,periods:u.periods,keyComp:u.keyComp,term:u.term,
-      lessons:u.lessons.map(l=>Object.assign({},l,{aids:l.aids||u.aids||'',assessment:l.assessment||u.assessment||'',references:l.references||ref}))}))};
+      lessons:u.lessons.map(l=>{ const sb=cite(u,l,'sb',"Student's Book"), tg=cite(u,l,'tg',"Teacher's Guide"); const refs=[l.references||ref, sb, tg].filter(Boolean).join(' ');
+        const aids=[sb?"Student's Book "+rng(u.sb[0],u.sb[1],bk.sb.off):'', l.aids||u.aids||''].filter(Boolean).join('; ');
+        return Object.assign({},l,{aids:aids,assessment:l.assessment||u.assessment||'',references:refs,sbBook:sb?1:0}); })}))};
     return expanded[k];
   }
   function secSubjects(cls){ const cl=SEC_DATA.classes[cls]; if(!cl) return []; return Object.keys(cl.subjects).map(id=>({id,units:[],title:cl.subjects[id].name})).sort((a,b)=>metaFor(a.id).name.localeCompare(metaFor(b.id).name)); }
