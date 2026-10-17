@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EduSmart Lesson Plan Generator</title>
+<meta name="theme-color" content="#053857">
+<meta name="description" content="EduSmart Lesson Plan Generator: REB-format lesson plans for Primary 1 to 6, built from the 2026-2027 REB schemes of work and pupil books. Works offline.">
+<link rel="icon" type="image/png" href="__FAVICON__">
+<style>
+:root{--rw-blue:#00A1DE;--rw-yellow:#FAD201;--rw-green:#20603D;--navy:#053857;
+  --bg:#f4f7fb;--card:#fff;--ink:#0f1b33;--mute:#51607d;--line:#dbe4ef;--soft:#eef3f9;
+  --brand:#20603D;--brand-ink:#fff;--accent:#00A1DE;--hdr:#053857;--hdr-ink:#fff;--tab-on:#053857;
+  --bad:#c92a2a;--warn:#8a5a00;--ok:#20603D;--r:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0a1626;--card:#10253a;--ink:#e8f0f8;--mute:#9db2c8;--line:#24405c;--soft:#15304a;--brand:#2a8a58;--accent:#27b4ea;--hdr:#041f31;--tab-on:#fff;--bad:#ff8787;--warn:#ffd24d;--ok:#5fd08d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.flagbar{display:flex;height:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.flagbar i{display:block}.flagbar i:nth-child(1){flex:2;background:#00A1DE}.flagbar i:nth-child(2){flex:1;background:#FAD201}.flagbar i:nth-child(3){flex:1;background:#20603D}
+header{background:var(--hdr);color:var(--hdr-ink);padding:12px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;flex:1;min-width:230px}
+.logo-mark{display:block;width:48px;height:48px;flex:none;background:#fff;border-radius:10px;padding:3px;overflow:hidden}.logo-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.wm{font-size:21px;font-weight:800;letter-spacing:-.2px;line-height:1.1}.wm span{color:#FAD201}
+.school{font-size:13px;opacity:.9;margin-top:2px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+footer.foot{margin-top:28px;color:var(--mute);font-size:12.5px}
+footer.foot .in{max-width:1100px;margin:0 auto;padding:12px 16px 22px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+footer.foot .in b{color:var(--ink)}
+/* controls used by the lesson-plan code */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.row-card{display:flex;align-items:center;gap:14px;padding:12px 14px}
+.row-card .thumb{width:52px;height:52px;border-radius:12px;flex:0 0 52px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.row-card .thumb svg{width:26px;height:26px}
+.row-card .rc-body{flex:1;min-width:0}.row-card .rc-body b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row-card .rc-body span{font-size:12.5px;color:var(--mute)}
+.btn{font:inherit;font-weight:600;border:1px solid var(--brand);background:var(--brand);color:var(--brand-ink);border-radius:9px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn:hover:not(:disabled){filter:brightness(1.12)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg,.ibtn svg{width:17px;height:17px;flex:none}
+.btn.line{background:transparent;color:var(--brand);border-color:var(--brand)}
+.btn.ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
+.btn.sm{padding:5px 11px;font-size:13px}
+.btn.bad{color:var(--bad);border-color:var(--line);background:var(--card)}
+.sub-note{color:var(--mute);font-size:13px}
+.section-head{display:flex;align-items:center;gap:12px;margin:6px 0 14px}.section-head h2{font-size:17px;margin:0}.section-head .line{flex:1;height:1px;background:var(--line)}
+.empty{text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:var(--r);background:var(--card)}.empty svg{width:36px;height:36px;margin-bottom:8px;color:var(--accent)}
+.page-banner{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-radius:16px;padding:20px 22px;margin-bottom:16px;color:#fff;background:linear-gradient(120deg,#053857 0%,#0a6aa0 60%,#00A1DE 100%)}
+.page-banner:after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,#00A1DE 0 50%,#FAD201 50% 75%,#20603D 75% 100%)}
+.page-banner h2{margin:0 0 4px;font-size:20px}.page-banner p{margin:0;opacity:.95;max-width:640px}
+.pb-ic{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none}.pb-ic svg{width:26px;height:26px}
+.pb-act{margin-left:auto}.page-banner .btn{background:#FAD201;color:#053857;border-color:#FAD201}
+.field label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin:12px 0 5px}
+.txt,select.txt,textarea.txt,input.txt{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+.txt:focus{outline:none;border-color:var(--accent)}textarea.txt{resize:vertical}
+.grid{display:grid;gap:12px}.g-2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.g-3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.class-choose{display:flex;flex-wrap:wrap;gap:10px}
+.class-pick{font:inherit;color:var(--ink);border:1.6px solid var(--line);border-radius:14px;padding:8px 14px;min-width:92px;text-align:center;background:var(--card);cursor:pointer}
+.class-pick:hover{border-color:var(--accent)}.class-pick.on{border-color:var(--rw-blue);box-shadow:0 0 0 4px rgba(0,161,222,.15)}
+.class-pick b{display:block;font-size:19px;color:var(--tab-on)}.class-pick span{font-size:11.5px;color:var(--mute)}
+.chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}.chip.tiny{padding:2px 8px;font-size:11px}
+.lp-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin:4px 0 8px}
+.lp-chk{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer}.lp-chk input,.lp-src input{width:16px;height:16px}
+.lp-step{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--soft)}
+.lp-step-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}.lp-step-head b{font-size:15px}
+.lp-src{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+@media (max-width:620px){.lp-checks{grid-template-columns:1fr}.row-card{flex-wrap:wrap}}
+/* printable sheet */
+.print-preview{background:#e9eef6;padding:22px;border-radius:16px;overflow:auto}
+.print-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.sheet{background:#fff;color:#152238;width:820px;max-width:100%;margin:0 auto 20px;padding:40px 44px;box-shadow:0 10px 30px rgba(16,32,64,.14);border-radius:6px;font-size:14px;line-height:1.5}
+.sh-head{display:flex;align-items:center;gap:16px;border-bottom:4px solid #053857;padding-bottom:12px;margin-bottom:6px;position:relative}
+.sh-head:after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;background:linear-gradient(90deg,#00A1DE 0 50%,#FAD201 50% 75%,#20603D 75% 100%);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sh-head img{width:62px;height:62px;object-fit:contain;background:#fff}
+.sh-head .sh-txt{flex:1;min-width:0}.sh-head h2{margin:0;font-size:22px;color:#053857}
+.sh-head .sh-motto{font-style:italic;color:#51617a;font-size:13px;margin-top:2px}.sh-head .sh-contact{color:#51617a;font-size:12px;margin-top:3px}
+.sh-doc-title{text-align:center;font-size:18px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#053857;margin:18px 0 16px}
+.lp-names{display:flex;justify-content:space-between;gap:20px;margin:4px 0 12px;font-size:14px;flex-wrap:wrap}
+.lp-tbl{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12.5px}
+.lp-tbl th,.lp-tbl td{border:1px solid #33415c;padding:6px 8px;vertical-align:top;text-align:left}
+.lp-tbl th{background:#e6f6fd;font-weight:700;color:#053857;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.lp-tbl .lp-k{width:34%;background:#f4f7fc;font-weight:600}.lp-tbl .lp-v{width:66%}
+.lp-act .lp-time{width:120px;background:#f4f7fc}.lp-act .lp-gc{width:180px;background:#fbfcfe}.lp-act td div{margin-bottom:4px}
+.sheet .sign-row{display:flex;justify-content:space-between;margin-top:30px;gap:20px}
+.sheet .sign-row .sig{flex:1;text-align:center;border-top:1px solid #33415c;padding-top:6px;font-size:12px;color:#51617a}
+.sheet .foot-note{margin-top:16px;text-align:center;color:#6b7c93;font-size:11px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222a3d;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;display:none;z-index:60;max-width:92vw}
+@page{size:A4;margin:10mm}
+@media print{html,body{background:#fff!important}body *{visibility:hidden!important}#printRoot,#printRoot *{visibility:visible!important}#printRoot{position:absolute;left:0;top:0;width:100%;padding:0;background:#fff}#printRoot .print-actions{display:none!important}#printRoot .print-preview{background:#fff;padding:0}.sheet{box-shadow:none;margin:0 auto;width:100%;max-width:100%;padding:0;page-break-after:always}.sheet:last-child{page-break-after:auto}#onb{display:none!important}}
+/* welcome screen and setup guide */
+#onb{position:fixed;inset:0;z-index:40;display:none;overflow:auto;color:#fff;background:radial-gradient(1100px 560px at 15% -10%,#0b6a9e 0,#053857 58%,#032a42 100%)}
+#onb.on{display:block}
+.onb-flag{display:flex;height:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.onb-flag i{display:block}.onb-flag i:nth-child(1){flex:2;background:#00A1DE}.onb-flag i:nth-child(2){flex:1;background:#FAD201}.onb-flag i:nth-child(3){flex:1;background:#20603D}
+.onb-wrap{min-height:100%;display:flex;flex-direction:column}
+.onb-main{flex:1;display:flex;align-items:center;justify-content:center;padding:26px 16px}
+.hero{max-width:900px;width:100%;text-align:center}
+.hero .tile{width:min(340px,80vw);margin:0 auto 16px;background:#fff;border-radius:30px;padding:14px;box-shadow:0 12px 34px rgba(0,0,0,.38)}.hero .tile img{display:block;width:100%;height:auto}
+.hero .eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#FAD201;margin-bottom:8px}
+.hero h1{text-wrap:balance;font-size:clamp(26px,4.8vw,42px);line-height:1.1;margin:0 0 12px;letter-spacing:-.5px;outline:none}.hero h1 span{color:#FAD201}
+.hero p.lead{font-size:clamp(16px,2.1vw,18.5px);max-width:680px;margin:0 auto 22px;color:#d9ebf6}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 24px;text-align:left}
+.how div{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 16px}
+.how b{display:flex;align-items:center;gap:10px;font-size:16px;margin-bottom:4px}
+.how .n{flex:none;width:28px;height:28px;border-radius:50%;background:#FAD201;color:#053857;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.how span.d{color:#cfe6f3;font-size:14px}
+.onb-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ob{font:inherit;font-weight:700;border-radius:10px;padding:12px 22px;cursor:pointer;border:2px solid rgba(255,255,255,.6);background:transparent;color:#fff}
+.ob.go{background:#FAD201;color:#053857;border-color:#FAD201}.ob:hover{filter:brightness(1.1)}.ob:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.onb-note{margin-top:14px;color:#b9d6e8;font-size:13px}
+.onb-foot{text-align:center;color:#b9d6e8;font-size:12.5px;padding:12px 16px 16px}
+.wz{width:100%;max-width:780px;background:var(--card);color:var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.42)}
+.wz .onb-flag{height:8px}.wz-in{padding:22px 24px 6px}
+.stepper{display:flex;gap:6px;margin:0 0 18px;padding:0;list-style:none}
+.stepper li{flex:1;min-width:0;font-size:11.5px;color:var(--mute);text-align:center;border-top:5px solid var(--line);padding-top:6px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stepper li.done{border-color:var(--ok);color:var(--ok)}.stepper li.cur{border-color:var(--accent);color:var(--ink)}
+.wz h2{margin:0 0 4px;font-size:22px}.wz h2:focus{outline:none}.wz .sub{color:var(--mute);margin:0 0 16px}
+.wz-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px 20px;border-top:1px solid var(--line);margin-top:14px}
+.wz-bar .skip{color:var(--mute);background:none;border:0;font:inherit;cursor:pointer;text-decoration:underline;padding:6px}
+.sp{flex:1}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.fgrid input{width:100%}
+.fgrid label{display:block;font-size:12px;color:var(--mute);font-weight:600;margin-bottom:3px}
+.fgrid input[type=text]{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 11px}
+.msg{padding:9px 12px;border-radius:8px;font-size:13px;margin:8px 0}.msg.ok{background:#e3f1e9;color:#14452a;border:1px solid #a9d3bb}.msg.warn{background:#fff6d0;color:#5c4300;border:1px solid #f0d56a}
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
+.sumgrid div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}.sumgrid b{display:block;font-size:26px;color:var(--tab-on)}.sumgrid span{font-size:12.5px;color:var(--mute)}
+.next{list-style:none;margin:0 0 4px;padding:0;display:grid;gap:8px}.next li{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.next .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.cov{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}.cov th,.cov td{border:1px solid var(--line);padding:5px 8px;text-align:center}.cov th{background:var(--soft)}.cov td.l{text-align:left}
+@media (max-width:560px){.wz-in{padding:18px 16px 4px}.wz-bar{padding:12px 16px 16px}.stepper li{font-size:0}.stepper li.cur{font-size:11.5px;flex:3}}
+</style>
+</head>
+<body>
+<div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div>
+<header>
+  <div class="brand"><span class="logo-mark" aria-hidden="true">__MARK_IMG__</span><div><div class="wm">EduSmart <span>Lesson Plan Generator</span></div><div class="school" id="hTitle">REB lesson plans, P1 to P6</div></div></div>
+  <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn sm ghost" onclick="onbOpen(1)">Setup guide</button>
+    <button class="btn sm ghost" onclick="exportBackup()">Save backup</button>
+    <button class="btn sm ghost" onclick="document.getElementById('imp').click()">Open backup</button>
+    <input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
+  </div>
+</header>
+<main id="view"></main>
+<footer class="foot"><div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div><div class="in"><b>EduSmart Lesson Plan Generator</b><span>by EduSmart Consult LTD, Kigali, Rwanda</span><span>&middot;</span><a href="https://www.edusmartconsult.com" style="color:inherit" target="_blank" rel="noopener">www.edusmartconsult.com</a><span>&middot;</span><span>Built from the REB 2026-2027 schemes of work and pupil books</span></div></footer>
+<div id="onb" role="dialog" aria-modal="true" aria-label="Welcome and setup guide"></div>
+<div id="toast" role="status"></div>
+
+<script id="appdata" type="application/json">__DATA__</script>
+<script>
+/* ===== stand-ins for the Smart School App functions that lessonplan.js expects ===== */
+const LOGO_FULL=`__LOGO_FULL__`;
+const MARK_IMG=`__MARK_IMG__`;
+const STORE_KEY='edusmart.lessonplan.v1';
+const DATA=JSON.parse(document.getElementById('appdata').textContent);
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function stripLeadNum(s){ return String(s||'').replace(/^\s*\(?\d{1,3}\s*[\.\)]\s*/,'').trim(); }
+const $=id=>document.getElementById(id);
+function toast(t){ const el=$('toast'); el.textContent=t; el.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>el.style.display='none',3600); }
+const SUBJECT_META={
+  maths:{name:'Mathematics',color:'#3B5BDB',tint:'#e6eafc'},english:{name:'English',color:'#0CA678',tint:'#e0f6ef'},
+  kinyarwanda:{name:'Ikinyarwanda',color:'#E8590C',tint:'#fdece1'},french:{name:'Français',color:'#7048E8',tint:'#eee9fd'},
+  sst:{name:'Social and Religious Studies',color:'#1098AD',tint:'#e0f4f7'},set:{name:'Science and Elementary Technology',color:'#2F9E44',tint:'#e6f6ea'},
+  arts:{name:'Creative Arts',color:'#E64980',tint:'#fdeaf1'},pes:{name:'Physical Education and Sports',color:'#F08C00',tint:'#fdf0dc'}};
+function metaFor(id){ const b=String(id||'').replace(/^tg_/,''); return SUBJECT_META[b]||{name:id,color:'#3B5BDB',tint:'#e6eafc'}; }
+const CLASS_META={};['P1','P2','P3','P4','P5','P6'].forEach(c=>CLASS_META[c]={id:c,name:'Primary '+c[1],short:c});
+function classMeta(id){ return CLASS_META[id]||CLASS_META.P4; }
+const ICONS={
+ back:'<path d="M15 6l-6 6 6 6"/>',check:'<path d="M5 12l5 5 9-10"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ exams:'<path d="M7 3h8l4 4v14H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+ guide:'<path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v13c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v13"/>',
+ f_guide:'<path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v13c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v13"/>',
+ star:'<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>'};
+function icon(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[n]||ICONS.guide)+'</svg>'; }
+/* settings (school, teacher, saved plans) live in this browser / app's own storage */
+const Accounts={ root:{settings:{}},
+  load(){ try{ const r=localStorage.getItem(STORE_KEY); if(r){ const d=JSON.parse(r); if(d&&typeof d==='object') this.root.settings=d; } }catch(e){} },
+  save(){ try{ localStorage.setItem(STORE_KEY,JSON.stringify(this.root.settings)); }catch(e){ toast('Could not save on this device - use "Save backup".'); } },
+  activeStaff(){ const t=this.root.settings.teacher||{}; return {id:'t1',name:t.name||''}; } };
+Accounts.load();
+const App={ schemeCache:{}, catalogCache:{}, classId:'P4', teacherClass:null };
+const NAMES_FALLBACK={pes:'Physical Education and Sports',arts:'Creative Arts'};
+/* catalogue: rebuild the arrays lessonplan.js reads from the compact bundle */
+(function(){
+  const KIND={n:'number',c:'choice',o:'order',m:'match',t:'text',x:'other'};
+  Object.keys(DATA.catalog).forEach(cls=>{
+    const books=DATA.catalog[cls].books.map(b=>({id:b.id,title:b.title,units:b.units.map(u=>({id:u.id,title:u.title,stories:u.stories.map(s=>{
+      const pages=[]; if(s.pg&&s.pg[2]){ for(let i=0;i<s.pg[2];i++) pages.push('page_'+String(i===s.pg[2]-1?s.pg[1]:s.pg[0]).padStart(3,'0')+'.webp'); }
+      const tasks=(s.tk||'').split('').map((c,i)=>({kind:KIND[c]||'other',prompt:(s.tp&&s.tp[i])||''}));
+      return {id:s.id,title:s.title,topic:s.topic||'',pages,tasks};
+    })}))}));
+    /* scheme-only subjects (for example P.E., or Creative Arts in P1-P3) have no pupil book: list them so a plan can still be made from the scheme */
+    Object.keys(DATA.schemes).filter(k=>k.startsWith(cls+'-')).forEach(k=>{ const sid=k.slice(cls.length+1); if(!books.some(b=>b.id===sid)) books.push({id:sid,title:(DATA.schemes[k].subjectName||NAMES_FALLBACK[sid]||sid),units:[]}); });
+    App.catalogCache[cls]={books};
+  });
+})();
+async function ensureCatalog(c){ return App.catalogCache[c]||{books:[]}; }
+function pupilBooksOf(c){ const cat=App.catalogCache[c]; return cat?(cat.books||[]).filter(b=>!b.id.startsWith('tg_')):[]; }
+function scopeAllowsSubject(){ return true; }
+function scopeClasses(){ return ['P1','P2','P3','P4','P5','P6']; }
+function isTeacher(){ return true; }
+function activeStaff(){ return Accounts.activeStaff(); }
+function teacherStudents(){ return []; }
+function schoolInfo(){ return Accounts.root.settings.school||{}; }
+window.reb={ loadScheme(cls,subject){ return Promise.resolve(DATA.schemes[cls+'-'+subject]||null); }, loadCatalog(c){ return Promise.resolve(App.catalogCache[c]||{books:[]}); } };
+function setTop(title,sub){ $('hTitle').textContent=schoolInfo().name?(schoolInfo().name+' - '+title):(title+(sub?' - '+sub:'')); document.title=title+' - EduSmart Lesson Plan Generator'; }
+function paint(html){ $('view').innerHTML='<div class="fade">'+html+'</div>'; window.scrollTo(0,0); }
+function paintPrint(title,sub,actionsHTML,sheetsHTML){ setTop(title,sub||''); $('view').innerHTML=`<div id="printRoot"><div class="print-actions">${actionsHTML}</div><div class="print-preview">${sheetsHTML}</div></div>`; window.scrollTo(0,0); }
+function doPrint(){ window.print(); }
+function navigate(){ renderLessonPlans(); }
+function banner(key,ic,title,sub,action){ return `<div class="page-banner"><div class="pb-ic">${icon(ic)}</div><div style="flex:1;min-width:220px"><h2>${title}</h2><p>${sub}</p></div>${action?`<div class="pb-act">${action}</div>`:''}</div>`; }
+function schoolHeaderHTML(){
+  const sc=schoolInfo(); const logo=sc.logo?`<img src="${esc(sc.logo)}" alt="School logo">`:`<img src="${MARK_IMG.match(/src="([^"]+)"/)[1]}" alt="">`;
+  const contacts=[sc.address,sc.phone,sc.email].filter(Boolean).join('  ·  ');
+  return `<div class="sh-head">${logo}<div class="sh-txt"><h2>${esc(sc.name||'EduSmart Lesson Plan Generator')}</h2>${sc.motto?`<div class="sh-motto">${esc(sc.motto)}</div>`:''}${contacts?`<div class="sh-contact">${esc(contacts)}</div>`:''}</div></div>`;
+}
+Object.defineProperty(App,'teacherClass',{get(){ return (Accounts.root.settings.defaults||{}).classId||null; },set(v){}});
+
+/* ===== the REB lesson-plan generator, unchanged apart from wording that named the Smart School App ===== */
+/*__LESSONPLAN__*/
+
+/* ===== backup and restore ===== */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify({app:'edusmart-lesson-plans',version:1,settings:Accounts.root.settings},null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lesson-plans-backup-'+new Date().toISOString().slice(0,10)+'.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); toast('Backup saved to your Downloads.');
+}
+function importBackup(inp){
+  const f=inp.files[0]; inp.value=''; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d||d.app!=='edusmart-lesson-plans'||!d.settings||typeof d.settings!=='object') throw new Error('bad');
+      if(!confirm('Replace your school details and saved lesson plans with the backup file?')) return;
+      Accounts.root.settings=d.settings; if(!Array.isArray(Accounts.root.settings.lessonPlans)) Accounts.root.settings.lessonPlans=[]; Accounts.save(); LP=null; renderLessonPlans(); toast('Backup opened.'); if($('onb').classList.contains('on')) onbClose();
+    }catch(e){ toast('That file is not a lesson-plan backup.'); } };
+  r.readAsText(f);
+}
+
+/* ===== welcome screen and setup guide ===== */
+const ONB={step:0};
+const ONB_LABELS=['School','Teacher','How it works','Finish'];
+function onbNeeded(){ const s=Accounts.root.settings; return !s.onboarded && !s.school && !(s.lessonPlans&&s.lessonPlans.length); }
+function onbInert(on){ ['header','main','footer.foot'].forEach(sel=>{ const el=document.querySelector(sel); if(el){ if(on) el.setAttribute('inert',''); else el.removeAttribute('inert'); } }); }
+function onbOpen(step){ ONB.step=step||0; $('onb').classList.add('on'); onbInert(true); onbRender(); }
+function onbClose(){ Accounts.root.settings.onboarded=true; Accounts.save(); $('onb').classList.remove('on'); onbInert(false); renderLessonPlans(); window.scrollTo(0,0); }
+function onbGo(n){ ONB.step=Math.max(0,Math.min(4,n)); onbRender(); $('onb').scrollTop=0; }
+function onbFinish(act){ onbClose(); if(act==='new') lpNew(); }
+function onbBackup(){ $('imp').click(); }
+function onbSet(group,k,v){ const s=Accounts.root.settings; s[group]=s[group]||{}; s[group][k]=v; Accounts.save(); }
+function onbClass(c){ onbSet('defaults','classId',c); onbRender(); }
+function onbLogo(inp){ const f=inp.files[0]; inp.value=''; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const img=new Image(); img.onload=()=>{ const h=Math.min(160,img.height), w=Math.max(1,Math.round(img.width*h/img.height)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); onbSet('school','logo',cv.toDataURL('image/png')); onbRender(); }; img.onerror=()=>toast('Could not read that image.'); img.src=r.result; };
+  r.readAsDataURL(f); }
+async function onbSample(){
+  onbClose(); LP=lpFreshDraft(); LP.classId='P4'; LP.subject='maths'; await lpLoadScheme('P4','maths'); LP.useScheme=lpSchemeAvailable(); lpPickUnit('0'); lpPickLesson('0'); lpAutofill(); lpPreview();
+}
+function onbCoverage(){
+  const rows=[]; let nS=0,nL=0;
+  ['P1','P2','P3','P4','P5','P6'].forEach(c=>{ const subs=pupilBooksOf(c).map(b=>b.id); const have=Object.keys(DATA.schemes).filter(k=>k.startsWith(c+'-')).map(k=>k.slice(3)); rows.push([c,subs.length,have.length]); have.forEach(k=>{ nS++; (DATA.schemes[c+'-'+k].units||[]).forEach(u=>nL+=(u.lessons||[]).length); }); });
+  return {rows,nS,nL};
+}
+function onbStepper(){ return `<ol class="stepper" aria-label="Setup progress">${ONB_LABELS.map((l,i)=>`<li class="${i<ONB.step-1?'done':i===ONB.step-1?'cur':''}" ${i===ONB.step-1?'aria-current="step"':''}>${i<ONB.step-1?'&#10003; ':''}${l}</li>`).join('')}</ol>`; }
+function onbBody(){
+  const s=ONB.step, st=Accounts.root.settings, sc=st.school||{}, tc=st.teacher||{}, df=st.defaults||{};
+  if(s===1) return `<h2 id="onbH" tabindex="-1">Tell us about your school</h2><p class="sub">Printed at the top of every lesson plan. You can change it later with the Setup guide button.</p>
+    <div class="fgrid"><div><label for="o_name">School name</label><input type="text" id="o_name" value="${esc(sc.name)}" placeholder="e.g. GS Nyabigega" autocomplete="off" oninput="onbSet('school','name',this.value)"></div>
+    <div><label for="o_motto">Motto (optional)</label><input type="text" id="o_motto" value="${esc(sc.motto)}" autocomplete="off" oninput="onbSet('school','motto',this.value)"></div>
+    <div><label for="o_contact">Address, phone or email (optional)</label><input type="text" id="o_contact" value="${esc(sc.address)}" autocomplete="off" oninput="onbSet('school','address',this.value)"></div>
+    <div><label>School logo (optional)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${sc.logo?`<img src="${esc(sc.logo)}" alt="Your logo" style="height:46px">`:''}<button class="btn sm ghost" type="button" onclick="document.getElementById('o_logo').click()">${sc.logo?'Change logo':'Add logo'}</button>${sc.logo?'<button class="btn sm bad" type="button" onclick="onbSet(\'school\',\'logo\',\'\');onbRender()">Remove</button>':''}<input id="o_logo" type="file" accept="image/*" style="display:none" onchange="onbLogo(this)"></div></div></div>`;
+  if(s===2) return `<h2 id="onbH" tabindex="-1">About you</h2><p class="sub">Your name is filled into each plan, and your usual class is chosen first when you start a plan.</p>
+    <div class="fgrid"><div><label for="o_tname">Teacher's name</label><input type="text" id="o_tname" value="${esc(tc.name)}" autocomplete="off" oninput="onbSet('teacher','name',this.value)"></div></div>
+    <label style="display:block;font-size:12px;color:var(--mute);font-weight:600;margin:14px 0 6px">The class you teach most</label>
+    <div class="class-choose">${['P1','P2','P3','P4','P5','P6'].map(c=>`<button type="button" class="class-pick ${df.classId===c?'on':''}" onclick="onbClass('${c}')"><b>${c}</b><span>${classMeta(c).name}</span></button>`).join('')}</div>`;
+  if(s===3){ const cv=onbCoverage();
+    return `<h2 id="onbH" tabindex="-1">How your plans are built</h2><p class="sub">Choose a class, subject, unit and lesson. The plan is filled in the official REB template from the REB 2026-2027 scheme of work, then you edit it, print it or save it as a PDF.</p>
+    <div class="msg ok"><b>${cv.nS}</b> schemes of work and <b>${cv.nL.toLocaleString('en')}</b> lessons are built in, for Primary 1 to 6. Plans are written in English, French or Kinyarwanda to match the subject.</div>
+    <ul style="margin:8px 0 0 18px;font-size:14px;color:var(--ink)"><li>Where a scheme lesson matches a pupil-book lesson, the plan cites its book pages and practice items, and the teacher's guide pages.</li><li>Every plan is a <b>starting draft</b>. Read it, adjust the activities to your class, and sign it before use.</li><li>Your plans stay on this computer. Use <b>Save backup</b> to move them to another computer.</li></ul>`; }
+  return `<h2 id="onbH" tabindex="-1">You are ready${sc.name?', '+esc(sc.name):''}</h2><p class="sub">Your details are saved. Make your first lesson plan now, or look around first.</p>
+    <ol class="next"><li><span class="n">1</span><div><b>Pick the lesson</b><div class="sub-note">Class, subject, unit, lesson. Use the official scheme of work when it is offered.</div></div></li>
+    <li><span class="n">2</span><div><b>Press Auto-fill</b><div class="sub-note">Objectives, activities, assessment, differentiation and references are drafted for you.</div></div></li>
+    <li><span class="n">3</span><div><b>Edit, save and print</b><div class="sub-note">Save to your library, or print and save as a PDF. "Plans for the whole unit" drafts every lesson at once.</div></div></li></ol>`;
+}
+function onbRender(){
+  const o=$('onb'), s=ONB.step;
+  if(s===0){
+    o.innerHTML=`<div class="onb-wrap"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="onb-main"><div class="hero"><div class="tile">${LOGO_FULL}</div><span class="eyebrow">EduSmart Consult &middot; Kigali, Rwanda</span>
+      <h1 id="onbH" tabindex="-1">Welcome to <span>EduSmart Lesson Plan Generator</span></h1>
+      <p class="lead">Draft REB-format lesson plans for Primary 1 to 6 in minutes, from the 2026-2027 REB schemes of work and pupil books. Print them or save them as PDF. Works offline.</p>
+      <div class="how"><div><b><span class="n">1</span>Set up</b><span class="d">Your school and your usual class. About a minute.</span></div>
+        <div><b><span class="n">2</span>Pick a lesson</b><span class="d">Class, subject, unit and lesson from the REB scheme.</span></div>
+        <div><b><span class="n">3</span>Auto-fill and print</b><span class="d">Edit the draft, save it to your library, print or save as PDF.</span></div></div>
+      <div class="onb-cta"><button class="ob go" type="button" onclick="onbGo(1)">Set up my school &rarr;</button><button class="ob" type="button" onclick="onbSample()">See a sample plan</button><button class="ob" type="button" onclick="onbBackup()">Open a backup</button></div>
+      <p class="onb-note">Everything stays on this computer. <button type="button" class="ob" style="border:0;padding:2px 6px;font-weight:600;text-decoration:underline;font-size:13px" onclick="onbClose()">Skip for now</button></p></div></div>
+      <div class="onb-foot">EduSmart Lesson Plan Generator &middot; by EduSmart Consult LTD &middot; www.edusmartconsult.com</div>
+      <div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div></div>`;
+  } else {
+    const last=s===4;
+    o.innerHTML=`<div class="onb-wrap"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="onb-main"><div class="wz"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div><div class="wz-in">${onbStepper()}<div aria-live="polite">${onbBody()}</div></div>
+      <div class="wz-bar"><button class="btn ghost" type="button" onclick="onbGo(${s-1})">&larr; Back</button><span class="sp"></span>${last?'':'<button class="skip" type="button" onclick="onbClose()">Skip setup</button>'}
+      ${last?`<button class="btn ghost" type="button" onclick="onbFinish()">Open my library</button><button class="btn" type="button" onclick="onbFinish('new')">Make my first lesson plan &rarr;</button>`:`<button class="btn" type="button" onclick="onbGo(${s+1})">Continue &rarr;</button>`}</div></div></div>
+      <div class="onb-foot">Step ${s} of 4 &middot; your answers are saved as you go</div></div>`;
+  }
+  const h=$('onbH'); if(h&&!o.contains(document.activeElement)) h.focus({preventScroll:true});
+}
+document.addEventListener('keydown',e=>{ const o=$('onb'); if(e.key==='Escape'&&o&&o.classList.contains('on')&&ONB.step===0) onbClose(); });
+
+/* ===== start ===== */
+renderLessonPlans();
+if(onbNeeded()) onbOpen(0);
+</script>
+</body>
+</html>

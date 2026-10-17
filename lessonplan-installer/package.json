@@ -1,0 +1,51 @@
+{
+  "name": "edusmart-lesson-plan-generator",
+  "productName": "EduSmart Lesson Plan Generator",
+  "version": "1.0.0",
+  "description": "Offline REB lesson plan generator for Primary 1 to 6, built from the 2026-2027 REB schemes of work and pupil books.",
+  "author": "EduSmart Consult",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.edusmartconsult.lessonplangenerator",
+    "productName": "EduSmart Lesson Plan Generator",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "app/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "EduSmart Lesson Plan Generator",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "EduSmart-Lesson-Plan-Generator-Setup-${version}.${ext}"
+    }
+  }
+}
