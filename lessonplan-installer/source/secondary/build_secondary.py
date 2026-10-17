@@ -63,7 +63,7 @@ def clean_title(t):
     t = re.sub(r'\s*[-–]\s*$', '', re.sub(r'\s+', ' ', t)).strip(' -•–;')
     return t
 
-def split_title(t, content):
+def split_title_old(t, content):
     """keep lesson titles short: long rows put the detail into the content field"""
     if len(t) <= 90: return t, content
     m = re.search(r'\s[-–]\s|:\s|;\s|\.\s(?=[A-Z])', t[20:])
@@ -73,8 +73,33 @@ def split_title(t, content):
     rest = t[cut:].strip(' -:;,.')
     return head, (content + '; ' + rest if rest and rest not in (content or '') else content)
 
+def split_title(t, content):
+    """lesson titles stay short and whole-word; the detail goes to the content field"""
+    t = re.sub(r'\s+', ' ', t).strip()
+    if len(t) <= 70: return t, content
+    m = re.search(r':\s', t)
+    if m and 6 <= m.start() <= 70: head, rest = t[:m.start()], t[m.end():]
+    else:
+        m = re.search(r'\s[-–]\s|;\s', t)
+        if m and 12 <= m.start() <= 70: head, rest = t[:m.start()], t[m.end():]
+        else: head = t[:70].rsplit(' ', 1)[0]; rest = t[len(head):]
+    head = head.strip(' -:;,.'); rest = rest.strip(' -:;,.')
+    return head, (content + '; ' + rest if rest and rest not in (content or '') and overlap(rest, content or '') < 0.6 else content)
+
+def bal(t):
+    t = (t or '').strip(' .')
+    return t + ')' * max(0, t.count('(') - t.count(')'))
+
+def flat(items):
+    out = []
+    for i in items or []:
+        for p in re.split(r'\s*[–-]{2,}\s*', i):
+            p = p.strip(' ;.-–')
+            if len(p) > 2: out.append(p)
+    return out
+
 def clean_aids(a):
-    a = re.split(r'\s(?=Topic Area\b|Sub-?topic Area\b|Unit\s*\d+\s*[:.]|Senior\s*\d|Experimental version|Learning Objectives)', a or '')[0]
+    a = re.split(r'\s(?=Topic Area\b|TOPIC AREA|SUB-TOPIC|Sub-?topic Area\b|Unit\s*\d+\s*[:.]|Senior\s*\d|Experimental version|Learning Objectives|Teaching and learning materials|[A-Z][A-Za-z ,&]+ Syllabus\b)', a or '')[0]
     return re.sub(r'\s+', ' ', a).strip(' .;')
 
 def sentence(items):
@@ -134,8 +159,8 @@ def build(cd_path, syl_path, out_dir):
                 su = mp.get(i)
                 if not su:
                     report['unitsWithoutSyllabus'] += 1; report['noSyllabusBySubject'][sid] = report['noSyllabusBySubject'].get(sid, 0) + 1
-                K = (su or {}).get('knowledge', []); S = (su or {}).get('skills', []); A = (su or {}).get('attitudes', [])
-                C = (su or {}).get('content', []); ACT = (su or {}).get('activities', [])
+                K = flat((su or {}).get('knowledge', [])); S = flat((su or {}).get('skills', [])); A = flat((su or {}).get('attitudes', []))
+                C = flat((su or {}).get('content', [])); ACT = flat((su or {}).get('activities', []))
                 lessons = []
                 for li, l in enumerate(cu['lessons']):
                     text = l['title'] + ' ' + (l.get('points') or '')
@@ -149,18 +174,20 @@ def build(cd_path, syl_path, out_dir):
                                     'activities': sentence(best(ACT, text, 1, li))})
                 tot = sum(int(x['periods'] or 0) for x in lessons)
                 if cu.get('periods') and (tot < 0.7 * cu['periods'] or tot > 1.3 * cu['periods']): report['periodMismatch'] += 1
-                units.append({'no': str(len(units) + 1), 'title': (re.sub(r'^\s*Unit\s*\d+\s*[:.\-]?\s*', '', cu['title'] or '', flags=re.I) or (su or {}).get('title', '') or ('Unit %d' % (len(units) + 1))).strip(' .'),
+                units.append({'no': str(len(units) + 1), 'title': bal(re.sub(r'^\s*Unit\s*\d+\s*[:.\-]?\s*', '', cu['title'] or '', flags=re.I) or (su or {}).get('title', '') or ('Unit %d' % (len(units) + 1))).strip(' .'),
                               'periods': str(cu.get('periods') or (su or {}).get('lessons') or tot or ''), 'term': cu.get('term'), 'keyComp': cu.get('kuc') or (su or {}).get('kuc', ''), 'aids': clean_aids((su or {}).get('materials', '')), 'assessment': clean_aids((su or {}).get('assessment', '')), 'lessons': lessons})
         else:
             report['fromSyllabusOnly'].append('%s-%s' % (c, sid))
             for su in syl_units:
-                C = su.get('content', []) or [su['title']]
+                C = flat(su.get('content', [])) or [su['title']]
+                SK, SS, SA, SACT = flat(su.get('knowledge', [])), flat(su.get('skills', [])), flat(su.get('attitudes', [])), flat(su.get('activities', []))
                 n = su.get('lessons') or len(C)
                 per = max(1, round(n / max(1, len(C))))
                 lessons = []
                 for li, item in enumerate(C):
-                    lessons.append({'title': clean_title(item)[:140], 'periods': str(per), 'week': '', 'objectives': sentence(best(su.get('knowledge', []), item, 2, li) + best(su.get('skills', []), item, 1, li) + best(su.get('attitudes', []), item, 1, li)) or clean_title(item),
-                                    'content': item, 'activities': sentence(best(su.get('activities', []), item, 1, li))})
+                    ttl, cont = split_title(clean_title(item), item)
+                    lessons.append({'title': ttl, 'periods': str(per), 'week': '', 'objectives': sentence(best(SK, item, 2, li) + best(SS, item, 1, li) + best(SA, item, 1, li)) or clean_title(item),
+                                    'content': cont, 'activities': sentence(best(SACT, item, 1, li))})
                 units.append({'no': str(len(units) + 1), 'title': su['title'], 'periods': str(su.get('lessons') or ''), 'term': None, 'keyComp': su.get('kuc', ''), 'aids': su.get('materials', ''), 'assessment': su.get('assessment', ''), 'lessons': lessons})
         if not units: continue
         report['subjects'] += 1; report['units'] += len(units); report['lessons'] += sum(len(u['lessons']) for u in units)

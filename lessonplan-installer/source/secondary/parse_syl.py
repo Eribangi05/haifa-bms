@@ -83,8 +83,9 @@ def parse(path):
             if m: u['links'] = clean(m.group(1)); cur['field'] = 'links'; continue
             m = re.match(r'^\s*(?:Assessment\s*criteria|Vigezo\s*vya\s*Tathmini|Crit[èe]res\s*d.[ée]valuation|Ibisabwa\s*mu\s*isuzuma)\s*:?\s*(.*)$', l, re.I)
             if m: u['assessment'] = clean(m.group(1)); cur['field'] = 'assessment'; continue
-            m = re.match(r'^\s*(?:Materials?|Vifaa\s*vya\s*Ufundishaji[^:]*|Mat[ée]riel[^:]*|Ibikoresho[^:]*)\s*:?\s*(.*)$', l, re.I)
+            m = re.match(r'^\s*(?:Teaching\s*and\s*learning\s*materials?|Learning\s*materials?|Materials?|Vifaa\s*vya\s*Ufundishaji[^:]*|Mat[ée]riel[^:]*|Ibikoresho[^:]*)\s*:?\s*(.*)$', l, re.I)
             if m and len(l) > 10: u['materials'] = clean(m.group(1)); cur['field'] = 'materials'; continue
+            if cur['field'] in ('links', 'assessment', 'materials') and re.match(r'^\s*(Topic Area|Sub-?topic Area|TOPIC AREA|SUB-TOPIC|Unit\s*\d+\s*:|Senior\s*\w+\s*$|Experimental|.*Syllabus\b.*$)', l): cur['field'] = None
             if cur['field'] in ('links', 'assessment', 'materials') and l.strip() and not l.startswith('Experimental') and len(l) > 3 and not re.match(r'^\s*(\d+\s*$|Senior|.*Syllabus for)', l):
                 u[cur['field']] = clean(u[cur['field']] + ' ' + l)
         # the 5-column tables (objectives K/S/A, content, activities)

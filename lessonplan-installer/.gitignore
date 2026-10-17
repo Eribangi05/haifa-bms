@@ -1,3 +1,5 @@
 node_modules/
 dist/
 source/data.json
+source/secondary/secondary-data.js
+source/secondary/report.json

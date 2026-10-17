@@ -125,7 +125,7 @@ function renderLessonPlans(){
     <div class="section-head"><h2>Your lesson plans</h2><span class="sub-note">${used.length} saved</span><span class="line"></span></div>
     <div class="card" style="padding:12px 14px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <input class="txt" style="max-width:240px" type="search" placeholder="Search title, unit, objective" value="${esc(PLUS_LIB.q)}" oninput="plusLibSet('q',this.value)" aria-label="Search lesson plans">
-      <select class="txt" style="max-width:130px" onchange="plusLibSet('cls',this.value)" aria-label="Class">${plusOpt('','All classes',PLUS_LIB.cls)}${['P1','P2','P3','P4','P5','P6'].map(c=>plusOpt(c,classMeta(c).name,PLUS_LIB.cls)).join('')}</select>
+      <select class="txt" style="max-width:130px" onchange="plusLibSet('cls',this.value)" aria-label="Class">${plusOpt('','All classes',PLUS_LIB.cls)}${plusClassIds().map(c=>plusOpt(c,classMeta(c).name,PLUS_LIB.cls)).join('')}</select>
       <select class="txt" style="max-width:170px" onchange="plusLibSet('subj',this.value)" aria-label="Subject">${plusOpt('','All subjects',PLUS_LIB.subj)}${subjects.map(s=>plusOpt(s,metaFor(s).name,PLUS_LIB.subj)).join('')}</select>
       <select class="txt" style="max-width:120px" onchange="plusLibSet('term',this.value)" aria-label="Term">${plusOpt('','All terms',PLUS_LIB.term)}${LP_TERMS.map(t=>plusOpt(t,t,PLUS_LIB.term)).join('')}</select>
       <label class="lp-chk"><input type="checkbox" ${PLUS_LIB.fav?'checked':''} onchange="plusLibSet('fav',this.checked)"> Favourites</label>

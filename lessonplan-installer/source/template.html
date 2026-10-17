@@ -159,7 +159,7 @@ const SUBJECT_META={
   sst:{name:'Social and Religious Studies',color:'#1098AD',tint:'#e0f4f7'},set:{name:'Science and Elementary Technology',color:'#2F9E44',tint:'#e6f6ea'},
   arts:{name:'Creative Arts',color:'#E64980',tint:'#fdeaf1'},pes:{name:'Physical Education and Sports',color:'#F08C00',tint:'#fdf0dc'}};
 function metaFor(id){ const b=String(id||'').replace(/^tg_/,''); return SUBJECT_META[b]||{name:id,color:'#3B5BDB',tint:'#e6eafc'}; }
-const CLASS_META={};['P1','P2','P3','P4','P5','P6'].forEach(c=>CLASS_META[c]={id:c,name:'Primary '+c[1],short:c});
+const CLASS_META={};['P1','P2','P3','P4','P5','P6'].forEach(c=>CLASS_META[c]={id:c,name:'Primary '+c[1],short:c});   /* S1-S6 are added by the secondary layer */
 function classMeta(id){ return CLASS_META[id]||CLASS_META.P4; }
 const ICONS={
  back:'<path d="M15 6l-6 6 6 6"/>',check:'<path d="M5 12l5 5 9-10"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
@@ -193,7 +193,7 @@ const NAMES_FALLBACK={pes:'Physical Education and Sports',arts:'Creative Arts'};
 async function ensureCatalog(c){ return App.catalogCache[c]||{books:[]}; }
 function pupilBooksOf(c){ const cat=App.catalogCache[c]; return cat?(cat.books||[]).filter(b=>!b.id.startsWith('tg_')):[]; }
 function scopeAllowsSubject(){ return true; }
-function scopeClasses(){ return ['P1','P2','P3','P4','P5','P6']; }
+function scopeClasses(){ return plusClassIds(); }
 function isTeacher(){ return true; }
 function activeStaff(){ return Accounts.activeStaff(); }
 function teacherStudents(){ return []; }
@@ -251,6 +251,7 @@ async function onbSample(){
 function onbCoverage(){
   const rows=[]; let nS=0,nL=0;
   ['P1','P2','P3','P4','P5','P6'].forEach(c=>{ const subs=pupilBooksOf(c).map(b=>b.id); const have=Object.keys(DATA.schemes).filter(k=>k.startsWith(c+'-')).map(k=>k.slice(3)); rows.push([c,subs.length,have.length]); have.forEach(k=>{ nS++; (DATA.schemes[c+'-'+k].units||[]).forEach(u=>nL+=(u.lessons||[]).length); }); });
+  if(typeof SEC_DATA!=='undefined') SEC_CLASSES.forEach(c=>{ const cl=SEC_DATA.classes[c]; if(!cl) return; const ids=Object.keys(cl.subjects); let l=0; ids.forEach(id=>cl.subjects[id].scheme.units.forEach(u=>l+=u.lessons.length)); rows.push([c,ids.length,ids.length]); nS+=ids.length; nL+=l; });
   return {rows,nS,nL};
 }
 function onbStepper(){ return `<ol class="stepper" aria-label="Setup progress">${ONB_LABELS.map((l,i)=>`<li class="${i<ONB.step-1?'done':i===ONB.step-1?'cur':''}" ${i===ONB.step-1?'aria-current="step"':''}>${i<ONB.step-1?'&#10003; ':''}${l}</li>`).join('')}</ol>`; }
@@ -264,7 +265,7 @@ function onbBody(){
   if(s===2) return `<h2 id="onbH" tabindex="-1">About you</h2><p class="sub">Your name is filled into each plan, and your usual class is chosen first when you start a plan.</p>
     <div class="fgrid"><div><label for="o_tname">Teacher's name</label><input type="text" id="o_tname" value="${esc(tc.name)}" autocomplete="off" oninput="onbSet('teacher','name',this.value)"></div></div>
     <label style="display:block;font-size:12px;color:var(--mute);font-weight:600;margin:14px 0 6px">The class you teach most</label>
-    <div class="class-choose">${['P1','P2','P3','P4','P5','P6'].map(c=>`<button type="button" class="class-pick ${df.classId===c?'on':''}" onclick="onbClass('${c}')"><b>${c}</b><span>${classMeta(c).name}</span></button>`).join('')}</div>
+    <div class="class-choose">${plusClassIds().map(c=>`<button type="button" class="class-pick ${df.classId===c?'on':''}" onclick="onbClass('${c}')"><b>${c}</b><span>${classMeta(c).name}</span></button>`).join('')}</div>
     <label style="display:block;font-size:12px;color:var(--mute);font-weight:600;margin:16px 0 6px">ICT you usually have in class (used as the default in new plans; REB scores ICT use)</label>
     <div class="lp-checks">${Object.keys(PLUS_ICT).map(k=>`<label class="lp-chk"><input type="checkbox" ${(df.ictTools||{})[k]?'checked':''} onchange="onbIct('${k}')"> ${esc(PLUS_ICT[k].name)}</label>`).join('')}</div>`;
   if(s===3){ const cv=onbCoverage();
