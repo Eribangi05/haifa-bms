@@ -24,13 +24,16 @@ function lpSchemeLesson(){""")
 style="""/* the app's colour variables, under the names the Lesson Studio code uses */
 (function(){ const s=document.createElement('style'); s.textContent=':root{--soft:var(--surface-2,#eef3f9);--mute:var(--ink-3,#51607d);--tab-on:var(--reb-blue,#0b4da2);--card:var(--surface,#fff);--ok:#2f9e44}'; document.head.appendChild(s); })();
 """
-plus=''.join(open(os.path.join(HERE,f),encoding='utf-8').read() for f in ['plus1.js','plus2.js','plus3.js','plus4.js','plus5.js','plus6.js'])
+plus=''.join(open(os.path.join(HERE,f),encoding='utf-8').read() for f in ['plus1.js','plus2.js','plus3.js','plus4.js','plus5.js','plus6.js','plus7.js'])
 open(os.path.join(R,'lessonplan-plus.js'),'w',encoding='utf-8').write(style+plus)
+SEC=os.path.join(HERE,'secondary','secondary-data.js'); has_sec=os.path.exists(SEC)
+if has_sec: open(os.path.join(R,'lessonplan-secondary.js'),'w',encoding='utf-8').write(open(SEC,encoding='utf-8').read())
 for f in ('index.html','dev.html','index-android.html'):
     fp=os.path.join(R,f)
     if os.path.exists(fp):
         h=open(fp,encoding='utf-8').read()
-        if 'lessonplan-plus.js' not in h:
-            tag='<script src="lessonplan.js"></script>'; assert h.count(tag)==1,(f,h.count(tag))
-            h=h.replace(tag,tag+'\n<script src="lessonplan-plus.js"></script>'); open(fp,'w',encoding='utf-8').write(h)
+        tag='<script src="lessonplan.js"></script>'; assert h.count(tag)==1,(f,h.count(tag))
+        want=tag+('\n<script src="lessonplan-secondary.js"></script>' if has_sec else '')+'\n<script src="lessonplan-plus.js"></script>'
+        h=h.replace(tag+'\n<script src="lessonplan-secondary.js"></script>\n<script src="lessonplan-plus.js"></script>',tag).replace(tag+'\n<script src="lessonplan-plus.js"></script>',tag).replace(tag,want)
+        open(fp,'w',encoding='utf-8').write(h)
 print('ported',R)
