@@ -22,3 +22,6 @@ Replace `app/school-timetable.html` with the newest build, raise `version` in `p
 - Installer: Rwanda-colour welcome and finish pages (flag-proportion bands, EduSmart mark), choose-folder page, desktop and Start-menu shortcuts, launches the app when finished.
 - First launch: a full-screen welcome (Set up my school / Try the example school / Open a backup), then a 7-step setup guide: School, Levels, School day, Classes, Teachers, Rooms, Finish. Reopen it any time with the **Setup guide** button.
 - Installer images are generated from the brand mark (`build/installerSidebar.bmp`, `installerHeader.bmp`); replace them to rebrand.
+
+## Logo
+The app, installer pages and icon use the supplied EduSmart School Timetable logo (`build/logo-full.png` and `build/logo-emblem.png`; the icon is `build/icon.ico`). To change it, replace those files, regenerate the icon and installer images, and rebuild.
