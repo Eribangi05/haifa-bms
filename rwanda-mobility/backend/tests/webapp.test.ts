@@ -26,3 +26,9 @@ test('web app: served at the root as an installable PWA without shadowing the AP
   assert.match(nope.headers['content-type'] as string, /json/);
   assert.equal((await t.app.inject({ method: 'GET', url: '/../package.json' })).statusCode >= 400, true, 'no path traversal');
 });
+
+test('web app: the browser may use location and camera on its own origin only', async () => {
+  const r = await t.app.inject({ method: 'GET', url: '/' });
+  assert.match(r.headers['permissions-policy'] as string, /geolocation=\(self\)/);
+  assert.doesNotMatch(r.headers['permissions-policy'] as string, /microphone=\(self/);
+});

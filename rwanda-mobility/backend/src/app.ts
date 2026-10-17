@@ -102,7 +102,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
       reply.header('content-security-policy', "default-src 'none'; frame-ancestors 'none'");   // API responses are data, never documents
       reply.header('cross-origin-resource-policy', 'cross-origin');
     }
-    reply.header('permissions-policy', 'geolocation=(), camera=(), microphone=()');
+    reply.header('permissions-policy', 'geolocation=(self), camera=(self), microphone=()');   // the web app (served at /) needs the rider's position and the QR camera on its own origin only
   });
 
   const langOf = (req: { headers: Record<string, any> }) => reqLang(req.headers['accept-language']);
