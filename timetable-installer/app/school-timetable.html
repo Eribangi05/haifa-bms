@@ -91,6 +91,61 @@ table.t th{font-size:12px;color:var(--mute)}
 .sheet tr.sp td{height:20px;background:#eee;font-size:11px}
 @media print{body{background:#fff;color:#000}header,nav,main,#modal,#toast,footer.foot,body>.flagbar{display:none!important}#printArea{display:block}@page{size:A4 landscape;margin:8mm}}
 html.embed body>.flagbar,html.embed footer.foot{display:none}
+#toast{z-index:60}
+#onb{position:fixed;inset:0;z-index:40;display:none;overflow:auto;color:#fff;background:radial-gradient(1100px 560px at 15% -10%,#0b6a9e 0,#053857 58%,#032a42 100%)}
+#onb.on{display:block}
+.onb-flag{display:flex;height:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.onb-flag i{display:block}.onb-flag i:nth-child(1){flex:2;background:#00A1DE}.onb-flag i:nth-child(2){flex:1;background:#FAD201}.onb-flag i:nth-child(3){flex:1;background:#20603D}
+.onb-wrap{min-height:100%;display:flex;flex-direction:column}
+.onb-main{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 16px}
+.hero{max-width:900px;width:100%;text-align:center}
+.hero .tile{width:100px;height:100px;margin:0 auto 18px;background:#fff;border-radius:26px;padding:14px;box-shadow:0 12px 34px rgba(0,0,0,.38)}
+.hero .tile svg{width:100%;height:100%;display:block}
+.hero .eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#FAD201;margin-bottom:8px}
+.hero h1{text-wrap:balance;font-size:clamp(28px,5.2vw,46px);line-height:1.08;margin:0 0 12px;letter-spacing:-.6px}.hero h1 span{color:#FAD201}
+.hero p.lead{font-size:clamp(16px,2.2vw,19px);max-width:660px;margin:0 auto 24px;color:#d9ebf6}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px;text-align:left}
+.how div{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 16px}
+.how b{display:flex;align-items:center;gap:10px;font-size:16px;margin-bottom:4px}
+.how .n{flex:none;width:28px;height:28px;border-radius:50%;background:#FAD201;color:#053857;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.how span.d{color:#cfe6f3;font-size:14px}
+.onb-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ob{font:inherit;font-weight:700;border-radius:10px;padding:12px 22px;cursor:pointer;border:2px solid rgba(255,255,255,.6);background:transparent;color:#fff}
+.ob.go{background:#FAD201;color:#053857;border-color:#FAD201}
+.ob:hover{filter:brightness(1.1)}.ob:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.onb-note{margin-top:14px;color:#b9d6e8;font-size:13px}
+.onb-foot{text-align:center;color:#b9d6e8;font-size:12.5px;padding:12px 16px 16px}
+.wz{width:100%;max-width:780px;background:var(--card);color:var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.42)}
+.wz .onb-flag{height:8px}
+.wz-in{padding:22px 24px 6px}
+.stepper{display:flex;gap:6px;margin:0 0 18px;padding:0;list-style:none}
+.stepper li{flex:1;min-width:0;font-size:11.5px;color:var(--mute);text-align:center;border-top:5px solid var(--line);padding-top:6px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stepper li.done{border-color:var(--ok);color:var(--ok)}.stepper li.cur{border-color:var(--accent);color:var(--ink)}
+.wz h2{margin:0 0 4px;font-size:22px}.wz h2:focus{outline:none}.wz .sub{color:var(--mute);margin:0 0 16px}
+.wz-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px 20px;border-top:1px solid var(--line);margin-top:14px}
+.wz-bar .skip{color:var(--mute);background:none;border:0;font:inherit;cursor:pointer;text-decoration:underline;padding:6px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.fgrid input,.fgrid select{width:100%}
+.lvlgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.lvlc{border:2px solid var(--line);border-radius:12px;padding:12px 12px 12px 14px;cursor:pointer;display:block;position:relative;font-size:14px}
+.lvlc.on{border-color:var(--brand);box-shadow:0 0 0 3px rgba(32,96,61,.18)}
+.lvlc:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.lvlc input{position:absolute;opacity:0;pointer-events:none}
+.lvlc b{display:block;font-size:15px;padding-right:30px}.lvlc .d{display:block;color:var(--mute);margin:2px 0 6px;font-size:13px}
+.lvlc .tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid var(--ok);color:var(--ok)}
+.lvlc .tag.warn{border-color:var(--warn);color:var(--warn)}
+.lvlc .tick{position:absolute;right:10px;top:10px;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
+.lvlc.on .tick{background:var(--brand);border-color:var(--brand)}
+.lbox{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.lbox .row{margin-bottom:6px}
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
+.sumgrid div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
+.sumgrid b{display:block;font-size:26px;color:var(--tab-on)}.sumgrid span{font-size:12.5px;color:var(--mute)}
+.next{list-style:none;margin:0 0 4px;padding:0;display:grid;gap:8px}
+.next li{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.next .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+@media (max-width:560px){.wz-in{padding:18px 16px 4px}.wz-bar{padding:12px 16px 16px}.stepper li{font-size:0}.stepper li.cur{font-size:11.5px;flex:3}}
+@media print{#onb{display:none!important}}
+html.embed #onb,html.embed .noembed{display:none!important}
 </style>
 </head>
 <body>
@@ -98,6 +153,7 @@ html.embed body>.flagbar,html.embed footer.foot{display:none}
 <header>
   <div class="brand"><span class="logo-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x=".75" y=".75" width="62.5" height="62.5" rx="13.5" fill="#ffffff" stroke="#C3D2E3" stroke-width="1.5"/><rect x="8.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="25.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="42.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="8.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="25.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="42.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="8.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="25.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="42.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="8.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><rect x="25.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><rect x="42.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><circle cx="49.00" cy="12.88" r="2.7" fill="#FAD201"/><line x1="52.70" y1="12.88" x2="54.00" y2="12.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="52.20" y1="14.72" x2="53.33" y2="15.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="50.85" y1="16.08" x2="51.50" y2="17.21" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="49.00" y1="16.57" x2="49.00" y2="17.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="47.15" y1="16.08" x2="46.50" y2="17.21" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.80" y1="14.72" x2="44.67" y2="15.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.30" y1="12.88" x2="44.00" y2="12.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.80" y1="11.03" x2="44.67" y2="10.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="47.15" y1="9.67" x2="46.50" y2="8.54" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="49.00" y1="9.18" x2="49.00" y2="7.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="50.85" y1="9.67" x2="51.50" y2="8.54" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="52.20" y1="11.02" x2="53.33" y2="10.37" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/></svg></span><div><div class="wm">EduSmart <span>Timetable</span></div><div class="school" id="hTitle">Every lesson in its place</div></div></div>
   <div class="row">
+    <button class="btn sm noembed" onclick="onbOpen(1)">Setup guide</button>
     <button class="btn sm" onclick="exportJson()">Save backup</button>
     <button class="btn sm" onclick="document.getElementById('imp').click()">Open backup</button>
     <input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importJson(this)">
@@ -106,6 +162,7 @@ html.embed body>.flagbar,html.embed footer.foot{display:none}
 <nav id="tabs"></nav>
 <main id="view"></main>
 <footer class="foot"><div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div><div class="in"><b>EduSmart Timetable</b><span>by EduSmart Consult LTD, Kigali, Rwanda</span><span>&middot;</span><a href="https://www.edusmartconsult.com" style="color:inherit" target="_blank" rel="noopener">www.edusmartconsult.com</a><span class="sp"></span><span>Works offline. Your data stays on this device.</span></div></footer>
+<div id="onb" role="dialog" aria-modal="true" aria-label="Welcome and setup guide"></div>
 <div id="modal"><div class="box" id="modalBox"></div></div>
 <div id="toast"></div>
 <div id="printArea"></div>
@@ -1173,7 +1230,7 @@ function welcomeCard(){
   const steps=[['school','School day','Days, start time, breaks',true],['classes','Levels & classes','Pre-primary to S6',S.classes.length>0],['subjects','Subjects','Names and colours',S.subjects.length>0],['rooms','Rooms & labs','Optional',S.rooms.length>0],['teachers','Teachers','Days off and limits',S.teachers.length>0],['lessons','Lessons','Periods and who teaches',hasL],['timetable','Build','One click',built]];
   return `<div class="card welcome"><div class="row"><span class="wmark">${MARK_SVG}</span><div style="flex:1;min-width:220px"><h2>Welcome to EduSmart Timetable</h2><p class="h" style="margin:0">Plan every period, place every teacher, and print a professional timetable for your school. Follow the steps in order, or open the example school to see it all working.</p></div><button class="btn sm" onclick="S.hideWelcome=true;save();render()">Hide</button></div>
     <div class="steps">${steps.map(([id,tt,d,done],i)=>`<button class="step ${done?'done':''}" onclick="go('${id}')"><span class="n">${done?'&#10003;':i+1}</span><b>${tt}</b><small>${d}</small></button>`).join('')}</div>
-    <div class="row" style="margin-top:12px"><button class="btn pri" onclick="go('timetable');loadExample()">Open the example school</button><span class="h" style="margin:0">It replaces anything you have entered, so use it on a fresh start.</span></div></div>`;
+    <div class="row" style="margin-top:12px"><button class="btn pri" onclick="onbOpen(1)">Open the setup guide</button><button class="btn" onclick="go('timetable');loadExample()">Open the example school</button><span class="h" style="margin:0">It replaces anything you have entered, so use it on a fresh start.</span></div></div>`;
 }
 function vSchool(){
   const c=S.cfg; const sc=schedule(c).map(x=>`<tr><td>${fmt(x.start)}&ndash;${fmt(x.end)}</td><td>${x.type==='period'?'Period '+x.period:esc(x.label)}</td></tr>`).join('');
@@ -1615,7 +1672,7 @@ function importJson(inp){
   r.onload=()=>{ try{ const d=JSON.parse(r.result);
       if(!d||d.app!=='edusmart-school-timetable'||!Array.isArray(d.classes)||!Array.isArray(d.subjects)||!Array.isArray(d.teachers)||!d.cfg||!Array.isArray(d.cfg.days)) throw new Error('bad');
       if(!confirm('Replace everything in this page with the backup file?')) return;
-      S=migrate(Object.assign(fresh(),d)); prune(); REPORT=null; VIEW={mode:'class',id:null}; LESSON_CLASS=null; save(); render(); toast('Backup opened.');
+      S=migrate(Object.assign(fresh(),d)); prune(); REPORT=null; VIEW={mode:'class',id:null}; LESSON_CLASS=null; save(); render(); toast('Backup opened.'); if($('onb').classList.contains('on')) onbClose();
     }catch(e){ toast('That file is not a School Timetable backup.'); } };
   r.readAsText(f);
 }
@@ -1802,8 +1859,108 @@ function loadExample(){
 }
 function addMissingSubjects(){ SUBJECT_LIB.forEach(s=>{ if(!S.subjects.some(x=>x.id===s.id)) S.subjects.push(Object.assign({},s)); }); }
 
+/* ---------- welcome screen and setup guide (first run, and any time from "Setup guide") ---------- */
+const ONB={step:0};
+const ONB_LABELS=['School','Levels','School day','Classes','Teachers','Rooms','Finish'];
+function onbNeeded(){ return !S.onboarded && !S.school && !S.teachers.length && !Object.keys(S.timetable||{}).length; }
+function onbInert(on){ ['header','nav','main','footer.foot'].forEach(sel=>{ const el=document.querySelector(sel); if(el){ if(on) el.setAttribute('inert',''); else el.removeAttribute('inert'); } }); }
+function onbOpen(step){ ONB.step=step||0; $('onb').classList.add('on'); onbInert(true); onbRender(); }
+function onbClose(){ S.onboarded=true; save(); $('onb').classList.remove('on'); onbInert(false); render(); window.scrollTo(0,0); }
+function onbGo(n){ ONB.step=Math.max(0,Math.min(7,n)); onbRender(); $('onb').scrollTop=0; }
+function onbFinish(tab){ onbClose(); if(tab) go(tab); }
+function onbExample(){ onbClose(); go('timetable'); loadExample(); }
+function onbBackup(){ $('imp').click(); }
+function onbStreamsOf(levelId){ const g=lvl(levelId).grades[0]; if(!g) return 1; const n=S.classes.filter(c=>c.level===levelId&&(c.name===g||c.name.startsWith(g+' '))).length; return Math.max(1,n); }
+function onbStreams(levelId,n){
+  const L=lvl(levelId), letters='ABCDEF'.split('').slice(0,n);
+  L.grades.forEach(g=>{
+    const desired=n===1?[g]:letters.map(l=>g+' '+l);
+    const mine=()=>S.classes.filter(c=>c.level===levelId&&(c.name===g||c.name.startsWith(g+' ')));
+    const first=S.classes.find(c=>c.level===levelId&&c.name===g);
+    if(first&&n>1) first.name=desired[0];                      /* keep its lessons: "Primary 4" becomes "Primary 4 A" */
+    const only=S.classes.find(c=>c.level===levelId&&c.name===g+' A');
+    if(only&&n===1&&mine().length===1) only.name=g;
+    desired.forEach(nm=>{ if(!S.classes.some(c=>c.level===levelId&&c.name===nm)) addClassRaw(nm,levelId,''); });
+    mine().filter(c=>!desired.includes(c.name)&&!Object.keys(assignOf(c.id)).length).forEach(c=>dropClass(c.id));
+  });
+  sortClasses(); prune(); save(); onbRender();
+}
+function onbLogo(inp){ const f=inp.files[0]; inp.value=''; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const img=new Image(); img.onload=()=>{ const h=Math.min(160,img.height), w=Math.max(1,Math.round(img.width*h/img.height)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); S.logo=cv.toDataURL('image/png'); save(); onbRender(); }; img.onerror=()=>toast('Could not read that image.'); img.src=r.result; };
+  r.readAsDataURL(f); }
+function onbAddTeachers(){
+  const box=$('o_names'); if(!box) return; const names=box.value.split(/[\n;\t]+/).map(x=>x.trim()).filter(Boolean);
+  const have=new Set(S.teachers.map(t=>t.name.toLowerCase())); let n=0;
+  names.forEach(nm=>{ if(have.has(nm.toLowerCase())) return; have.add(nm.toLowerCase()); S.teachers.push({id:uid('t'),name:nm,offDays:[],offSlots:[],maxPerDay:0,pref:''}); n++; });
+  box.value=''; save(); onbRender(); toast(n?(n+' teacher'+(n>1?'s':'')+' added.'):'Those names are already on the list.');
+}
+function onbStepper(){ return `<ol class="stepper" aria-label="Setup progress">${ONB_LABELS.map((l,i)=>`<li class="${i<ONB.step-1?'done':i===ONB.step-1?'cur':''}" ${i===ONB.step-1?'aria-current="step"':''}>${i<ONB.step-1?'&#10003; ':''}${l}</li>`).join('')}</ol>`; }
+function onbBody(){
+  const s=ONB.step, c=S.cfg;
+  if(s===1) return `<h2 id="onbH" tabindex="-1">Tell us about your school</h2><p class="sub">Your name and logo are printed at the top of every timetable.</p>
+    <div class="fgrid"><div><label for="o_name">School name</label><input id="o_name" value="${esc(S.school)}" placeholder="e.g. Kigali Model School" autocomplete="off" oninput="S.school=this.value;save()"></div>
+    <div><label for="o_term">Term or year</label><input id="o_term" value="${esc(S.term)}" placeholder="e.g. Term 2, 2026" autocomplete="off" oninput="S.term=this.value;save()"></div>
+    <div><label for="o_head">Head teacher's name</label><input id="o_head" value="${esc(S.head)}" autocomplete="off" oninput="S.head=this.value;save()"></div>
+    <div><label>School logo (optional)</label><div class="row">${S.logo?`<img src="${S.logo}" alt="Your logo" style="height:48px">`:''}<button class="btn sm" type="button" onclick="document.getElementById('o_logo').click()">${S.logo?'Change logo':'Add logo'}</button>${S.logo?'<button class="btn sm bad" type="button" onclick="S.logo=\'\';save();onbRender()">Remove</button>':''}<input id="o_logo" type="file" accept="image/*" style="display:none" onchange="onbLogo(this)"></div></div></div>`;
+  if(s===2) return `<h2 id="onbH" tabindex="-1">Which levels do you teach?</h2><p class="sub">Choose every level at your school. Each starts with its usual classes and REB's weekly hours, which you can change later.</p>
+    <div class="lvlgrid">${LEVELS.map(l=>{ const on=lvlState(l.id).on, sr=SRC[l.src]; return `<label class="lvlc ${on?'on':''}"><input type="checkbox" ${on?'checked':''} onchange="toggleLevel('${l.id}',this.checked);onbRender()"><span class="tick" aria-hidden="true">${on?'&#10003;':''}</span><b>${esc(l.name)}</b><span class="d">${l.grades.length?esc(l.grades.join(', ')):'Pathways, added later'}</span><span class="tag ${sr.ok?'':'warn'}">${sr.ok?'Official REB hours':'Confirm hours with REB'}</span></label>`; }).join('')}</div>
+    ${LEVELS.some(l=>lvlState(l.id).on)?'':'<div class="msg warn" role="alert">Choose at least one level to continue.</div>'}`;
+  if(s===3) return `<h2 id="onbH" tabindex="-1">Your school day</h2><p class="sub">We start from the standard Rwanda school day. Change it only if your school runs differently.</p>
+    <div class="msg ok">First bell ${esc(c.dayStart)} &middot; ${c.periodsPerDay} periods of ${c.periodMins} minutes &middot; short breaks after ${c.breaksAfter.length?c.breaksAfter.join(' and '):'none'} &middot; lunch ${c.lunchAfterPeriod?'after period '+c.lunchAfterPeriod:'none'}</div>
+    <label>School days</label><div class="chips">${ALL_DAYS.map(d=>`<label class="chip" style="margin:0"><input type="checkbox" ${c.days.includes(d)?'checked':''} onchange="toggleDay('${d}',this.checked);onbRender()"> ${DAY_LABELS[d]}</label>`).join('')}</div>
+    <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:600">Change the shape of the day</summary><div class="fgrid" style="margin-top:10px">
+      <div><label for="o_dayStart">First bell</label><input id="o_dayStart" type="time" value="${esc(c.dayStart)}" onchange="setCfg('dayStart',this.value);onbRender()"></div>
+      <div><label for="o_ppd">Periods per day</label><input id="o_ppd" type="number" min="1" max="14" value="${c.periodsPerDay}" onchange="setCfg('periodsPerDay',+this.value);onbRender()"></div>
+      <div><label for="o_pm">Minutes per period</label><input id="o_pm" type="number" min="15" max="120" value="${c.periodMins}" onchange="setCfg('periodMins',+this.value);onbRender()"></div>
+      <div><label for="o_lunch">Lunch after period (0 = none)</label><input id="o_lunch" type="number" min="0" max="14" value="${c.lunchAfterPeriod}" onchange="setCfg('lunchAfterPeriod',+this.value);onbRender()"></div></div>
+      <div class="row" style="margin-top:10px"><button class="btn sm" type="button" onclick="resetDay();onbRender()">Back to the standard Rwanda day</button></div></details>`;
+  if(s===4){ const act=LEVELS.filter(l=>lvlState(l.id).on);
+    return `<h2 id="onbH" tabindex="-1">Your classes</h2><p class="sub">How many classes (streams) does each grade have? Two classes in a grade become A and B. You can rename them later.</p>
+    ${act.map(l=>{ const cs=S.classes.filter(x=>x.level===l.id); return `<div class="lbox"><div class="row"><b>${esc(l.name)}</b><span class="sp"></span>${l.grades.length?`<label style="margin:0" for="st_${l.id}">Classes per grade</label><select id="st_${l.id}" style="width:auto" onchange="onbStreams('${l.id}',+this.value)">${[1,2,3,4,5,6].map(n=>`<option ${n===onbStreamsOf(l.id)?'selected':''}>${n}</option>`).join('')}</select>`:''}</div>
+      ${cs.length?`<div class="chips">${cs.map(x=>`<span class="chip" style="cursor:default">${esc(x.name)}</span>`).join('')}</div>`:'<p class="h" style="margin:0;color:var(--mute)">S4-S6 pathways are added in Levels &amp; classes after this guide.</p>'}</div>`; }).join('')}`; }
+  if(s===5) return `<h2 id="onbH" tabindex="-1">Your teachers</h2><p class="sub">Type or paste your teachers' names, one on each line. You can add days off and daily limits later, or skip this and add them when you are ready.</p>
+    <label for="o_names">Teacher names</label><textarea id="o_names" rows="5" style="width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--card);color:var(--ink)" placeholder="Jane Uwase&#10;Eric Habimana&#10;Claudine Mukamana"></textarea>
+    <div class="row" style="margin:8px 0"><button class="btn pri" type="button" onclick="onbAddTeachers()">Add these teachers</button><span class="h" style="margin:0;color:var(--mute)">${S.teachers.length} on your list</span></div>
+    ${S.teachers.length?`<div class="chips">${S.teachers.map(t=>`<span class="chip" style="cursor:default">${esc(t.name)} <button type="button" class="btn sm bad" style="padding:0 6px;border:0" aria-label="Remove ${esc(t.name)}" onclick="delTeacher('${t.id}');onbRender()">&times;</button></span>`).join('')}</div>`:''}`;
+  if(s===6) return `<h2 id="onbH" tabindex="-1">Rooms and labs <span style="font-weight:400;color:var(--mute)">(optional)</span></h2><p class="sub">If lessons such as Science, ICT or P.E. need a special room, add them so two classes are never sent to the same lab at once. Not needed? Just continue.</p>
+    ${S.rooms.length?`<div class="chips" style="margin-bottom:12px">${S.rooms.map(r=>`<span class="chip" style="cursor:default">${esc(r.name)} &middot; ${esc(r.kind)}</span>`).join('')}</div>`:'<div class="msg warn">No rooms yet.</div>'}
+    ${S.rooms.length?'':'<button class="btn pri" type="button" onclick="addStandardRooms();onbRender()">Add the usual school rooms</button>'}`;
+  const nCl=S.classes.length, nT=S.teachers.length, nL=LEVELS.filter(l=>lvlState(l.id).on).length;
+  return `<h2 id="onbH" tabindex="-1">You are ready to plan${S.school?', '+esc(S.school):''}</h2><p class="sub">The setup is saved. Here is what you have, and what to do next.</p>
+    <div class="sumgrid"><div><b>${nL}</b><span>level${nL===1?'':'s'}</span></div><div><b>${nCl}</b><span>class${nCl===1?'':'es'}</span></div><div><b>${nT}</b><span>teacher${nT===1?'':'s'}</span></div><div><b>${S.rooms.length}</b><span>room${S.rooms.length===1?'':'s'}</span></div></div>
+    <ol class="next"><li><span class="n">1</span><div><b>Check your subjects</b><div class="h" style="margin:0;color:var(--mute)">Names and colours are ready. Change them on the Subjects tab if needed.</div></div></li>
+    <li><span class="n">2</span><div><b>Choose who teaches what</b><div class="h" style="margin:0;color:var(--mute)">On the Lessons tab, set each class's weekly periods and pick its teacher.</div></div></li>
+    <li><span class="n">3</span><div><b>Generate and print</b><div class="h" style="margin:0;color:var(--mute)">On the Timetable tab, press Generate. Then print a sheet for every class and teacher.</div></div></li></ol>
+    ${nT?'':'<div class="msg warn">You have not added teachers yet. Add them on the Teachers tab before you generate.</div>'}`;
+}
+function onbRender(){
+  const o=$('onb'), s=ONB.step;
+  if(s===0){
+    o.innerHTML=`<div class="onb-wrap"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="onb-main"><div class="hero"><div class="tile" aria-hidden="true">${MARK_SVG}</div><span class="eyebrow">EduSmart Consult &middot; Kigali, Rwanda</span>
+      <h1 id="onbH" tabindex="-1" style="outline:none">Welcome to EduSmart <span>School Timetable</span></h1>
+      <p class="lead">Plan every period, place every teacher and print a professional timetable, from pre-primary to S6. Built for Rwandan schools, with REB lesson hours as your starting point. Works offline.</p>
+      <div class="how"><div><b><span class="n">1</span>Set up your school</b><span class="d">Name, levels, classes and the school day. About two minutes.</span></div>
+        <div><b><span class="n">2</span>Add teachers and lessons</b><span class="d">Who teaches what, their days off and daily limits.</span></div>
+        <div><b><span class="n">3</span>Generate and print</b><span class="d">A clash-free timetable for every class and teacher, ready to print.</span></div></div>
+      <div class="onb-cta"><button class="ob go" type="button" onclick="onbGo(1)">Set up my school &rarr;</button><button class="ob" type="button" onclick="onbExample()">Try the example school</button><button class="ob" type="button" onclick="onbBackup()">Open a backup</button></div>
+      <p class="onb-note">Everything stays on this computer. <button type="button" class="ob" style="border:0;padding:2px 6px;font-weight:600;text-decoration:underline;font-size:13px" onclick="onbClose()">Skip for now</button></p></div></div>
+      <div class="onb-foot">EduSmart School Timetable &middot; by EduSmart Consult LTD &middot; www.edusmartconsult.com</div>
+      <div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div></div>`;
+  } else {
+    const last=s===7, canNext=!(s===2&&!LEVELS.some(l=>lvlState(l.id).on));
+    o.innerHTML=`<div class="onb-wrap"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="onb-main"><div class="wz"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div><div class="wz-in">${onbStepper()}<div aria-live="polite">${onbBody()}</div></div>
+      <div class="wz-bar"><button class="btn" type="button" onclick="onbGo(${s-1})">&larr; Back</button><span class="sp"></span>${last?'':'<button class="skip" type="button" onclick="onbClose()">Skip setup</button>'}
+      ${last?`<button class="btn" type="button" onclick="onbFinish('classes')">Review levels &amp; classes</button><button class="btn pri" type="button" onclick="onbFinish('lessons')">Start planning &rarr;</button>`:`<button class="btn pri" type="button" ${canNext?'':'disabled'} onclick="onbGo(${s+1})">Continue &rarr;</button>`}</div></div></div>
+      <div class="onb-foot">Step ${s} of 7 &middot; your answers are saved as you go</div></div>`;
+  }
+  const h=$('onbH'); if(h&&!o.contains(document.activeElement)) h.focus({preventScroll:true});
+}
+document.addEventListener('keydown',e=>{ const o=$('onb'); if(e.key==='Escape'&&o&&o.classList.contains('on')&&ONB.step===0) onbClose(); });
+
 if(EMBED){ window.addEventListener('message',e=>{ const m=e.data; if(m&&m.type==='st-load'){ window.__SEED=m.data; S=load(); (m.staff||[]).forEach(s=>{ if(!S.teachers.some(x=>x.id===s.id)) S.teachers.push({id:s.id,name:s.name,offDays:[],offSlots:[],maxPerDay:0,pref:''}); }); if(!S.school&&m.school) S.school=m.school; prune(); render(); } }); parent.postMessage({type:'st-ready'},'*'); }
-else { S=load(); prune(); render(); }
+else { S=load(); prune(); render(); if(onbNeeded()) onbOpen(0); }
 </script>
 </body>
 </html>
