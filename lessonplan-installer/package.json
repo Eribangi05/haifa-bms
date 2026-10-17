@@ -1,7 +1,7 @@
 {
   "name": "edusmart-lesson-plan-generator",
   "productName": "EduSmart Lesson Plan Generator",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Offline REB lesson plan generator for Primary 1 to 6, built from the 2026-2027 REB schemes of work and pupil books.",
   "author": "EduSmart Consult",
   "main": "main.js",

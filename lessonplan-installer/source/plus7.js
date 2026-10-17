@@ -11,6 +11,10 @@ function plusClassIds(){ return ['P1','P2','P3','P4','P5','P6'].concat(typeof SE
   if(typeof CLASS_META!=='undefined') SEC_CLASSES.forEach((c,i)=>{ if(!CLASS_META[c]) CLASS_META[c]={id:c,name:'Senior '+c[1],short:c,color:['#0b4da2','#1098ad','#2f9e44','#f08c00','#e64980','#7048e8'][i],tint:TINT[i]}; });
   /* subject metadata for ids the primary app does not know (biology, chemistry, ...) */
   if(typeof SUBJECT_META!=='undefined') SEC_CLASSES.forEach(c=>{ const cl=SEC_DATA.classes[c]; if(!cl) return; Object.keys(cl.subjects).forEach(id=>{ const s=cl.subjects[id]; if(!SUBJECT_META[id]) SUBJECT_META[id]={name:s.name,short:s.short,icon:'book',color:s.color,tint:'#eef1f6'}; }); });
+  /* keep only real questions or tasks (a question mark or a task verb), not the steps of a worked method */
+  const TASKV=/^(?:\(?[a-z]\)\s*)?(find|calculate|solve|explain|describe|discuss|list|state|identify|write|draw|compare|convert|evaluate|determine|give|define|name|outline|prove|simplify|express|differentiate|analy[sz]e|suggest|mention|justify|classify|construct|sketch|show|use|complete|match|fill|answer|read|translate|compose|summari[sz]e|distinguish|calculer|r\u00e9soudre|expliquer|d\u00e9crire|citer|\u00e9crire|identifier|compl\u00e9ter|lisez|r\u00e9pondez|sobanura|andika|vuga|garagaza|erekana|ssoma|eleza|taja|andika|jibu|soma|fafanua|toa)\b/i;
+  function exClean(q){ q=String(q||'').trim(); if(q.length<235) return q; const cut=Math.max(q.lastIndexOf('. '),q.lastIndexOf('? '),q.lastIndexOf(': ')); return cut>60?q.slice(0,cut+1).trim():''; }
+  function exOK(q){ return /\?/.test(q)||TASKV.test(String(q).trim()); }
   const expanded={};
   function secScheme(cls,subj){
     const k=cls+'-'+subj; if(expanded.hasOwnProperty(k)) return expanded[k];
@@ -22,7 +26,8 @@ function plusClassIds(){ return ['P1','P2','P3','P4','P5','P6'].concat(typeof SE
     expanded[k]={class:sc.class,subject:sc.subject,subjectName:sc.subjectName,units:sc.units.map(u=>({no:u.no,title:u.title,periods:u.periods,keyComp:u.keyComp,term:u.term,
       lessons:u.lessons.map(l=>{ const sb=cite(u,l,'sb',"Student's Book"), tg=cite(u,l,'tg',"Teacher's Guide"); const refs=[l.references||ref, sb, tg].filter(Boolean).join(' ');
         const aids=[sb?"Student's Book "+rng(u.sb[0],u.sb[1],bk.sb.off):'', l.aids||u.aids||''].filter(Boolean).join('; ');
-        return Object.assign({},l,{aids:aids,assessment:l.assessment||u.assessment||'',references:refs,sbBook:sb?1:0}); })}))};
+        const act=(l.ea!=null&&u.acts)?u.acts[l.ea]:null, off=bk.sb&&bk.sb.off, pp=l.sbp?(off!=null&&l.sbp-off>=1?l.sbp-off:l.sbp):0, ap=act?(off!=null&&act.p-off>=1?act.p-off:act.p):0;
+        return Object.assign({},l,{aids:aids,assessment:l.assessment||u.assessment||'',references:refs,sbBook:sb?1:0,ex:act?act.q.map(exClean).filter(q=>q&&exOK(q)):[],exPage:ap,bookPage:pp}); })}))};
     return expanded[k];
   }
   function secSubjects(cls){ const cl=SEC_DATA.classes[cls]; if(!cl) return []; return Object.keys(cl.subjects).map(id=>({id,units:[],title:cl.subjects[id].name})).sort((a,b)=>metaFor(a.id).name.localeCompare(metaFor(b.id).name)); }
@@ -86,6 +91,29 @@ function plusClassIds(){ return ['P1','P2','P3','P4','P5','P6'].concat(typeof SE
       if(head&&w.length<=4&&head.length>=4) out.push(head.replace(/[.,]+$/,'')); else { seg.split(/\s*,\s*/).forEach(x=>{ x=x.replace(/^(?:meaning|importance|types?|causes?|effects?|examples?|characteristics|uses?) of\s+/i,'').replace(/[.]+$/,'').trim(); if(x.length>=4&&x.split(/\s+/).length<=4) out.push(x); }); } });
     const u=Array.from(new Set(out.map(x=>x.charAt(0).toUpperCase()+x.slice(1)))).slice(0,8);
     return u.length>=2?u.join(', '):t;
+  };
+
+  /* ---- real book exercises: the Student's Book application activities for the lesson ---- */
+  const BOOKWORD={en:"Student's Book",fr:"Livre de l’élève",rw:'Igitabo cy’umunyeshuri'};
+  function secLesson(){ try{ return lpUsingScheme()?lpSchemeLesson():null; }catch(e){ return null; } }
+  function secBookLine(sl){ if(!sl||!sl.sbBook) return ''; const pg=sl.exPage||sl.bookPage; return pg?(BOOKWORD[plusLang()]||BOOKWORD.en)+', p. '+pg:''; }
+  const _tasks=plusTasks; plusTasks=function(){
+    if(!(LP&&plusIsSec(LP.classId))) return _tasks.apply(this,arguments);
+    const sl=secLesson(); const ref=secBookLine(sl);
+    return ((sl&&sl.ex)||[]).map(q=>({kind:'text',prompt:q,answer:ref?('Mark with the class; see '+ref+' and the Teacher’s Guide where available.'):'Mark with the class.'}));
+  };
+  const _exit2=plusExitDraft; plusExitDraft=function(){
+    if(!(LP&&plusIsSec(LP.classId))) return _exit2.apply(this,arguments);
+    const sl=secLesson(); const ex=(sl&&sl.ex)||[];
+    if(!ex.length){ const t=_exit2.apply(this,arguments); const ref=secBookLine(sl); return ref?t+'\n('+({en:'More practice: ',fr:'Plus d’exercices : ',rw:'Imyitozo y’inyongera: '}[plusLang()]||'More practice: ')+ref+')':t; }
+    const ref=secBookLine(sl);
+    return ex.slice(0,3).map((q,i)=>(i+1)+'. '+q).join('\n')+(ref?'\n('+({en:'From the ',fr:'Du ',rw:'Biva mu '}[plusLang()]||'From the ')+ref+')':'');
+  };
+  const _hw2=plusHomeworkDraft; plusHomeworkDraft=function(){
+    if(!(LP&&plusIsSec(LP.classId))) return _hw2.apply(this,arguments);
+    const sl=secLesson(); const ex=(sl&&sl.ex)||[]; const rest=ex.slice(3,5);
+    if(!rest.length) return _hw2.apply(this,arguments);
+    return rest.map((q,i)=>(i+1)+'. '+q).join('\n');
   };
   window.plusSecSchemeFor=secScheme;
 })();
