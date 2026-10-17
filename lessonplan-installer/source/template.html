@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EduSmart Lesson Plan Generator</title>
 <meta name="theme-color" content="#053857">
-<meta name="description" content="EduSmart Lesson Plan Generator: REB-format lesson plans for Primary 1 to 6, built from the 2026-2027 REB schemes of work and pupil books. Works offline.">
+<meta name="description" content="EduSmart Lesson Plan Generator: REB-format lesson plans for Primary 1 to Senior 6, built from the 2026-2027 REB schemes of work, syllabi and student books. Works offline.">
 <link rel="icon" type="image/png" href="__FAVICON__">
 <style>
 :root{--rw-blue:#00A1DE;--rw-yellow:#FAD201;--rw-green:#20603D;--navy:#053857;
@@ -270,7 +270,7 @@ function onbBody(){
     <div class="lp-checks">${Object.keys(PLUS_ICT).map(k=>`<label class="lp-chk"><input type="checkbox" ${(df.ictTools||{})[k]?'checked':''} onchange="onbIct('${k}')"> ${esc(PLUS_ICT[k].name)}</label>`).join('')}</div>`;
   if(s===3){ const cv=onbCoverage();
     return `<h2 id="onbH" tabindex="-1">How your plans are built</h2><p class="sub">Choose a class, subject, unit and lesson. The plan is filled in the official REB template from the REB 2026-2027 scheme of work, then you edit it, print it or save it as a PDF.</p>
-    <div class="msg ok"><b>${cv.nS}</b> schemes of work and <b>${cv.nL.toLocaleString('en')}</b> lessons are built in, for Primary 1 to 6. Plans are written in English, French or Kinyarwanda to match the subject.</div>
+    <div class="msg ok"><b>${cv.nS}</b> schemes of work and <b>${cv.nL.toLocaleString('en')}</b> lessons are built in, for Primary 1 to Senior 6. Plans are written in English, French or Kinyarwanda to match the subject.</div>
     <ul style="margin:8px 0 0 18px;font-size:14px;color:var(--ink)"><li>Where a scheme lesson matches a pupil-book lesson, the plan cites its book pages and practice items, and the teacher's guide pages.</li><li>Every plan is a <b>starting draft</b>. Read it, adjust the activities to your class, and sign it before use.</li><li>Your plans stay on this computer. Use <b>Save backup</b> to move them to another computer.</li></ul>`; }
   return `<h2 id="onbH" tabindex="-1">You are ready${sc.name?', '+esc(sc.name):''}</h2><p class="sub">Your details are saved. Make your first lesson plan now, or look around first.</p>
     <ol class="next"><li><span class="n">1</span><div><b>Pick the lesson</b><div class="sub-note">Class, subject, unit, lesson. Use the official scheme of work when it is offered.</div></div></li>
@@ -283,7 +283,7 @@ function onbRender(){
     o.innerHTML=`<div class="onb-wrap"><div class="onb-flag" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="onb-main"><div class="hero"><div class="tile">${LOGO_FULL}</div><span class="eyebrow">EduSmart Consult &middot; Kigali, Rwanda</span>
       <h1 id="onbH" tabindex="-1">Welcome to <span>EduSmart Lesson Plan Generator</span></h1>
-      <p class="lead">Draft REB-format lesson plans for Primary 1 to 6 in minutes, from the 2026-2027 REB schemes of work and pupil books. Print them or save them as PDF. Works offline.</p>
+      <p class="lead">Draft REB-format lesson plans for Primary 1 to Senior 6 in minutes, from the 2026-2027 REB schemes of work, syllabi and student books. Print them or save them as PDF. Works offline.</p>
       <div class="how"><div><b><span class="n">1</span>Set up</b><span class="d">Your school and your usual class. About a minute.</span></div>
         <div><b><span class="n">2</span>Pick a lesson</b><span class="d">Class, subject, unit and lesson from the REB scheme.</span></div>
         <div><b><span class="n">3</span>Auto-fill and print</b><span class="d">Edit the draft, save it to your library, print or save as PDF.</span></div></div>

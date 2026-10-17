@@ -1,6 +1,6 @@
 # EduSmart Lesson Plan Generator - Windows installer
 
-An offline desktop app that drafts REB-format lesson plans for Primary 1 to 6 from the **2026-2027 REB schemes of work** and pupil books (the same data and generator as the Smart School App's lesson-plan screen, in its own window).
+An offline desktop app that drafts REB-format lesson plans for Primary 1 to Senior 6 from the **2026-2027 REB schemes of work, syllabi** and student books (the same data and generator as the Smart School App's lesson-plan screen, in its own window).
 
 ## Build the installer (Windows PC with Node.js LTS)
 ```powershell
@@ -8,7 +8,7 @@ cd lessonplan-installer
 npm install
 npm run dist
 ```
-The installer is `dist\EduSmart-Lesson-Plan-Generator-Setup-1.1.0.exe` (unsigned: SmartScreen shows "More info > Run anyway"). Try without installing: `npm start`.
+The installer is `dist\EduSmart-Lesson-Plan-Generator-Setup-<version>.exe` (unsigned: SmartScreen shows "More info > Run anyway"). Try without installing: `npm start`.
 
 ## Refresh the data (new REB documents, new content update)
 The app bundles `app/lesson-plan-generator.html` (about 4.4 MB: 48 schemes of work, 4,105 book and teacher's-guide lessons, the generator and the logo). To rebuild it from the Smart School content tree and generator:
