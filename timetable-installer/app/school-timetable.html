@@ -1,0 +1,1809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EduSmart Timetable</title>
+<meta name="theme-color" content="#053857">
+<meta name="description" content="EduSmart Timetable: plan every period, place every teacher, and print professional school timetables. Works offline.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20width%3D%2264%22%20height%3D%2264%22%20role%3D%22img%22%20aria-label%3D%22EduSmart%20Timetable%22%3E%3Ctitle%3EEduSmart%20Timetable%3C%2Ftitle%3E%3Crect%20x%3D%22.75%22%20y%3D%22.75%22%20width%3D%2262.5%22%20height%3D%2262.5%22%20rx%3D%2213.5%22%20fill%3D%22%23ffffff%22%20stroke%3D%22%23C3D2E3%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%228.00%22%20y%3D%228.00%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2300A1DE%22%2F%3E%3Crect%20x%3D%2225.00%22%20y%3D%228.00%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2300A1DE%22%2F%3E%3Crect%20x%3D%2242.00%22%20y%3D%228.00%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2300A1DE%22%2F%3E%3Crect%20x%3D%228.00%22%20y%3D%2220.75%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2300A1DE%22%2F%3E%3Crect%20x%3D%2225.00%22%20y%3D%2220.75%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2300A1DE%22%2F%3E%3Crect%20x%3D%2242.00%22%20y%3D%2220.75%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2300A1DE%22%2F%3E%3Crect%20x%3D%228.00%22%20y%3D%2233.50%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%23FAD201%22%2F%3E%3Crect%20x%3D%2225.00%22%20y%3D%2233.50%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%23FAD201%22%2F%3E%3Crect%20x%3D%2242.00%22%20y%3D%2233.50%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%23FAD201%22%2F%3E%3Crect%20x%3D%228.00%22%20y%3D%2246.25%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2320603D%22%2F%3E%3Crect%20x%3D%2225.00%22%20y%3D%2246.25%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2320603D%22%2F%3E%3Crect%20x%3D%2242.00%22%20y%3D%2246.25%22%20width%3D%2214.00%22%20height%3D%229.75%22%20rx%3D%222.2%22%20fill%3D%22%2320603D%22%2F%3E%3Ccircle%20cx%3D%2249.00%22%20cy%3D%2212.88%22%20r%3D%223.4%22%20fill%3D%22%23FAD201%22%2F%3E%3C%2Fsvg%3E">
+<style>
+:root{--rw-blue:#00A1DE;--rw-yellow:#FAD201;--rw-green:#20603D;--navy:#053857;
+  --bg:#f4f7fb;--card:#fff;--ink:#0f1b33;--mute:#51607d;--line:#dbe4ef;
+  --brand:#20603D;--brand-ink:#fff;--accent:#00A1DE;--hdr:#053857;--hdr-ink:#fff;--tab-on:#053857;
+  --bad:#c92a2a;--warn:#8a5a00;--ok:#20603D;--r:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0a1626;--card:#10253a;--ink:#e8f0f8;--mute:#9db2c8;--line:#24405c;--brand:#2a8a58;--brand-ink:#fff;--accent:#27b4ea;--hdr:#041f31;--tab-on:#ffffff;--bad:#ff8787;--warn:#ffd24d;--ok:#5fd08d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.flagbar{display:flex;height:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.flagbar i{display:block}.flagbar i:nth-child(1){flex:2;background:#00A1DE}.flagbar i:nth-child(2){flex:1;background:#FAD201}.flagbar i:nth-child(3){flex:1;background:#20603D}
+header{background:var(--hdr);color:var(--hdr-ink);padding:12px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;flex:1;min-width:220px}
+.logo-mark{display:block;width:44px;height:44px;flex:none}.logo-mark svg{width:100%;height:100%;display:block}
+.wm{font-size:22px;font-weight:800;letter-spacing:-.2px;line-height:1.1}.wm span{color:#FAD201}
+.school{font-size:13px;opacity:.9;margin-top:2px}
+footer.foot{margin-top:28px;color:var(--mute);font-size:12.5px}
+footer.foot .in{max-width:1180px;margin:0 auto;padding:12px 16px 22px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+footer.foot .in b{color:var(--ink)}
+nav{display:flex;gap:4px;padding:8px 12px 0;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{border:0;background:none;color:var(--mute);padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:var(--tab-on);border-color:var(--accent)}
+main{max-width:1180px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:16px}.card p.h{margin:0 0 12px;color:var(--mute);font-size:13px}
+label{display:block;font-size:12px;color:var(--mute);font-weight:600;margin-bottom:3px}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;max-width:100%}
+input[type=color]{padding:0;width:38px;height:32px}
+input[type=checkbox]{width:auto}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn.pri{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn.pri:hover:not(:disabled){filter:brightness(1.12)}
+.btn.bad{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:13px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+table.t{border-collapse:collapse;width:100%}
+table.t th,table.t td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+table.t th{font-size:12px;color:var(--mute)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer}
+.msg{padding:9px 12px;border-radius:8px;font-size:13px;margin:6px 0}
+.msg.err{background:#fff0f0;color:#a61e1e;border:1px solid #ffc9c9}.msg.warn{background:#fff6d0;color:#5c4300;border:1px solid #f0d56a}.msg.ok{background:#e3f1e9;color:#14452a;border:1px solid #a9d3bb}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .msg.err{background:#3a1d1d;color:#ffa8a8;border-color:#5c2b2b}:root:not([data-theme=light]) .msg.warn{background:#3b3414;color:#ffe08a;border-color:#6b5c1c}:root:not([data-theme=light]) .msg.ok{background:#12301f;color:#a9e6c3;border-color:#1f5a3a}}
+.welcome .wmark{width:56px;height:56px;flex:none}.welcome .wmark svg{width:100%;height:100%}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.step{font:inherit;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.step:hover{border-color:var(--accent)}.step small{color:var(--mute);font-size:12px}
+.step .n{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:2px solid var(--accent);color:var(--tab-on);margin-bottom:4px}
+.step.done .n{background:var(--brand);border-color:var(--brand);color:#fff}
+.tt{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;min-width:680px}
+.tt th{background:var(--bg);font-size:12px;padding:8px 4px;border:1px solid var(--line)}
+.tt td{border:1px solid var(--line);padding:0;height:54px;vertical-align:top}
+.tt td.tm{width:92px;font-size:11px;color:var(--mute);padding:4px 6px;background:var(--bg)}
+.tt tr.sp td{height:24px;background:var(--bg);text-align:center;font-size:12px;color:var(--mute)}
+.cell{height:100%;padding:5px 7px;cursor:pointer;border-left:5px solid transparent;font-size:12.5px;line-height:1.25;border-radius:0}
+.cell b{display:block;font-size:13px}
+.cell small{color:var(--mute);display:block}
+.tt td.off{background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 6px,var(--card) 6px,var(--card) 12px)}
+.cell[draggable=true]{cursor:grab}
+.sheet .hd{display:flex;align-items:center;gap:12px;margin-bottom:6px}.sheet .pb{display:flex;align-items:center;gap:6px;font-size:12px;color:#053857}.sheet .pm{width:26px;height:26px;display:block}.sheet .pm svg{width:100%;height:100%}
+.sheet .bf{margin-top:8px;font-size:10.5px;color:#51607d;text-align:center}
+.sheet .flagbar{margin-bottom:8px}.sheet h2{color:#053857}
+.sheet th{background:#e6f6fd;color:#053857;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet .lg{height:48px}.sheet .tm2{font-size:13px;color:#444}
+.sheet .ft{display:flex;justify-content:space-between;gap:18px;margin-top:16px;font-size:12px}.sheet .ft span{flex:1;border-top:1px solid #333;padding-top:3px}
+.cell.empty{color:var(--mute);opacity:.5}
+.cell:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.tt th{border-top:3px solid var(--accent)}
+.scroll{overflow-x:auto}
+#modal{position:fixed;inset:0;background:rgba(10,14,25,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+#modal.on{display:flex}
+#modal .box{background:var(--card);border-radius:var(--r);padding:20px;width:100%;max-width:420px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222a3d;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;display:none;z-index:30}
+#printArea{display:none}
+.sheet{page-break-after:always;padding:6mm}
+.sheet h2{margin:0}.sheet .meta{color:#444;margin:2px 0 8px;font-size:13px}
+.sheet table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12px}
+.sheet th,.sheet td{border:1px solid #333;padding:4px;text-align:center;height:34px}
+.sheet td.tm{width:90px;font-size:10px;background:#f1f1f1}
+.sheet td.off{background:repeating-linear-gradient(135deg,#eee,#eee 4px,#fff 4px,#fff 8px)}
+.sheet tr.sp td{height:20px;background:#eee;font-size:11px}
+@media print{body{background:#fff;color:#000}header,nav,main,#modal,#toast,footer.foot,body>.flagbar{display:none!important}#printArea{display:block}@page{size:A4 landscape;margin:8mm}}
+html.embed body>.flagbar,html.embed footer.foot{display:none}
+</style>
+</head>
+<body>
+<div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div>
+<header>
+  <div class="brand"><span class="logo-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x=".75" y=".75" width="62.5" height="62.5" rx="13.5" fill="#ffffff" stroke="#C3D2E3" stroke-width="1.5"/><rect x="8.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="25.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="42.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="8.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="25.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="42.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="8.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="25.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="42.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="8.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><rect x="25.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><rect x="42.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><circle cx="49.00" cy="12.88" r="2.7" fill="#FAD201"/><line x1="52.70" y1="12.88" x2="54.00" y2="12.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="52.20" y1="14.72" x2="53.33" y2="15.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="50.85" y1="16.08" x2="51.50" y2="17.21" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="49.00" y1="16.57" x2="49.00" y2="17.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="47.15" y1="16.08" x2="46.50" y2="17.21" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.80" y1="14.72" x2="44.67" y2="15.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.30" y1="12.88" x2="44.00" y2="12.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.80" y1="11.03" x2="44.67" y2="10.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="47.15" y1="9.67" x2="46.50" y2="8.54" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="49.00" y1="9.18" x2="49.00" y2="7.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="50.85" y1="9.67" x2="51.50" y2="8.54" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="52.20" y1="11.02" x2="53.33" y2="10.37" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/></svg></span><div><div class="wm">EduSmart <span>Timetable</span></div><div class="school" id="hTitle">Every lesson in its place</div></div></div>
+  <div class="row">
+    <button class="btn sm" onclick="exportJson()">Save backup</button>
+    <button class="btn sm" onclick="document.getElementById('imp').click()">Open backup</button>
+    <input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importJson(this)">
+  </div>
+</header>
+<nav id="tabs"></nav>
+<main id="view"></main>
+<footer class="foot"><div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div><div class="in"><b>EduSmart Timetable</b><span>by EduSmart Consult LTD, Kigali, Rwanda</span><span>&middot;</span><a href="https://www.edusmartconsult.com" style="color:inherit" target="_blank" rel="noopener">www.edusmartconsult.com</a><span class="sp"></span><span>Works offline. Your data stays on this device.</span></div></footer>
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script type="text/plain" id="solverSrc">const ST_MORNING_SUBJECTS = ['maths','english','kinyarwanda'];
+const ST_LATE_SUBJECTS = ['arts','pes'];
+const ST_RESTARTS = 40;         // seeded greedy attempts (cut short by the time budget), keep the best
+const ST_POLISH_ITERS = 6000;   // bounded local-search moves after the best placement
+const ST_TIME_BUDGET_MS = 900;  // whole solve stays under about a second so the screen stays responsive
+function stPeriodSlots(cfg){
+  const out=[]; (cfg.days||[]).forEach(day=>{ for(let p=1;p<=cfg.periodsPerDay;p++) out.push({day,period:p,key:day+'_'+p}); }); return out;
+}
+function stRng(seed){
+  let a=(seed>>>0)||1;
+  return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+}
+function stShuffle(arr, seed){
+  const out=arr.slice(); const rng=stRng(seed||1);
+  for(let i=out.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [out[i],out[j]]=[out[j],out[i]]; }
+  return out;
+}
+
+/* ---------- placement state ---------- */
+function stNewState(){ return { grid:{}, busy:{}, at:{}, tDay:{}, sDay:{}, sSubj:{}, rm:{}, roomOpts:{}, roomCap:{}, roomUse:{} }; }
+function stEnsure(st, sectionId, teacherId){
+  if(!st.grid[sectionId]) st.grid[sectionId]={}; if(!st.sDay[sectionId]) st.sDay[sectionId]={};
+  if(teacherId){ if(!st.busy[teacherId]) st.busy[teacherId]=new Set(); if(!st.at[teacherId]) st.at[teacherId]={}; if(!st.tDay[teacherId]) st.tDay[teacherId]={}; }
+}
+function stPut(st, sectionId, slot, cell){
+  stEnsure(st, sectionId, cell.teacherId);
+  st.grid[sectionId][slot.key]=cell;
+  if(cell.teacherId){ st.busy[cell.teacherId].add(slot.key); st.at[cell.teacherId][slot.key]=sectionId; st.tDay[cell.teacherId][slot.day]=(st.tDay[cell.teacherId][slot.day]||0)+1; }
+  if(cell.roomId){ const r=st.rm[cell.roomId]||(st.rm[cell.roomId]={}); r[slot.key]=(r[slot.key]||0)+1; st.roomUse[cell.roomId]=(st.roomUse[cell.roomId]||0)+1; }
+  (st.sDay[sectionId][slot.day]=st.sDay[sectionId][slot.day]||new Set()).add(slot.period);
+  const sk=sectionId+'|'+cell.subjectKey; const m=(st.sSubj[sk]=st.sSubj[sk]||{}); m[slot.day]=(m[slot.day]||0)+1;
+}
+function stTake(st, sectionId, slot){
+  const cell=st.grid[sectionId][slot.key]; delete st.grid[sectionId][slot.key];
+  if(cell.teacherId){ st.busy[cell.teacherId].delete(slot.key); delete st.at[cell.teacherId][slot.key]; st.tDay[cell.teacherId][slot.day]--; }
+  if(cell.roomId){ st.rm[cell.roomId][slot.key]--; st.roomUse[cell.roomId]--; }
+  st.sDay[sectionId][slot.day].delete(slot.period);
+  st.sSubj[sectionId+'|'+cell.subjectKey][slot.day]--;
+  return cell;
+}
+/* ---- rooms and labs: a room can hold `capacity` classes at once (a lab 1, a playground several) ---- */
+function stRoomFree(st, roomId, key){ return (((st.rm[roomId]||{})[key])||0) < (st.roomCap[roomId]||1); }
+// '' = this lesson needs no special room; null = every allowed room is already full at those periods;
+// otherwise the least-used allowed room that is free for ALL the given period keys (1 for a single, 2 for a double)
+function stRoomPick(st, sectionId, subjectKey, keys){
+  const opts=st.roomOpts[sectionId+'|'+subjectKey]; if(!opts||!opts.length) return '';
+  let best=null, bu=Infinity;
+  for(const r of opts){ if(keys.every(k=>stRoomFree(st,r,k))){ const u=st.roomUse[r]||0; if(u<bu){ bu=u; best=r; } } }
+  return best;
+}
+// hard constraints for putting `teacherId` into slot: free, not on a day off, under the daily maximum
+function stTeacherCan(st, rules, teacherId, slot){
+  if(!teacherId) return true;
+  if(st.busy[teacherId] && st.busy[teacherId].has(slot.key)) return false;
+  const off=rules&&rules.offDays&&rules.offDays[teacherId]; if(off&&off.has(slot.day)) return false;
+  const offS=rules&&rules.offSlots&&rules.offSlots[teacherId]; if(offS&&offS.has(slot.key)) return false;
+  const cap=rules&&rules.maxPerDay&&rules.maxPerDay[teacherId]; if(cap && ((st.tDay[teacherId]||{})[slot.day]||0)>=cap) return false;
+  return true;
+}
+function stSlotSoftScore(subjectId, day, period, cfg, teacherBusy, teacherId, sectionSubjDay, sectionId, extra){
+  // kept for compatibility with earlier callers/tests; the solver uses stScoreSlot below
+  let score=0;
+  const dayKey=sectionId+'|'+subjectId;
+  if((sectionSubjDay[dayKey]||new Set()).has(day)) score-=50;
+  if(ST_MORNING_SUBJECTS.includes(subjectId)) score += (cfg.periodsPerDay-period);
+  else if(ST_LATE_SUBJECTS.includes(subjectId)) score += period;
+  const busy=teacherBusy[teacherId];
+  if(busy && (busy.has(day+'_'+(period-1)) || busy.has(day+'_'+(period+1)))) score += 8;
+  return score;
+}
+// How good is this slot for this lesson (higher = better). Balanced so the day fills from period 1 with no holes,
+// a subject is not repeated on a day beyond what its weekly count needs, lessons spread evenly over the week.
+// `rules` (optional) carries each teacher's soft time-of-day preference - a nudge, never a hard block.
+function stScoreSlot(task, slot, st, cfg, rules){
+  const sec=task.sectionId, day=slot.day, period=slot.period; let sc=0;
+  const days=(cfg.days||[]).length||5;
+  // a double-period subject wants up to 2 periods (one block) on a day, not "weekly count / days"
+  const allowed=task.double?2:Math.max(1,Math.ceil((task.totalPeriods||task.periodsNeeded)/days));
+  const cnt=((st.sSubj[sec+'|'+task.subjectId]||{})[day])||0;
+  if(cnt>=allowed) sc-=90*(cnt-allowed+1); else if(cnt>0) sc-=6*cnt;
+  const occ=st.sDay[sec][day]; let firstFree=1; if(occ) while(occ.has(firstFree)) firstFree++;
+  if(period>firstFree) sc-=28*(period-firstFree); else if(period===firstFree) sc+=10;
+  sc-=5*(occ?occ.size:0);
+  if(ST_MORNING_SUBJECTS.includes(task.subjectId)) sc+=(cfg.periodsPerDay-period)*0.6;
+  else if(ST_LATE_SUBJECTS.includes(task.subjectId)) sc+=period*0.5;
+  const busy=st.busy[task.teacherId];
+  if(busy){ if(busy.has(day+'_'+(period-1))||busy.has(day+'_'+(period+1))) sc+=6; }
+  // soft teacher time-of-day preference: "morning" = at/before the lunch period (or the day's
+  // midpoint if lunch isn't configured), "afternoon" = after it.
+  const pref=rules&&rules.pref&&rules.pref[task.teacherId];
+  if(pref){
+    const boundary=cfg.lunchAfterPeriod||Math.ceil(cfg.periodsPerDay/2);
+    const isMorning=period<=boundary;
+    sc += (pref==='morning')===isMorning ? 12 : -10;
+  }
+  return sc;
+}
+/* split a subject's weekly periods into placement blocks: pairs of 2 (doubles), with one single
+   left over if the count is odd; a non-double subject is simply N ordinary singles. */
+function stTaskBlocks(periodsNeeded, double){
+  if(!double) return Array(Math.max(0,periodsNeeded)).fill(1);
+  const blocks=[]; let n=Math.max(0,periodsNeeded);
+  while(n>=2){ blocks.push(2); n-=2; }
+  if(n===1) blocks.push(1);
+  return blocks;
+}
+// valid starting periods for a double: period p and p+1 must both exist in the day with no
+// break/lunch between them, or it would really be two separate lessons, not one double.
+function stDoubleStarts(cfg){
+  const out=[]; for(let p=1;p<cfg.periodsPerDay;p++){ if((cfg.breaksAfter||[]).includes(p)||p===cfg.lunchAfterPeriod) continue; out.push(p); }
+  return out;
+}
+
+/* One full greedy placement. opts: { rules, locked:{sectionId:{key:cell}}, rng }.
+   Returns { sectionGrid, teacherBusy, failures }. Never violates the hard constraints: a slot is only chosen if the
+   section's slot is empty, the teacher is free, not on a day off and under their daily maximum. Periods that cannot be
+   placed at all are reported in `failures`, never silently dropped. Locked lessons (kept from manual edits) are placed
+   first and count towards their subject's weekly periods. */
+function stPlaceAll(tasks, slots, cfg, opts){
+  opts=opts||{}; const rules=opts.rules||{}; const rng=opts.rng||Math.random; const failures=[];
+  const st=stNewState(); const slotByKey={}; slots.forEach(s=>{ slotByKey[s.key]=s; });
+  tasks.forEach(t=>stEnsure(st,t.sectionId,t.teacherId));
+  st.roomCap=opts.roomCap||{}; tasks.forEach(t=>{ if(t.rooms&&t.rooms.length) st.roomOpts[t.sectionId+'|'+t.subjectId]=t.rooms; });
+  const lockedCount={};
+  const lockedIn=opts.locked||{};
+  Object.keys(lockedIn).forEach(sectionId=>{
+    Object.keys(lockedIn[sectionId]||{}).forEach(key=>{
+      const slot=slotByKey[key]; const c=lockedIn[sectionId][key]; if(!slot||!c) return;
+      if(st.grid[sectionId]&&st.grid[sectionId][key]) return;
+      if(c.teacherId && st.busy[c.teacherId] && st.busy[c.teacherId].has(key)) return;   // a clash inside the locked set itself: drop it
+      if(c.roomId && !stRoomFree(st,c.roomId,key)) return;
+      stPut(st, sectionId, slot, Object.assign({}, c, {locked:true}));
+      const k=sectionId+'|'+c.subjectKey; lockedCount[k]=(lockedCount[k]||0)+1;
+    });
+  });
+  const doubleStarts=new Set(stDoubleStarts(cfg));
+  tasks.forEach(task=>{
+    const total=task.periodsNeeded; task.totalPeriods=total;
+    const already=lockedCount[task.sectionId+'|'+task.subjectId]||0;
+    const blocks=stTaskBlocks(Math.max(0,total-already), task.double);
+    blocks.forEach(size=>{
+      if(size===2 && stPlaceDouble(task, st, slots, cfg, rules, rng, doubleStarts)) return;
+      // couldn't fit as a double anywhere (or it wasn't a double subject): place as single period(s)
+      // instead of losing the lesson - a double that doesn't fit becomes two ordinary singles.
+      const need=size===2?2:1;
+      for(let i=0;i<need;i++){
+        if(!stPlaceSingle(task, st, slots, cfg, rules, rng)) failures.push({ sectionId:task.sectionId, subjectId:task.subjectId, missing:1, teacherId:task.teacherId, needsRoom:!!(st.roomOpts[task.sectionId+'|'+task.subjectId]||[]).length });
+      }
+    });
+  });
+  return { sectionGrid:st.grid, teacherBusy:st.busy, failures, state:st };
+}
+// place one ordinary (single-period) lesson at its best-scoring free slot, falling back to the
+// ejection repair pass when nothing is free outright. Returns true/false (placed or not).
+function stPlaceSingle(task, st, slots, cfg, rules, rng){
+  const grid=st.grid[task.sectionId];
+  let best=null, bestScore=-Infinity, bestRoom='';
+  for(let i=0;i<slots.length;i++){
+    const s=slots[i]; if(grid[s.key]||!stTeacherCan(st,rules,task.teacherId,s)) continue;
+    const room=stRoomPick(st,task.sectionId,task.subjectId,[s.key]); if(room===null) continue;
+    const sc=stScoreSlot(task,s,st,cfg,rules)+rng()*0.5;
+    if(sc>bestScore){ bestScore=sc; best=s; bestRoom=room; }
+  }
+  if(!best && stRepair(task, st, slots, cfg, rules, rng)) return true;
+  if(!best) return false;
+  stPut(st, task.sectionId, best, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId, blockId:best.key }, bestRoom?{roomId:bestRoom}:{}));
+  return true;
+}
+// place one double (2 consecutive periods, same day) lesson at its best-scoring valid start.
+// No ejection repair for doubles (kept simple/fast) - the caller falls back to two singles
+// when this returns false, so the periods are never lost even if no double slot is free.
+function stPlaceDouble(task, st, slots, cfg, rules, rng, doubleStarts){
+  const grid=st.grid[task.sectionId]; const slotByKey={}; slots.forEach(s=>{ slotByKey[s.key]=s; });
+  let best=null, best2=null, bestScore=-Infinity, bestRoom='';
+  for(let i=0;i<slots.length;i++){
+    const s=slots[i]; if(!doubleStarts.has(s.period)) continue;
+    const s2=slotByKey[s.day+'_'+(s.period+1)]; if(!s2) continue;
+    if(grid[s.key]||grid[s2.key]) continue;
+    if(!stTeacherCan(st,rules,task.teacherId,s)||!stTeacherCan(st,rules,task.teacherId,s2)) continue;
+    const capT=rules.maxPerDay&&rules.maxPerDay[task.teacherId]; if(capT && (((st.tDay[task.teacherId]||{})[s.day])||0)+2>capT) continue;   // BOTH periods of the double must fit under the daily limit
+    const room=stRoomPick(st,task.sectionId,task.subjectId,[s.key,s2.key]); if(room===null) continue;
+    const sc=stScoreSlot(task,s,st,cfg,rules)+rng()*0.5;
+    if(sc>bestScore){ bestScore=sc; best=s; best2=s2; bestRoom=room; }
+  }
+  if(!best) return false;
+  const blockId=task.sectionId+'|'+task.subjectId+'|'+best.key; const rx=bestRoom?{roomId:bestRoom}:{};
+  stPut(st, task.sectionId, best, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId, blockId, double:true, blockPos:0 }, rx));
+  stPut(st, task.sectionId, best2, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId, blockId, double:true, blockPos:1 }, rx));
+  return true;
+}
+/* Ejection repair: the lesson found no free slot only because the same teacher is busy in ANOTHER section at the
+   section's free slots. Try moving one of those other lessons (never a locked one) to a different slot where its
+   teacher is free, then use the freed slot. Depth one, so it stays fast and predictable. */
+function stRepair(task, st, slots, cfg, rules, rng){
+  const grid=st.grid[task.sectionId]; const order=slots.slice();
+  for(let i=order.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
+  for(const s of order){
+    if(grid[s.key]) continue;
+    const off=rules.offDays&&rules.offDays[task.teacherId]; if(off&&off.has(s.day)) continue;
+    const blockerSec=st.at[task.teacherId]&&st.at[task.teacherId][s.key]; if(!blockerSec||blockerSec===task.sectionId) continue;
+    const bcell=st.grid[blockerSec][s.key]; if(!bcell||bcell.locked||bcell.double) continue;   // never split a double period
+    const cap=rules.maxPerDay&&rules.maxPerDay[task.teacherId];
+    if(cap && ((st.tDay[task.teacherId]||{})[s.day]||0)>cap) continue;
+    for(const s2 of order){
+      if(s2.key===s.key||st.grid[blockerSec][s2.key]) continue;
+      // take the blocker out, move it to s2 first, THEN check the new lesson at s with the updated counts
+      // (checking both before moving either let one teacher end up over their daily limit when blocker and new lesson share a teacher)
+      const removed=stTake(st, blockerSec, s);
+      const r2=stRoomPick(st, blockerSec, removed.subjectKey, [s2.key]);
+      if(r2!==null && stTeacherCan(st, rules, removed.teacherId, s2)){
+        stPut(st, blockerSec, s2, Object.assign({}, removed, r2?{roomId:r2}:{roomId:undefined}));
+        const r1=stRoomPick(st, task.sectionId, task.subjectId, [s.key]);
+        if(r1!==null && stTeacherCan(st, rules, task.teacherId, s)){
+          stPut(st, task.sectionId, s, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId }, r1?{roomId:r1}:{}));
+          return true;
+        }
+        stTake(st, blockerSec, s2);
+      }
+      stPut(st, blockerSec, s, removed);
+    }
+  }
+  return false;
+}
+/* ---------- quality measure (lower = better) ---------- */
+function stSectionPenalty(grid, cfg){
+  const days=cfg.days||[]; let pen=0; const perDay={}; const subj={}; const counts=[];
+  Object.keys(grid).forEach(key=>{
+    const i=key.lastIndexOf('_'); const day=key.slice(0,i), period=+key.slice(i+1); const cell=grid[key];
+    (perDay[day]=perDay[day]||[]).push(period);
+    const m=(subj[cell.subjectKey]=subj[cell.subjectKey]||{n:0,days:{},double:false}); m.n++; m.days[day]=(m.days[day]||0)+1; if(cell.double) m.double=true;
+    if(ST_MORNING_SUBJECTS.includes(cell.subjectKey) && period>5) pen+=3;
+    if(ST_LATE_SUBJECTS.includes(cell.subjectKey) && period<=3) pen+=3;
+  });
+  days.forEach(d=>{ const ps=perDay[d]||[]; counts.push(ps.length); if(ps.length){ pen+=30*(Math.max.apply(null,ps)-ps.length); } });   // holes inside the day
+  const total=counts.reduce((a,b)=>a+b,0), avg=days.length?total/days.length:0;
+  counts.forEach(c=>{ pen+=4*Math.abs(c-avg); });                                                                                            // uneven days
+  // repeats: a double-period subject wants exactly 2 (one block) on a day, not the usual weekly-average cap
+  Object.keys(subj).forEach(k=>{ const allowed=subj[k].double?2:Math.max(1,Math.ceil(subj[k].n/(days.length||5)));
+    Object.keys(subj[k].days).forEach(d=>{ const c=subj[k].days[d]; if(c>allowed) pen+=90*(c-allowed); else if(c>1 && !(subj[k].double&&c===2)) pen+=6*(c-1); }); });
+  return pen;
+}
+function stTeacherPenalty(busySet, cfg){
+  if(!busySet||!busySet.size) return 0; const perDay={}; let pen=0;
+  busySet.forEach(key=>{ const i=key.lastIndexOf('_'); (perDay[key.slice(0,i)]=perDay[key.slice(0,i)]||[]).push(+key.slice(i+1)); });
+  Object.keys(perDay).forEach(d=>{ const ps=perDay[d]; const span=Math.max.apply(null,ps)-Math.min.apply(null,ps)+1; pen+=10*(span-ps.length); if(ps.length>7) pen+=5*(ps.length-7); });   // idle gaps, very long days
+  return pen;
+}
+function stObjective(result, cfg){
+  let pen=0; Object.keys(result.sectionGrid).forEach(sid=>{ pen+=stSectionPenalty(result.sectionGrid[sid],cfg); });
+  Object.keys(result.teacherBusy).forEach(t=>{ pen+=stTeacherPenalty(result.teacherBusy[t],cfg); });
+  return pen;
+}
+function stScoreResult(result, cfg){
+  let failed=0; result.failures.forEach(f=>failed+=f.missing);
+  return failed*100000 + (cfg?stObjective(result,cfg):0);      // fewer unplaced periods always beats a prettier but incomplete timetable
+}
+
+/* Bounded local search: move a lesson into a free slot of the same section, or swap two lessons of a section, and keep the
+   change only if it is still valid and lowers the penalty of the sections and teachers it touches. Locked lessons never move. */
+function stPolish(result, cfg, opts){
+  opts=opts||{}; const rules=opts.rules||{}; const rng=opts.rng||Math.random; const deadline=opts.deadline||(Date.now()+400);
+  const st=result.state; if(!st) return result; const slots=opts.slots||stPeriodSlots(cfg); const byKey={}; slots.forEach(s=>{ byKey[s.key]=s; });
+  const sectionIds=Object.keys(st.grid); if(!sectionIds.length) return result;
+  const local=(sid,tids)=>{ let p=stSectionPenalty(st.grid[sid],cfg); tids.forEach(t=>{ if(t) p+=stTeacherPenalty(st.busy[t],cfg); }); return p; };
+  for(let iter=0; iter<ST_POLISH_ITERS && Date.now()<deadline; iter++){
+    if(iter%250===249 && stObjective(result,cfg)===0) break;   // nothing left to improve
+    const sid=sectionIds[Math.floor(rng()*sectionIds.length)]; const grid=st.grid[sid]; const keys=Object.keys(grid).filter(k=>!grid[k].locked&&!grid[k].double);   // a double's two periods stay paired; polish only moves/swaps singles
+    if(!keys.length) continue;
+    const kA=keys[Math.floor(rng()*keys.length)]; const sA=byKey[kA]; const a=grid[kA];
+    if(rng()<0.5){
+      const sB=slots[Math.floor(rng()*slots.length)]; if(grid[sB.key]) continue;
+      const before=local(sid,[a.teacherId]);
+      stTake(st,sid,sA);
+      if(stTeacherCan(st,rules,a.teacherId,sB)){
+        const rm=stRoomPick(st,sid,a.subjectKey,[sB.key]);
+        if(rm!==null){
+          stPut(st,sid,sB,Object.assign({},a,{roomId:rm||undefined}));
+          if(local(sid,[a.teacherId])<before-1e-9) continue;
+          stTake(st,sid,sB);
+        }
+      }
+      stPut(st,sid,sA,a);
+    } else {
+      const kB=keys[Math.floor(rng()*keys.length)]; if(kA===kB) continue; const sB=byKey[kB]; const b=grid[kB]; if(a.subjectKey===b.subjectKey&&a.teacherId===b.teacherId) continue;
+      const before=local(sid,[a.teacherId,b.teacherId]);
+      stTake(st,sid,sA); stTake(st,sid,sB);
+      if(stTeacherCan(st,rules,a.teacherId,sB) && stTeacherCan(st,rules,b.teacherId,sA)){
+        const ra=stRoomPick(st,sid,a.subjectKey,[sB.key]);
+        if(ra!==null){
+          stPut(st,sid,sB,Object.assign({},a,{roomId:ra||undefined}));
+          const rb=stRoomPick(st,sid,b.subjectKey,[sA.key]);
+          if(rb!==null){
+            stPut(st,sid,sA,Object.assign({},b,{roomId:rb||undefined}));
+            if(local(sid,[a.teacherId,b.teacherId])<before-1e-9) continue;
+            stTake(st,sid,sA);
+          }
+          stTake(st,sid,sB);
+        }
+      }
+      stPut(st,sid,sA,a); stPut(st,sid,sB,b);
+    }
+  }
+  return result;
+}
+/* ---- ejection-chain repair for lessons the greedy pass could not place ----
+   Take an unplaced lesson, choose the slot where it displaces the fewest other (unlocked) lessons, put it there, and
+   queue the displaced lessons to be placed again (a lesson never goes straight back to the slot it was evicted from).
+   Hard rules are never relaxed: days off, unavailable periods, daily limits, rooms and locked lessons all still apply. */
+function stRepairUnplaced(res, tasks, slots, cfg, rules, rng, deadline, onProgress){
+  const st=res.state; if(!st) return res; const byKey={}; slots.forEach(s=>{ byKey[s.key]=s; });
+  const need={}; tasks.forEach(t=>{ need[t.sectionId+'|'+t.subjectId]={t,n:t.periodsNeeded}; });
+  const countOf=(sid,subj)=>Object.values(st.grid[sid]||{}).filter(c=>c.subjectKey===subj).length;
+  const missingNow=()=>{ const out=[]; Object.keys(need).forEach(k=>{ const e=need[k], have=countOf(e.t.sectionId,e.t.subjectId); if(have<e.n) out.push({sectionId:e.t.sectionId,subjectId:e.t.subjectId,teacherId:e.t.teacherId,missing:e.n-have,needsRoom:!!(st.roomOpts[k]||[]).length}); }); return out; };
+  const queue=[]; missingNow().forEach(f=>{ for(let i=0;i<f.missing;i++) queue.push({sectionId:f.sectionId,subjectId:f.subjectId,teacherId:f.teacherId}); });
+  if(!queue.length) return res;
+  const tabu={}, snap=()=>JSON.parse(JSON.stringify(st.grid)); let iter=0, bestLen=queue.length, bestGrid=snap();
+  const lk=l=>l.sectionId+'|'+l.subjectId;
+  const stub=l=>{ const e=need[lk(l)]; return {sectionId:l.sectionId,subjectId:l.subjectId,teacherId:l.teacherId,periodsNeeded:e?e.n:1,totalPeriods:e?e.n:1,double:false}; };
+  const evict=(sec,key,out)=>{ const cell=st.grid[sec]&&st.grid[sec][key]; if(!cell) return; const s=byKey[key];
+    stTake(st,sec,s); out.push({sec,key,cell});
+    if(cell.double){ const [d,p]=[key.slice(0,key.lastIndexOf('_')),+key.slice(key.lastIndexOf('_')+1)], mk=d+'_'+(cell.blockPos===0?p+1:p-1), m=st.grid[sec][mk];
+      if(m&&m.blockId===cell.blockId&&!m.locked){ stTake(st,sec,byKey[mk]); out.push({sec,key:mk,cell:m}); } } };
+  const direct=l=>{ const grid=st.grid[l.sectionId], task=stub(l); let best=null,bs=-Infinity,br='';
+    for(let i=0;i<slots.length;i++){ const s=slots[i]; if(grid[s.key]||!stTeacherCan(st,rules,l.teacherId,s)) continue;
+      const room=stRoomPick(st,l.sectionId,l.subjectId,[s.key]); if(room===null) continue;
+      const sc=stScoreSlot(task,s,st,cfg,rules)+rng()*0.5; if(sc>bs){ bs=sc; best=s; br=room; } }
+    if(!best) return false;
+    stPut(st,l.sectionId,best,Object.assign({subjectKey:l.subjectId,teacherId:l.teacherId,blockId:best.key},br?{roomId:br}:{})); return true; };
+  const eject=l=>{
+    let best=null, bestCost=Infinity;
+    for(let i=0;i<slots.length;i++){ const s=slots[i], key=s.key, secCell=st.grid[l.sectionId][key];
+      if(secCell&&secCell.locked) continue;
+      const off=rules.offDays&&rules.offDays[l.teacherId]; if(off&&off.has(s.day)) continue;
+      const offS=rules.offSlots&&rules.offSlots[l.teacherId]; if(offS&&offS.has(key)) continue;
+      const ev=[]; let cost=0;
+      if(secCell){ ev.push([l.sectionId,key]); cost++; }
+      const other=st.at[l.teacherId]&&st.at[l.teacherId][key];
+      if(other&&other!==l.sectionId){ const oc=st.grid[other][key]; if(!oc||oc.locked) continue; if(!ev.some(e=>e[0]===other&&e[1]===key)){ ev.push([other,key]); cost++; } }
+      const cap=rules.maxPerDay&&rules.maxPerDay[l.teacherId];
+      if(cap){ const dayN=(st.tDay[l.teacherId]||{})[s.day]||0, rem=ev.filter(e=>{ const c=st.grid[e[0]][e[1]]; return c&&c.teacherId===l.teacherId; }).length;
+        if(dayN-rem>=cap){ let cand=null; for(const sec of Object.keys(st.grid)){ for(const k2 of Object.keys(st.grid[sec])){ const c2=st.grid[sec][k2]; if(c2.teacherId===l.teacherId&&k2.slice(0,k2.lastIndexOf('_'))===s.day&&!c2.locked&&!ev.some(e=>e[0]===sec&&e[1]===k2)){ cand=[sec,k2]; break; } } if(cand) break; }
+          if(!cand) continue; ev.push(cand); cost++; } }
+      const opts=st.roomOpts[lk(l)];
+      if(opts&&opts.length){ const free=opts.some(r=>stRoomFree(st,r,key)||ev.some(e=>{ const c=st.grid[e[0]][e[1]]; return c&&c.roomId===r&&e[1]===key; }));
+        if(!free){ let pick=null; for(const r of opts){ for(const sec of Object.keys(st.grid)){ const c=st.grid[sec][key]; if(c&&c.roomId===r&&!c.locked&&!ev.some(e=>e[0]===sec&&e[1]===key)){ pick=[sec,key]; break; } } if(pick) break; }
+          if(!pick) continue; ev.push(pick); cost++; } }
+      if((tabu[lk(l)+'|'+key]||0)>iter) cost+=3;
+      cost+=rng()*0.9; if(cost<bestCost){ bestCost=cost; best={s,ev}; } }
+    if(!best) return false;
+    const out=[]; best.ev.forEach(e=>evict(e[0],e[1],out));
+    const room=stRoomPick(st,l.sectionId,l.subjectId,[best.s.key]);
+    if(st.grid[l.sectionId][best.s.key]||!stTeacherCan(st,rules,l.teacherId,best.s)||room===null){ out.forEach(o=>stPut(st,o.sec,byKey[o.key],o.cell)); return false; }
+    stPut(st,l.sectionId,best.s,Object.assign({subjectKey:l.subjectId,teacherId:l.teacherId,blockId:best.s.key},room?{roomId:room}:{}));
+    out.forEach(o=>{ const e={sectionId:o.sec,subjectId:o.cell.subjectKey,teacherId:o.cell.teacherId}; tabu[lk(e)+'|'+o.key]=iter+8+Math.floor(rng()*10); queue.push(e); });
+    return true; };
+  let lastP=0;
+  while(queue.length && Date.now()<deadline){
+    iter++; const l=queue.shift();
+    if(onProgress && (iter&31)===0 && Date.now()-lastP>300){ lastP=Date.now(); onProgress(bestLen,bestGrid); }
+    if(!direct(l)){ if(!eject(l)) queue.push(l); }
+    if(queue.length<bestLen){ bestLen=queue.length; bestGrid=snap(); }
+    if(iter%64===0 && queue.length>bestLen+6 && Date.now()>deadline-1) break;
+  }
+  if(queue.length>bestLen){   // restore the best arrangement seen
+    const ns=stNewState(); ns.roomCap=st.roomCap; ns.roomOpts=st.roomOpts;
+    Object.keys(st.grid).forEach(sid=>stEnsure(ns,sid)); Object.keys(bestGrid).forEach(sid=>{ stEnsure(ns,sid); Object.keys(bestGrid[sid]).forEach(k=>stPut(ns,sid,byKey[k],bestGrid[sid][k])); });
+    res.state=ns; res.sectionGrid=ns.grid; res.teacherBusy=ns.busy; }
+  else { res.sectionGrid=st.grid; res.teacherBusy=st.busy; }
+  const keep=res.state; res.failures=(function(){ const stt=res.state; const out=[]; Object.keys(need).forEach(k=>{ const e=need[k], have=Object.values(stt.grid[e.t.sectionId]||{}).filter(c=>c.subjectKey===e.t.subjectId).length; if(have<e.n) out.push({sectionId:e.t.sectionId,subjectId:e.t.subjectId,teacherId:e.t.teacherId,missing:e.n-have,needsRoom:!!(stt.roomOpts[k]||[]).length}); }); return out; })();
+  return res;
+}
+
+/* Full solve: several seeded greedy attempts (most-constrained lessons first), keep the best, then polish it - all within
+   a time budget so the screen stays responsive. */
+function stSolve(tasks, slots, cfg, opts){
+  opts=opts||{}; const seed=opts.seed||1; const budget=opts.timeBudgetMs||ST_TIME_BUDGET_MS; const t0=Date.now();
+  const rules=opts.rules||{};
+  const load={}; tasks.forEach(t=>{ load[t.teacherId]=(load[t.teacherId]||0)+t.periodsNeeded; });
+  const flex=t=>{ const off=rules.offDays&&rules.offDays[t.teacherId]; const days=(cfg.days||[]).length-(off?off.size:0); return days*cfg.periodsPerDay; };
+  const ordered=tasks.slice().sort((a,b)=> ((load[b.teacherId]/flex(b))-(load[a.teacherId]/flex(a))) || (b.periodsNeeded-a.periodsNeeded));
+  const tk=t=>t.sectionId+'|'+t.subjectId, bump={};
+  let best=null, attempts=0, lastReport=0;
+  const unplacedOf=r=>r.failures.reduce((a,f)=>a+f.missing,0);
+  const report=force=>{ if(!opts.progress) return; const now=Date.now(); if(!force&&now-lastReport<400) return; lastReport=now; opts.progress({attempt:attempts,unplaced:best?unplacedOf(best):null,elapsed:now-t0,grid:best?best.sectionGrid:null}); };
+  for(let attempt=0; ; attempt++){
+    const elapsed=Date.now()-t0;
+    if(best){
+      if(unplacedOf(best)===0){ if(attempt>=ST_RESTARTS||elapsed>budget*0.55) break; }          // everything placed: a few more tries for a tidier timetable
+      else if(elapsed>budget*0.9) break;                                                          // still unplaced lessons: keep trying until the time budget is nearly used
+    }
+    // lessons that failed in earlier attempts go first next time; the rest are shuffled a little more each attempt
+    const order=attempt===0?ordered:(()=>{ const jit=stRng(seed*31+attempt*7919+13), rank=new Map(), spread=Math.min(ordered.length*0.5,6+attempt); ordered.forEach((t,i)=>rank.set(t,i+(jit()-0.5)*spread));
+      return ordered.slice().sort((a,b)=>((bump[tk(b)]||0)-(bump[tk(a)]||0))||(rank.get(a)-rank.get(b))); })();
+    let res=stPlaceAll(order, slots, cfg, { rules, locked:opts.locked, roomCap:opts.roomCap, rng:stRng(seed+attempt*101) });
+    if(res.failures.length){
+      const remain=budget*0.9-(Date.now()-t0), slice=Math.max(30,Math.min(remain,budget*(attempt===0?0.3:0.2)));
+      res=stRepairUnplaced(res, tasks, slots, cfg, rules, stRng(seed+attempt*17+5), Date.now()+slice, (u,g)=>{ if(opts.progress&&(!best||u<unplacedOf(best))) opts.progress({attempt:attempts+1,unplaced:u,elapsed:Date.now()-t0,grid:g}); });
+    }
+    res.score=stScoreResult(res,cfg); attempts++;
+    res.failures.forEach(f=>{ bump[f.sectionId+'|'+f.subjectId]=(bump[f.sectionId+'|'+f.subjectId]||0)+f.missing; });
+    const improved=!best||res.score<best.score; if(improved) best=res; report(improved);
+    if(best.score===0) break;
+  }
+  stPolish(best, cfg, { rules, slots, rng:stRng(seed+9), deadline:Math.max(Date.now()+60,t0+budget) });
+  best.score=stScoreResult(best,cfg); best.penalty=stObjective(best,cfg); best.attempts=attempts; best.seed=seed; report(true);
+  return best;
+}
+/* ---------- feasibility pre-check: say in plain words what cannot work BEFORE generating ---------- */
+function stPrecheck(tasks, cfg, rules, opts){
+  opts=opts||{}; const issues=[]; const slotsPerWeek=(cfg.days||[]).length*cfg.periodsPerDay; rules=rules||{};
+  const secTotals={}; tasks.forEach(t=>{ secTotals[t.sectionId]=(secTotals[t.sectionId]||0)+t.periodsNeeded; });
+  Object.keys(secTotals).forEach(sid=>{
+    if(secTotals[sid]>slotsPerWeek) issues.push({level:'error',msg:`${(opts.sectionLabel||(x=>x))(sid)} needs ${secTotals[sid]} periods a week but the week only has ${slotsPerWeek}. Reduce the weekly periods.`});
+  });
+  const load={}; tasks.forEach(t=>{ load[t.teacherId]=(load[t.teacherId]||0)+t.periodsNeeded; });
+  Object.keys(load).forEach(tid=>{
+    const off=rules.offDays&&rules.offDays[tid]; const days=(cfg.days||[]).length-(off?off.size:0);
+    const cap=rules.maxPerDay&&rules.maxPerDay[tid]; const perDay=cap?Math.min(cap,cfg.periodsPerDay):cfg.periodsPerDay;
+    const offS=rules.offSlots&&rules.offSlots[tid]; let avail=0; (cfg.days||[]).forEach(d=>{ if(off&&off.has(d)) return; let n=cfg.periodsPerDay; if(offS) n-=[...offS].filter(k=>k.slice(0,k.lastIndexOf('_'))===d).length; avail+=Math.max(0,cap?Math.min(cap,n):n); }); const name=(opts.teacherName||(x=>x))(tid);
+    if(load[tid]>avail) issues.push({level:'error',msg:`${name} is asked to teach ${load[tid]} periods a week but is only available for ${avail}${off?' (days off)':''}${cap?` (max ${cap} a day)`:''}. Assign some subjects to another teacher or relax their limits.`});
+    else if(load[tid]>avail*0.9) issues.push({level:'warn',msg:`${name} is almost fully booked (${load[tid]} of ${avail} periods) - the timetable will have little room to move.`});
+  });
+  return issues;
+}
+
+// human-readable quality summary of a solved timetable
+function stQualityOf(result, cfg){
+  let holes=0, repeats=0, teacherGaps=0; const days=(cfg.days||[]).length||5;
+  Object.keys(result.sectionGrid).forEach(sid=>{
+    const grid=result.sectionGrid[sid]; const perDay={}; const subj={};
+    Object.keys(grid).forEach(key=>{ const i=key.lastIndexOf('_'); const d=key.slice(0,i), p=+key.slice(i+1); (perDay[d]=perDay[d]||[]).push(p); const m=(subj[grid[key].subjectKey]=subj[grid[key].subjectKey]||{n:0,d:{},double:false}); m.n++; m.d[d]=(m.d[d]||0)+1; if(grid[key].double) m.double=true; });
+    Object.keys(perDay).forEach(d=>{ holes+=Math.max.apply(null,perDay[d])-perDay[d].length; });
+    Object.keys(subj).forEach(k=>{ const allowed=subj[k].double?2:Math.max(1,Math.ceil(subj[k].n/days)); Object.keys(subj[k].d).forEach(d=>{ if(subj[k].d[d]>allowed) repeats+=subj[k].d[d]-allowed; }); });
+  });
+  Object.keys(result.teacherBusy).forEach(t=>{ const perDay={}; result.teacherBusy[t].forEach(key=>{ const i=key.lastIndexOf('_'); (perDay[key.slice(0,i)]=perDay[key.slice(0,i)]||[]).push(+key.slice(i+1)); });
+    Object.keys(perDay).forEach(d=>{ const ps=perDay[d]; teacherGaps+=Math.max.apply(null,ps)-Math.min.apply(null,ps)+1-ps.length; }); });
+  return { holes, repeats, teacherGaps };
+}</script>
+<script>
+/* ======================================================================
+   SCHEDULING ENGINE - copied unchanged from the Smart School App
+   (src/renderer/school-timetable.js). Same hard rules and soft preferences.
+   ====================================================================== */
+const ST_MORNING_SUBJECTS = ['maths','english','kinyarwanda'];
+const ST_LATE_SUBJECTS = ['arts','pes'];
+const ST_RESTARTS = 40;         // seeded greedy attempts (cut short by the time budget), keep the best
+const ST_POLISH_ITERS = 6000;   // bounded local-search moves after the best placement
+const ST_TIME_BUDGET_MS = 900;  // whole solve stays under about a second so the screen stays responsive
+function stPeriodSlots(cfg){
+  const out=[]; (cfg.days||[]).forEach(day=>{ for(let p=1;p<=cfg.periodsPerDay;p++) out.push({day,period:p,key:day+'_'+p}); }); return out;
+}
+function stRng(seed){
+  let a=(seed>>>0)||1;
+  return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+}
+function stShuffle(arr, seed){
+  const out=arr.slice(); const rng=stRng(seed||1);
+  for(let i=out.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [out[i],out[j]]=[out[j],out[i]]; }
+  return out;
+}
+
+/* ---------- placement state ---------- */
+function stNewState(){ return { grid:{}, busy:{}, at:{}, tDay:{}, sDay:{}, sSubj:{}, rm:{}, roomOpts:{}, roomCap:{}, roomUse:{} }; }
+function stEnsure(st, sectionId, teacherId){
+  if(!st.grid[sectionId]) st.grid[sectionId]={}; if(!st.sDay[sectionId]) st.sDay[sectionId]={};
+  if(teacherId){ if(!st.busy[teacherId]) st.busy[teacherId]=new Set(); if(!st.at[teacherId]) st.at[teacherId]={}; if(!st.tDay[teacherId]) st.tDay[teacherId]={}; }
+}
+function stPut(st, sectionId, slot, cell){
+  stEnsure(st, sectionId, cell.teacherId);
+  st.grid[sectionId][slot.key]=cell;
+  if(cell.teacherId){ st.busy[cell.teacherId].add(slot.key); st.at[cell.teacherId][slot.key]=sectionId; st.tDay[cell.teacherId][slot.day]=(st.tDay[cell.teacherId][slot.day]||0)+1; }
+  if(cell.roomId){ const r=st.rm[cell.roomId]||(st.rm[cell.roomId]={}); r[slot.key]=(r[slot.key]||0)+1; st.roomUse[cell.roomId]=(st.roomUse[cell.roomId]||0)+1; }
+  (st.sDay[sectionId][slot.day]=st.sDay[sectionId][slot.day]||new Set()).add(slot.period);
+  const sk=sectionId+'|'+cell.subjectKey; const m=(st.sSubj[sk]=st.sSubj[sk]||{}); m[slot.day]=(m[slot.day]||0)+1;
+}
+function stTake(st, sectionId, slot){
+  const cell=st.grid[sectionId][slot.key]; delete st.grid[sectionId][slot.key];
+  if(cell.teacherId){ st.busy[cell.teacherId].delete(slot.key); delete st.at[cell.teacherId][slot.key]; st.tDay[cell.teacherId][slot.day]--; }
+  if(cell.roomId){ st.rm[cell.roomId][slot.key]--; st.roomUse[cell.roomId]--; }
+  st.sDay[sectionId][slot.day].delete(slot.period);
+  st.sSubj[sectionId+'|'+cell.subjectKey][slot.day]--;
+  return cell;
+}
+/* ---- rooms and labs: a room can hold `capacity` classes at once (a lab 1, a playground several) ---- */
+function stRoomFree(st, roomId, key){ return (((st.rm[roomId]||{})[key])||0) < (st.roomCap[roomId]||1); }
+// '' = this lesson needs no special room; null = every allowed room is already full at those periods;
+// otherwise the least-used allowed room that is free for ALL the given period keys (1 for a single, 2 for a double)
+function stRoomPick(st, sectionId, subjectKey, keys){
+  const opts=st.roomOpts[sectionId+'|'+subjectKey]; if(!opts||!opts.length) return '';
+  let best=null, bu=Infinity;
+  for(const r of opts){ if(keys.every(k=>stRoomFree(st,r,k))){ const u=st.roomUse[r]||0; if(u<bu){ bu=u; best=r; } } }
+  return best;
+}
+// hard constraints for putting `teacherId` into slot: free, not on a day off, under the daily maximum
+function stTeacherCan(st, rules, teacherId, slot){
+  if(!teacherId) return true;
+  if(st.busy[teacherId] && st.busy[teacherId].has(slot.key)) return false;
+  const off=rules&&rules.offDays&&rules.offDays[teacherId]; if(off&&off.has(slot.day)) return false;
+  const offS=rules&&rules.offSlots&&rules.offSlots[teacherId]; if(offS&&offS.has(slot.key)) return false;
+  const cap=rules&&rules.maxPerDay&&rules.maxPerDay[teacherId]; if(cap && ((st.tDay[teacherId]||{})[slot.day]||0)>=cap) return false;
+  return true;
+}
+function stSlotSoftScore(subjectId, day, period, cfg, teacherBusy, teacherId, sectionSubjDay, sectionId, extra){
+  // kept for compatibility with earlier callers/tests; the solver uses stScoreSlot below
+  let score=0;
+  const dayKey=sectionId+'|'+subjectId;
+  if((sectionSubjDay[dayKey]||new Set()).has(day)) score-=50;
+  if(ST_MORNING_SUBJECTS.includes(subjectId)) score += (cfg.periodsPerDay-period);
+  else if(ST_LATE_SUBJECTS.includes(subjectId)) score += period;
+  const busy=teacherBusy[teacherId];
+  if(busy && (busy.has(day+'_'+(period-1)) || busy.has(day+'_'+(period+1)))) score += 8;
+  return score;
+}
+// How good is this slot for this lesson (higher = better). Balanced so the day fills from period 1 with no holes,
+// a subject is not repeated on a day beyond what its weekly count needs, lessons spread evenly over the week.
+// `rules` (optional) carries each teacher's soft time-of-day preference - a nudge, never a hard block.
+function stScoreSlot(task, slot, st, cfg, rules){
+  const sec=task.sectionId, day=slot.day, period=slot.period; let sc=0;
+  const days=(cfg.days||[]).length||5;
+  // a double-period subject wants up to 2 periods (one block) on a day, not "weekly count / days"
+  const allowed=task.double?2:Math.max(1,Math.ceil((task.totalPeriods||task.periodsNeeded)/days));
+  const cnt=((st.sSubj[sec+'|'+task.subjectId]||{})[day])||0;
+  if(cnt>=allowed) sc-=90*(cnt-allowed+1); else if(cnt>0) sc-=6*cnt;
+  const occ=st.sDay[sec][day]; let firstFree=1; if(occ) while(occ.has(firstFree)) firstFree++;
+  if(period>firstFree) sc-=28*(period-firstFree); else if(period===firstFree) sc+=10;
+  sc-=5*(occ?occ.size:0);
+  if(ST_MORNING_SUBJECTS.includes(task.subjectId)) sc+=(cfg.periodsPerDay-period)*0.6;
+  else if(ST_LATE_SUBJECTS.includes(task.subjectId)) sc+=period*0.5;
+  const busy=st.busy[task.teacherId];
+  if(busy){ if(busy.has(day+'_'+(period-1))||busy.has(day+'_'+(period+1))) sc+=6; }
+  // soft teacher time-of-day preference: "morning" = at/before the lunch period (or the day's
+  // midpoint if lunch isn't configured), "afternoon" = after it.
+  const pref=rules&&rules.pref&&rules.pref[task.teacherId];
+  if(pref){
+    const boundary=cfg.lunchAfterPeriod||Math.ceil(cfg.periodsPerDay/2);
+    const isMorning=period<=boundary;
+    sc += (pref==='morning')===isMorning ? 12 : -10;
+  }
+  return sc;
+}
+/* split a subject's weekly periods into placement blocks: pairs of 2 (doubles), with one single
+   left over if the count is odd; a non-double subject is simply N ordinary singles. */
+function stTaskBlocks(periodsNeeded, double){
+  if(!double) return Array(Math.max(0,periodsNeeded)).fill(1);
+  const blocks=[]; let n=Math.max(0,periodsNeeded);
+  while(n>=2){ blocks.push(2); n-=2; }
+  if(n===1) blocks.push(1);
+  return blocks;
+}
+// valid starting periods for a double: period p and p+1 must both exist in the day with no
+// break/lunch between them, or it would really be two separate lessons, not one double.
+function stDoubleStarts(cfg){
+  const out=[]; for(let p=1;p<cfg.periodsPerDay;p++){ if((cfg.breaksAfter||[]).includes(p)||p===cfg.lunchAfterPeriod) continue; out.push(p); }
+  return out;
+}
+
+/* One full greedy placement. opts: { rules, locked:{sectionId:{key:cell}}, rng }.
+   Returns { sectionGrid, teacherBusy, failures }. Never violates the hard constraints: a slot is only chosen if the
+   section's slot is empty, the teacher is free, not on a day off and under their daily maximum. Periods that cannot be
+   placed at all are reported in `failures`, never silently dropped. Locked lessons (kept from manual edits) are placed
+   first and count towards their subject's weekly periods. */
+function stPlaceAll(tasks, slots, cfg, opts){
+  opts=opts||{}; const rules=opts.rules||{}; const rng=opts.rng||Math.random; const failures=[];
+  const st=stNewState(); const slotByKey={}; slots.forEach(s=>{ slotByKey[s.key]=s; });
+  tasks.forEach(t=>stEnsure(st,t.sectionId,t.teacherId));
+  st.roomCap=opts.roomCap||{}; tasks.forEach(t=>{ if(t.rooms&&t.rooms.length) st.roomOpts[t.sectionId+'|'+t.subjectId]=t.rooms; });
+  const lockedCount={};
+  const lockedIn=opts.locked||{};
+  Object.keys(lockedIn).forEach(sectionId=>{
+    Object.keys(lockedIn[sectionId]||{}).forEach(key=>{
+      const slot=slotByKey[key]; const c=lockedIn[sectionId][key]; if(!slot||!c) return;
+      if(st.grid[sectionId]&&st.grid[sectionId][key]) return;
+      if(c.teacherId && st.busy[c.teacherId] && st.busy[c.teacherId].has(key)) return;   // a clash inside the locked set itself: drop it
+      if(c.roomId && !stRoomFree(st,c.roomId,key)) return;
+      stPut(st, sectionId, slot, Object.assign({}, c, {locked:true}));
+      const k=sectionId+'|'+c.subjectKey; lockedCount[k]=(lockedCount[k]||0)+1;
+    });
+  });
+  const doubleStarts=new Set(stDoubleStarts(cfg));
+  tasks.forEach(task=>{
+    const total=task.periodsNeeded; task.totalPeriods=total;
+    const already=lockedCount[task.sectionId+'|'+task.subjectId]||0;
+    const blocks=stTaskBlocks(Math.max(0,total-already), task.double);
+    blocks.forEach(size=>{
+      if(size===2 && stPlaceDouble(task, st, slots, cfg, rules, rng, doubleStarts)) return;
+      // couldn't fit as a double anywhere (or it wasn't a double subject): place as single period(s)
+      // instead of losing the lesson - a double that doesn't fit becomes two ordinary singles.
+      const need=size===2?2:1;
+      for(let i=0;i<need;i++){
+        if(!stPlaceSingle(task, st, slots, cfg, rules, rng)) failures.push({ sectionId:task.sectionId, subjectId:task.subjectId, missing:1, teacherId:task.teacherId, needsRoom:!!(st.roomOpts[task.sectionId+'|'+task.subjectId]||[]).length });
+      }
+    });
+  });
+  return { sectionGrid:st.grid, teacherBusy:st.busy, failures, state:st };
+}
+// place one ordinary (single-period) lesson at its best-scoring free slot, falling back to the
+// ejection repair pass when nothing is free outright. Returns true/false (placed or not).
+function stPlaceSingle(task, st, slots, cfg, rules, rng){
+  const grid=st.grid[task.sectionId];
+  let best=null, bestScore=-Infinity, bestRoom='';
+  for(let i=0;i<slots.length;i++){
+    const s=slots[i]; if(grid[s.key]||!stTeacherCan(st,rules,task.teacherId,s)) continue;
+    const room=stRoomPick(st,task.sectionId,task.subjectId,[s.key]); if(room===null) continue;
+    const sc=stScoreSlot(task,s,st,cfg,rules)+rng()*0.5;
+    if(sc>bestScore){ bestScore=sc; best=s; bestRoom=room; }
+  }
+  if(!best && stRepair(task, st, slots, cfg, rules, rng)) return true;
+  if(!best) return false;
+  stPut(st, task.sectionId, best, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId, blockId:best.key }, bestRoom?{roomId:bestRoom}:{}));
+  return true;
+}
+// place one double (2 consecutive periods, same day) lesson at its best-scoring valid start.
+// No ejection repair for doubles (kept simple/fast) - the caller falls back to two singles
+// when this returns false, so the periods are never lost even if no double slot is free.
+function stPlaceDouble(task, st, slots, cfg, rules, rng, doubleStarts){
+  const grid=st.grid[task.sectionId]; const slotByKey={}; slots.forEach(s=>{ slotByKey[s.key]=s; });
+  let best=null, best2=null, bestScore=-Infinity, bestRoom='';
+  for(let i=0;i<slots.length;i++){
+    const s=slots[i]; if(!doubleStarts.has(s.period)) continue;
+    const s2=slotByKey[s.day+'_'+(s.period+1)]; if(!s2) continue;
+    if(grid[s.key]||grid[s2.key]) continue;
+    if(!stTeacherCan(st,rules,task.teacherId,s)||!stTeacherCan(st,rules,task.teacherId,s2)) continue;
+    const capT=rules.maxPerDay&&rules.maxPerDay[task.teacherId]; if(capT && (((st.tDay[task.teacherId]||{})[s.day])||0)+2>capT) continue;   // BOTH periods of the double must fit under the daily limit
+    const room=stRoomPick(st,task.sectionId,task.subjectId,[s.key,s2.key]); if(room===null) continue;
+    const sc=stScoreSlot(task,s,st,cfg,rules)+rng()*0.5;
+    if(sc>bestScore){ bestScore=sc; best=s; best2=s2; bestRoom=room; }
+  }
+  if(!best) return false;
+  const blockId=task.sectionId+'|'+task.subjectId+'|'+best.key; const rx=bestRoom?{roomId:bestRoom}:{};
+  stPut(st, task.sectionId, best, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId, blockId, double:true, blockPos:0 }, rx));
+  stPut(st, task.sectionId, best2, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId, blockId, double:true, blockPos:1 }, rx));
+  return true;
+}
+/* Ejection repair: the lesson found no free slot only because the same teacher is busy in ANOTHER section at the
+   section's free slots. Try moving one of those other lessons (never a locked one) to a different slot where its
+   teacher is free, then use the freed slot. Depth one, so it stays fast and predictable. */
+function stRepair(task, st, slots, cfg, rules, rng){
+  const grid=st.grid[task.sectionId]; const order=slots.slice();
+  for(let i=order.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
+  for(const s of order){
+    if(grid[s.key]) continue;
+    const off=rules.offDays&&rules.offDays[task.teacherId]; if(off&&off.has(s.day)) continue;
+    const blockerSec=st.at[task.teacherId]&&st.at[task.teacherId][s.key]; if(!blockerSec||blockerSec===task.sectionId) continue;
+    const bcell=st.grid[blockerSec][s.key]; if(!bcell||bcell.locked||bcell.double) continue;   // never split a double period
+    const cap=rules.maxPerDay&&rules.maxPerDay[task.teacherId];
+    if(cap && ((st.tDay[task.teacherId]||{})[s.day]||0)>cap) continue;
+    for(const s2 of order){
+      if(s2.key===s.key||st.grid[blockerSec][s2.key]) continue;
+      // take the blocker out, move it to s2 first, THEN check the new lesson at s with the updated counts
+      // (checking both before moving either let one teacher end up over their daily limit when blocker and new lesson share a teacher)
+      const removed=stTake(st, blockerSec, s);
+      const r2=stRoomPick(st, blockerSec, removed.subjectKey, [s2.key]);
+      if(r2!==null && stTeacherCan(st, rules, removed.teacherId, s2)){
+        stPut(st, blockerSec, s2, Object.assign({}, removed, r2?{roomId:r2}:{roomId:undefined}));
+        const r1=stRoomPick(st, task.sectionId, task.subjectId, [s.key]);
+        if(r1!==null && stTeacherCan(st, rules, task.teacherId, s)){
+          stPut(st, task.sectionId, s, Object.assign({ subjectKey:task.subjectId, teacherId:task.teacherId }, r1?{roomId:r1}:{}));
+          return true;
+        }
+        stTake(st, blockerSec, s2);
+      }
+      stPut(st, blockerSec, s, removed);
+    }
+  }
+  return false;
+}
+/* ---------- quality measure (lower = better) ---------- */
+function stSectionPenalty(grid, cfg){
+  const days=cfg.days||[]; let pen=0; const perDay={}; const subj={}; const counts=[];
+  Object.keys(grid).forEach(key=>{
+    const i=key.lastIndexOf('_'); const day=key.slice(0,i), period=+key.slice(i+1); const cell=grid[key];
+    (perDay[day]=perDay[day]||[]).push(period);
+    const m=(subj[cell.subjectKey]=subj[cell.subjectKey]||{n:0,days:{},double:false}); m.n++; m.days[day]=(m.days[day]||0)+1; if(cell.double) m.double=true;
+    if(ST_MORNING_SUBJECTS.includes(cell.subjectKey) && period>5) pen+=3;
+    if(ST_LATE_SUBJECTS.includes(cell.subjectKey) && period<=3) pen+=3;
+  });
+  days.forEach(d=>{ const ps=perDay[d]||[]; counts.push(ps.length); if(ps.length){ pen+=30*(Math.max.apply(null,ps)-ps.length); } });   // holes inside the day
+  const total=counts.reduce((a,b)=>a+b,0), avg=days.length?total/days.length:0;
+  counts.forEach(c=>{ pen+=4*Math.abs(c-avg); });                                                                                            // uneven days
+  // repeats: a double-period subject wants exactly 2 (one block) on a day, not the usual weekly-average cap
+  Object.keys(subj).forEach(k=>{ const allowed=subj[k].double?2:Math.max(1,Math.ceil(subj[k].n/(days.length||5)));
+    Object.keys(subj[k].days).forEach(d=>{ const c=subj[k].days[d]; if(c>allowed) pen+=90*(c-allowed); else if(c>1 && !(subj[k].double&&c===2)) pen+=6*(c-1); }); });
+  return pen;
+}
+function stTeacherPenalty(busySet, cfg){
+  if(!busySet||!busySet.size) return 0; const perDay={}; let pen=0;
+  busySet.forEach(key=>{ const i=key.lastIndexOf('_'); (perDay[key.slice(0,i)]=perDay[key.slice(0,i)]||[]).push(+key.slice(i+1)); });
+  Object.keys(perDay).forEach(d=>{ const ps=perDay[d]; const span=Math.max.apply(null,ps)-Math.min.apply(null,ps)+1; pen+=10*(span-ps.length); if(ps.length>7) pen+=5*(ps.length-7); });   // idle gaps, very long days
+  return pen;
+}
+function stObjective(result, cfg){
+  let pen=0; Object.keys(result.sectionGrid).forEach(sid=>{ pen+=stSectionPenalty(result.sectionGrid[sid],cfg); });
+  Object.keys(result.teacherBusy).forEach(t=>{ pen+=stTeacherPenalty(result.teacherBusy[t],cfg); });
+  return pen;
+}
+function stScoreResult(result, cfg){
+  let failed=0; result.failures.forEach(f=>failed+=f.missing);
+  return failed*100000 + (cfg?stObjective(result,cfg):0);      // fewer unplaced periods always beats a prettier but incomplete timetable
+}
+
+/* Bounded local search: move a lesson into a free slot of the same section, or swap two lessons of a section, and keep the
+   change only if it is still valid and lowers the penalty of the sections and teachers it touches. Locked lessons never move. */
+function stPolish(result, cfg, opts){
+  opts=opts||{}; const rules=opts.rules||{}; const rng=opts.rng||Math.random; const deadline=opts.deadline||(Date.now()+400);
+  const st=result.state; if(!st) return result; const slots=opts.slots||stPeriodSlots(cfg); const byKey={}; slots.forEach(s=>{ byKey[s.key]=s; });
+  const sectionIds=Object.keys(st.grid); if(!sectionIds.length) return result;
+  const local=(sid,tids)=>{ let p=stSectionPenalty(st.grid[sid],cfg); tids.forEach(t=>{ if(t) p+=stTeacherPenalty(st.busy[t],cfg); }); return p; };
+  for(let iter=0; iter<ST_POLISH_ITERS && Date.now()<deadline; iter++){
+    if(iter%250===249 && stObjective(result,cfg)===0) break;   // nothing left to improve
+    const sid=sectionIds[Math.floor(rng()*sectionIds.length)]; const grid=st.grid[sid]; const keys=Object.keys(grid).filter(k=>!grid[k].locked&&!grid[k].double);   // a double's two periods stay paired; polish only moves/swaps singles
+    if(!keys.length) continue;
+    const kA=keys[Math.floor(rng()*keys.length)]; const sA=byKey[kA]; const a=grid[kA];
+    if(rng()<0.5){
+      const sB=slots[Math.floor(rng()*slots.length)]; if(grid[sB.key]) continue;
+      const before=local(sid,[a.teacherId]);
+      stTake(st,sid,sA);
+      if(stTeacherCan(st,rules,a.teacherId,sB)){
+        const rm=stRoomPick(st,sid,a.subjectKey,[sB.key]);
+        if(rm!==null){
+          stPut(st,sid,sB,Object.assign({},a,{roomId:rm||undefined}));
+          if(local(sid,[a.teacherId])<before-1e-9) continue;
+          stTake(st,sid,sB);
+        }
+      }
+      stPut(st,sid,sA,a);
+    } else {
+      const kB=keys[Math.floor(rng()*keys.length)]; if(kA===kB) continue; const sB=byKey[kB]; const b=grid[kB]; if(a.subjectKey===b.subjectKey&&a.teacherId===b.teacherId) continue;
+      const before=local(sid,[a.teacherId,b.teacherId]);
+      stTake(st,sid,sA); stTake(st,sid,sB);
+      if(stTeacherCan(st,rules,a.teacherId,sB) && stTeacherCan(st,rules,b.teacherId,sA)){
+        const ra=stRoomPick(st,sid,a.subjectKey,[sB.key]);
+        if(ra!==null){
+          stPut(st,sid,sB,Object.assign({},a,{roomId:ra||undefined}));
+          const rb=stRoomPick(st,sid,b.subjectKey,[sA.key]);
+          if(rb!==null){
+            stPut(st,sid,sA,Object.assign({},b,{roomId:rb||undefined}));
+            if(local(sid,[a.teacherId,b.teacherId])<before-1e-9) continue;
+            stTake(st,sid,sA);
+          }
+          stTake(st,sid,sB);
+        }
+      }
+      stPut(st,sid,sA,a); stPut(st,sid,sB,b);
+    }
+  }
+  return result;
+}
+/* ---- ejection-chain repair for lessons the greedy pass could not place ----
+   Take an unplaced lesson, choose the slot where it displaces the fewest other (unlocked) lessons, put it there, and
+   queue the displaced lessons to be placed again (a lesson never goes straight back to the slot it was evicted from).
+   Hard rules are never relaxed: days off, unavailable periods, daily limits, rooms and locked lessons all still apply. */
+function stRepairUnplaced(res, tasks, slots, cfg, rules, rng, deadline, onProgress){
+  const st=res.state; if(!st) return res; const byKey={}; slots.forEach(s=>{ byKey[s.key]=s; });
+  const need={}; tasks.forEach(t=>{ need[t.sectionId+'|'+t.subjectId]={t,n:t.periodsNeeded}; });
+  const countOf=(sid,subj)=>Object.values(st.grid[sid]||{}).filter(c=>c.subjectKey===subj).length;
+  const missingNow=()=>{ const out=[]; Object.keys(need).forEach(k=>{ const e=need[k], have=countOf(e.t.sectionId,e.t.subjectId); if(have<e.n) out.push({sectionId:e.t.sectionId,subjectId:e.t.subjectId,teacherId:e.t.teacherId,missing:e.n-have,needsRoom:!!(st.roomOpts[k]||[]).length}); }); return out; };
+  const queue=[]; missingNow().forEach(f=>{ for(let i=0;i<f.missing;i++) queue.push({sectionId:f.sectionId,subjectId:f.subjectId,teacherId:f.teacherId}); });
+  if(!queue.length) return res;
+  const tabu={}, snap=()=>JSON.parse(JSON.stringify(st.grid)); let iter=0, bestLen=queue.length, bestGrid=snap();
+  const lk=l=>l.sectionId+'|'+l.subjectId;
+  const stub=l=>{ const e=need[lk(l)]; return {sectionId:l.sectionId,subjectId:l.subjectId,teacherId:l.teacherId,periodsNeeded:e?e.n:1,totalPeriods:e?e.n:1,double:false}; };
+  const evict=(sec,key,out)=>{ const cell=st.grid[sec]&&st.grid[sec][key]; if(!cell) return; const s=byKey[key];
+    stTake(st,sec,s); out.push({sec,key,cell});
+    if(cell.double){ const [d,p]=[key.slice(0,key.lastIndexOf('_')),+key.slice(key.lastIndexOf('_')+1)], mk=d+'_'+(cell.blockPos===0?p+1:p-1), m=st.grid[sec][mk];
+      if(m&&m.blockId===cell.blockId&&!m.locked){ stTake(st,sec,byKey[mk]); out.push({sec,key:mk,cell:m}); } } };
+  const direct=l=>{ const grid=st.grid[l.sectionId], task=stub(l); let best=null,bs=-Infinity,br='';
+    for(let i=0;i<slots.length;i++){ const s=slots[i]; if(grid[s.key]||!stTeacherCan(st,rules,l.teacherId,s)) continue;
+      const room=stRoomPick(st,l.sectionId,l.subjectId,[s.key]); if(room===null) continue;
+      const sc=stScoreSlot(task,s,st,cfg,rules)+rng()*0.5; if(sc>bs){ bs=sc; best=s; br=room; } }
+    if(!best) return false;
+    stPut(st,l.sectionId,best,Object.assign({subjectKey:l.subjectId,teacherId:l.teacherId,blockId:best.key},br?{roomId:br}:{})); return true; };
+  const eject=l=>{
+    let best=null, bestCost=Infinity;
+    for(let i=0;i<slots.length;i++){ const s=slots[i], key=s.key, secCell=st.grid[l.sectionId][key];
+      if(secCell&&secCell.locked) continue;
+      const off=rules.offDays&&rules.offDays[l.teacherId]; if(off&&off.has(s.day)) continue;
+      const offS=rules.offSlots&&rules.offSlots[l.teacherId]; if(offS&&offS.has(key)) continue;
+      const ev=[]; let cost=0;
+      if(secCell){ ev.push([l.sectionId,key]); cost++; }
+      const other=st.at[l.teacherId]&&st.at[l.teacherId][key];
+      if(other&&other!==l.sectionId){ const oc=st.grid[other][key]; if(!oc||oc.locked) continue; if(!ev.some(e=>e[0]===other&&e[1]===key)){ ev.push([other,key]); cost++; } }
+      const cap=rules.maxPerDay&&rules.maxPerDay[l.teacherId];
+      if(cap){ const dayN=(st.tDay[l.teacherId]||{})[s.day]||0, rem=ev.filter(e=>{ const c=st.grid[e[0]][e[1]]; return c&&c.teacherId===l.teacherId; }).length;
+        if(dayN-rem>=cap){ let cand=null; for(const sec of Object.keys(st.grid)){ for(const k2 of Object.keys(st.grid[sec])){ const c2=st.grid[sec][k2]; if(c2.teacherId===l.teacherId&&k2.slice(0,k2.lastIndexOf('_'))===s.day&&!c2.locked&&!ev.some(e=>e[0]===sec&&e[1]===k2)){ cand=[sec,k2]; break; } } if(cand) break; }
+          if(!cand) continue; ev.push(cand); cost++; } }
+      const opts=st.roomOpts[lk(l)];
+      if(opts&&opts.length){ const free=opts.some(r=>stRoomFree(st,r,key)||ev.some(e=>{ const c=st.grid[e[0]][e[1]]; return c&&c.roomId===r&&e[1]===key; }));
+        if(!free){ let pick=null; for(const r of opts){ for(const sec of Object.keys(st.grid)){ const c=st.grid[sec][key]; if(c&&c.roomId===r&&!c.locked&&!ev.some(e=>e[0]===sec&&e[1]===key)){ pick=[sec,key]; break; } } if(pick) break; }
+          if(!pick) continue; ev.push(pick); cost++; } }
+      if((tabu[lk(l)+'|'+key]||0)>iter) cost+=3;
+      cost+=rng()*0.9; if(cost<bestCost){ bestCost=cost; best={s,ev}; } }
+    if(!best) return false;
+    const out=[]; best.ev.forEach(e=>evict(e[0],e[1],out));
+    const room=stRoomPick(st,l.sectionId,l.subjectId,[best.s.key]);
+    if(st.grid[l.sectionId][best.s.key]||!stTeacherCan(st,rules,l.teacherId,best.s)||room===null){ out.forEach(o=>stPut(st,o.sec,byKey[o.key],o.cell)); return false; }
+    stPut(st,l.sectionId,best.s,Object.assign({subjectKey:l.subjectId,teacherId:l.teacherId,blockId:best.s.key},room?{roomId:room}:{}));
+    out.forEach(o=>{ const e={sectionId:o.sec,subjectId:o.cell.subjectKey,teacherId:o.cell.teacherId}; tabu[lk(e)+'|'+o.key]=iter+8+Math.floor(rng()*10); queue.push(e); });
+    return true; };
+  let lastP=0;
+  while(queue.length && Date.now()<deadline){
+    iter++; const l=queue.shift();
+    if(onProgress && (iter&31)===0 && Date.now()-lastP>300){ lastP=Date.now(); onProgress(bestLen,bestGrid); }
+    if(!direct(l)){ if(!eject(l)) queue.push(l); }
+    if(queue.length<bestLen){ bestLen=queue.length; bestGrid=snap(); }
+    if(iter%64===0 && queue.length>bestLen+6 && Date.now()>deadline-1) break;
+  }
+  if(queue.length>bestLen){   // restore the best arrangement seen
+    const ns=stNewState(); ns.roomCap=st.roomCap; ns.roomOpts=st.roomOpts;
+    Object.keys(st.grid).forEach(sid=>stEnsure(ns,sid)); Object.keys(bestGrid).forEach(sid=>{ stEnsure(ns,sid); Object.keys(bestGrid[sid]).forEach(k=>stPut(ns,sid,byKey[k],bestGrid[sid][k])); });
+    res.state=ns; res.sectionGrid=ns.grid; res.teacherBusy=ns.busy; }
+  else { res.sectionGrid=st.grid; res.teacherBusy=st.busy; }
+  const keep=res.state; res.failures=(function(){ const stt=res.state; const out=[]; Object.keys(need).forEach(k=>{ const e=need[k], have=Object.values(stt.grid[e.t.sectionId]||{}).filter(c=>c.subjectKey===e.t.subjectId).length; if(have<e.n) out.push({sectionId:e.t.sectionId,subjectId:e.t.subjectId,teacherId:e.t.teacherId,missing:e.n-have,needsRoom:!!(stt.roomOpts[k]||[]).length}); }); return out; })();
+  return res;
+}
+
+/* Full solve: several seeded greedy attempts (most-constrained lessons first), keep the best, then polish it - all within
+   a time budget so the screen stays responsive. */
+function stSolve(tasks, slots, cfg, opts){
+  opts=opts||{}; const seed=opts.seed||1; const budget=opts.timeBudgetMs||ST_TIME_BUDGET_MS; const t0=Date.now();
+  const rules=opts.rules||{};
+  const load={}; tasks.forEach(t=>{ load[t.teacherId]=(load[t.teacherId]||0)+t.periodsNeeded; });
+  const flex=t=>{ const off=rules.offDays&&rules.offDays[t.teacherId]; const days=(cfg.days||[]).length-(off?off.size:0); return days*cfg.periodsPerDay; };
+  const ordered=tasks.slice().sort((a,b)=> ((load[b.teacherId]/flex(b))-(load[a.teacherId]/flex(a))) || (b.periodsNeeded-a.periodsNeeded));
+  const tk=t=>t.sectionId+'|'+t.subjectId, bump={};
+  let best=null, attempts=0, lastReport=0;
+  const unplacedOf=r=>r.failures.reduce((a,f)=>a+f.missing,0);
+  const report=force=>{ if(!opts.progress) return; const now=Date.now(); if(!force&&now-lastReport<400) return; lastReport=now; opts.progress({attempt:attempts,unplaced:best?unplacedOf(best):null,elapsed:now-t0,grid:best?best.sectionGrid:null}); };
+  for(let attempt=0; ; attempt++){
+    const elapsed=Date.now()-t0;
+    if(best){
+      if(unplacedOf(best)===0){ if(attempt>=ST_RESTARTS||elapsed>budget*0.55) break; }          // everything placed: a few more tries for a tidier timetable
+      else if(elapsed>budget*0.9) break;                                                          // still unplaced lessons: keep trying until the time budget is nearly used
+    }
+    // lessons that failed in earlier attempts go first next time; the rest are shuffled a little more each attempt
+    const order=attempt===0?ordered:(()=>{ const jit=stRng(seed*31+attempt*7919+13), rank=new Map(), spread=Math.min(ordered.length*0.5,6+attempt); ordered.forEach((t,i)=>rank.set(t,i+(jit()-0.5)*spread));
+      return ordered.slice().sort((a,b)=>((bump[tk(b)]||0)-(bump[tk(a)]||0))||(rank.get(a)-rank.get(b))); })();
+    let res=stPlaceAll(order, slots, cfg, { rules, locked:opts.locked, roomCap:opts.roomCap, rng:stRng(seed+attempt*101) });
+    if(res.failures.length){
+      const remain=budget*0.9-(Date.now()-t0), slice=Math.max(30,Math.min(remain,budget*(attempt===0?0.3:0.2)));
+      res=stRepairUnplaced(res, tasks, slots, cfg, rules, stRng(seed+attempt*17+5), Date.now()+slice, (u,g)=>{ if(opts.progress&&(!best||u<unplacedOf(best))) opts.progress({attempt:attempts+1,unplaced:u,elapsed:Date.now()-t0,grid:g}); });
+    }
+    res.score=stScoreResult(res,cfg); attempts++;
+    res.failures.forEach(f=>{ bump[f.sectionId+'|'+f.subjectId]=(bump[f.sectionId+'|'+f.subjectId]||0)+f.missing; });
+    const improved=!best||res.score<best.score; if(improved) best=res; report(improved);
+    if(best.score===0) break;
+  }
+  stPolish(best, cfg, { rules, slots, rng:stRng(seed+9), deadline:Math.max(Date.now()+60,t0+budget) });
+  best.score=stScoreResult(best,cfg); best.penalty=stObjective(best,cfg); best.attempts=attempts; best.seed=seed; report(true);
+  return best;
+}
+/* ---------- feasibility pre-check: say in plain words what cannot work BEFORE generating ---------- */
+function stPrecheck(tasks, cfg, rules, opts){
+  opts=opts||{}; const issues=[]; const slotsPerWeek=(cfg.days||[]).length*cfg.periodsPerDay; rules=rules||{};
+  const secTotals={}; tasks.forEach(t=>{ secTotals[t.sectionId]=(secTotals[t.sectionId]||0)+t.periodsNeeded; });
+  Object.keys(secTotals).forEach(sid=>{
+    if(secTotals[sid]>slotsPerWeek) issues.push({level:'error',msg:`${(opts.sectionLabel||(x=>x))(sid)} needs ${secTotals[sid]} periods a week but the week only has ${slotsPerWeek}. Reduce the weekly periods.`});
+  });
+  const load={}; tasks.forEach(t=>{ load[t.teacherId]=(load[t.teacherId]||0)+t.periodsNeeded; });
+  Object.keys(load).forEach(tid=>{
+    const off=rules.offDays&&rules.offDays[tid]; const days=(cfg.days||[]).length-(off?off.size:0);
+    const cap=rules.maxPerDay&&rules.maxPerDay[tid]; const perDay=cap?Math.min(cap,cfg.periodsPerDay):cfg.periodsPerDay;
+    const offS=rules.offSlots&&rules.offSlots[tid]; let avail=0; (cfg.days||[]).forEach(d=>{ if(off&&off.has(d)) return; let n=cfg.periodsPerDay; if(offS) n-=[...offS].filter(k=>k.slice(0,k.lastIndexOf('_'))===d).length; avail+=Math.max(0,cap?Math.min(cap,n):n); }); const name=(opts.teacherName||(x=>x))(tid);
+    if(load[tid]>avail) issues.push({level:'error',msg:`${name} is asked to teach ${load[tid]} periods a week but is only available for ${avail}${off?' (days off)':''}${cap?` (max ${cap} a day)`:''}. Assign some subjects to another teacher or relax their limits.`});
+    else if(load[tid]>avail*0.9) issues.push({level:'warn',msg:`${name} is almost fully booked (${load[tid]} of ${avail} periods) - the timetable will have little room to move.`});
+  });
+  return issues;
+}
+
+// human-readable quality summary of a solved timetable
+function stQualityOf(result, cfg){
+  let holes=0, repeats=0, teacherGaps=0; const days=(cfg.days||[]).length||5;
+  Object.keys(result.sectionGrid).forEach(sid=>{
+    const grid=result.sectionGrid[sid]; const perDay={}; const subj={};
+    Object.keys(grid).forEach(key=>{ const i=key.lastIndexOf('_'); const d=key.slice(0,i), p=+key.slice(i+1); (perDay[d]=perDay[d]||[]).push(p); const m=(subj[grid[key].subjectKey]=subj[grid[key].subjectKey]||{n:0,d:{},double:false}); m.n++; m.d[d]=(m.d[d]||0)+1; if(grid[key].double) m.double=true; });
+    Object.keys(perDay).forEach(d=>{ holes+=Math.max.apply(null,perDay[d])-perDay[d].length; });
+    Object.keys(subj).forEach(k=>{ const allowed=subj[k].double?2:Math.max(1,Math.ceil(subj[k].n/days)); Object.keys(subj[k].d).forEach(d=>{ if(subj[k].d[d]>allowed) repeats+=subj[k].d[d]-allowed; }); });
+  });
+  Object.keys(result.teacherBusy).forEach(t=>{ const perDay={}; result.teacherBusy[t].forEach(key=>{ const i=key.lastIndexOf('_'); (perDay[key.slice(0,i)]=perDay[key.slice(0,i)]||[]).push(+key.slice(i+1)); });
+    Object.keys(perDay).forEach(d=>{ const ps=perDay[d]; teacherGaps+=Math.max.apply(null,ps)-Math.min.apply(null,ps)+1-ps.length; }); });
+  return { holes, repeats, teacherGaps };
+}
+
+/* ======================================================================
+   STANDALONE APP
+   ====================================================================== */
+const MARK_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x=".75" y=".75" width="62.5" height="62.5" rx="13.5" fill="#ffffff" stroke="#C3D2E3" stroke-width="1.5"/><rect x="8.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="25.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="42.00" y="8.00" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="8.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="25.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="42.00" y="20.75" width="14.00" height="9.75" rx="2.2" fill="#00A1DE"/><rect x="8.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="25.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="42.00" y="33.50" width="14.00" height="9.75" rx="2.2" fill="#FAD201"/><rect x="8.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><rect x="25.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><rect x="42.00" y="46.25" width="14.00" height="9.75" rx="2.2" fill="#20603D"/><circle cx="49.00" cy="12.88" r="2.7" fill="#FAD201"/><line x1="52.70" y1="12.88" x2="54.00" y2="12.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="52.20" y1="14.72" x2="53.33" y2="15.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="50.85" y1="16.08" x2="51.50" y2="17.21" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="49.00" y1="16.57" x2="49.00" y2="17.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="47.15" y1="16.08" x2="46.50" y2="17.21" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.80" y1="14.72" x2="44.67" y2="15.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.30" y1="12.88" x2="44.00" y2="12.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="45.80" y1="11.03" x2="44.67" y2="10.38" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="47.15" y1="9.67" x2="46.50" y2="8.54" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="49.00" y1="9.18" x2="49.00" y2="7.88" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="50.85" y1="9.67" x2="51.50" y2="8.54" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/><line x1="52.20" y1="11.02" x2="53.33" y2="10.37" stroke="#FAD201" stroke-width="0.85" stroke-linecap="round"/></svg>`;
+const LS_KEY='edusmart.schooltimetable.v1';
+const EMBED=(window.parent!==window); /* inside the Smart School App: data comes from / goes to the app */
+if(EMBED) document.documentElement.classList.add('embed');
+const DAY_LABELS={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
+const ALL_DAYS=Object.keys(DAY_LABELS);
+const REB_DAY={dayStart:'08:30',assemblyMins:15,periodsPerDay:10,periodMins:40,shortBreakMins:15,breaksAfter:[3,8],lunchAfterPeriod:5,lunchMins:65,days:['Mon','Tue','Wed','Thu','Fri']};
+/* ----------------------------------------------------------------------------------------------------------------
+   REB subject hours. Every figure carries its source:
+     syl25  = REB 2025 revised primary syllabi, appendix "Subjects and weekly time allocation" (period = 40 minutes)
+     cd26   = REB content-distribution files 2026-27 published on elearning.reb.rw (the header of each file states the
+              weekly periods for that subject)
+     news26 = a news-site report of the 2026-27 REB timetable (NOT an official REB document, and not always consistent)
+   In REF below, each subject is [periods a week, verified]: verified=1 means it is stated in an official REB file;
+   verified=0 means it is an assumption or comes only from news reports and must be confirmed with REB.
+   ---------------------------------------------------------------------------------------------------------------- */
+const SRC={
+  syl25:{ok:true, label:'REB 2025 revised primary syllabi (weekly time allocation appendix)'},
+  cd26:{ok:true, label:'REB content-distribution files 2026-27 (elearning.reb.rw)'},
+  news26:{ok:false,label:'News reports of the REB 2026-27 timetable (not an official REB document)'}};
+const SUBJECT_LIB=[
+ {id:'discovery',name:'Discovery of the World',short:'Discovery',color:'#2F9E44'},
+ {id:'numeracy',name:'Numeracy',short:'Numeracy',color:'#3B5BDB'},
+ {id:'lit_kiny',name:'Language & Literacy: Kinyarwanda',short:'Kinya literacy',color:'#E8590C'},
+ {id:'lit_eng',name:'Language & Literacy: English (oral)',short:'English oral',color:'#0CA678'},
+ {id:'physdev',name:'Physical Development & Health',short:'Physical dev.',color:'#F08C00'},
+ {id:'story',name:'Story time (Kinyarwanda)',short:'Story time',color:'#AE3EC9'},
+ {id:'playscheme',name:'Play scheme / free play',short:'Free play',color:'#12B886'},
+ {id:'maths',name:'Mathematics',short:'Maths',color:'#3B5BDB'},
+ {id:'english',name:'English',short:'English',color:'#0CA678'},
+ {id:'kinyarwanda',name:'Ikinyarwanda',short:'Kinyarwanda',color:'#E8590C'},
+ {id:'french',name:'Français',short:'Français',color:'#7048E8'},
+ {id:'kiswahili',name:'Kiswahili',short:'Kiswahili',color:'#D9480F'},
+ {id:'sst',name:'Social Studies & Religious Education',short:'SRE',color:'#1098AD'},
+ {id:'set',name:'Science and Elementary Technology',short:'Science',color:'#2F9E44'},
+ {id:'arts',name:'Creative Arts',short:'Arts',color:'#E64980'},
+ {id:'pes',name:'Physical Education & Sports',short:'P.E.',color:'#F08C00'},
+ {id:'cocurricular',name:'Co-curricular activities',short:'Co-curr.',color:'#7C8DA6'},
+ {id:'physics',name:'Physics',short:'Physics',color:'#364FC7'},
+ {id:'chemistry',name:'Chemistry',short:'Chemistry',color:'#C2255C'},
+ {id:'biology',name:'Biology',short:'Biology',color:'#2B8A3E'},
+ {id:'history',name:'History & Citizenship',short:'History',color:'#99682B'},
+ {id:'geography',name:'Geography & Environment',short:'Geography',color:'#0B7285'},
+ {id:'entrepreneurship',name:'Entrepreneurship',short:'Entrepreneur.',color:'#E67700'},
+ {id:'ict',name:'ICT / Computer Studies',short:'ICT',color:'#4C6EF5'},
+ {id:'religion',name:'Religion & Ethics',short:'Religion',color:'#868E96'},
+ {id:'elective',name:'Elective (Music/Dance/Drama, Fine Arts, Home Sciences or Farming)',short:'Elective',color:'#AE3EC9'},
+ {id:'coremaths',name:'Core Mathematics',short:'Core Maths',color:'#5F3DC4'},
+ {id:'basicmaths',name:'Basic Mathematics',short:'Basic Maths',color:'#7048E8'},
+ {id:'economics',name:'Economics',short:'Economics',color:'#5C940D'},
+ {id:'literature',name:'Literature in English',short:'Literature',color:'#9C36B5'},
+ {id:'english_major',name:'English (major)',short:'English maj.',color:'#087F5B'},
+ {id:'english_minor',name:'English (minor)',short:'English min.',color:'#38D9A9'},
+ {id:'kinya_major',name:'Ikinyarwanda (major)',short:'Kinya maj.',color:'#C2410C'},
+ {id:'kinya_minor',name:'Ikinyarwanda (minor)',short:'Kinya min.',color:'#FB923C'},
+ {id:'french_major',name:'Français (major)',short:'Français maj.',color:'#5F3DC4'},
+ {id:'french_minor',name:'Français (minor)',short:'Français min.',color:'#A78BFA'},
+ {id:'psychology',name:'Psychology',short:'Psychology',color:'#B197FC'},
+ {id:'gs',name:'General & Religious Studies',short:'Gen. Studies',color:'#495057'}];
+const REF={
+ pre:{discovery:[5,0],numeracy:[5,0],lit_kiny:[5,0],lit_eng:[5,0],physdev:[5,0],arts:[2,0],story:[3,0],playscheme:[5,0]},
+ plow:{kinyarwanda:[5,1],english:[5,1],maths:[5,1],french:[2,1],sst:[2,1],set:[2,1],arts:[2,1],pes:[1,1],cocurricular:[1,1]},
+ primary:{kinyarwanda:[9,1],english:[9,1],maths:[9,1],set:[5,1],sst:[5,1],french:[5,1],arts:[2,1],pes:[2,1],cocurricular:[4,1]},
+ lower:{maths:[6,1],english:[5,1],kinyarwanda:[3,1],french:[3,1],kiswahili:[3,1],physics:[4,1],chemistry:[4,0],biology:[4,1],geography:[3,1],history:[3,1],entrepreneurship:[3,1],ict:[2,0],pes:[2,1],religion:[1,1],elective:[2,1]},
+ /* upper secondary: per-subject periods (a pathway is built from several of these); not a per-class total */
+ upper:{physics:[7,1],chemistry:[7,0],biology:[7,1],coremaths:[7,1],basicmaths:[3,1],economics:[7,1],geography:[7,1],history:[7,1],english_major:[7,1],english_minor:[3,1],literature:[7,1],kiswahili:[7,1],kinya_major:[7,1],kinya_minor:[3,1],french_major:[7,1],french_minor:[3,1],psychology:[3,1],entrepreneurship:[3,1],pes:[2,1]}};
+/* S4-S6 pathways named in REB's 2026-27 files. REB's files do not list which subjects make up each pathway, so a new
+   pathway class starts with only the subjects every pathway has; add the rest on the Lessons tab (REB's periods are filled in). */
+const PATHWAYS={MSP1:'Math & Sciences, Stream 1',MSP2:'Math & Sciences, Stream 2',AH:'Arts & Humanities',LANG:'Languages'};
+const PATHWAY_SHORT={MSP1:'Math&Sci 1',MSP2:'Math&Sci 2',AH:'Arts&Hum',LANG:'Languages'};
+/* the former S4-S6 combinations (S6 only, per news reports); the subjects of each combination are the school's own knowledge, not from REB */
+const COMBOS={PCM:['physics','chemistry','coremaths'],PCB:['physics','chemistry','biology'],MCB:['coremaths','chemistry','biology'],MPG:['coremaths','physics','geography'],
+  MEG:['coremaths','economics','geography'],HEG:['history','economics','geography'],HEL:['history','economics','literature'],LEG:['literature','economics','geography']};
+const COMBO_NAMES={PCM:'Physics, Chemistry, Maths',PCB:'Physics, Chemistry, Biology',MCB:'Maths, Chemistry, Biology',MPG:'Maths, Physics, Geography',MEG:'Maths, Economics, Geography',HEG:'History, Economics, Geography',HEL:'History, Economics, Literature',LEG:'Literature, Economics, Geography'};
+function upperTemplate(combo){ const t={entrepreneurship:3,pes:2}; (COMBOS[combo]||[]).forEach(s=>t[s]=REF.upper[s]?REF.upper[s][0]:7); return t; }
+function refTemplate(level){ const t={}; Object.keys(REF[level]||{}).forEach(k=>t[k]=REF[level][k][0]); return t; }
+const LEVELS=[
+ {id:'pre',name:'Pre-primary',grades:['Nursery 1','Nursery 2','Nursery 3'],periods:7,src:'news26',tmpl:()=>refTemplate('pre'),
+  note:'No official weekly table was available. These hours come from news reports of the 2026-27 REB pre-primary timetable (7 activity blocks a day of 20-30 minutes). Confirm with REB.'},
+ {id:'plow',name:'Lower primary (P1-P3)',grades:['Primary 1','Primary 2','Primary 3'],periods:5,src:'syl25',tmpl:()=>refTemplate('plow'),
+  note:'REB 2025 syllabi: 25 periods a week (5 a day, 40 minutes each), stated for double-shift schools. If your school runs a full day, raise "Periods used each day" and adjust the lessons.'},
+ {id:'primary',name:'Upper primary (P4-P6)',grades:['Primary 4','Primary 5','Primary 6'],periods:10,src:'syl25',tmpl:()=>refTemplate('primary'),
+  note:'REB 2025 syllabi: 50 periods a week (10 a day, 40 minutes each). Note: the Social Studies & Religious Education P4-P6 syllabus still prints an older 30-period table; five other syllabi agree on 50.'},
+ {id:'lower',name:'Lower secondary (S1-S3)',grades:['S1','S2','S3'],periods:10,src:'cd26',tmpl:()=>refTemplate('lower'),
+  note:'Weekly periods per subject are from the header of each REB 2026-27 content-distribution file. Not stated in the files I could read: Chemistry (4 assumed, like Physics and Biology) and ICT (2 assumed) - marked with a warning sign.'},
+ {id:'upper',name:'Upper secondary (S4-S6)',grades:[],periods:10,src:'cd26',tmpl:upperTemplate,
+  note:'REB 2026-27 files: major subjects 7 periods a week, minor subjects 3, Entrepreneurship 3, P.E. 2. REB is moving S4-S6 from combinations to pathways; its files do not list a pathway\'s subjects, so add them on the Lessons tab (REB\'s periods are filled in for you). ICT and General & Religious Studies weekly periods are not stated in the files I read.'}];
+/* the engine nudges these subjects earlier / later in the day; extend its lists for the other levels */
+['numeracy','discovery','lit_kiny','lit_eng','physics','chemistry','biology','coremaths','basicmaths','english_major','kinya_major'].forEach(x=>ST_MORNING_SUBJECTS.push(x));
+['playscheme','story','physdev','cocurricular','elective'].forEach(x=>ST_LATE_SUBJECTS.push(x));
+const TEACHER_COLORS=['#3B5BDB','#0CA678','#E8590C','#7048E8','#1098AD','#2F9E44','#E64980','#F08C00','#495057','#12B886','#D6336C','#5F3DC4'];
+
+let S=null, TAB='school', VIEW={mode:'class',id:null}, REPORT=null, LESSON_CLASS=null;
+
+function fresh(){
+  const levels=LEVELS.map(l=>({id:l.id,on:l.id==='plow'||l.id==='primary',periods:l.periods}));
+  const classes=[], plan={};
+  ['plow','primary'].forEach(lv=>lvl(lv).grades.forEach(g=>{ const id='P'+g.replace('Primary ',''); classes.push({id,name:g,level:lv,combo:''}); plan[id]=refTemplate(lv); }));
+  return {app:'edusmart-school-timetable',version:5,effort:'quick',school:'',logo:'',term:'',head:'',versions:[],cfg:JSON.parse(JSON.stringify(REB_DAY)),levels,classes,
+    subjects:JSON.parse(JSON.stringify(SUBJECT_LIB)),teachers:[],rooms:[],subjectRooms:{},roomPlan:{},plan,doubles:{},assign:{},timetable:{},prev:null,seed:0,nextId:1};
+}
+function migrate(d){   /* open backups / saved data made by earlier versions */
+  const v=d.version||0;
+  if(!Array.isArray(d.levels)) d.levels=LEVELS.map(l=>({id:l.id,on:l.id==='primary',periods:l.periods}));
+  if(v<5){   /* split the old single "primary" level into lower primary (P1-P3) and upper primary (P4-P6); never touches lessons already set */
+    const old=d.levels.find(l=>l.id==='primary');
+    if(!d.levels.some(l=>l.id==='plow')) d.levels.push({id:'plow',on:old?old.on:false,periods:old?old.periods:5});
+    d.classes.forEach(c=>{ if((c.level||'primary')==='primary'&&/^(primary|p)\s*[123](\D|$)/i.test(c.name)) c.level='plow'; });
+    SUBJECT_LIB.forEach(s=>{ if(!d.subjects.some(x=>x.id===s.id)) d.subjects.push(Object.assign({},s)); });
+  }
+  LEVELS.forEach(l=>{ if(!d.levels.some(x=>x.id===l.id)) d.levels.push({id:l.id,on:false,periods:l.periods}); });
+  d.classes.forEach(c=>{ if(!c.level) c.level='primary'; if(c.combo==null) c.combo=''; });
+  const order=LEVELS.map(l=>l.id); d.classes.sort((a,b)=>order.indexOf(a.level)-order.indexOf(b.level));
+  if(!Array.isArray(d.rooms)) d.rooms=[]; if(!d.subjectRooms) d.subjectRooms={}; if(!d.roomPlan) d.roomPlan={};
+  if(!Array.isArray(d.versions)) d.versions=[]; if(d.logo==null) d.logo=''; if(d.term==null) d.term=''; if(d.head==null) d.head='';
+  d.teachers.forEach(t=>{ if(!Array.isArray(t.offSlots)) t.offSlots=[]; });
+  d.version=5; return d;
+}
+function load(){ if(EMBED){ const d=window.__SEED; return d&&d.app==='edusmart-school-timetable'?migrate(d):fresh(); } try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const d=JSON.parse(raw); if(d&&d.app==='edusmart-school-timetable') return migrate(d); } }catch(e){} return fresh(); }
+function save(){ if(EMBED){ try{ parent.postMessage({type:'st-save',data:JSON.parse(JSON.stringify(S))},'*'); }catch(e){} return; } try{ localStorage.setItem(LS_KEY,JSON.stringify(S)); }catch(e){ toast('Could not save on this device - use "Save backup".'); } }
+function uid(p){ return p+(S.nextId++); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>el.style.display='none',3200); }
+const $=id=>document.getElementById(id);
+
+const cls=id=>S.classes.find(c=>c.id===id);
+const subj=id=>S.subjects.find(s=>s.id===id)||{id,name:id,short:id,color:'#868e96'};
+const teacher=id=>S.teachers.find(t=>t.id===id);
+const tName=id=>{ const t=teacher(id); return t?t.name:'(no teacher)'; };
+function tColor(id){ const i=S.teachers.findIndex(t=>t.id===id); return i<0?'#868e96':TEACHER_COLORS[i%TEACHER_COLORS.length]; }
+function planOf(cid){ if(!S.plan[cid]) S.plan[cid]={}; return S.plan[cid]; }
+function assignOf(cid){ if(!S.assign[cid]) S.assign[cid]={}; return S.assign[cid]; }
+function doublesOf(cid){ if(!S.doubles[cid]) S.doubles[cid]={}; return S.doubles[cid]; }
+
+/* ---------- day layout ---------- */
+function toMins(hhmm){ const [h,m]=(hhmm||'08:00').split(':').map(Number); return h*60+(m||0); }
+function fmt(m){ return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function schedule(cfg){
+  const out=[]; let t=toMins(cfg.dayStart);
+  if(cfg.assemblyMins>0){ out.push({type:'assembly',label:'Assembly',start:t,end:t+cfg.assemblyMins}); t+=cfg.assemblyMins; }
+  for(let p=1;p<=cfg.periodsPerDay;p++){
+    out.push({type:'period',period:p,start:t,end:t+cfg.periodMins}); t+=cfg.periodMins;
+    if(p===cfg.lunchAfterPeriod){ out.push({type:'lunch',label:'Lunch',start:t,end:t+cfg.lunchMins}); t+=cfg.lunchMins; }
+    else if((cfg.breaksAfter||[]).includes(p)){ out.push({type:'break',label:'Break',start:t,end:t+cfg.shortBreakMins}); t+=cfg.shortBreakMins; }
+  }
+  return out;
+}
+function prune(){   /* drop lessons that no longer fit the school (day structure, classes, subjects, teachers, rooms) - also used after Undo, Versions and Open backup */
+  const days=new Set(S.cfg.days);
+  Object.keys(S.timetable).forEach(cid=>{
+    if(!cls(cid)){ delete S.timetable[cid]; return; }
+    const L=levelPeriods(cid), g=S.timetable[cid];
+    Object.keys(g).forEach(k=>{ const x=g[k], [d,p]=stSplitKey(k);
+      if(!days.has(d)||p>L||!S.subjects.some(s=>s.id===x.subjectKey)||(x.teacherId&&!teacher(x.teacherId))) delete g[k];
+      else if(x.roomId&&!room(x.roomId)) delete x.roomId; });
+    Object.keys(g).forEach(k=>{ const x=g[k]; if(x.double){ const [d,p]=stSplitKey(k), mate=g[d+'_'+(x.blockPos===0?p+1:p-1)]; if(!mate||mate.blockId!==x.blockId){ delete x.double; delete x.blockPos; } } });
+  });
+}
+function stSplitKey(key){ const i=key.lastIndexOf('_'); return [key.slice(0,i),+key.slice(i+1)]; }
+
+/* ---------- tabs ---------- */
+const TABS=[['school','1 School day'],['classes','2 Levels & classes'],['subjects','3 Subjects'],['rooms','4 Rooms & labs'],['teachers','5 Teachers'],['lessons','6 Lessons'],['timetable','7 Timetable'],['reports','8 Reports'],['cover','9 Cover']];
+function go(t){ TAB=t; render(); window.scrollTo(0,0); }
+function render(){
+  $('hTitle').textContent=S.school||'Every lesson in its place'; document.title=(S.school?S.school+' - ':'')+'EduSmart Timetable';
+  $('tabs').innerHTML=TABS.map(([id,l])=>`<button class="${id===TAB?'on':''}" onclick="go('${id}')">${l}</button>`).join('');
+  if(JOB&&TAB!=='timetable'){ /* keep the page responsive; the job continues in the background */ }
+  $('view').innerHTML=({school:vSchool,classes:vClasses,subjects:vSubjects,rooms:vRooms,teachers:vTeachers,lessons:vLessons,timetable:vTimetable,reports:vReports,cover:vCover})[TAB]();
+  if(JOB) updateJob();
+}
+
+/* ---------- 1. school day ---------- */
+function welcomeCard(){
+  if(S.hideWelcome) return '';
+  const hasL=S.classes.some(c=>Object.keys(assignOf(c.id)).length), built=hasTimetable();
+  const steps=[['school','School day','Days, start time, breaks',true],['classes','Levels & classes','Pre-primary to S6',S.classes.length>0],['subjects','Subjects','Names and colours',S.subjects.length>0],['rooms','Rooms & labs','Optional',S.rooms.length>0],['teachers','Teachers','Days off and limits',S.teachers.length>0],['lessons','Lessons','Periods and who teaches',hasL],['timetable','Build','One click',built]];
+  return `<div class="card welcome"><div class="row"><span class="wmark">${MARK_SVG}</span><div style="flex:1;min-width:220px"><h2>Welcome to EduSmart Timetable</h2><p class="h" style="margin:0">Plan every period, place every teacher, and print a professional timetable for your school. Follow the steps in order, or open the example school to see it all working.</p></div><button class="btn sm" onclick="S.hideWelcome=true;save();render()">Hide</button></div>
+    <div class="steps">${steps.map(([id,tt,d,done],i)=>`<button class="step ${done?'done':''}" onclick="go('${id}')"><span class="n">${done?'&#10003;':i+1}</span><b>${tt}</b><small>${d}</small></button>`).join('')}</div>
+    <div class="row" style="margin-top:12px"><button class="btn pri" onclick="go('timetable');loadExample()">Open the example school</button><span class="h" style="margin:0">It replaces anything you have entered, so use it on a fresh start.</span></div></div>`;
+}
+function vSchool(){
+  const c=S.cfg; const sc=schedule(c).map(x=>`<tr><td>${fmt(x.start)}&ndash;${fmt(x.end)}</td><td>${x.type==='period'?'Period '+x.period:esc(x.label)}</td></tr>`).join('');
+  return `${welcomeCard()}<div class="card"><h2>School</h2><p class="h">The name is printed on every timetable sheet.</p>
+    <label>School name</label><input style="width:100%;max-width:420px" value="${esc(S.school)}" onchange="S.school=this.value;save();render()" placeholder="e.g. Kigali Model School"></div>
+  ${printoutsCard()}
+  <div class="card"><h2>School days</h2><p class="h">Tick the days lessons are taught.</p>
+    <div class="chips">${ALL_DAYS.map(d=>`<label class="chip" style="margin:0"><input type="checkbox" ${c.days.includes(d)?'checked':''} onchange="toggleDay('${d}',this.checked)"> ${DAY_LABELS[d]}</label>`).join('')}</div></div>
+  <div class="card"><h2>Shape of the day</h2><p class="h">Starts as the standard Rwanda school day (8:30 start, 10 periods of 40 minutes, breaks after periods 3 and 8, lunch after period 5). Change anything that differs at your school.</p>
+    <div class="grid2">
+      <div><label>First bell</label><input type="time" value="${c.dayStart}" onchange="setCfg('dayStart',this.value)"></div>
+      <div><label>Assembly (minutes, 0 = none)</label><input type="number" min="0" max="60" value="${c.assemblyMins}" onchange="setCfg('assemblyMins',+this.value)"></div>
+      <div><label>Periods per day</label><input type="number" min="1" max="14" value="${c.periodsPerDay}" onchange="setCfg('periodsPerDay',+this.value)"></div>
+      <div><label>Minutes per period</label><input type="number" min="15" max="120" value="${c.periodMins}" onchange="setCfg('periodMins',+this.value)"></div>
+      <div><label>Short break (minutes)</label><input type="number" min="0" max="60" value="${c.shortBreakMins}" onchange="setCfg('shortBreakMins',+this.value)"></div>
+      <div><label>Short breaks after periods (e.g. 3,8)</label><input value="${c.breaksAfter.join(',')}" onchange="setBreaks(this.value)"></div>
+      <div><label>Lunch after period (0 = none)</label><input type="number" min="0" max="14" value="${c.lunchAfterPeriod}" onchange="setCfg('lunchAfterPeriod',+this.value)"></div>
+      <div><label>Lunch (minutes)</label><input type="number" min="0" max="120" value="${c.lunchMins}" onchange="setCfg('lunchMins',+this.value)"></div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn sm" onclick="resetDay()">Reset to standard Rwanda day</button></div></div>
+  <div class="card"><h2>The day at a glance</h2><table class="t" style="max-width:360px"><tbody>${sc}</tbody></table></div>`;
+}
+function toggleDay(d,on){ const s=new Set(S.cfg.days); on?s.add(d):s.delete(d); if(!s.size){ toast('Keep at least one school day.'); render(); return; } S.cfg.days=ALL_DAYS.filter(x=>s.has(x)); prune(); save(); render(); }
+function setCfg(k,v){ if(Number.isNaN(v)) return; S.cfg[k]=v; if(S.cfg.periodsPerDay<1) S.cfg.periodsPerDay=1; prune(); save(); render(); }
+function setBreaks(str){ S.cfg.breaksAfter=String(str).split(',').map(x=>parseInt(x,10)).filter(n=>n>=1&&n<S.cfg.periodsPerDay); save(); render(); }
+function resetDay(){ S.cfg=JSON.parse(JSON.stringify(REB_DAY)); prune(); save(); render(); toast('Standard day restored.'); }
+
+/* ---------- 2. levels & classes ---------- */
+function lvl(id){ return LEVELS.find(l=>l.id===id)||LEVELS.find(l=>l.id==='primary'); }
+function lvlState(id){ let s=S.levels.find(l=>l.id===id); if(!s){ s={id,on:false,periods:lvl(id).periods}; S.levels.push(s); } return s; }
+function levelPeriods(cid){ const c=cls(cid); const L=c?lvlState(c.level).periods:S.cfg.periodsPerDay; return Math.max(1,Math.min(S.cfg.periodsPerDay,L||S.cfg.periodsPerDay)); }
+function sortClasses(){ const order=LEVELS.map(l=>l.id); S.classes.sort((a,b)=>order.indexOf(a.level)-order.indexOf(b.level)); }
+function classOptions(sel){ return LEVELS.map(l=>{ const cs=S.classes.filter(c=>c.level===l.id); return cs.length?`<optgroup label="${esc(l.name)}">${cs.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)}</option>`).join('')}</optgroup>`:''; }).join(''); }
+function templateFor(level,combo){ const t=lvl(level).tmpl(combo), out={}; Object.keys(t).forEach(k=>{ if(S.subjects.some(s=>s.id===k)) out[k]=t[k]; }); return out; }
+function addClassRaw(name,level,combo){ const id=uid('c'); S.classes.push({id,name,level,combo:combo||''}); S.plan[id]=templateFor(level,combo); sortClasses(); return id; }
+function vClasses(){
+  const on=LEVELS.filter(l=>lvlState(l.id).on);
+  return `<div class="card"><h2>Levels your school teaches</h2><p class="h">Switch on every level you have. Each level starts with its usual classes and a suggested set of subjects, and you can change all of it. Every level shares the same bell times, so a teacher is never booked in two places at once, even across levels.</p>
+    <div class="chips">${LEVELS.map(l=>`<label class="chip"><input type="checkbox" ${lvlState(l.id).on?'checked':''} onchange="toggleLevel('${l.id}',this.checked)"> ${esc(l.name)}</label>`).join('')}</div></div>`
+   +(on.length?on.map(levelCard).join(''):'<div class="msg warn">Switch on at least one level above.</div>')+sourcesCard();
+}
+function sourcesCard(){ return `<div class="card"><h2>Where the REB figures come from</h2><p class="h">The weekly periods are starting points taken from REB documents. They are not a substitute for your own copy of REB's current timetable circular, so please check them.</p>
+  <ul style="margin:0 0 0 18px;font-size:14px">
+  <li><b>P1-P6:</b> the "Subjects and weekly time allocation" table in REB's 2025 revised primary syllabi (a period is 40 minutes). Lower primary is stated for double-shift schools.</li>
+  <li><b>S1-S6:</b> the header of each REB 2026-27 content-distribution file on elearning.reb.rw, which states that subject's periods a week.</li>
+  <li><b>Not confirmed:</b> pre-primary (news reports only), Chemistry and ICT in S1-S3, ICT and General &amp; Religious Studies in S4-S6, and which subjects belong to each S4-S6 pathway. These are marked with a warning sign or "Not official".</li>
+  <li><b>Known disagreement:</b> one SRE syllabus (P4-P6) still prints an older 30-period table, and a news report of the 2026-27 timetable gives different P.E. and co-curricular hours for P1-P3. This tool follows the syllabi that agree.</li></ul></div>`; }
+function levelCard(l){
+  const st=lvlState(l.id), cs=S.classes.filter(c=>c.level===l.id);
+  const add=l.id==='upper'
+   ?`<div><label>Pathway or combination</label><select id="uc_combo"><optgroup label="Pathways (REB 2026-27)">${Object.keys(PATHWAYS).map(k=>`<option value="${k}">${PATHWAYS[k]}</option>`).join('')}</optgroup><optgroup label="Former combinations (S6 only)">${Object.keys(COMBOS).map(k=>`<option value="${k}">${k} - ${COMBO_NAMES[k]}</option>`).join('')}</optgroup><option value="">General (no pathway)</option></select></div>
+     <div><label>Grades</label><div class="chips">${['S4','S5','S6'].map(g=>`<label class="chip" style="margin:0"><input type="checkbox" id="ug_${g}" checked> ${g}</label>`).join('')}</div></div>
+     <button class="btn pri" onclick="addUpper()">Add classes</button>`
+   :`<div><label>New class</label><input id="nc_${l.id}" placeholder="${({pre:'e.g. Nursery 1 B',plow:'e.g. Primary 2 B',primary:'e.g. Primary 5 B',lower:'e.g. S2 B'})[l.id]||'e.g. New class'}"></div><button class="btn pri" onclick="addClassBtn('${l.id}')">Add class</button>`;
+  const sr=SRC[l.src];
+  return `<div class="card"><div class="row"><h2 style="margin:0">${esc(l.name)}</h2><span class="chip" style="cursor:default;border-color:${sr.ok?'var(--ok)':'var(--warn)'};color:${sr.ok?'var(--ok)':'var(--warn)'}">${sr.ok?'Official REB figures':'Not official: confirm with REB'}</span><span class="sp"></span>${cs.length?`<button class="btn sm" onclick="resetLevelToREB('${l.id}')">Reset to the REB starting point</button>`:''}</div>
+    <p class="h" style="margin:6px 0 0">${esc(l.note)}</p>
+    <div class="row" style="margin:8px 0 12px"><div><label>Periods used each day (of ${S.cfg.periodsPerDay})</label><input type="number" min="1" max="${S.cfg.periodsPerDay}" style="width:90px" value="${Math.min(st.periods,S.cfg.periodsPerDay)}" onchange="setLevelPeriods('${l.id}',+this.value)"></div>
+      <span class="h" style="margin:0;flex:1;min-width:200px">Periods after this are left empty for these classes.</span></div>
+    ${cs.length?`<table class="t"><thead><tr><th>Class</th><th>Lessons a week</th><th></th></tr></thead><tbody>${cs.map(c=>{ const n=Object.values(planOf(c.id)).reduce((a,b)=>a+b,0); return `<tr><td><input value="${esc(c.name)}" onchange="renameClass('${c.id}',this.value)"></td><td>${n} of ${S.cfg.days.length*levelPeriods(c.id)}</td><td style="text-align:right"><button class="btn sm bad" onclick="delClass('${c.id}')">Remove</button></td></tr>`; }).join('')}</tbody></table>`:'<div class="msg warn">No classes yet - add one below.</div>'}
+    <div class="row" style="margin-top:12px;align-items:flex-end">${add}</div></div>`;
+}
+function toggleLevel(id,on){
+  const st=lvlState(id), have=S.classes.filter(c=>c.level===id);
+  if(on){ st.on=true; if(!have.length) lvl(id).grades.forEach(g=>addClassRaw(g,id,'')); }
+  else { if(have.length&&!confirm(`Switch off ${lvl(id).name}? Its ${have.length} class(es) and their lessons will be removed.`)){ render(); return; }
+    have.forEach(c=>dropClass(c.id)); st.on=false; }
+  save(); render();
+}
+function setLevelPeriods(id,v){ if(!(v>=1)) return; lvlState(id).periods=Math.min(v,S.cfg.periodsPerDay); prune(); save(); render(); }
+function addClassBtn(level){ const el=$('nc_'+level); const n=el.value.trim(); if(!n) return; addClassRaw(n,level,''); save(); render(); }
+function addUpper(){ const combo=$('uc_combo').value; const gs=['S4','S5','S6'].filter(g=>$('ug_'+g).checked); if(!gs.length){ toast('Tick at least one grade.'); return; }
+  gs.forEach(g=>addClassRaw(g+(combo?' '+(PATHWAY_SHORT[combo]||combo):''),'upper',combo)); save(); render(); }
+function renameClass(id,n){ const c=cls(id); if(c&&n.trim()){ c.name=n.trim(); save(); } }
+function dropClass(id){ S.classes=S.classes.filter(c=>c.id!==id); delete S.plan[id]; delete S.assign[id]; delete S.doubles[id]; delete S.roomPlan[id]; delete S.timetable[id]; }
+function delClass(id){ if(!confirm('Remove this class and its timetable?')) return; dropClass(id); save(); render(); }
+
+/* ---------- 3. subjects ---------- */
+function vSubjects(){
+  const used=id=>S.classes.filter(c=>id in planOf(c.id)).length;
+  const missing=SUBJECT_LIB.filter(s=>!S.subjects.some(x=>x.id===s.id));
+  return `<div class="card"><h2>Subjects</h2><p class="h">One list for the whole school. Which subjects a class actually studies is set on the <b>Lessons</b> tab. The colour is used on the timetable. Maths, English, Ikinyarwanda, Numeracy, Literacy and the sciences are placed earlier in the day; Arts, P.E., Play and Music later.</p>
+    <div class="scroll"><table class="t"><thead><tr><th>Subject</th><th>Short name</th><th>Colour</th><th>Used by</th><th></th></tr></thead><tbody>${S.subjects.map(s=>`<tr><td><input style="min-width:220px" value="${esc(s.name)}" onchange="editSubject('${s.id}','name',this.value)"></td><td><input style="width:120px" value="${esc(s.short)}" onchange="editSubject('${s.id}','short',this.value)"></td><td><input type="color" value="${s.color}" onchange="editSubject('${s.id}','color',this.value)"></td><td>${used(s.id)} class(es)</td><td style="text-align:right"><button class="btn sm bad" onclick="delSubject('${s.id}')">Remove</button></td></tr>`).join('')}</tbody></table></div>
+    <div class="row" style="margin-top:10px"><input id="newSubject" placeholder="New subject, e.g. Kiswahili"><button class="btn pri" onclick="addSubject()">Add subject</button>${missing.length?`<span class="sp"></span><button class="btn sm" onclick="restoreSubjects()">Restore ${missing.length} standard subject(s)</button>`:''}</div></div>`;
+}
+function addSubject(){ const n=$('newSubject').value.trim(); if(!n) return; S.subjects.push({id:uid('s'),name:n,short:n.slice(0,12),color:'#868e96'}); save(); render(); }
+function restoreSubjects(){ SUBJECT_LIB.forEach(s=>{ if(!S.subjects.some(x=>x.id===s.id)) S.subjects.push(Object.assign({},s)); }); save(); render(); }
+function editSubject(id,k,v){ const s=S.subjects.find(x=>x.id===id); if(s&&String(v).trim()){ s[k]=v; save(); } }
+function delSubject(id){ if(!confirm('Remove this subject from every class?')) return; S.subjects=S.subjects.filter(s=>s.id!==id); delete S.subjectRooms[id]; S.classes.forEach(c=>dropSubjectFrom(c.id,id)); save(); render(); }
+function dropSubjectFrom(cid,sid){ delete (S.roomPlan[cid]||{})[sid]; delete planOf(cid)[sid]; delete assignOf(cid)[sid]; delete doublesOf(cid)[sid]; Object.keys(S.timetable[cid]||{}).forEach(k=>{ if(S.timetable[cid][k].subjectKey===sid) delete S.timetable[cid][k]; }); }
+
+/* ---------- 4. rooms & labs ---------- */
+const ROOM_KINDS=['Laboratory','ICT lab','Library','Hall','Playground / field','Other'];
+function room(id){ return S.rooms.find(r=>r.id===id); }
+function rName(id){ const r=room(id); return r?r.name:''; }
+function roomCapOf(id){ const r=room(id); return r&&r.cap>0?r.cap:1; }
+/* rooms a class's lesson may use: this class's own choice, else the subject's default rooms; none = the class's own classroom */
+function taskRooms(cid,sid){ const o=(S.roomPlan[cid]||{})[sid]; if(o==='none') return []; if(o&&room(o)) return [o]; return (S.subjectRooms[sid]||[]).filter(room); }
+function roomDemand(rid){ let n=0; S.classes.forEach(c=>Object.keys(planOf(c.id)).forEach(sid=>{ const rs=taskRooms(c.id,sid); if(rs.length===1&&rs[0]===rid) n+=planOf(c.id)[sid]||0; })); return n; }
+function vRooms(){
+  const used=S.subjects.filter(s=>S.classes.some(c=>s.id in planOf(c.id)));
+  const week=S.cfg.days.length*S.cfg.periodsPerDay;
+  return `<div class="card"><h2>Rooms &amp; labs</h2><p class="h">List the special rooms that two classes cannot share at the same time: laboratories, ICT labs, a library, a hall, a playground. Ordinary lessons happen in each class's own classroom, which needs no setup. <b>At once</b> is how many classes the room can hold together (a lab 1, a big playground 3).</p>
+    ${S.rooms.length?`<div class="scroll"><table class="t"><thead><tr><th>Room</th><th>Type</th><th>At once</th><th>Booked by lessons that can only use it</th><th></th></tr></thead><tbody>${S.rooms.map(r=>{ const d=roomDemand(r.id), cap=roomCapOf(r.id)*week; return `<tr><td><input value="${esc(r.name)}" onchange="editRoom('${r.id}','name',this.value)"></td>
+      <td><select onchange="editRoom('${r.id}','kind',this.value)">${ROOM_KINDS.map(k=>`<option ${r.kind===k?'selected':''}>${k}</option>`).join('')}</select></td>
+      <td><input type="number" min="1" max="20" style="width:70px" value="${roomCapOf(r.id)}" onchange="editRoom('${r.id}','cap',+this.value)"></td>
+      <td style="color:${d>cap?'var(--bad)':'inherit'}">${d} of ${cap} periods a week</td>
+      <td style="text-align:right"><button class="btn sm bad" onclick="delRoom('${r.id}')">Remove</button></td></tr>`; }).join('')}</tbody></table></div>`:'<div class="msg warn">No rooms yet. Skip this tab if you do not need it, or add rooms below.</div>'}
+    <div class="row" style="margin-top:12px;align-items:flex-end"><div><label>New room</label><input id="newRoom" placeholder="e.g. Physics Lab"></div>
+      <div><label>Type</label><select id="newRoomKind">${ROOM_KINDS.map(k=>`<option>${k}</option>`).join('')}</select></div>
+      <div><label>At once</label><input id="newRoomCap" type="number" min="1" max="20" value="1" style="width:70px"></div>
+      <button class="btn pri" onclick="addRoom()">Add room</button>
+      ${S.rooms.length?'':'<span class="sp"></span><button class="btn" onclick="addStandardRooms()">Add the usual school rooms</button>'}</div></div>
+  ${S.rooms.length?`<div class="card"><h2>Which subjects need a room?</h2><p class="h">Tick the room a subject must be taught in. Tick <b>several</b> if any of them will do (for example two ICT labs): the timetable picks whichever is free. A subject with nothing ticked is taught in the class's own classroom. You can still override this for one class on the Lessons tab.</p>
+    <div class="scroll"><table class="t"><thead><tr><th>Subject</th>${S.rooms.map(r=>`<th style="text-align:center">${esc(r.name)}</th>`).join('')}</tr></thead><tbody>${used.map(s=>`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${s.color};margin-right:6px"></span>${esc(s.name)}</td>${S.rooms.map(r=>`<td style="text-align:center"><input type="checkbox" ${(S.subjectRooms[s.id]||[]).includes(r.id)?'checked':''} onchange="toggleSubjectRoom('${s.id}','${r.id}',this.checked)"></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`:''}`;
+}
+function addRoom(){ const n=$('newRoom').value.trim(); if(!n) return; S.rooms.push({id:uid('r'),name:n,kind:$('newRoomKind').value,cap:Math.max(1,+$('newRoomCap').value||1)}); save(); render(); }
+function editRoom(id,k,v){ const r=room(id); if(!r) return; if(k==='name'&&!String(v).trim()) return; if(k==='cap') v=Math.max(1,v||1); r[k]=v; save(); if(k!=='name') render(); }
+function delRoom(id){ if(!confirm('Remove this room? Lessons using it go back to their own classroom.')) return;
+  S.rooms=S.rooms.filter(r=>r.id!==id); Object.keys(S.subjectRooms).forEach(s=>{ S.subjectRooms[s]=S.subjectRooms[s].filter(x=>x!==id); if(!S.subjectRooms[s].length) delete S.subjectRooms[s]; });
+  Object.keys(S.roomPlan).forEach(c=>Object.keys(S.roomPlan[c]).forEach(s=>{ if(S.roomPlan[c][s]===id) delete S.roomPlan[c][s]; }));
+  Object.keys(S.timetable).forEach(c=>Object.values(S.timetable[c]).forEach(x=>{ if(x.roomId===id) delete x.roomId; })); save(); render(); }
+function toggleSubjectRoom(sid,rid,on){ const s=new Set(S.subjectRooms[sid]||[]); on?s.add(rid):s.delete(rid); if(s.size) S.subjectRooms[sid]=[...s]; else delete S.subjectRooms[sid]; save(); }
+function addStandardRooms(){
+  const mk=(name,kind,cap)=>{ const r={id:uid('r'),name,kind,cap:cap||1}; S.rooms.push(r); return r.id; };
+  const set=(sid,ids)=>{ if(S.subjects.some(s=>s.id===sid)) S.subjectRooms[sid]=ids; };
+  const ph=mk('Physics Lab','Laboratory'), ch=mk('Chemistry Lab','Laboratory'), bi=mk('Biology Lab','Laboratory'), ic=mk('ICT Lab','ICT lab'), pg=mk('Playground','Playground / field',3); mk('Library','Library');
+  set('physics',[ph]); set('chemistry',[ch]); set('biology',[bi]); set('ict',[ic]); set('pes',[pg]); save(); render(); toast('Rooms added and linked to their subjects. Change anything you like.');
+}
+
+/* ---------- 5. teachers ---------- */
+function load_(tid){ let n=0; S.classes.forEach(c=>Object.keys(assignOf(c.id)).forEach(sid=>{ if(assignOf(c.id)[sid]===tid) n+=planOf(c.id)[sid]||0; })); return n; }
+function vTeachers(){
+  const cap=S.cfg.days.length*S.cfg.periodsPerDay;
+  return `<div class="card"><h2>Teachers</h2><p class="h">Add every teacher. <b>Days off</b>, <b>Unavailable times</b> and <b>Max periods a day</b> are never broken. <b>Preference</b> is a gentle nudge, not a rule.</p>
+    ${S.teachers.length?'':'<div class="msg warn">No teachers yet. Add them below, or use <b>Load an example school</b> on the Timetable tab to see how it works.</div>'}
+    <div class="scroll"><table class="t"><thead><tr><th>Teacher</th><th>Days off</th><th>Unavailable times</th><th>Max / day</th><th>Prefers</th><th>Load</th><th></th></tr></thead><tbody>
+    ${S.teachers.map(t=>{ const l=load_(t.id); return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${tColor(t.id)};margin-right:6px"></span><input value="${esc(t.name)}" onchange="editTeacher('${t.id}','name',this.value)"></td>
+      <td><div class="chips">${S.cfg.days.map(d=>`<label class="chip" style="margin:0"><input type="checkbox" ${t.offDays.includes(d)?'checked':''} onchange="teacherOff('${t.id}','${d}',this.checked)"> ${d}</label>`).join('')}</div></td>
+      <td><button class="btn sm" onclick="openAvail('${t.id}')">${(t.offSlots||[]).length?(t.offSlots.length+' period(s)'):'Set'}</button></td>
+      <td><input type="number" min="0" max="${S.cfg.periodsPerDay}" style="width:70px" value="${t.maxPerDay||''}" placeholder="any" onchange="editTeacher('${t.id}','maxPerDay',+this.value||0)"></td>
+      <td><select onchange="editTeacher('${t.id}','pref',this.value)"><option value="">No preference</option><option value="morning" ${t.pref==='morning'?'selected':''}>Mornings</option><option value="afternoon" ${t.pref==='afternoon'?'selected':''}>Afternoons</option></select></td>
+      <td style="color:${l>cap?'var(--bad)':'inherit'}">${l} / ${cap}</td>
+      <td style="text-align:right"><button class="btn sm bad" onclick="delTeacher('${t.id}')">Remove</button></td></tr>`; }).join('')}</tbody></table></div>
+    <div class="row" style="margin-top:10px"><input id="newTeacher" placeholder="Teacher name"><button class="btn pri" onclick="addTeacher()">Add teacher</button></div></div>`;
+}
+function addTeacher(){ const n=$('newTeacher').value.trim(); if(!n) return; S.teachers.push({id:uid('t'),name:n,offDays:[],offSlots:[],maxPerDay:0,pref:''}); save(); render(); }
+function editTeacher(id,k,v){ const t=teacher(id); if(!t) return; if(k==='name'&&!String(v).trim()) return; t[k]=v; save(); if(k!=='name') render(); }
+function teacherOff(id,d,on){ const t=teacher(id); const s=new Set(t.offDays); on?s.add(d):s.delete(d); t.offDays=[...s]; save(); }
+function delTeacher(id){ if(!confirm('Remove this teacher? Their lessons are removed from the timetable.')) return; S.teachers=S.teachers.filter(t=>t.id!==id); S.classes.forEach(c=>{ Object.keys(assignOf(c.id)).forEach(s=>{ if(assignOf(c.id)[s]===id) delete assignOf(c.id)[s]; }); Object.keys(S.timetable[c.id]||{}).forEach(k=>{ if(S.timetable[c.id][k].teacherId===id) delete S.timetable[c.id][k]; }); }); save(); render(); }
+
+/* ---------- comparison with REB's weekly periods ---------- */
+function refFor(level,sid){ const r=REF[level]; return r&&r[sid]?r[sid]:null; }
+function rebCheck(cid){
+  const c=cls(cid), ref=REF[c.level]; if(!ref) return null; const plan=planOf(cid), rows=[];
+  Object.keys(plan).forEach(sid=>{ const r=ref[sid], have=plan[sid]||0; if(!r) rows.push({sid,kind:'extra',have}); else if(have!==r[0]) rows.push({sid,kind:'differs',have,ref:r[0],v:r[1]}); });
+  if(c.level!=='upper') Object.keys(ref).forEach(sid=>{ if(!(sid in plan)) rows.push({sid,kind:'missing',have:0,ref:ref[sid][0],v:ref[sid][1]}); });
+  return rows;
+}
+function rebPanel(cid){
+  const c=cls(cid), L=lvl(c.level), rows=rebCheck(cid); if(!rows) return ''; const src=SRC[L.src];
+  const badge=src.ok?'<span style="color:var(--ok)">Official REB figures</span>':'<span style="color:var(--warn)">Not official: confirm with REB</span>';
+  const nm=sid=>esc(subj(sid).name), unv=r=>r.v===0?' <span title="Not stated in the REB files I could read">&#9888;</span>':'';
+  const lines=rows.map(r=>r.kind==='differs'?`<li>${nm(r.sid)}: you have <b>${r.have}</b>, REB has <b>${r.ref}</b>${unv(r)}</li>`:r.kind==='missing'?`<li>${nm(r.sid)}: REB lists <b>${r.ref}</b>${unv(r)}, this class has none</li>`:`<li>${nm(r.sid)}: <b>${r.have}</b> periods, which is not in REB's table for this level</li>`).join('');
+  return `<div class="msg ${rows.length?'warn':'ok'}" style="margin-top:10px"><b>Compared with REB (${esc(L.name)}):</b> ${rows.length?'differs in '+rows.length+' place(s)':'matches the weekly periods'}. ${badge}.
+    ${rows.length?`<ul style="margin:6px 0 0 18px">${lines}</ul><div style="margin-top:6px"><button class="btn sm" onclick="applyREB('${cid}')">Set this class to the REB figures</button></div>`:''}
+    <div style="margin-top:4px;font-size:12px;opacity:.85">Source: ${esc(src.label)}.</div></div>`;
+}
+function applyREB(cid){ const c=cls(cid), ref=REF[c.level]; if(!ref) return; if(!confirm("Change this class's periods to the REB figures? Teachers are kept.")) return;
+  const plan=planOf(cid); Object.keys(ref).forEach(s=>{ if(c.level==='upper'){ if(s in plan) plan[s]=ref[s][0]; } else plan[s]=ref[s][0]; }); save(); render(); }
+function resetLevelToREB(id){ const cs=S.classes.filter(c=>c.level===id); if(!cs.length) return;
+  if(!confirm(`Reset the subjects and weekly periods of ${cs.length} ${lvl(id).name} class(es) to the REB starting point? Teachers for subjects that stay are kept; lessons already in the timetable for removed subjects are dropped.`)) return;
+  cs.forEach(c=>{ const t=templateFor(id,c.combo); const old=planOf(c.id); const keepAsg=assignOf(c.id), keepDbl=doublesOf(c.id);
+    Object.keys(keepAsg).forEach(k=>{ if(!(k in t)) delete keepAsg[k]; }); Object.keys(keepDbl).forEach(k=>{ if(!(k in t)) delete keepDbl[k]; });
+    Object.keys(old).forEach(k=>{ if(!(k in t)) dropSubjectFrom(c.id,k); }); S.plan[c.id]=t; }); prune(); save(); render(); toast('Reset to the REB starting point.'); }
+
+/* ---------- 6. lessons ---------- */
+function vLessons(){
+  if(!S.classes.length) return '<div class="card"><div class="msg warn">Switch on a level and add classes first (tab 2).</div></div>';
+  if(!cls(LESSON_CLASS)) LESSON_CLASS=S.classes[0].id;
+  const cid=LESSON_CLASS, c=cls(cid), plan=planOf(cid), asg=assignOf(cid), dbl=doublesOf(cid);
+  const rows=S.subjects.filter(s=>s.id in plan), others=S.subjects.filter(s=>!(s.id in plan));
+  const L=levelPeriods(cid), cap=S.cfg.days.length*L, total=rows.reduce((a,s)=>a+(plan[s.id]||0),0);
+  const opts=sel=>`<option value="">- choose teacher -</option>`+S.teachers.map(t=>`<option value="${t.id}" ${sel===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
+  const used=S.subjects.filter(s=>S.classes.some(x=>s.id in planOf(x.id)));
+  return `<div class="card"><div class="row"><div><label>Class</label><select onchange="LESSON_CLASS=this.value;render()">${classOptions(cid)}</select></div>
+      <div class="sp"></div><button class="btn sm" onclick="copyPlan()">Copy these periods &amp; doubles to similar classes</button></div>
+    <h2 style="margin-top:14px">${esc(c.name)} &mdash; weekly lessons</h2><p class="h">${esc(lvl(c.level).name)}${c.combo?' &middot; '+esc(PATHWAYS[c.combo]||COMBO_NAMES[c.combo]||c.combo):''}. Choose which subjects this class studies, how many periods a week each gets, who teaches it, and tick <b>Double</b> to teach it as two periods in a row (good for practicals and P.E.).</p>
+    ${S.teachers.length?'':'<div class="msg warn">Add teachers first (tab 5) so you can pick them here.</div>'}
+    <div class="scroll"><table class="t"><thead><tr><th>Subject</th><th>Periods a week</th><th>Double</th><th>Teacher</th>${S.rooms.length?'<th>Room / lab</th>':''}<th></th></tr></thead><tbody>
+    ${rows.map(s=>`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${s.color};margin-right:6px"></span>${esc(s.name)}</td>
+      <td><input type="number" min="0" max="${cap}" style="width:80px" value="${plan[s.id]||0}" onchange="setPeriods('${cid}','${s.id}',+this.value)"></td>
+      <td><input type="checkbox" ${dbl[s.id]?'checked':''} onchange="setDouble('${cid}','${s.id}',this.checked)"></td>
+      <td><select onchange="setTeacher('${cid}','${s.id}',this.value)">${opts(asg[s.id])}</select></td>
+      ${S.rooms.length?`<td><select onchange="setRoomPlan('${cid}','${s.id}',this.value)">${roomOpts(cid,s.id)}</select></td>`:''}
+      <td style="text-align:right"><button class="btn sm bad" onclick="removeFromClass('${s.id}')" title="This class does not study it">Remove</button></td></tr>`).join('')}</tbody></table></div>
+    ${others.length?`<div class="row" style="margin-top:10px"><select id="addSubj"><option value="">+ add another subject to this class...</option>${others.map(s=>{ const r=refFor(c.level,s.id); return `<option value="${s.id}">${esc(s.name)}${r?` (REB: ${r[0]} a week${r[1]?'':', unconfirmed'})`:''}</option>`; }).join('')}</select><button class="btn" onclick="addToClass()">Add</button></div>`:''}
+    ${rebPanel(cid)}<div class="msg ${total>cap?'err':'ok'}" style="margin-top:10px">Total: <b>${total}</b> periods a week. This class uses <b>${L}</b> periods a day, so the week has room for <b>${cap}</b>${total>cap?' &mdash; too many, reduce some subjects.':total<cap?` &mdash; ${cap-total} free period(s) will stay empty.`:'.'}</div></div>
+  <div class="card"><h2>Same teacher for a subject in many classes</h2><p class="h">Handy for subject teachers (one Physics teacher for S1&ndash;S3, one P.E. teacher for the whole school). Only classes that study the subject are changed.</p>
+    <div class="row" style="margin-bottom:8px"><div><label>Apply to</label><select id="qaScope"><option value="">Every class</option>${LEVELS.filter(l=>S.classes.some(x=>x.level===l.id)).map(l=>`<option value="${l.id}">${esc(l.name)} only</option>`).join('')}</select></div></div>
+    <div class="scroll"><table class="t"><tbody>${used.map(s=>`<tr><td>${esc(s.name)}</td><td><select id="qa_${s.id}">${opts('')}</select></td><td><button class="btn sm" onclick="assignAll('${s.id}')">Apply</button></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function roomOpts(cid,sid){ const cur=(S.roomPlan[cid]||{})[sid]||''; const def=(S.subjectRooms[sid]||[]).filter(room).map(rName).join(' / ');
+  return `<option value="" ${cur===''?'selected':''}>${def?'Usual: '+esc(def):'Own classroom'}</option>${def?`<option value="none" ${cur==='none'?'selected':''}>Own classroom</option>`:''}`+S.rooms.map(r=>`<option value="${r.id}" ${cur===r.id?'selected':''}>${esc(r.name)}</option>`).join(''); }
+function setRoomPlan(c,s,v){ if(!S.roomPlan[c]) S.roomPlan[c]={}; if(v) S.roomPlan[c][s]=v; else delete S.roomPlan[c][s]; save(); }
+function setPeriods(c,s,v){ planOf(c)[s]=Math.max(0,v||0); save(); render(); }
+function setDouble(c,s,on){ if(on) doublesOf(c)[s]=true; else delete doublesOf(c)[s]; save(); }
+function setTeacher(c,s,t){ if(t) assignOf(c)[s]=t; else delete assignOf(c)[s]; save(); }
+function addToClass(){ const sid=$('addSubj').value; if(!sid) return; const r=refFor(cls(LESSON_CLASS).level,sid); planOf(LESSON_CLASS)[sid]=r?r[0]:1; save(); render(); }
+function removeFromClass(sid){ dropSubjectFrom(LESSON_CLASS,sid); save(); render(); }
+function copyPlan(){ const c=cls(LESSON_CLASS), src=planOf(c.id), sd=doublesOf(c.id);
+  const same=S.classes.filter(x=>x.id!==c.id&&x.level===c.level&&(x.combo||'')===(c.combo||''));
+  if(!same.length){ toast('No other class of the same kind (same level and combination).'); return; }
+  if(!confirm(`Copy these subjects, periods and doubles to ${same.length} other class(es) of the same kind? Their teachers are kept.`)) return;
+  same.forEach(x=>{ const old=assignOf(x.id); S.plan[x.id]=Object.assign({},src); S.doubles[x.id]=Object.assign({},sd); Object.keys(old).forEach(k=>{ if(!(k in S.plan[x.id])) delete old[k]; }); });
+  save(); toast('Copied to '+same.length+' class(es).'); }
+function assignAll(sid){ const t=$('qa_'+sid).value, scope=$('qaScope').value; if(!t){ toast('Pick a teacher first.'); return; }
+  let n=0; S.classes.forEach(c=>{ if(scope&&c.level!==scope) return; if(sid in planOf(c.id)){ assignOf(c.id)[sid]=t; n++; } });
+  save(); toast(`${subj(sid).name}: ${tName(t)} now teaches it in ${n} class(es).`); render(); }
+
+/* ---------- 7. timetable ---------- */
+function rulesFromTeachers(){ const out={offDays:{},maxPerDay:{},pref:{}}; S.teachers.forEach(t=>{ if(t.offDays.length) out.offDays[t.id]=new Set(t.offDays); if((t.offSlots||[]).length){ out.offSlots=out.offSlots||{}; out.offSlots[t.id]=new Set(t.offSlots); } if(t.maxPerDay>0) out.maxPerDay[t.id]=t.maxPerDay; if(t.pref) out.pref[t.id]=t.pref; }); return out; }
+function buildTasks(){
+  const tasks=[],warnings=[];
+  S.classes.forEach(c=>{ const missing=[];
+    S.subjects.forEach(s=>{ if(!(s.id in planOf(c.id))) return; const n=planOf(c.id)[s.id]||0; if(!n) return; const t=assignOf(c.id)[s.id];
+      if(!t||!teacher(t)){ missing.push(s.name); return; }
+      tasks.push({sectionId:c.id,classId:c.id,subjectId:s.id,teacherId:t,periodsNeeded:n,double:!!doublesOf(c.id)[s.id],rooms:taskRooms(c.id,s.id)}); });
+    if(missing.length) warnings.push(`${c.name}: no teacher chosen for ${missing.join(', ')} - left out of the timetable.`); });
+  return {tasks,warnings};
+}
+/* ---------- building the timetable: prepare -> solve (in the background) -> apply ---------- */
+const EFFORT={quick:{ms:900,label:'Quick (about 1 second)'},thorough:{ms:20000,label:'Thorough (up to 20 seconds)'},maximum:{ms:120000,label:'Maximum (up to 2 minutes)'}};
+let JOB=null;
+function prepareGenerate(discardLocks){
+  const {tasks,warnings}=buildTasks(); const cfg=S.cfg; const slots=stPeriodSlots(cfg);
+  if(!tasks.length) return {ok:false,report:{ok:false,warnings:warnings.length?warnings:['Nothing to schedule yet: give subjects a number of periods and a teacher (tab 6).'],issues:[]}};
+  const rules=rulesFromTeachers(); const locked={}; const capIssues=[];
+  S.classes.forEach(c=>{ const L=levelPeriods(c.id);
+    if(L<cfg.periodsPerDay) cfg.days.forEach(d=>{ for(let p=L+1;p<=cfg.periodsPerDay;p++) (locked[c.id]=locked[c.id]||{})[d+'_'+p]={subjectKey:'__off__',teacherId:'',locked:true}; });
+    const need=tasks.filter(x=>x.sectionId===c.id).reduce((a,x)=>a+x.periodsNeeded,0), room=cfg.days.length*L;
+    if(need>room) capIssues.push({level:'error',msg:`${c.name} needs ${need} periods a week but only has room for ${room} (${L} a day). Reduce its weekly periods or give its level more periods a day.`}); });
+  if(!discardLocks) Object.keys(S.timetable).forEach(cid=>Object.keys(S.timetable[cid]).forEach(k=>{ const c=S.timetable[cid][k]; if(c.locked&&cls(cid)&&teacher(c.teacherId)&&c.subjectKey!=='__off__') (locked[cid]=locked[cid]||{})[k]=c; }));
+  const issues=capIssues.concat(stPrecheck(tasks,cfg,rules,{sectionLabel:id=>cls(id).name,teacherName:tName}).filter(i=>!/ periods a week but the week only has /.test(i.msg)));
+  const roomCap={}; S.rooms.forEach(r=>roomCap[r.id]=roomCapOf(r.id)); const weekSlots=cfg.days.length*cfg.periodsPerDay, pools={};
+  tasks.forEach(x=>{ if(x.rooms&&x.rooms.length){ const k=x.rooms.slice().sort().join(','); (pools[k]=pools[k]||{rooms:x.rooms,need:0}).need+=x.periodsNeeded; } });
+  Object.values(pools).forEach(p=>{ const supply=p.rooms.reduce((a,r)=>a+roomCapOf(r),0)*weekSlots, nm=p.rooms.map(rName).join(' / ');
+    if(p.need>supply) issues.push({level:'error',msg:`${nm} is needed for ${p.need} periods a week but can only host ${supply}. Add another room, allow more rooms for the subject, or reduce those periods.`});
+    else if(p.need>supply*0.85) issues.push({level:'warn',msg:`${nm} is almost fully booked (${p.need} of ${supply} periods) - the timetable will have little room to move.`}); });
+  return {ok:true,tasks,warnings,cfg,slots,rules,locked,roomCap,issues,seed:(Date.now()%2147483000)+1};
+}
+/* what is still unplaced / how tidy it is, worked out from the finished grid itself (so a stopped search can still be reported) */
+function failuresFromGrid(tasks,grid){ const out=[]; tasks.forEach(t=>{ const have=Object.values(grid[t.sectionId]||{}).filter(c=>c.subjectKey===t.subjectId).length; if(have<t.periodsNeeded) out.push({sectionId:t.sectionId,subjectId:t.subjectId,teacherId:t.teacherId,missing:t.periodsNeeded-have,needsRoom:!!(t.rooms&&t.rooms.length)}); }); return out; }
+function qualityFromGrid(grid,cfg){ const busy={}; Object.keys(grid).forEach(sid=>Object.keys(grid[sid]).forEach(k=>{ const t=grid[sid][k].teacherId; if(t) (busy[t]=busy[t]||new Set()).add(k); })); return stQualityOf({sectionGrid:grid,teacherBusy:busy},cfg); }
+function solveSync(prep,budget){ const best=stSolve(prep.tasks,prep.slots,prep.cfg,{rules:prep.rules,locked:prep.locked,seed:prep.seed,roomCap:prep.roomCap,timeBudgetMs:budget}); return {grid:best.sectionGrid,attempts:best.attempts}; }
+function failureMessages(fl){ return fl.map(f=>`${cls(f.sectionId).name}: ${f.missing} period(s) of ${subj(f.subjectId).name} could not be placed - ${f.needsRoom?`${tName(f.teacherId)} or the room/lab (${taskRooms(f.sectionId,f.subjectId).map(rName).join(' / ')}) had no free time left at the same moment. Add another room, give the subject to another teacher, or free some time.`:`${tName(f.teacherId)} has no free time left (other classes, days off or daily limit). Give this subject to another teacher or free some of their time.`}`); }
+function finishGenerate(prep,out,meta){
+  const grid=out.grid; Object.keys(grid).forEach(cid=>Object.keys(grid[cid]).forEach(k=>{ if(grid[cid][k].subjectKey==='__off__') delete grid[cid][k]; }));
+  if(Object.keys(S.timetable).length) S.prev=JSON.parse(JSON.stringify(S.timetable));
+  S.timetable={}; Object.keys(grid).forEach(cid=>S.timetable[cid]=grid[cid]); S.seed=prep.seed;
+  const fl=failuresFromGrid(prep.tasks,S.timetable), q=qualityFromGrid(S.timetable,prep.cfg), failed=fl.reduce((a,f)=>a+f.missing,0), placed=prep.tasks.reduce((a,t)=>a+t.periodsNeeded,0)-failed;
+  REPORT={ok:true,warnings:prep.warnings.concat(failureMessages(fl)),issues:prep.issues,effort:(meta&&meta.effort)||'quick',stopped:!!(meta&&meta.stopped),secs:meta?meta.secs:null,
+    stats:{placed,failed,holes:q.holes,repeats:q.repeats,gaps:q.teacherGaps,kept:Object.values(prep.locked).reduce((a,o)=>a+Object.values(o).filter(x=>x.subjectKey!=='__off__').length,0)}};
+  if(!VIEW.id||!cls(VIEW.id)) VIEW={mode:'class',id:S.classes[0].id};
+  save();
+}
+/* synchronous build (used by the Quick setting, the tests, and as a fallback when background work is unavailable) */
+function generate(discardLocks,budget){ const prep=prepareGenerate(discardLocks); if(!prep.ok){ REPORT=prep.report; return; } finishGenerate(prep,solveSync(prep,budget||EFFORT.quick.ms),{effort:'quick'}); }
+function setEffort(v){ if(EFFORT[v]){ S.effort=v; save(); } }
+function workerSource(){ return document.getElementById('solverSrc').textContent+`
+self.onmessage=function(e){ var d=e.data;
+  var res=stSolve(d.tasks,d.slots,d.cfg,{seed:d.seed,rules:d.rules,roomCap:d.roomCap,locked:d.locked,timeBudgetMs:d.budget,
+    progress:function(p){ self.postMessage({type:'progress',attempt:p.attempt,unplaced:p.unplaced,elapsed:p.elapsed,grid:p.grid}); }});
+  self.postMessage({type:'done',grid:res.sectionGrid,attempts:res.attempts});
+};`; }
+function runGenerate(discard,effort){
+  if(JOB) return; effort=EFFORT[effort]?effort:(EFFORT[S.effort]?S.effort:'quick'); let budget;
+  const prep=prepareGenerate(discard); if(!prep.ok){ REPORT=prep.report; render(); return; }
+  if(effort!=='quick'&&prep.issues.some(i=>i.level==='error')){ effort='quick'; toast('Some rules cannot all be met (see the problems listed), so searching longer would not help. Fix those first.'); }
+  budget=EFFORT[effort].ms; const fallback=(ms)=>{ toast('Building the timetable...'); setTimeout(()=>{ const t0=Date.now(); finishGenerate(prep,solveSync(prep,ms),{effort,secs:Math.round((Date.now()-t0)/100)/10}); render(); },30); };
+  if(effort==='quick'||!window.Worker||!window.Blob||!window.URL) return fallback(effort==='quick'?budget:Math.min(budget,4000));
+  let url,w; try{ url=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'})); w=new Worker(url); }catch(e){ return fallback(4000); }
+  JOB={w,url,prep,effort,budget,start:Date.now(),lastGrid:null,unplaced:null,attempt:0};
+  const end=(out,stopped)=>{ const j=JOB; if(!j) return; JOB=null; try{ j.w.terminate(); URL.revokeObjectURL(j.url); }catch(e){}
+    const secs=Math.round((Date.now()-j.start)/100)/10; if(!out){ toast('Nothing was built yet, so your timetable is unchanged.'); render(); return; }
+    finishGenerate(j.prep,{grid:out},{effort:j.effort,stopped,secs}); render(); };
+  w.onmessage=e=>{ const m=e.data; if(!JOB) return;
+    if(m.type==='progress'){ if(m.grid) JOB.lastGrid=m.grid; JOB.unplaced=m.unplaced; JOB.attempt=m.attempt; updateJob(); if(m.unplaced===0&&false) end(m.grid,false); }
+    else if(m.type==='done'){ end(m.grid,false); } };
+  w.onerror=()=>{ const j=JOB; JOB=null; try{ w.terminate(); URL.revokeObjectURL(url); }catch(e){} toast('Background work is not available here, so it is running in the page instead.'); fallback(4000); };
+  w.postMessage({tasks:prep.tasks,slots:prep.slots,cfg:prep.cfg,seed:prep.seed,rules:prep.rules,roomCap:prep.roomCap,locked:prep.locked,budget});
+  render(); JOB.timer=setInterval(()=>{ if(JOB) updateJob(); else clearInterval(JOB&&JOB.timer); },500);
+}
+function stopJob(){ if(!JOB) return; clearInterval(JOB.timer); const j=JOB, out=j.lastGrid; JOB=null; try{ j.w.terminate(); URL.revokeObjectURL(j.url); }catch(e){}
+  if(!out){ toast('Nothing was built yet, so your timetable is unchanged.'); render(); return; }
+  finishGenerate(j.prep,{grid:out},{effort:j.effort,stopped:true,secs:Math.round((Date.now()-j.start)/100)/10}); render(); toast('Stopped: kept the best timetable found so far.'); }
+function updateJob(){ const el=document.getElementById('jobStatus'); if(!el||!JOB) return; const s=Math.round((Date.now()-JOB.start)/1000);
+  el.innerHTML=`Working&hellip; <b>${s}s</b> of up to ${Math.round(JOB.budget/1000)}s &middot; attempt ${JOB.attempt} &middot; `+(JOB.unplaced==null?'getting started':JOB.unplaced===0?'<b style="color:var(--ok)">every lesson is placed</b>, now tidying up':`<b>${JOB.unplaced}</b> lesson(s) still unplaced`);
+  const bar=document.getElementById('jobBar'); if(bar) bar.style.width=Math.min(100,Math.round(100*(Date.now()-JOB.start)/JOB.budget))+'%'; }
+function undoGenerate(){ if(!S.prev){ toast('Nothing to undo.'); return; } const cur=S.timetable; S.timetable=S.prev; S.prev=cur; prune(); REPORT=null; save(); render(); toast('Went back to the previous timetable.'); }
+function unlockAll(){ Object.values(S.timetable).forEach(g=>Object.values(g).forEach(c=>delete c.locked)); save(); render(); toast('All hand-made changes unlocked - the next build may move them.'); }
+function clearAll(){ if(!confirm('Erase the whole timetable? (You can still undo once.)')) return; S.prev=JSON.parse(JSON.stringify(S.timetable)); S.timetable={}; REPORT=null; save(); render(); }
+function teacherSchedule(tid){ const out={}; Object.keys(S.timetable).forEach(cid=>Object.keys(S.timetable[cid]).forEach(k=>{ const c=S.timetable[cid][k]; if(c.teacherId===tid) out[k]={subjectKey:c.subjectKey,classId:cid}; })); return out; }
+function busyElsewhere(key,tid,exceptCid){ if(!tid) return null; for(const cid of Object.keys(S.timetable)){ if(cid===exceptCid) continue; const c=S.timetable[cid][key]; if(c&&c.teacherId===tid) return cid; } return null; }
+
+function vTimetable(){
+  const has=Object.keys(S.timetable).some(c=>Object.keys(S.timetable[c]).length);
+  let h=`<div class="card"><div class="row">
+    <button class="btn pri" onclick="runGenerate(false)" ${JOB?'disabled':''}>${has?'Build again':'Build the timetable'}</button>
+    <select onchange="setEffort(this.value)" title="How long the builder may search for a solution" ${JOB?'disabled':''}>${Object.keys(EFFORT).map(k=>`<option value="${k}" ${(S.effort||'quick')===k?'selected':''}>${EFFORT[k].label}</option>`).join('')}</select>
+    ${S.prev?'<button class="btn" onclick="undoGenerate()">Undo build</button>':''}${HIST.length?'<button class="btn" onclick="undoEdit()">Undo last change</button>':''}${has?'<button class="btn" onclick="openVersions()">Versions</button>':''}
+    <span class="sp"></span>
+    ${S.teachers.length?'':'<button class="btn" onclick="loadExample()">Load an example school</button>'}
+    ${has?'<button class="btn bad" onclick="clearAll()">Erase</button>':''}</div>
+    <p class="h" style="margin:8px 0 0">Click any lesson to change it by hand. Hand-made changes are 🔒 locked, so building again keeps them.</p></div>`;
+  if(JOB) h+=`<div class="card"><div class="row"><div style="flex:1;min-width:220px"><div id="jobStatus">Working&hellip;</div><div style="background:var(--line);height:8px;border-radius:4px;margin-top:8px"><div id="jobBar" style="background:linear-gradient(90deg,#00A1DE 0 50%,#FAD201 50% 75%,#20603D 75%);height:8px;border-radius:4px;width:0%"></div></div></div><button class="btn bad" onclick="stopJob()">Stop and keep the best so far</button></div><p class="h" style="margin:8px 0 0">You can leave this page open, but please keep it open until it finishes. Harder timetables can take a while.</p></div>`;
+  if(REPORT&&!JOB){
+    if(!REPORT.ok) h+=REPORT.warnings.map(w=>`<div class="msg err">${esc(w)}</div>`).join('');
+    else {
+      REPORT.issues.forEach(i=>h+=`<div class="msg ${i.level==='error'?'err':'warn'}">${esc(i.msg)}</div>`);
+      REPORT.warnings.forEach(w=>h+=`<div class="msg warn">${esc(w)}</div>`);
+      const s=REPORT.stats;
+      h+=`<div class="msg ${s.failed?'warn':'ok'}"><b>${s.placed}</b> lessons placed${s.failed?`, <b>${s.failed}</b> could not be placed`:' - no teacher is ever in two classes at once'}. Empty gaps inside a class day: <b>${s.holes}</b> &middot; teacher idle gaps: <b>${s.gaps}</b>${s.kept?` &middot; ${s.kept} hand-made lesson(s) kept`:''}.${REPORT.secs!=null?` <span style="opacity:.75">(searched ${REPORT.secs}s${REPORT.stopped?', stopped early':''})</span>`:''}</div>`;
+      if(s.failed&&!JOB) h+=`<div class="msg warn">${s.failed} lesson(s) could not be placed. Searching longer often finds a way: <button class="btn sm" onclick="runGenerate(false,'thorough')">Try harder (up to 20 seconds)</button> <button class="btn sm" onclick="runGenerate(false,'maximum')">Maximum effort (up to 2 minutes)</button><br><span style="font-size:12px">If it still cannot place them, the school's rules may truly leave no room: see the reasons listed below.</span></div>`;
+    }
+  }
+  if(!has) return h+'<div class="card"><p class="h">No timetable yet. Fill in tabs 1&ndash;6, then press <b>Build the timetable</b>.</p></div>';
+  const vi=validate(); if(vi.length) h+=`<div class="msg err"><b>${vi.length} problem(s)</b> found in this timetable (see tab 8, Reports). First: ${esc(vi[0].msg)}</div>`;
+  if(!VIEW.id||!(VIEW.mode==='class'?cls(VIEW.id):VIEW.mode==='room'?room(VIEW.id):teacher(VIEW.id))) VIEW={mode:'class',id:S.classes[0].id};
+  const list=VIEW.mode==='class'?S.classes.map(c=>[c.id,c.name]):VIEW.mode==='room'?S.rooms.map(r=>[r.id,r.name]):S.teachers.map(t=>[t.id,t.name]);
+  h+=`<div class="card"><div class="row" style="margin-bottom:10px">
+    <div><label>Show</label><select onchange="VIEW={mode:this.value,id:null};render()"><option value="class" ${VIEW.mode==='class'?'selected':''}>One class</option><option value="teacher" ${VIEW.mode==='teacher'?'selected':''}>One teacher</option>${S.rooms.length?`<option value="room" ${VIEW.mode==='room'?'selected':''}>One room or lab</option>`:''}</select></div>
+    <div><label>${({class:'Class',teacher:'Teacher',room:'Room or lab'})[VIEW.mode]}</label><select onchange="VIEW.id=this.value;render()">${VIEW.mode==='class'?classOptions(VIEW.id):list.map(([id,n])=>`<option value="${id}" ${id===VIEW.id?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+    <span class="sp"></span>
+    <button class="btn sm" onclick="shareText()">Copy as text</button>
+    <button class="btn sm" onclick="printThis()">Print this</button>
+    <button class="btn sm" onclick="printAll('class')">Print all classes</button>
+    <button class="btn sm" onclick="printAll('teacher')">Print all teachers</button>
+    ${S.rooms.length?'<button class="btn sm" onclick="printAll(\'room\')">Print all rooms</button>':''}
+    <button class="btn sm" onclick="exportCsv()">Excel / CSV</button>
+    <button class="btn sm" onclick="unlockAll()">Unlock all</button></div>
+    <div class="scroll">${gridHTML(VIEW.mode,VIEW.id,true)}</div>
+    ${VIEW.mode==='class'?legendHTML():''}</div>`;
+  return h;
+}
+function legendHTML(){ return `<div class="chips" style="margin-top:10px">${S.teachers.map(t=>`<span class="chip" style="cursor:default;border-left:5px solid ${tColor(t.id)}">${esc(t.name)}</span>`).join('')}</div>`; }
+function roomSchedule(rid){ const out={}; Object.keys(S.timetable).forEach(cid=>Object.keys(S.timetable[cid]).forEach(k=>{ const c=S.timetable[cid][k]; if(c.roomId===rid) (out[k]=out[k]||[]).push({subjectKey:c.subjectKey,classId:cid}); })); return out; }
+function cellInfo(mode,id,key){
+  if(mode==='class'){ const c=(S.timetable[id]||{})[key]; if(!c) return null; const sub=[c.teacherId?tName(c.teacherId):'',c.roomId?rName(c.roomId):''].filter(Boolean).join(' \u00b7 ');
+    return {subj:c.subjectKey,top:subj(c.subjectKey).short,sub,tid:c.teacherId,locked:c.locked}; }
+  if(mode==='room'){ const h=roomSchedule(id)[key]; if(!h) return null; const subs=[...new Set(h.map(x=>subj(x.subjectKey).short))];
+    return {subj:h[0].subjectKey,top:subs.join(', '),sub:h.map(x=>cls(x.classId)?cls(x.classId).name:'').join(', '),tid:null}; }
+  const t=teacherSchedule(id)[key]; return t?{subj:t.subjectKey,top:subj(t.subjectKey).short,sub:[cls(t.classId)?cls(t.classId).name:'',(S.timetable[t.classId][key]||{}).roomId?rName(S.timetable[t.classId][key].roomId):''].filter(Boolean).join(' \u00b7 '),tid:id}:null;
+}
+function gridHTML(mode,id,interactive){
+  const cfg=S.cfg, sched=schedule(cfg);
+  const rows=sched.map(x=>{
+    if(x.type!=='period') return `<tr class="sp"><td class="tm">${fmt(x.start)}</td><td colspan="${cfg.days.length}">${esc(x.label)}</td></tr>`;
+    return `<tr><td class="tm"><b>P${x.period}</b><br>${fmt(x.start)}&ndash;${fmt(x.end)}</td>${cfg.days.map(d=>{
+      const key=d+'_'+x.period, ci=cellInfo(mode,id,key);
+      if(mode==='class'&&x.period>levelPeriods(id)) return `<td class="off"></td>`;
+      const click=(interactive&&mode==='class')?` onclick="openEdit('${id}','${d}',${x.period})"`:'';
+      const dd=(interactive&&mode==='class')?` ondragover="event.preventDefault()" ondrop="dropOn(event,'${id}','${key}')"`:'';
+      const drag=(interactive&&mode==='class'&&ci&&!((S.timetable[id]||{})[key]||{}).double)?` draggable="true" ondragstart="dragStart(event,'${id}','${key}')"`:'';
+      if(!ci) return `<td><div class="cell empty"${click}${dd}>${interactive&&mode==='class'?'+':''}</div></td>`;
+      return `<td><div class="cell"${click}${dd}${drag} style="background:${subj(ci.subj).color}26;border-left-color:${tColor(ci.tid)}"><b>${esc(ci.top)}${ci.locked?' 🔒':''}</b><small>${esc(ci.sub)}</small></div></td>`; }).join('')}</tr>`;
+  }).join('');
+  return `<table class="tt"><thead><tr><th>Time</th>${cfg.days.map(d=>`<th>${DAY_LABELS[d]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------- manual edit ---------- */
+function openEdit(cid,day,period){
+  if(period>levelPeriods(cid)) return;
+  const key=day+'_'+period, cur=(S.timetable[cid]||{})[key]||null; const mine=S.subjects.filter(s=>s.id in planOf(cid)), rest=S.subjects.filter(s=>!(s.id in planOf(cid)));
+  const op=s=>`<option value="${s.id}" ${cur&&cur.subjectKey===s.id?'selected':''}>${esc(s.name)}</option>`;
+  const sOpts=`<optgroup label="This class studies">${mine.map(op).join('')}</optgroup>${rest.length?`<optgroup label="Other subjects">${rest.map(op).join('')}</optgroup>`:''}`;
+  $('modalBox').innerHTML=`<h2 style="margin:0 0 4px">${esc(cls(cid).name)}</h2><p class="h" style="margin:0 0 12px">${DAY_LABELS[day]}, period ${period}</p>
+    <label>Subject</label><select id="eSubj" style="width:100%" onchange="editSubjChange('${cid}')">${sOpts}</select>
+    <label style="margin-top:10px">Teacher</label><select id="eTeach" style="width:100%" onchange="editCheck('${cid}','${day}',${period})"></select>
+    ${S.rooms.length?`<label style="margin-top:10px">Room / lab</label><select id="eRoom" style="width:100%" onchange="editCheck('${cid}','${day}',${period})"></select>`:''}
+    <div id="eMsg"></div>
+    <div class="row" style="margin-top:14px"><button class="btn pri" id="eSave" onclick="editSave('${cid}','${day}',${period})">Save</button>${cur?`<button class="btn bad" onclick="editClear('${cid}','${day}',${period})">Empty this slot</button>`:''}<span class="sp"></span><button class="btn" onclick="closeModal()">Cancel</button></div>`;
+  $('modal').classList.add('on');
+  if(!cur) $('eSubj').selectedIndex=0;
+  fillTeachers(cid,$('eSubj').value,cur?cur.teacherId:null); fillRooms(cid,$('eSubj').value,cur?(cur.roomId||''):null,day,period); editCheck(cid,day,period);
+}
+function fillTeachers(cid,sid,sel){
+  const pref=sel||assignOf(cid)[sid]||'';
+  $('eTeach').innerHTML=`<option value="">(no teacher)</option>`+S.teachers.map(t=>`<option value="${t.id}" ${t.id===pref?'selected':''}>${esc(t.name)}</option>`).join('');
+}
+function fillRooms(cid,sid,sel,day,period){ const el=$('eRoom'); if(!el) return; let pick=sel;
+  if(pick===null){ const key=day+'_'+period; const pool=taskRooms(cid,sid); pick=''; for(const r of pool){ let n=0; Object.keys(S.timetable).forEach(c=>{ if(c!==cid&&(S.timetable[c][key]||{}).roomId===r) n++; }); if(n<roomCapOf(r)){ pick=r; break; } } if(!pick&&pool.length) pick=pool[0]; }
+  el.innerHTML=`<option value="">(own classroom)</option>`+S.rooms.map(r=>`<option value="${r.id}" ${r.id===pick?'selected':''}>${esc(r.name)}</option>`).join(''); }
+function editSubjChange(cid){ const m=$('eMsg'), d=m.dataset; fillTeachers(cid,$('eSubj').value,null); fillRooms(cid,$('eSubj').value,null,d.day,+d.period); editCheck(cid,d.day,+d.period); }
+function editCheck(cid,day,period){
+  const m=$('eMsg'); m.dataset.day=day; m.dataset.period=period; const tid=$('eTeach').value, key=day+'_'+period; let err='';
+  if(tid){ const t=teacher(tid);
+    const other=busyElsewhere(key,tid,cid); if(other) err=`${t.name} is already teaching ${cls(other).name} at this time.`;
+    else if(t.offDays.includes(day)) err=`${t.name} has ${DAY_LABELS[day]} off.`;
+    else if((t.offSlots||[]).includes(key)) err=`${t.name} is not available at this time.`;
+    else if(t.maxPerDay>0){ let n=0; Object.keys(S.timetable).forEach(c=>Object.keys(S.timetable[c]).forEach(k=>{ const [d]=stSplitKey(k); if(d===day&&k!==(c===cid?key:'')&&S.timetable[c][k].teacherId===tid) n++; })); if(n>=t.maxPerDay) err=`${t.name} already has ${n} periods on ${DAY_LABELS[day]} (their limit is ${t.maxPerDay}).`; } }
+  const rid=$('eRoom')?$('eRoom').value:'';
+  if(!err&&rid){ let n=0,who=''; Object.keys(S.timetable).forEach(c=>{ if(c===cid) return; const x=S.timetable[c][key]; if(x&&x.roomId===rid){ n++; who=cls(c).name; } }); if(n>=roomCapOf(rid)) err=`${rName(rid)} is already in use${who?' by '+who:''} at this time.`; }
+  m.innerHTML=err?`<div class="msg err">${esc(err)}</div>`:'';
+  $('eSave').disabled=!!err;
+}
+function unpair(cid,key){ const c=(S.timetable[cid]||{})[key]; if(!c||!c.blockId) return; Object.values(S.timetable[cid]).forEach(x=>{ if(x.blockId===c.blockId){ delete x.double; delete x.blockPos; } }); }
+function editSave(cid,day,period){ const key=day+'_'+period; if($('eSave').disabled) return; pushHistory(); unpair(cid,key);
+  if(!S.timetable[cid]) S.timetable[cid]={}; S.timetable[cid][key]=Object.assign({subjectKey:$('eSubj').value,teacherId:$('eTeach').value,locked:true,blockId:key},($('eRoom')&&$('eRoom').value)?{roomId:$('eRoom').value}:{});
+  save(); closeModal(); render(); }
+function editClear(cid,day,period){ const key=day+'_'+period; pushHistory(); unpair(cid,key); delete S.timetable[cid][key]; save(); closeModal(); render(); }
+function closeModal(){ $('modal').classList.remove('on'); }
+$('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+/* ---------- print & export ---------- */
+function sheetHTML(mode,id){
+  const cfg=S.cfg, sched=schedule(cfg); const name=mode==='class'?cls(id).name:mode==='room'?room(id).name:teacher(id).name;
+  const rows=sched.map(x=>{
+    if(x.type!=='period') return `<tr class="sp"><td class="tm">${fmt(x.start)}</td><td colspan="${cfg.days.length}">${esc(x.label)}</td></tr>`;
+    return `<tr><td class="tm">${fmt(x.start)}&ndash;${fmt(x.end)}<br>(P${x.period})</td>${cfg.days.map(d=>{ if(mode==='class'&&x.period>levelPeriods(id)) return '<td class="off"></td>'; const ci=cellInfo(mode,id,d+'_'+x.period); return `<td>${ci?`<b>${esc(ci.top)}</b><br>${esc(ci.sub)}`:''}</td>`; }).join('')}</tr>`; }).join('');
+  return `<div class="sheet">${sheetHead()}<div class="meta"><b>${({class:'Class timetable',teacher:'Teacher timetable',room:'Room timetable'})[mode]}: ${esc(name)}</b>${mode==='class'?' ('+esc(lvl(cls(id).level).name)+')':''} &nbsp;&middot;&nbsp; Printed ${new Date().toLocaleDateString()}</div>
+    <table><thead><tr><th class="tm">Time</th>${cfg.days.map(d=>`<th>${DAY_LABELS[d]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>${sheetFoot()}</div>`;
+}
+function doPrint(html){ $('printArea').innerHTML=html; setTimeout(()=>window.print(),50); }
+function printThis(){ doPrint(sheetHTML(VIEW.mode,VIEW.id)); }
+function printAll(mode){ const ids=mode==='class'?S.classes.map(c=>c.id):mode==='room'?S.rooms.filter(r=>Object.keys(roomSchedule(r.id)).length).map(r=>r.id):S.teachers.filter(t=>Object.keys(teacherSchedule(t.id)).length).map(t=>t.id); doPrint(ids.map(id=>sheetHTML(mode,id)).join('')); }
+function download(name,blob){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
+function exportCsv(){
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"', sched=schedule(S.cfg).filter(x=>x.type==='period'), time={}; sched.forEach(x=>time[x.period]=fmt(x.start)+' - '+fmt(x.end));
+  const lines=[['Class','Day','Period','Time','Subject','Teacher','Room','Double period'].map(q).join(',')];
+  S.classes.forEach(c=>{ const g=S.timetable[c.id]||{};
+    Object.keys(g).map(k=>({k,d:stSplitKey(k)})).sort((a,b)=>(S.cfg.days.indexOf(a.d[0])-S.cfg.days.indexOf(b.d[0]))||(a.d[1]-b.d[1])).forEach(({k,d})=>{ const x=g[k]; lines.push([c.name,DAY_LABELS[d[0]],d[1],time[d[1]]||'',subj(x.subjectKey).name,x.teacherId?tName(x.teacherId):'',x.roomId?rName(x.roomId):'',x.double?'Yes':''].map(q).join(',')); }); });
+  download('school-timetable-'+new Date().toISOString().slice(0,10)+'.csv',new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}));
+}
+function exportJson(){ download('school-timetable-backup-'+new Date().toISOString().slice(0,10)+'.json',new Blob([JSON.stringify(S,null,1)],{type:'application/json'})); toast('Backup saved to your Downloads.'); }
+function importJson(inp){
+  const f=inp.files[0]; inp.value=''; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result);
+      if(!d||d.app!=='edusmart-school-timetable'||!Array.isArray(d.classes)||!Array.isArray(d.subjects)||!Array.isArray(d.teachers)||!d.cfg||!Array.isArray(d.cfg.days)) throw new Error('bad');
+      if(!confirm('Replace everything in this page with the backup file?')) return;
+      S=migrate(Object.assign(fresh(),d)); prune(); REPORT=null; VIEW={mode:'class',id:null}; LESSON_CLASS=null; save(); render(); toast('Backup opened.');
+    }catch(e){ toast('That file is not a School Timetable backup.'); } };
+  r.readAsText(f);
+}
+
+/* ===================== checks, reports, cover, undo, versions, sharing ===================== */
+let HIST=[], DRAG=null, COVER={tid:'',days:[],picks:{},found:false};
+const hasTimetable=()=>Object.keys(S.timetable).some(c=>Object.keys(S.timetable[c]).length);
+function pushHistory(){ HIST.push(JSON.stringify(S.timetable)); if(HIST.length>25) HIST.shift(); }
+function undoEdit(){ if(!HIST.length) return; S.timetable=JSON.parse(HIST.pop()); prune(); save(); render(); toast('Last change undone.'); }
+
+/* ---- independent verifier: re-checks the finished timetable from scratch, whoever made it (engine, drag, or hand edit) ---- */
+function validate(tt){
+  tt=tt||S.timetable; const issues=[], tAt={}, rAt={}, perDay={};
+  S.classes.forEach(c=>{ const g=tt[c.id]||{}, L=levelPeriods(c.id);
+    Object.keys(g).forEach(k=>{ const x=g[k], [d,p]=stSplitKey(k), where=`${c.name}, ${DAY_LABELS[d]||d} P${p}`;
+      if(p>L||!S.cfg.days.includes(d)) issues.push({type:'outside',msg:`${where}: a lesson outside this class's school day.`});
+      if(x.teacherId){ const t=teacher(x.teacherId); (tAt[x.teacherId+'|'+k]=tAt[x.teacherId+'|'+k]||[]).push(c.name);
+        if(t){ if(t.offDays.includes(d)) issues.push({type:'off',msg:`${t.name} is booked on ${DAY_LABELS[d]}, their day off (${where}).`});
+          if((t.offSlots||[]).includes(k)) issues.push({type:'off',msg:`${t.name} is booked at a time they are unavailable (${where}).`});
+          perDay[t.id+'|'+d]=(perDay[t.id+'|'+d]||0)+1; } }
+      if(x.roomId) (rAt[x.roomId+'|'+k]=rAt[x.roomId+'|'+k]||[]).push(c.name); }); });
+  Object.keys(tAt).forEach(k=>{ if(tAt[k].length>1){ const [tid,key]=k.split('|'), [d,p]=stSplitKey(key); issues.push({type:'clash',msg:`${tName(tid)} is teaching ${tAt[k].join(' and ')} at the same time (${DAY_LABELS[d]} P${p}).`}); } });
+  Object.keys(rAt).forEach(k=>{ const [rid,key]=k.split('|'), [d,p]=stSplitKey(key); if(rAt[k].length>roomCapOf(rid)) issues.push({type:'room',msg:`${rName(rid)} is over-booked by ${rAt[k].join(' and ')} (${DAY_LABELS[d]} P${p}).`}); });
+  S.teachers.forEach(t=>{ if(t.maxPerDay>0) S.cfg.days.forEach(d=>{ const n=perDay[t.id+'|'+d]||0; if(n>t.maxPerDay) issues.push({type:'max',msg:`${t.name} has ${n} periods on ${DAY_LABELS[d]} (their limit is ${t.maxPerDay}).`}); }); });
+  return issues;
+}
+function shortfalls(){ const out=[]; S.classes.forEach(c=>S.subjects.forEach(s=>{ if(!(s.id in planOf(c.id))) return; const want=planOf(c.id)[s.id]||0; if(!want) return; const got=Object.values(S.timetable[c.id]||{}).filter(x=>x.subjectKey===s.id).length; if(got!==want) out.push({c,s,want,got}); })); return out; }
+function teacherStats(t){ const days={}, sc=teacherSchedule(t.id), cl=new Set(); let total=0,gaps=0;
+  Object.keys(sc).forEach(k=>{ const [d,p]=stSplitKey(k); (days[d]=days[d]||[]).push(p); total++; cl.add(sc[k].classId); });
+  Object.keys(days).forEach(d=>{ const ps=days[d]; gaps+=Math.max.apply(null,ps)-Math.min.apply(null,ps)+1-ps.length; });
+  return {total,gaps,days,classes:cl.size}; }
+
+/* ---- 8. reports ---- */
+function vReports(){
+  if(!hasTimetable()) return '<div class="card"><p class="h">Build a timetable first (tab 7), then come back here for the checks and reports.</p></div>';
+  const issues=validate(), sf=shortfalls(); let planned=0, placed=0;
+  S.classes.forEach(c=>Object.values(planOf(c.id)).forEach(n=>planned+=n||0)); Object.values(S.timetable).forEach(g=>placed+=Object.keys(g).length);
+  const doneClasses=S.classes.filter(c=>!sf.some(x=>x.c.id===c.id)).length, week=S.cfg.days.length;
+  const tile=(n,l,bad)=>`<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="font-size:26px;font-weight:700;color:${bad?'var(--bad)':'var(--ok)'}">${n}</div><div style="color:var(--mute);font-size:13px">${l}</div></div>`;
+  const stats=S.teachers.map(t=>({t,s:teacherStats(t)})).filter(x=>x.s.total).sort((a,b)=>b.s.total-a.s.total), cap=S.cfg.days.length*S.cfg.periodsPerDay;
+  return `<div class="card"><h2>Checks</h2><p class="h">The timetable is re-checked from scratch here, including any changes you made by hand.</p>
+    <div class="grid2" style="margin-bottom:12px">${tile(issues.length,'problems found',issues.length)}${tile(placed+' of '+planned,'lessons placed',placed!==planned)}${tile(doneClasses+' of '+S.classes.length,'classes complete',doneClasses!==S.classes.length)}</div>
+    ${issues.length?issues.map(i=>`<div class="msg err">${esc(i.msg)}</div>`).join(''):'<div class="msg ok">No problems: no teacher or room is double-booked, and every day off, unavailable time and daily limit is respected.</div>'}
+    ${sf.length?`<h2 style="margin-top:14px">Lessons not fully placed</h2>`+sf.map(x=>`<div class="msg warn">${esc(x.c.name)} &mdash; ${esc(x.s.name)}: ${x.got} of ${x.want} periods placed${x.got<x.want?(assignOf(x.c.id)[x.s.id]?'':' (no teacher chosen)'):''}.</div>`).join(''):''}</div>
+  <div class="card"><div class="row"><h2 style="margin:0">Teacher workload</h2><span class="sp"></span><button class="btn sm" onclick="printReport()">Print this report</button></div>
+    <p class="h" style="margin-top:4px">Periods taught each week, per day, and idle gaps between a teacher's first and last lesson of a day.</p>
+    <div class="scroll"><table class="t"><thead><tr><th>Teacher</th><th>Periods / week</th><th>Classes</th>${S.cfg.days.map(d=>`<th style="text-align:center">${d}</th>`).join('')}<th>Idle gaps</th></tr></thead><tbody>
+    ${stats.map(({t,s})=>`<tr><td>${esc(t.name)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="background:${tColor(t.id)};height:8px;border-radius:4px;width:${Math.max(4,Math.round(120*s.total/cap))}px"></div>${s.total}</div></td><td>${s.classes}</td>${S.cfg.days.map(d=>`<td style="text-align:center">${(s.days[d]||[]).length||'&ndash;'}</td>`).join('')}<td>${s.gaps}</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="card"><h2>Comparison with REB's weekly periods</h2><p class="h">Each class is compared with REB's figures for its level. Figures marked unofficial come from news reports or are assumptions: confirm them with REB.</p>
+    <div class="scroll"><table class="t"><thead><tr><th>Class</th><th>Level</th><th>Source</th><th>Result</th></tr></thead><tbody>${S.classes.map(c=>{ const rows=rebCheck(c.id), L=lvl(c.level); const ok=SRC[L.src].ok; return `<tr><td>${esc(c.name)}</td><td>${esc(L.name)}</td><td style="color:${ok?'var(--ok)':'var(--warn)'}">${ok?'Official':'Unofficial'}</td><td>${!rows?'-':rows.length?`<span style="color:var(--warn)">${rows.length} difference(s): ${rows.slice(0,3).map(r=>esc(subj(r.sid).short)).join(', ')}${rows.length>3?'...':''}</span>`:'<span style="color:var(--ok)">Matches REB</span>'}</td></tr>`; }).join('')}</tbody></table></div></div>
+  ${S.rooms.length?`<div class="card"><h2>Room and lab use</h2><div class="scroll"><table class="t"><thead><tr><th>Room</th><th>Periods used</th><th>Share of the week</th></tr></thead><tbody>${S.rooms.map(r=>{ const u=Object.values(roomSchedule(r.id)).reduce((a,x)=>a+x.length,0), c=roomCapOf(r.id)*cap; return `<tr><td>${esc(r.name)}</td><td>${u} of ${c}</td><td><div style="background:var(--line);border-radius:4px;height:8px;width:140px"><div style="background:var(--accent);height:8px;border-radius:4px;width:${Math.round(140*u/c)}px"></div></div></td></tr>`; }).join('')}</tbody></table></div></div>`:''}`;
+}
+function printReport(){
+  const cap=S.cfg.days.length*S.cfg.periodsPerDay, stats=S.teachers.map(t=>({t,s:teacherStats(t)})).filter(x=>x.s.total).sort((a,b)=>b.s.total-a.s.total);
+  doPrint(`<div class="sheet">${sheetHead()}<div class="meta"><b>Teacher workload</b> (periods a week; a full week is ${cap})</div><table><thead><tr><th style="width:30%">Teacher</th><th>Periods</th><th>Classes</th>${S.cfg.days.map(d=>`<th>${d}</th>`).join('')}<th>Idle gaps</th></tr></thead><tbody>${stats.map(({t,s})=>`<tr><td style="text-align:left">${esc(t.name)}</td><td>${s.total}</td><td>${s.classes}</td>${S.cfg.days.map(d=>`<td>${(s.days[d]||[]).length||'-'}</td>`).join('')}<td>${s.gaps}</td></tr>`).join('')}</tbody></table>${sheetFoot()}</div>`);
+}
+
+/* ---- 9. cover for an absent teacher ---- */
+function vCover(){
+  if(!hasTimetable()) return '<div class="card"><p class="h">Build a timetable first (tab 7). Then, when a teacher is absent, pick them here and the best free teachers are suggested for each lesson they would miss.</p></div>';
+  const withLessons=S.teachers.filter(t=>Object.keys(teacherSchedule(t.id)).length);
+  if(!COVER.days.length){ const today=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()]; COVER.days=[S.cfg.days.includes(today)?today:S.cfg.days[0]]; }
+  let h=`<div class="card"><h2>Cover for an absent teacher</h2><p class="h">Pick who is absent and on which day(s). For each lesson they would miss, the teachers who are free at that time are ranked: first those who already teach that class, then the same subject, then whoever has the lightest day. Nobody is ever suggested for two classes at once, or past their daily limit.</p>
+    <div class="row" style="align-items:flex-end"><div><label>Absent teacher</label><select onchange="COVER.tid=this.value;COVER.found=false;COVER.picks={};render()"><option value="">- choose -</option>${withLessons.map(t=>`<option value="${t.id}" ${t.id===COVER.tid?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div>
+      <div><label>Day(s)</label><div class="chips">${S.cfg.days.map(d=>`<label class="chip" style="margin:0"><input type="checkbox" ${COVER.days.includes(d)?'checked':''} onchange="coverDay('${d}',this.checked)"> ${d}</label>`).join('')}</div></div>
+      <button class="btn pri" onclick="findCover()" ${COVER.tid?'':'disabled'}>Find cover</button></div></div>`;
+  if(COVER.found&&COVER.tid){ const les=coverLessons();
+    h+=`<div class="card"><div class="row"><h2 style="margin:0">${esc(tName(COVER.tid))} &mdash; ${les.length} lesson(s) to cover</h2><span class="sp"></span><button class="btn sm" onclick="coverText()">Copy as text</button><button class="btn sm" onclick="printCover()">Print cover sheet</button></div>`;
+    if(!les.length) h+='<div class="msg ok" style="margin-top:10px">This teacher has no lessons on the chosen day(s).</div>';
+    else h+=`<div class="scroll"><table class="t" style="margin-top:8px"><thead><tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th>Cover teacher</th></tr></thead><tbody>${les.map(l=>{ const pk=l.key+'@'+l.cid, cands=coverCandidates(l), cur=COVER.picks[pk]||'';
+      const opts=`<option value="">- nobody yet -</option>`+cands.map(c=>`<option value="${c.t.id}" ${cur===c.t.id?'selected':''}>${esc(c.t.name)}${c.teachesClass?' - teaches this class':c.teachesSubj?' - teaches this subject':''}</option>`).join('');
+      const tm=schedule(S.cfg).find(x=>x.type==='period'&&x.period===l.p);
+      return `<tr><td>${DAY_LABELS[l.d]}</td><td>P${l.p} &middot; ${fmt(tm.start)}</td><td>${esc(cls(l.cid).name)}</td><td>${esc(subj(l.subjectKey).name)}</td><td>${cands.length||cur?`<select onchange="COVER.picks['${pk}']=this.value;render()">${opts}</select>`:'<span style="color:var(--bad)">Nobody is free at this time</span>'}</td></tr>`; }).join('')}</tbody></table></div>`;
+    h+='</div>'; }
+  return h;
+}
+function coverDay(d,on){ const s=new Set(COVER.days); on?s.add(d):s.delete(d); COVER.days=S.cfg.days.filter(x=>s.has(x)); COVER.found=false; COVER.picks={}; render(); }
+function coverLessons(){ const sc=teacherSchedule(COVER.tid), out=[]; Object.keys(sc).forEach(k=>{ const [d,p]=stSplitKey(k); if(COVER.days.includes(d)) out.push({key:k,d,p,cid:sc[k].classId,subjectKey:sc[k].subjectKey}); }); out.sort((a,b)=>(S.cfg.days.indexOf(a.d)-S.cfg.days.indexOf(b.d))||(a.p-b.p)); return out; }
+function coverCandidates(l){
+  const out=[];
+  S.teachers.forEach(t=>{ if(t.id===COVER.tid) return; const sc=teacherSchedule(t.id);
+    if(sc[l.key]) return; if(t.offDays.includes(l.d)||(t.offSlots||[]).includes(l.key)) return;
+    let busyCover=false, covers=0, dayCovers=0;
+    Object.keys(COVER.picks).forEach(k2=>{ if(COVER.picks[k2]!==t.id) return; const [kk,cid2]=k2.split('@'); covers++; if(kk.split('_')[0]===l.d) dayCovers++; if(kk===l.key&&cid2!==l.cid) busyCover=true; });
+    if(busyCover) return;
+    const own=COVER.picks[l.key+'@'+l.cid]===t.id; const dayLoad=Object.keys(sc).filter(k=>k.split('_')[0]===l.d).length+dayCovers-(own?1:0);
+    if(t.maxPerDay>0&&dayLoad>=t.maxPerDay) return;
+    const teachesClass=Object.values(sc).some(x=>x.classId===l.cid), teachesSubj=Object.values(sc).some(x=>x.subjectKey===l.subjectKey);
+    out.push({t,teachesClass,teachesSubj,score:(teachesClass?30:0)+(teachesSubj?20:0)-dayLoad*2-(covers-(own?1:0))*3}); });
+  out.sort((a,b)=>b.score-a.score); return out;
+}
+function findCover(){ COVER.picks={}; coverLessons().forEach(l=>{ const c=coverCandidates(l); if(c.length) COVER.picks[l.key+'@'+l.cid]=c[0].t.id; }); COVER.found=true; render(); }
+function coverRows(){ const sched=schedule(S.cfg); return coverLessons().map(l=>{ const tm=sched.find(x=>x.type==='period'&&x.period===l.p), pick=COVER.picks[l.key+'@'+l.cid], cell=(S.timetable[l.cid]||{})[l.key]||{};
+  return {day:DAY_LABELS[l.d],time:`P${l.p} ${fmt(tm.start)}-${fmt(tm.end)}`,cls:cls(l.cid).name,subj:subj(l.subjectKey).name,cover:pick?tName(pick):'(none found)',room:cell.roomId?rName(cell.roomId):''}; }); }
+function printCover(){ const rows=coverRows();
+  doPrint(`<div class="sheet">${sheetHead()}<div class="meta"><b>Cover sheet</b> &mdash; absent: ${esc(tName(COVER.tid))} (${COVER.days.map(d=>DAY_LABELS[d]).join(', ')})</div><table><thead><tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th>Cover teacher</th><th>Room</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.day}</td><td>${r.time}</td><td>${esc(r.cls)}</td><td>${esc(r.subj)}</td><td><b>${esc(r.cover)}</b></td><td>${esc(r.room)}</td></tr>`).join('')}</tbody></table>${sheetFoot()}</div>`); }
+function coverText(){ const rows=coverRows(); copyText(`*Cover - ${tName(COVER.tid)} absent*\n`+rows.map(r=>`${r.day} ${r.time}: ${r.cls} ${r.subj} -> ${r.cover}${r.room?' ('+r.room+')':''}`).join('\n')); }
+
+/* ---- drag & drop a lesson to another period (checked, and undoable) ---- */
+function dragStart(ev,cid,key){ DRAG={cid,key}; try{ ev.dataTransfer.setData('text/plain',key); ev.dataTransfer.effectAllowed='move'; }catch(e){} }
+function dropOn(ev,cid,key){ ev.preventDefault(); const d=DRAG; DRAG=null; if(!d||d.cid!==cid||d.key===key) return; moveOrSwap(cid,d.key,key); }
+function moveOrSwap(cid,from,to){
+  const g=S.timetable[cid]||{}, a=g[from], b=g[to]; if(!a) return;
+  if(a.double||(b&&b.double)){ toast('Double periods move with the Edit box: click the lesson.'); return; }
+  if(stSplitKey(to)[1]>levelPeriods(cid)) return;
+  const before=new Set(validate().map(i=>i.msg)), snap=JSON.stringify(S.timetable); pushHistory();
+  delete g[from]; if(b){ g[from]=b; b.blockId=from; b.locked=true; } g[to]=a; a.blockId=to; a.locked=true;
+  const bad=validate().filter(i=>!before.has(i.msg));
+  if(bad.length){ S.timetable=JSON.parse(snap); HIST.pop(); toast(bad[0].msg+' Move cancelled.'); render(); return; }
+  save(); render();
+}
+
+/* ---- saved versions (for example one per term) ---- */
+function lessonsIn(tt){ return Object.values(tt).reduce((a,g)=>a+Object.keys(g).length,0); }
+function openVersions(){
+  $('modalBox').innerHTML=`<h2 style="margin:0 0 4px">Saved versions</h2><p class="h">Keep a copy of this timetable, for example "Term 2 2026", and open it again later.</p>
+    <div class="row"><input id="verName" placeholder="Name, e.g. Term 2 2026" style="flex:1"><button class="btn pri" onclick="saveVersion()">Save this version</button></div><div id="verList">${versionList()}</div>
+    <div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn" onclick="closeModal()">Close</button></div>`; $('modal').classList.add('on');
+}
+function versionList(){ return S.versions.length?S.versions.map(v=>`<div class="row" style="padding:8px 0;border-top:1px solid var(--line);margin-top:8px"><div style="flex:1"><b>${esc(v.name)}</b><br><small style="color:var(--mute)">${new Date(v.at).toLocaleString()} &middot; ${lessonsIn(v.timetable)} lessons</small></div><button class="btn sm" onclick="restoreVersion('${v.id}')">Open</button><button class="btn sm bad" onclick="delVersion('${v.id}')">Delete</button></div>`).join(''):'<div class="msg warn" style="margin-top:12px">No saved versions yet.</div>'; }
+function saveVersion(){ if(!hasTimetable()){ toast('Build a timetable first.'); return; } const n=($('verName').value||'').trim()||('Version '+(S.versions.length+1)); S.versions.unshift({id:uid('v'),name:n,at:Date.now(),timetable:JSON.parse(JSON.stringify(S.timetable))}); save(); $('verList').innerHTML=versionList(); $('verName').value=''; toast('Saved "'+n+'".'); }
+function restoreVersion(id){ const v=S.versions.find(x=>x.id===id); if(!v) return; if(!confirm('Replace the current timetable with "'+v.name+'"? You can undo this.')) return; pushHistory(); S.timetable=JSON.parse(JSON.stringify(v.timetable)); prune(); save(); closeModal(); render(); toast('Opened "'+v.name+'".'); }
+function delVersion(id){ S.versions=S.versions.filter(x=>x.id!==id); save(); $('verList').innerHTML=versionList(); }
+
+/* ---- share as text (WhatsApp / SMS) ---- */
+function shareText(){
+  if(!VIEW.id||!hasTimetable()){ toast('Open a timetable first (tab 7).'); return; }
+  const mode=VIEW.mode, id=VIEW.id, sched=schedule(S.cfg).filter(x=>x.type==='period'); const name=mode==='class'?cls(id).name:mode==='room'?room(id).name:teacher(id).name;
+  let out=`*${S.school||'School'} - ${name}*${S.term?' ('+S.term+')':''}\n`;
+  S.cfg.days.forEach(d=>{ const lines=[]; sched.forEach(x=>{ if(mode==='class'&&x.period>levelPeriods(id)) return; const ci=cellInfo(mode,id,d+'_'+x.period); if(ci) lines.push(`${fmt(x.start)} ${ci.top}${ci.sub?' ('+ci.sub+')':''}`); }); if(lines.length) out+=`\n*${DAY_LABELS[d]}*\n`+lines.join('\n')+'\n'; });
+  copyText(out);
+}
+function copyText(txt){ const done=()=>toast('Copied. Paste it into WhatsApp or SMS.'); if(navigator.clipboard&&window.isSecureContext) navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt,done)); else fallbackCopy(txt,done); }
+function fallbackCopy(txt,done){ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Could not copy automatically.'); } ta.remove(); }
+
+/* ---- teacher: unavailable periods ---- */
+function openAvail(tid){
+  const t=teacher(tid), cfg=S.cfg, slots=new Set(t.offSlots||[]);
+  const rows=Array.from({length:cfg.periodsPerDay},(_,i)=>i+1).map(p=>`<tr><td><b>P${p}</b></td>${cfg.days.map(d=>{ const off=t.offDays.includes(d); return `<td style="text-align:center"><input type="checkbox" ${slots.has(d+'_'+p)||off?'checked':''} ${off?'disabled':''} onchange="toggleSlot('${tid}','${d}_${p}',this.checked)"></td>`; }).join('')}</tr>`).join('');
+  $('modalBox').innerHTML=`<h2 style="margin:0 0 4px">${esc(t.name)}</h2><p class="h">Tick the periods this teacher is <b>not</b> available, for example a part-time teacher. A whole day off is set with the Days off boxes.</p>
+    <div class="scroll"><table class="t"><thead><tr><th></th>${cfg.days.map(d=>`<th style="text-align:center">${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="row" style="margin-top:12px"><button class="btn" onclick="clearSlots('${tid}')">Clear all</button><span class="sp"></span><button class="btn pri" onclick="closeModal();render()">Done</button></div>`; $('modal').classList.add('on');
+}
+function toggleSlot(tid,key,on){ const t=teacher(tid), s=new Set(t.offSlots||[]); on?s.add(key):s.delete(key); t.offSlots=[...s]; save(); }
+function clearSlots(tid){ teacher(tid).offSlots=[]; save(); openAvail(tid); }
+
+/* ---- printouts: logo, term, head teacher, signature lines ---- */
+function sheetHead(){ return `<div class="hd">${S.logo?`<img class="lg" src="${S.logo}" alt="">`:''}<div style="flex:1"><h2>${esc(S.school||'School')}</h2>${S.term?`<div class="tm2">${esc(S.term)}</div>`:''}</div><div class="pb"><span class="pm">${MARK_SVG}</span><span><b>EduSmart</b> Timetable</span></div></div><div class="flagbar" aria-hidden="true"><i></i><i></i><i></i></div>`; }
+function sheetFoot(){ return `<div class="ft"><span>Prepared by</span><span>Head teacher: ${esc(S.head)}</span><span>Signature &amp; date</span></div><div class="bf">Prepared with EduSmart Timetable &middot; www.edusmartconsult.com</div>`; }
+function printoutsCard(){ return `<div class="card"><h2>Printouts</h2><p class="h">Shown on every printed timetable, with signature lines at the bottom.</p>
+  <div class="grid2"><div><label>Term / year</label><input value="${esc(S.term)}" placeholder="e.g. Term 2, 2026" onchange="S.term=this.value;save()"></div><div><label>Head teacher's name</label><input value="${esc(S.head)}" onchange="S.head=this.value;save()"></div></div>
+  <div class="row" style="margin-top:12px">${S.logo?`<img src="${S.logo}" alt="logo" style="height:56px">`:''}<button class="btn sm" onclick="document.getElementById('logoIn').click()">${S.logo?'Change logo':'Add school logo'}</button>${S.logo?'<button class="btn sm bad" onclick="S.logo=\'\';save();render()">Remove logo</button>':''}<input id="logoIn" type="file" accept="image/*" style="display:none" onchange="loadLogo(this)"></div></div>`; }
+function loadLogo(inp){ const f=inp.files[0]; inp.value=''; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const img=new Image(); img.onload=()=>{ const h=Math.min(160,img.height), w=Math.max(1,Math.round(img.width*h/img.height)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); S.logo=cv.toDataURL('image/png'); save(); render(); }; img.onerror=()=>toast('Could not read that image.'); img.src=r.result; };
+  r.readAsDataURL(f); }
+
+/* ---------- example school ---------- */
+function loadExample(){
+  if((S.teachers.length||Object.keys(S.timetable).length)&&!confirm('Replace your classes, teachers and lessons with the example school?')) return;
+  S.classes=[]; S.plan={}; S.assign={}; S.doubles={}; S.timetable={}; S.prev=null; S.teachers=[]; REPORT=null;
+  S.levels.forEach(l=>l.on=true);
+  addMissingSubjects();
+  const upperExtra={MSP1:['coremaths','physics','chemistry'],LANG:['english_major','kinya_major','french_major','basicmaths']};   /* illustrative only: REB does not list a pathway's subjects */
+  LEVELS.forEach(l=>{ if(l.id==='upper') ['MSP1','LANG'].forEach(pw=>['S4','S5','S6'].forEach(g=>{ const id=addClassRaw(g+' '+PATHWAY_SHORT[pw],'upper',pw); upperExtra[pw].forEach(s=>{ if(S.subjects.some(x=>x.id===s)) S.plan[id][s]=REF.upper[s][0]; }); })); else l.grades.forEach(g=>addClassRaw(g,l.id,'')); });
+  S.rooms=[]; S.roomPlan={}; S.subjectRooms={};
+  const mkRoom=(name,kind,cap)=>{ const id=uid('r'); S.rooms.push({id,name,kind,cap:cap||1}); return id; };
+  const physL=mkRoom('Physics Lab','Laboratory'),chemL=mkRoom('Chemistry Lab','Laboratory'),bioL=mkRoom('Biology Lab','Laboratory'),ict1=mkRoom('ICT Lab 1','ICT lab'),ict2=mkRoom('ICT Lab 2','ICT lab'),field=mkRoom('Playground','Playground / field',3); mkRoom('Library','Library');
+  S.subjectRooms={physics:[physL],chemistry:[chemL],biology:[bioL],ict:[ict1,ict2],pes:[field]};
+  const names=['Mukamana Alice','Habimana Jean','Uwase Grace','Niyonzima Eric','Ingabire Claire','Nsengimana Paul','Mutoni Diane','Kamanzi Sam','Bizimana Olivier','Uwimana Esther','Ndayisaba Joseph','Mukeshimana Rose','Hakizimana David','Umutoni Sandrine','Nkurunziza Patrick','Uwera Josiane','Ntakirutimana Eric','Mukandayisenga Marie','Habiyaremye Samuel','Iradukunda Chantal','Nshimiyimana Felix','Umuhoza Beatrice','Gasana Emmanuel','Mukamazimpaka Judith','Rukundo Alain','Uwamahoro Vestine','Twagirayezu Innocent','Nyirahabimana Jeanne','Bigirimana Theogene','Mugisha Kevin','Nyiraneza Odette','Karangwa Moses','Tuyisenge Aline','Ishimwe Peace','Munyaneza Aimable'];
+  let n=0; const pool={};
+  const teacherFor=(key,label)=>pool[key]||(pool[key]=(()=>{ const id=uid('t'); S.teachers.push({id,name:names[n%names.length]+' ('+label+')',offDays:[],offSlots:[],maxPerDay:0,pref:''}); n++; return id; })());
+  const shared=['entrepreneurship','ict','pes','religion','gs','elective'];
+  S.classes.forEach(c=>{ const plan=S.plan[c.id]; S.assign[c.id]={}; S.doubles[c.id]={};
+    Object.keys(plan).forEach(sid=>{ let t;
+      if(c.level==='pre') t=teacherFor('pre|'+c.id,c.name+' teacher');
+      else if(c.level==='primary'||c.level==='plow') t=['french','arts','pes'].includes(sid)?teacherFor('prim|'+sid,subj(sid).short+', primary'):teacherFor('prim|'+c.id,c.name+' teacher');
+      else if(shared.includes(sid)) t=teacherFor('sec|'+sid,subj(sid).short+', secondary');
+      else t=teacherFor(c.level+'|'+sid,subj(sid).short+(c.level==='lower'?' S1-S3':' S4-S6'));
+      if(c.level==='primary'||c.level==='plow'){ /* class teachers keep their own class, specialists are shared across both primary levels */ }
+      S.assign[c.id][sid]=t;
+      if(['pes','arts'].includes(sid)||((c.level==='lower'||c.level==='upper')&&['physics','chemistry','biology'].includes(sid))) S.doubles[c.id][sid]=true; }); });
+  const fr=pool['prim|french']; if(fr){ const t=teacher(fr); t.offDays=['Fri']; t.offSlots=['Mon_1','Mon_2','Tue_1','Tue_2']; t.maxPerDay=6; t.pref='morning'; }
+  save(); runGenerate(true); toast('Example school loaded: every level, with its teachers.');
+}
+function addMissingSubjects(){ SUBJECT_LIB.forEach(s=>{ if(!S.subjects.some(x=>x.id===s.id)) S.subjects.push(Object.assign({},s)); }); }
+
+if(EMBED){ window.addEventListener('message',e=>{ const m=e.data; if(m&&m.type==='st-load'){ window.__SEED=m.data; S=load(); (m.staff||[]).forEach(s=>{ if(!S.teachers.some(x=>x.id===s.id)) S.teachers.push({id:s.id,name:s.name,offDays:[],offSlots:[],maxPerDay:0,pref:''}); }); if(!S.school&&m.school) S.school=m.school; prune(); render(); } }); parent.postMessage({type:'st-ready'},'*'); }
+else { S=load(); prune(); render(); }
+</script>
+</body>
+</html>

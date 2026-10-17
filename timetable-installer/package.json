@@ -1,0 +1,43 @@
+{
+  "name": "edusmart-school-timetable",
+  "productName": "EduSmart School Timetable",
+  "version": "1.0.0",
+  "description": "Offline school timetable generator for Rwanda: pre-primary to secondary, REB hours, rooms and labs.",
+  "author": "EduSmart Consult",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.edusmartconsult.schooltimetable",
+    "productName": "EduSmart School Timetable",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "app/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "EduSmart School Timetable"
+    }
+  }
+}
