@@ -3,7 +3,7 @@
 import json,re,os
 HERE=os.path.dirname(os.path.abspath(__file__))
 NAMES={'env':("Ubumenyi bw’ibidukikije","Environment"),'maths':("Imibare","Numeracy"),'kinyarwanda':("Ikinyarwanda","Kinyarwanda"),
- 'english':("English","English"),'arts':("Ubugeni n’umuco","Arts and culture"),'health':("Ibonezabuzima","Health and physical development")}
+ 'english':("English","English"),'social':("Iterambere mu mibanire n’amarangamutima","Social and emotional development"),'arts':("Ubugeni n’umuco","Arts and culture"),'health':("Ibonezabuzima","Health and physical development")}
 SPLIT=[('nsan ganya matsiko','nsanganyamatsiko'),('nsanganya matsiko','nsanganyamatsiko'),('nsan ganyamatsiko','nsanganyamatsiko'),('bi fatiye','bifatiye'),('nsanganya\u00a0matsiko','nsanganyamatsiko'),('Insanganya matsiko','Insanganyamatsiko')]
 def fix(t):
     t=re.sub(r'\s+',' ',t or '').strip(); t=t.replace('­','')
@@ -27,6 +27,21 @@ def apply_split(t,W,B):
         out.append(w); i+=1
     return ''.join(out)
 def joined(xs,sep='; '): return sep.join(fix(x).rstrip('.;, ') for x in xs if fix(x))
+
+# 7th learning area from the REB 2015 pre-primary curriculum (3-6 years): social and emotional development, 6 whole-year units (not split by grade)
+soc=json.load(open(os.path.join(HERE,'social.json'),encoding='utf-8'))
+def socrow(u):
+    it=[x.strip() for x in re.split(r'\s-\s',' '+u['cols']) if x.strip()]
+    k=0
+    while k<len(it) and len(it[k])<=95 and not it[k].lower().startswith(('in ','children')): k+=1
+    content=it[:k]; rest=it[k:]
+    acts=[x for x in rest if len(x)>95 or x.lower().startswith(('in ','children'))]; skills=[x for x in rest if x not in acts]
+    kc=re.sub(r'^Children (?:should|will) be able to ','',u['kc']).strip(); kc=kc[:1].upper()+kc[1:]
+    return {'title':u['title'],'periods':'','week':'All year',
+      'objectives':kc.rstrip('.'),'content':'; '.join(content) or u['title'],
+      'activities':'. '.join(a.rstrip('.') for a in acts)+'.' if acts else '','aids':u['res'].rstrip('.'),
+      'assessment':('Assessment criteria: '+u['assess'].rstrip('.')+'.') if u['assess'] else '',
+      'references':'REB Pre-primary curriculum 2015 (ages 3-6), Social and emotional development, Unit %s. Parents\u2019 role: %s'%(u['no'],u['parent'].rstrip('.')+'.' if u['parent'] else '')}
 out={'classes':{}}
 for y in (1,2,3):
     rows=json.load(open(os.path.join(HERE,'pp%d.json'%y),encoding='utf-8'))
@@ -48,6 +63,7 @@ for y in (1,2,3):
               'objectives':joined(r['obj']),'content':joined(r['lessons']) or title,'activities':joined(r['act'],'. ')+'.' if r['act'] else '',
               'aids':fix(r['aids']).strip('- '),'assessment':'','references':'REB Pre-primary scheme of work, Year %d (%s), term %d, week %s'%(y,NAMES[area][1],r['term'],wk)})
         subs[area]={'name':NAMES[area][1],'local':NAMES[area][0],'units':units,'n':sum(len(u['lessons']) for u in units)}
+    subs['social']={'name':NAMES['social'][1],'local':NAMES['social'][0],'units':[{'no':'1','title':'Social and emotional development (the whole year)','periods':'','term':None,'keyComp':'','lessons':[socrow(u) for u in soc]}],'n':len(soc)}
     out['classes']['N%d'%y]=subs
 def walk(o,f):
     if isinstance(o,str): return f(o)

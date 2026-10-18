@@ -1,28 +1,28 @@
 /* ===== Lesson Studio, part 10: pre-primary (Years 1-3, classes N1-N3) =====
    Uses PP_DATA (preprimary/preprimary-data.js, built by preprimary/build_pp.py from the REB pre-primary schemes of work, Years 1-3).
    Adds the three pre-primary years, their six learning areas and the weekly scheme rows to the generator.
-   Plans are in Kinyarwanda (English for the English area), speak of "children", last 30 minutes and use observation, not exams. */
+   Plans are in Kinyarwanda (English for the English and Social and emotional areas), speak of "children", last 30 minutes and use observation, not exams. */
 const PP_CLASSES=['N1','N2','N3'];
 function plusIsPP(c){ return /^N[1-3]$/.test(c||''); }
 (function(){
   if(typeof PP_DATA==='undefined') return;
-  const AREA={env:'pp_env',maths:'pp_maths',kinyarwanda:'kinyarwanda',english:'english',arts:'pp_arts',health:'pp_health'};
+  const AREA={env:'pp_env',maths:'pp_maths',kinyarwanda:'kinyarwanda',english:'english',arts:'pp_arts',health:'pp_health',social:'pp_social'};
   const UNAREA={}; Object.keys(AREA).forEach(k=>UNAREA[AREA[k]]=k);
   const COL={pp_env:'#2f9e44',pp_maths:'#0b4da2',pp_arts:'#e64980',pp_health:'#f08c00'};
   if(typeof CLASS_META!=='undefined') PP_CLASSES.forEach((c,i)=>{ if(!CLASS_META[c]) CLASS_META[c]={id:c,name:'Pre-primary Year '+(i+1),short:c,color:['#f08c00','#e64980','#7048e8'][i],tint:['#fdf0dc','#fdeaf1','#eee9fd'][i]}; });
   if(typeof SUBJECT_META!=='undefined') Object.keys(PP_DATA.classes.N1).forEach(a=>{ const id=AREA[a], s=PP_DATA.classes.N1[a]; if(!SUBJECT_META[id]) SUBJECT_META[id]={name:s.name,short:s.name.split(' ')[0],icon:'book',color:COL[id]||'#0b4da2',tint:'#eef1f6'}; });
-  const NAMEOF=a=>({env:'Environment (Ubumenyi bw’ibidukikije)',maths:'Numeracy (Imibare)',arts:'Arts and culture (Ubugeni n’umuco)',health:'Health and physical development (Ibonezabuzima)',kinyarwanda:'Kinyarwanda',english:'English'}[a]);
+  const NAMEOF=a=>({env:'Environment (Ubumenyi bw’ibidukikije)',maths:'Numeracy (Imibare)',arts:'Arts and culture (Ubugeni n’umuco)',health:'Health and physical development (Ibonezabuzima)',social:'Social and emotional development (REB 2015 curriculum)',kinyarwanda:'Kinyarwanda',english:'English'}[a]);
   const cache={};
   function ppScheme(cls,subj){
     const k=cls+'-'+subj; if(cache.hasOwnProperty(k)) return cache[k];
     const a=UNAREA[subj], s=a&&PP_DATA.classes[cls]&&PP_DATA.classes[cls][a]; if(!s) return (cache[k]=null);
     return (cache[k]={class:cls,subject:subj,subjectName:NAMEOF(a),units:s.units.map(u=>({no:u.no,title:u.title,periods:u.periods,keyComp:u.keyComp,term:u.term,
-      lessons:u.lessons.map(l=>Object.assign({},l,{assessment:''}))}))});
+      lessons:u.lessons.map(l=>Object.assign({},l,{assessment:l.assessment||''}))}))});
   }
-  function ppSubjects(cls){ const c=PP_DATA.classes[cls]; if(!c) return []; return ['env','maths','kinyarwanda','english','arts','health'].filter(a=>c[a]).map(a=>({id:AREA[a],units:[],title:NAMEOF(a)})); }
+  function ppSubjects(cls){ const c=PP_DATA.classes[cls]; if(!c) return []; return ['env','maths','kinyarwanda','english','arts','health','social'].filter(a=>c[a]).map(a=>({id:AREA[a],units:[],title:NAMEOF(a)})); }
   /* language: Kinyarwanda for every area except English (the REB schemes are written in Kinyarwanda) */
-  const _ls=lpLangSubject; lpLangSubject=function(p){ if(p&&!p.lang&&plusIsPP(p.classId)) return p.subject==='english'?'english':'kinyarwanda'; return _ls.apply(this,arguments); };
-  const _lo=plusLangOf; plusLangOf=function(p){ if(p&&!p.lang&&plusIsPP(p.classId)) return p.subject==='english'?'en':'rw'; return _lo.apply(this,arguments); };
+  const _ls=lpLangSubject; lpLangSubject=function(p){ if(p&&!p.lang&&plusIsPP(p.classId)) return (p.subject==='english'||p.subject==='pp_social')?'english':'kinyarwanda'; return _ls.apply(this,arguments); };
+  const _lo=plusLangOf; plusLangOf=function(p){ if(p&&!p.lang&&plusIsPP(p.classId)) return (p.subject==='english'||p.subject==='pp_social')?'en':'rw'; return _lo.apply(this,arguments); };
   const _classes=plusClassIds; plusClassIds=function(){ return PP_CLASSES.concat(_classes.apply(this,arguments)); };
   const _editor=lpEditor;
   lpEditor=function(){
