@@ -38,7 +38,7 @@ try {
   const e0 = await estimate(); const total0 = e0.fare.total; ok(`moto estimate before: ${total0} RWF`);
 
   // ---- 1. Settings: turn self-approval on (super admin), see the warning banner
-  await A.getByRole('button', { name: 'Settings' }).click();
+  await A.getByRole('button', { name: 'Settings', exact: true }).click();
   await A.getByText('Allow self-approval of price changes').waitFor();
   await shot(A, '1-settings');
   await A.getByLabel('Allow self-approval of price changes').check();
