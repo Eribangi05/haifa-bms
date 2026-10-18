@@ -1935,7 +1935,7 @@ function plusCalOff(v){ plusCal().off=String(v||''); Accounts.save(); plusCalRef
 /* ===== Lesson Studio, part 10: pre-primary (Years 1-3, classes N1-N3) =====
    Uses PP_DATA (preprimary/preprimary-data.js, built by preprimary/build_pp.py from the REB pre-primary schemes of work, Years 1-3).
    Adds the three pre-primary years, their six learning areas and the weekly scheme rows to the generator.
-   Plans are in Kinyarwanda (English for the English and Social and emotional areas), speak of "children", last 30 minutes and use observation, not exams. */
+   Plans are in Kinyarwanda (English for the English and Social and emotional areas), speak of "children", last 20-30 minutes (REB pre-primary timetable 2026-27: 30 min for Environment, Numeracy and languages; 20 min for Arts, Health and Social) and use observation, not exams. */
 const PP_CLASSES=['N1','N2','N3'];
 function plusIsPP(c){ return /^N[1-3]$/.test(c||''); }
 (function(){
@@ -1987,7 +1987,7 @@ function plusIsPP(c){ return /^N[1-3]$/.test(c||''); }
     if(LP&&plusIsPP(LP.classId)&&!LP._ppApp){ LP.approach='play'; LP._ppApp=1; }
     const r=_after.apply(this,arguments);
     if(LP&&plusIsPP(LP.classId)){
-      if(!LP._ppDur){ LP.duration=30; LP._ppDur=1; }
+      if(!LP._ppDur){ LP.duration=/^(pp_arts|pp_health|pp_social)$/.test(LP.subject||'')?20:30; LP._ppDur=1; }
       if(typeof LP_TEXT_KEYS!=='undefined') LP_TEXT_KEYS.forEach(k=>{ if(typeof LP[k]==='string') LP[k]=kids(LP[k]); });
       const o=String(LP.objectives||'').replace(/^(?:By the end of the (?:lesson|session), |Ku iherezo ry[’']isomo, )(?:learners|pupils|children|abana|abanyeshuri)\s+(?:will be able to|bazashobora)\s+/i,'').trim().replace(/;\s+(\S)/g,(m,c)=>', '+c.toLowerCase());
       if(o){ const en=plusLang()==='en'; const body=o.charAt(0).toLowerCase()+o.slice(1);
