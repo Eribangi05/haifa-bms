@@ -53,7 +53,7 @@ Labels (assigned by evidence, not intent):
 | | Profile, language, notification prefs, saved places, emergency contacts | TESTED |
 | | Account deactivation (admin/user request) | IMPLEMENTED |
 | | Deletion + access request workflow, anonymisation | TESTED |
-| | Email verification | NOT BUILT |
+| | Email verification | TESTED (code by email, 15 minutes, one a minute, five wrong tries lock it, a new address must be proven again; delivery SIMULATED until `EMAIL_PROVIDER=http` is connected) |
 | | Google / Apple sign-in | PENDING INTEGRATION |
 | Catalogue | Moto, Standard car live; Comfort/Family/Airport/Intercity/Goods/Cargo defined but disabled | IMPLEMENTED (enabling requires price + approval) |
 | | Availability only with real eligible drivers; coverage polygon check | TESTED |
@@ -62,7 +62,7 @@ Labels (assigned by evidence, not intent):
 | | Console price editor: labelled fields with units, validation, current-vs-proposed diff, live fare preview (`POST /admin/pricing/preview`, same `computeFare`), copy values to another service/zone, scheduled start date | TESTED (API) + browser e2e (`scripts/admin-pricing-e2e.ts`) |
 | | `pricing.self_approval` switch (default off, super admin only): proposer may approve own fare/commission change, flagged `self_approved` in audit, red banner in the console | TESTED |
 | | Peak / off-peak windows per pricing rule (day-of-week + hour range, -50%..+100%, capped by the rule surge cap), own itemised rw/fr/en receipt line | TESTED (engine + estimates) |
-| | Negotiated fares | NOT BUILT (flag reserved) |
+| | Negotiated fares | TESTED behind `pricing.negotiated` (off). Rider proposes up to `negotiation.max_discount_pct` below the platform price, the driver accepts, declines or counters once, the rider answers; see the 0.9.9 section |
 | Booking | State machine, transitions, events, idempotency, one-active-trip constraints | TESTED |
 | | Scheduled rides (release by sweeper) | TESTED |
 | | Cancellation rules (grace, fee recorded, driver/platform fault) | TESTED |
@@ -255,3 +255,17 @@ Labels (assigned by evidence, not intent):
 * Console texts for the new pages and for the map, scheduling and ratings settings added in Kinyarwanda and French (they were missing for the 0.9.x map settings).
 * **Demo data, fuller (0.9.9 candidate)**: besides trips, payments, earnings and ratings, the demo now fills support cases, safety incidents, staff alerts and fraud signals, claims, driver and Abasare applications waiting for review, promotions, referrals, campaigns, quests, fixed routes, venue partners with QR codes, a company account, a fleet, refund and payout queues, privacy requests and a staff team. Four trips are on the road and two riders are waiting for a driver when it loads. **Fix**: every demo driver now has approved documents, because without them the hourly eligibility job marked all demo drivers ineligible and they disappeared from the maps. Removing the demo also removes all of this. (TESTED: `tests/demo.test.ts`)
 
+
+## Improvement round (0.9.9)
+
+* **Price per kilometre** (TESTED): the seeded tariffs have no base fare and no per-minute charge, so a trip costs rate x kilometres (minimum fare still applies). The receipt shows the rate (`4.2 km x 1000 RWF`), each price in the app shows `RWF per km`, and the console price editor has **Use price per kilometre only** (sets base fare and per-minute to 0). Existing databases keep their current tariffs until a price change is approved.
+* **Instant updates** (TESTED API, browser e2e): `GET /realtime/wait` is a held request that answers when something changes for the signed-in user (offer, booking step, chat message) or after 25 s. Screens that poll quickly refresh at once and poll every 10 s as a safety net while it works; if it fails they poll as before. In-process, so one API instance only (several instances need Postgres LISTEN/NOTIFY or Redis behind `services/realtime.ts emit`).
+* **Web app** (browser e2e): location help for a blocked browser (padlock steps), a notice for drivers that the tab must stay open.
+* **Moto safety notice** at confirmation (one passenger, helmet, check the plate) in three languages. **Passenger rating by drivers** (TESTED): stars and passenger tags after the trip, the average shows on the next offer, drivers never see tags. Table `ratings` reused; `users.passenger_rating_avg`.
+* **Long-pickup charge** (TESTED, off by default): rule fields `pickup_free_km`, `pickup_per_km`, `pickup_max`; charged on the quote from the nearest available driver, shown as its own line, capped. Console price editor section "Long pickup (optional)".
+* **Proposed fares with one counter-offer** (TESTED, browser e2e, flag `pricing.negotiated` off): the agreed price becomes one disclosed line on the booking, the platform quote is never changed, both sides confirm by accepting the other number before the PIN, the history is kept (`fare_offers`, booking events). Not offered with promos, tax, credit, company or partner billing, guest rides or Abasare. Legal check before switching on.
+* **Business portal** (browser e2e): `/business/`, see `BUSINESS_PORTAL.md`.
+* **Weekly driver push** (TESTED): Monday 07:00 to 11:00 Kigali, once per week, last week's trips and earnings. **Payout speed** shown on Earnings (`payout.target_hours`, an operations promise, not an automatic timer). Streak bonuses already exist as quests.
+* **Parcel by moto** (TESTED, browser e2e; service `courier`, disabled until an operator enables it): sender, recipient name and phone, size, what is inside. The recipient is texted the driver, plate and tracking link (never the PIN); the driver sees size, note and the recipient's first name only. Same limits and erasure as rides for guests.
+* **Email verification** (TESTED, browser e2e): Profile, optional email with a code. Delivery SIMULATED until an email service is connected (`EMAIL_PROVIDER=http`).
+* **Uptime check** (`.github/workflows/abasare-uptime.yml`): every 15 minutes `/health`, `/ready`, the console and the app; a failed run emails the repository watchers and the calls also keep the free Render service awake. **Not done**: a Kiswahili language pack (left out on purpose).

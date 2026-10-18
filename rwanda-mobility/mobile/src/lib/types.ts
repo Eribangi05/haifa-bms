@@ -26,6 +26,7 @@ export type Booking = {
   estimated_fare: number | null; final_fare: number | null; payment_method: string; payer_type?: string; scheduled_for?: string | null;
   requested_at: string; completed_at?: string | null; cancel_fee?: number | null; distance_m?: number; duration_s?: number;
   started_at?: string | null; passenger?: { first_name: string };
+  parcel?: { size: 'small' | 'medium' | 'large'; description: string | null; recipient: string };
   negotiation?: { proposed_fare: number; platform_price?: number; agreed_fare: number | null; agreed_by: string | null; counters: { id: string; amount: number; driver_first_name: string | null; expires_at: string }[] };
   unread_messages?: number; phone_sharing?: { i_share: boolean; they_share: boolean }; contact_phone?: string; estimated_driver_net?: number | null;
   guest?: { name?: string; phone_masked?: string; language?: string; purged?: boolean; first_name?: string; can_contact?: boolean };
@@ -35,7 +36,7 @@ export type Booking = {
 export type Receipt = { receipt_no: string; issued_at: string; status: string; currency: string; total: number | null; route: { from?: string; to?: string; distance_m?: number; duration_s?: number }; fare?: Fare; payment: { method: string; status: string; reference?: string; paid_at?: string } | null; driver?: { name: string; plate?: string } | null };
 export type ChatMessage = { id: string; sender_id: string; body: string; created_at?: string; read_at?: string | null };
 
-export type Offer = { booking_id: string; expires_at: string; eta_s: number; distance_m: number; driver_net: number; pickup_name?: string; pickup_note?: string; dest_name?: string; payment_method: string; trip_distance_m: number; trip_duration_s: number; hire_mode?: 'p2p' | 'hourly' | null; hours_booked?: number; cv_class?: string; cv_transmission?: string; proposed_fare?: number | null; counter_amount?: number | null; estimated_fare?: number | null; passenger_rating?: number | null; passenger_rating_count?: number };
+export type Offer = { booking_id: string; expires_at: string; eta_s: number; distance_m: number; driver_net: number; pickup_name?: string; pickup_note?: string; dest_name?: string; payment_method: string; trip_distance_m: number; trip_duration_s: number; hire_mode?: 'p2p' | 'hourly' | null; hours_booked?: number; cv_class?: string; cv_transmission?: string; proposed_fare?: number | null; counter_amount?: number | null; parcel?: { size: 'small' | 'medium' | 'large'; description: string | null; recipient: string } | null; estimated_fare?: number | null; passenger_rating?: number | null; passenger_rating_count?: number };
 export type Requirement = { doc_type: string; mandatory: boolean; requires_expiry?: boolean };
 export type DriverDoc = { id: string; doc_type: string; review_status: string; review_note?: string | null; expiry_date?: string | null };
 export type Permission = { can_work: boolean; reasons?: string[]; expired_documents?: string[]; missing_documents?: string[] };

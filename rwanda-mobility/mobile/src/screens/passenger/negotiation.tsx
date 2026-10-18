@@ -37,7 +37,7 @@ export function NegotiationCard({ b, reload }: { b: Booking; reload: () => void 
       {n.counters.map((c) => (
         <Card key={c.id}>
           <Text style={S.h2}>{t('up.neg.counter', { name: c.driver_first_name ?? '', amount: c.amount })}</Text>
-          <View style={S.row}><Btn title={t('up.neg.accept')} onPress={() => answer(c.id, 'accept')} loading={busy} /><Btn kind="ghost" title={t('up.neg.decline')} onPress={() => answer(c.id, 'decline')} /></View>
+          <View style={[S.row, { gap: 8 }]}><Btn title={t('up.neg.accept')} onPress={() => answer(c.id, 'accept')} loading={busy} /><Btn kind="ghost" title={t('up.neg.decline')} onPress={() => answer(c.id, 'decline')} /></View>
         </Card>))}
     </View>
   );

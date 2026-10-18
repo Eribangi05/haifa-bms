@@ -177,6 +177,7 @@ export type CreateIn = {
   customer_vehicle_id?: string; owner_attested?: boolean; request_code?: string; prefer_favourite?: boolean;
   for_guest?: GuestIn; partner_id?: string; partner_billed?: boolean;
   proposed_fare?: number;   // passenger-proposed price (flag pricing.negotiated)
+  parcel?: { recipient_name: string; recipient_phone: string; size: 'small' | 'medium' | 'large'; description?: string; language?: 'rw' | 'fr' | 'en' };   // courier service only
   wallet_amount?: number; remainder_method?: string; channel?: 'app' | 'ussd' | 'web';   // credit: payment_method 'wallet' | 'wallet_partial'
 };
 
@@ -282,6 +283,13 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
          quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, fareTotal, quote.distance_m, quote.duration_s, inp.payment_method,
          inp.corporate_id ? 'corporate' : 'passenger', inp.corporate_id ?? null, inp.cost_centre ?? null, inp.po_ref ?? null, inp.rider_name ?? null, inp.rider_phone ?? null,
          quote.scheduled_for, inp.idempotency_key, JSON.stringify(bdoc)], c))[0];
+      if (svc.restrictions?.parcel) {
+        if (!inp.parcel) throw badRequest('parcel_required', 'Tell us who receives the parcel and how big it is');
+        if (inp.for_guest) throw badRequest('guest_not_allowed', 'A parcel has a recipient, not a guest');
+        await attachGuest(c, b, 'ride', { name: inp.parcel.recipient_name, phone: inp.parcel.recipient_phone, language: inp.parcel.language });   // the recipient is the person told about the driver; same limits and erasure as guests
+        await q('update bookings set parcel=$2 where id=$1', [b.id, JSON.stringify({ recipient_name: inp.parcel.recipient_name.trim().slice(0, 60), size: inp.parcel.size, description: inp.parcel.description?.trim().slice(0, 140) || null })], c);
+        await logEvent(c, b.id, 'parcel_attached', { id: passengerId, role: 'passenger' }, { size: inp.parcel.size });
+      } else if (inp.parcel) throw badRequest('parcel_not_allowed', 'Only the parcel service takes a parcel');
       if (inp.proposed_fare != null) {
         const prop = await checkProposal(c, passengerId, svc, bdoc, inp.proposed_fare, { corporate: !!inp.corporate_id, partner: !!inp.partner_billed, guest: !!inp.for_guest, wallet: !!walletMode });
         if (prop) { await q('update bookings set proposed_fare=$2 where id=$1', [b.id, prop], c); b.proposed_fare = prop; await logEvent(c, b.id, 'fare_proposed', { id: passengerId, role: 'passenger' }, { amount: prop, platform_price: bdoc.total }); }
@@ -354,6 +362,7 @@ export async function bookingView(b: BookingRow, as: Perspective) {
     destination: { lat: b.dest_lat, lng: b.dest_lng, name: b.dest_name },
     estimated_fare: b.estimated_fare, final_fare: b.final_fare, fare_is_final: b.final_fare != null,
     negotiation: await negotiationView(b),
+    parcel: (b as any).parcel ? { size: (b as any).parcel.size, description: (b as any).parcel.description ?? null, recipient: as === 'driver' ? String((b as any).parcel.recipient_name ?? '').split(' ')[0] : (b as any).parcel.recipient_name } : undefined,
     fare_breakdown: b.fare_breakdown, payment_method: b.payment_method, scheduled_for: b.scheduled_for,
     requested_at: b.requested_at, assigned_at: b.assigned_at, started_at: b.started_at, completed_at: b.completed_at,
     cancelled_at: b.cancelled_at, cancel_by: b.cancel_by, cancel_reason: b.cancel_reason, cancel_fee: b.cancel_fee,

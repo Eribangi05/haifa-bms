@@ -52,6 +52,7 @@ Android: `cd mobile && npm install && EXPO_PUBLIC_API_URL=http://10.0.2.2:8080 n
 |---|---|
 | [`docs/SETUP_AND_DEPLOYMENT.md`](docs/SETUP_AND_DEPLOYMENT.md) | Local setup, tests, production checklist, jobs and retention. |
 | [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md) | Every environment variable and runtime setting, with defaults. Checked against the code in CI. |
+| [`docs/BUSINESS_PORTAL.md`](docs/BUSINESS_PORTAL.md) | The web portal for companies and fleets at `/business/`: tabs, rules, safety notes. |
 | [`docs/WEB_APP.md`](docs/WEB_APP.md) | The installable web app served at the root address: install, limits, build, caching. |
 | [`docs/FINAL_REVIEW.md`](docs/FINAL_REVIEW.md) | Final product review against the master prompt and the Rwandan market, with priorities. |
 | [`docs/ANDROID_BUILD.md`](docs/ANDROID_BUILD.md) | Building the APK/AAB, EAS, push set-up, Play Console declarations, device test plan. |

@@ -26,6 +26,10 @@ export const config = {
   smsProvider: env.SMS_PROVIDER ?? 'console',
   smsHttpUrl: env.SMS_HTTP_URL ?? '',
   smsHttpToken: env.SMS_HTTP_TOKEN ?? '',
+  emailProvider: env.EMAIL_PROVIDER ?? 'console',
+  emailHttpUrl: env.EMAIL_HTTP_URL ?? '',
+  emailHttpToken: env.EMAIL_HTTP_TOKEN ?? '',
+  emailFrom: env.EMAIL_FROM ?? 'Abasare <no-reply@abasare.rw>',
   momo: {
     mode: (env.MOMO_MODE ?? 'simulator') as 'sandbox' | 'live' | 'simulator',
     baseUrl: env.MOMO_BASE_URL ?? 'https://sandbox.momodeveloper.mtn.com',
@@ -70,6 +74,7 @@ export function configProblems(c: typeof config = config, e: Record<string, stri
   } else if (c.momo.mode === 'sandbox' && (c.momo.callbackToken === 'dev-callback-token' || c.momo.callbackToken.length < 16)) warn.push('MOMO_CALLBACK_TOKEN is the public development default: set a secret value');
   if (c.momo.mode === 'simulator' && !staging) warn.push('MOMO_MODE=simulator in production: mobile-money payments are SIMULATED');
   if (c.smsProvider === 'http' && !c.smsHttpUrl) fatal.push('SMS_PROVIDER=http needs SMS_HTTP_URL');
+  if (c.emailProvider === 'http' && !c.emailHttpUrl) fatal.push('EMAIL_PROVIDER=http needs EMAIL_HTTP_URL');
   if (c.smsProvider === 'console' && !staging) warn.push('SMS_PROVIDER=console in production: OTP codes are not delivered');
   if (c.pushProvider === 'expo' && !c.expoPushUrl) fatal.push('PUSH_PROVIDER=expo needs EXPO_PUSH_URL');
   if (/localhost|127\.0\.0\.1/.test(c.publicBaseUrl)) warn.push('PUBLIC_BASE_URL points at localhost: share and request-code links will not work');

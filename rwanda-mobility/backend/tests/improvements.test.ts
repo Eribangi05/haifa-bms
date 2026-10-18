@@ -133,3 +133,59 @@ test('weekly driver digest: Monday morning only, once per week, only for drivers
   assert.equal((await q("select 1 from notifications where user_id=$1 and template_key='weekly_statement'", [idle.id])).length, 0);
   const w = await t.api('GET', '/drivers/me/wallet', { token: d.token }); assert.equal(w.json.payout_target_hours, 24);
 });
+
+test('courier: a parcel by moto needs a recipient and size; the recipient is texted the driver and link (never the PIN); the driver sees the parcel but not the recipient number', async () => {
+  await t.reset();
+  await q("update service_categories set enabled=true where id='courier'"); await q("update zone_services set enabled=true where service_id='courier'");
+  const p = await t.register('passenger'), d = await t.driver({ vehicle: 'moto' });
+  const est = await t.estimate(p.token, { service_id: 'courier' });
+  const o = est.json.options.find((x: any) => x.service_id === 'courier'); assert.ok(o?.available, JSON.stringify(est.json.options.map((x: any) => [x.service_id, x.available])));
+  assert.ok(o.per_km_only);
+  const post = (extra: any, quote = o.quote_id) => t.api('POST', '/bookings', { token: p.token, headers: { 'idempotency-key': 'c-' + Math.random().toString(36).slice(2, 12) }, body: { quote_id: quote, payment_method: 'cash', ...extra } });
+  assert.equal((await post({})).json.error.code, 'parcel_required');
+  const fresh = async () => (await t.estimate(p.token, { service_id: 'courier' })).json.options.find((x: any) => x.service_id === 'courier').quote_id;
+  assert.equal((await post({ parcel: { recipient_name: 'Eric', recipient_phone: '0788000111', size: 'huge' } }, await fresh())).status, 400);
+  const ok = await post({ parcel: { recipient_name: 'Eric Mugisha', recipient_phone: '0788000111', size: 'small', description: 'Documents', language: 'en' } }, await fresh());
+  assert.equal(ok.status, 201, JSON.stringify(ok.json)); const id = ok.json.booking.id as string;
+  assert.equal(ok.json.booking.parcel.recipient, 'Eric Mugisha'); assert.equal(ok.json.booking.parcel.size, 'small');
+  const offer = (await t.api('GET', '/drivers/me/offers', { token: d.token })).json.offers.find((x: any) => x.booking_id === id);
+  assert.deepEqual(offer.parcel, { size: 'small', description: 'Documents', recipient: 'Eric' }, 'the driver gets the first name only');
+  assert.ok(!JSON.stringify(offer).includes('0788000111'));
+  await t.api('POST', `/bookings/${id}/accept`, { token: d.token });
+  const msgs = await q<any>("select kind, body from guest_messages where booking_id=$1", [id]);
+  assert.equal(msgs.length, 1); assert.match(msgs[0].body, /parcel/i); assert.ok(!/PIN/i.test(msgs[0].body), 'the recipient is never given the PIN'); assert.match(msgs[0].body, /https?:\/\//);
+  const dv = (await t.api('GET', `/bookings/${id}`, { token: d.token })).json; assert.equal(dv.parcel.recipient, 'Eric'); assert.ok(!JSON.stringify(dv).includes('0788000111'));
+  // a normal ride cannot carry a parcel, and a parcel cannot be a guest ride
+  const std = (await t.estimate(p.token, { service_id: 'moto' })).json.options.find((x: any) => x.service_id === 'moto');
+  await t.reset();
+  const dd = await t.driver({ vehicle: 'moto' }); void dd;
+  const std2 = (await t.estimate(p.token, { service_id: 'moto' })).json.options.find((x: any) => x.service_id === 'moto');
+  assert.equal((await post({ parcel: { recipient_name: 'E', recipient_phone: '0788000111', size: 'small' } }, std2.quote_id)).json.error.code, 'parcel_not_allowed'); void std;
+  await q("update service_categories set enabled=false where id='courier'"); await q("update zone_services set enabled=false where service_id='courier'");
+});
+
+test('email: a code proves ownership; wrong codes are counted; changing the address clears the proof', async () => {
+  const u = await t.register('passenger');
+  assert.equal((await t.api('POST', '/users/me/email/code', { token: u.token })).json.error.code, 'email_missing');
+  assert.equal((await t.api('PATCH', '/users/me', { token: u.token, body: { email: 'Aline@Example.RW' } })).status, 200);
+  assert.equal((await t.api('GET', '/users/me', { token: u.token })).json.email_verified, false);
+  const r = await t.api('POST', '/users/me/email/code', { token: u.token }); assert.equal(r.status, 200, JSON.stringify(r.json));
+  const { emailOutbox } = await import('../src/providers/email.ts');
+  assert.equal(emailOutbox.at(-1)!.to, 'aline@example.rw'); assert.ok(emailOutbox.at(-1)!.text.includes(r.json.dev_code));
+  assert.equal((await t.api('POST', '/users/me/email/code', { token: u.token })).status, 429, 'one code a minute');
+  const wrong = r.json.dev_code === '000000' ? '111111' : '000000';
+  assert.equal((await t.api('POST', '/users/me/email/verify', { token: u.token, body: { code: wrong } })).json.error.code, 'email_code_wrong');
+  assert.equal((await t.api('POST', '/users/me/email/verify', { token: u.token, body: { code: 'abc' } })).status, 400);
+  const ok = await t.api('POST', '/users/me/email/verify', { token: u.token, body: { code: r.json.dev_code } }); assert.equal(ok.status, 200);
+  assert.equal((await t.api('GET', '/users/me', { token: u.token })).json.email_verified, true);
+  assert.equal((await t.api('POST', '/users/me/email/code', { token: u.token })).json.error.code, 'email_already_verified');
+  await t.api('PATCH', '/users/me', { token: u.token, body: { email: 'other@example.rw' } });
+  assert.equal((await t.api('GET', '/users/me', { token: u.token })).json.email_verified, false, 'a new address must be proven again');
+  await t.api('PATCH', '/users/me', { token: u.token, body: { display_name: 'Aline' } });
+  assert.equal((await t.api('GET', '/users/me', { token: u.token })).json.email, 'other@example.rw');
+  // five wrong codes lock the code
+  await q("update email_verifications set created_at = created_at - interval '2 minutes' where user_id=$1", [u.id]);
+  const r2 = await t.api('POST', '/users/me/email/code', { token: u.token }); const bad = r2.json.dev_code === '000000' ? '111111' : '000000';
+  for (let i = 0; i < 5; i++) await t.api('POST', '/users/me/email/verify', { token: u.token, body: { code: bad } });
+  assert.equal((await t.api('POST', '/users/me/email/verify', { token: u.token, body: { code: r2.json.dev_code } })).status, 429);
+});

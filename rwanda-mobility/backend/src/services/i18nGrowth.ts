@@ -18,6 +18,21 @@ export const GROWTH_TEMPLATES: Record<string, Record<Lang, Tpl>> = {
     rw: { title: 'Urugendo rwahagaritswe', body: 'Abasare: urugendo {{booker}} yagutumiye rwahagaritswe.' },
     fr: { title: 'Course annulée', body: 'Abasare : la course que {{booker}} avait réservée pour vous a été annulée.' },
   },
+  parcel_assigned: {
+    en: { title: 'A parcel is coming to you', body: 'Abasare: {{booker}} sent you a parcel. Driver {{driver}}, plate {{plate}}. Follow live: {{link}}' },
+    rw: { title: 'Ipaki iragusanga', body: 'Abasare: {{booker}} yaguhaye ipaki. Umushoferi {{driver}}, plaque {{plate}}. Rikurikirane ako kanya: {{link}}' },
+    fr: { title: 'Un colis arrive', body: 'Abasare : {{booker}} vous envoie un colis. Chauffeur {{driver}}, plaque {{plate}}. Suivi en direct : {{link}}' },
+  },
+  parcel_arrived: {
+    en: { title: 'Your parcel has arrived', body: 'Abasare: the driver {{driver}} is at your door with the parcel from {{booker}}. Plate {{plate}}.' },
+    rw: { title: 'Ipaki yaje', body: 'Abasare: umushoferi {{driver}} ari aho uri afite ipaki ya {{booker}}. Plaque {{plate}}.' },
+    fr: { title: 'Votre colis est arrivé', body: 'Abasare : le chauffeur {{driver}} est chez vous avec le colis de {{booker}}. Plaque {{plate}}.' },
+  },
+  parcel_cancelled: {
+    en: { title: 'Parcel cancelled', body: 'Abasare: the parcel {{booker}} was sending you was cancelled.' },
+    rw: { title: 'Ipaki yahagaritswe', body: 'Abasare: ipaki {{booker}} yakohereje yahagaritswe.' },
+    fr: { title: 'Colis annulé', body: 'Abasare : le colis que {{booker}} vous envoyait a été annulé.' },
+  },
   schedule_booked: {
     en: { title: 'Recurring ride booked', body: 'Your recurring ride on {{date}} at {{time}} is booked. Price: {{amount}} RWF.' },
     rw: { title: 'Urugendo rusubiramo rwateguwe', body: 'Urugendo rwawe rusubiramo rwo ku wa {{date}} saa {{time}} rwateguwe. Igiciro: {{amount}} RWF.' },

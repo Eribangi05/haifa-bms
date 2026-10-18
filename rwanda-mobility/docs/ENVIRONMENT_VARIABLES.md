@@ -17,6 +17,8 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `ADMIN_MFA_RESET_EMAIL`, `ADMIN_MFA_RESET_TOKEN` | no | | Recovery for a lost authenticator: set both (token = any text of 8+ characters), redeploy, read `STAFF MFA RESET` in the logs for the new secret. It runs once per distinct token value; remove both afterwards. |
 | `APP_ENV` | no | | Set `staging` on a test deployment to allow `OTP_DEV_ECHO=true` there (the code is returned in the API response and shown in the app). Never set on production. |
 | `SMS_HTTP_URL`, `SMS_HTTP_TOKEN` | if `http` | | SMS gateway endpoint and token. |
+| `EMAIL_PROVIDER` | no | `console` | `console` keeps the message in memory and logs it (**SIMULATED**); `http` posts `{from,to,subject,text}` to `EMAIL_HTTP_URL` with `Bearer EMAIL_HTTP_TOKEN` (adapt to your email service in `providers/email.ts`). Used for the email verification code. |
+| `EMAIL_HTTP_URL`, `EMAIL_HTTP_TOKEN`, `EMAIL_FROM` | if `http` | `Abasare <no-reply@abasare.rw>` (`EMAIL_FROM`) | Email gateway endpoint, token and sender. |
 | `OTP_DEV_ECHO` | never in prod | `false` | `true` returns the OTP in the API response for testing. Honoured only outside production, or in production when `APP_ENV=staging` (the staging blueprint). Never enable it on a deployment with real users. |
 | `MOMO_MODE` | yes | `simulator` | `simulator` (local fake, **no real money**), `sandbox` (MTN sandbox), `live`. |
 | `MOMO_BASE_URL` | sandbox/live | MTN sandbox URL | MTN MoMo API origin (see momodeveloper.mtn.com / Rwanda portal). |
@@ -57,6 +59,8 @@ Backend reads configuration only from the environment (`backend/.env.example` is
 | `ENROLL_RATE_MAX` | no | `10` | Per-user per-minute cap on `POST /drivers/enroll`. |
 | `NAV_RATE_MAX` | no | `40` | Per-user per-minute cap on turn-by-turn route requests (`GET /bookings/:id/navigation`). |
 | `CHAT_RATE_MAX` | no | `30` | Per-user per-minute cap on in-trip chat messages. |
+| `COUNTER_RATE_MAX` | no | `30` | Per-user per-minute cap on fare counter-offers and the answers to them (proposed fares). |
+| `EMAIL_CODE_RATE_MAX` | no | `10` | Per-user per-minute cap on email code requests and checks (on top of one code a minute and five an hour). |
 | `SHARE_RATE_MAX` | no | `20` | Per-user per-minute cap on creating trip-share links. |
 | `SOS_RATE_MAX` | no | `6` | Per-user per-minute cap on `POST /safety/sos`. |
 | `CASE_RATE_MAX` | no | `10` | Per-user per-minute cap on support cases, case messages and safety reports. |
@@ -83,7 +87,7 @@ The server logs each problem at start; **fatal** ones stop it: `MOMO_MODE=live` 
 
 ## Admin-editable runtime settings (stored in `system_settings`, edit in Admin -> Settings)
 
-`ratings.low_score`, `ratings.flag_avg_x10`, `ratings.flag_min_count`, `ratings.flag_window_days`, `dispatch.offer_timeout_s`, `dispatch.max_rounds`, `dispatch.group_size`, `dispatch.strategy`, `dispatch.heartbeat_max_age_s`, `dispatch.base_radius_km`, `dispatch.radius_step_km`, `dispatch.max_radius_km`, `booking.cancel_grace_s`, `booking.cancel_fee`, `booking.noshow_wait_min`, `booking.noshow_fee`, `booking.quote_ttl_s`, `booking.max_scheduled_days`, `booking.min_schedule_lead_min`, `abasare.quick_hours`, `map.nearby_radius_km`, `map.wide_radius_km`, `map.nearby_max`, `map.nearby_blur_m`, `payout.min_amount`, `payout.fee`, `payout.large_threshold`, `refund.large_threshold`, `driver.expiry_reminder_days`, `retention.location_days`, `retention.client_error_days` (client error reports, default 30), `retention.notification_days` (180), `retention.session_days` (30), `retention.handover_days` (Abasare car-check photos, 90), `otp.*`, `safety.escalation_contacts`, `tracking.max_speed_kmh`, `abasare.min_photos`, `abasare.min_licence_years`, `abasare.issue_window_min`, `pricing.self_approval` (super admin only; lets a proposer approve their own price change, flagged `self_approved` in the audit log).
+`ratings.low_score`, `ratings.flag_avg_x10`, `ratings.flag_min_count`, `ratings.flag_window_days`, `negotiation.max_discount_pct`, `negotiation.counter_wait_s`, `payout.target_hours`, `dispatch.offer_timeout_s`, `dispatch.max_rounds`, `dispatch.group_size`, `dispatch.strategy`, `dispatch.heartbeat_max_age_s`, `dispatch.base_radius_km`, `dispatch.radius_step_km`, `dispatch.max_radius_km`, `booking.cancel_grace_s`, `booking.cancel_fee`, `booking.noshow_wait_min`, `booking.noshow_fee`, `booking.quote_ttl_s`, `booking.max_scheduled_days`, `booking.min_schedule_lead_min`, `abasare.quick_hours`, `map.nearby_radius_km`, `map.wide_radius_km`, `map.nearby_max`, `map.nearby_blur_m`, `payout.min_amount`, `payout.fee`, `payout.large_threshold`, `refund.large_threshold`, `driver.expiry_reminder_days`, `retention.location_days`, `retention.client_error_days` (client error reports, default 30), `retention.notification_days` (180), `retention.session_days` (30), `retention.handover_days` (Abasare car-check photos, 90), `otp.*`, `safety.escalation_contacts`, `tracking.max_speed_kmh`, `abasare.min_photos`, `abasare.min_licence_years`, `abasare.issue_window_min`, `pricing.self_approval` (super admin only; lets a proposer approve their own price change, flagged `self_approved` in the audit log).
 
 
 ## Additional variables (feature rounds 1-3)

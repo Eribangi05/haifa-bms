@@ -10,4 +10,10 @@ export const upEn = {
   'up.neg.counter': '{name} replies with {amount} RWF', 'up.neg.accept': 'Accept', 'up.neg.decline': 'No thanks', 'up.neg.agreed': 'Agreed price: {amount} RWF',
   'up.neg.rider.offers': 'Rider offers {amount} RWF (usual price {usual})', 'up.neg.accept.at': 'Accept {amount} RWF', 'up.neg.counter.btn': 'Reply with another price', 'up.neg.counter.sent': 'Your reply was sent. Waiting for the rider.', 'up.neg.counter.pick': 'Choose your price',
   'up.payout.speed': 'Approved payouts are paid within {h} hours.',
+  'up.parcel.title': 'Parcel details', 'up.parcel.recipient': 'Recipient name', 'up.parcel.phone': 'Recipient phone', 'up.parcel.size': 'Size',
+  'up.parcel.small': 'Small: documents, envelope', 'up.parcel.medium': 'Medium: shoebox, up to 5 kg', 'up.parcel.large': 'Large: up to 10 kg', 'up.parcel.desc': 'What is inside (optional)',
+  'up.parcel.note': 'The recipient gets the driver, plate and a tracking link by SMS. When the driver collects the parcel, give them the trip PIN yourself. Do not send cash or illegal items.',
+  'up.parcel.for': 'Parcel for {name} · {size}', 'up.parcel': 'Parcel', 'up.parcel.invalid': 'Enter the recipient name and a valid phone number.',
+  'up.email.title': 'Email (optional)', 'up.email.hint': 'Used for receipts and account messages. We send a code to check it is yours.', 'up.email.save': 'Save email', 'up.email.send': 'Send code',
+  'up.email.code': '6-digit code', 'up.email.verify': 'Verify', 'up.email.verified': 'Email verified', 'up.email.unverified': 'Not verified yet', 'up.email.sent': 'Code sent. Check your inbox.', 'up.email.ok': 'Your email is verified.',
 } as const;

@@ -24,6 +24,8 @@
 | GET | `/users/me/drivers` |
 | DELETE | `/users/me/drivers/:driverId` |
 | PUT | `/users/me/drivers/:driverId` |
+| POST | `/users/me/email/code` |
+| POST | `/users/me/email/verify` |
 | GET | `/users/me/emergency-contacts` |
 | POST | `/users/me/emergency-contacts` |
 | DELETE | `/users/me/emergency-contacts/:id` |
@@ -68,6 +70,8 @@
 | POST | `/bookings/:id/cash-collected` |
 | POST | `/bookings/:id/claims` |
 | POST | `/bookings/:id/complete` |
+| POST | `/bookings/:id/counter` |
+| POST | `/bookings/:id/counters/:cid/:answer` |
 | GET | `/bookings/:id/deposit` |
 | POST | `/bookings/:id/deposit/pay` |
 | POST | `/bookings/:id/en-route` |
@@ -83,6 +87,7 @@
 | POST | `/bookings/:id/payment-method` |
 | POST | `/bookings/:id/ratings` |
 | GET | `/bookings/:id/receipt` |
+| POST | `/bookings/:id/receipt/link` |
 | POST | `/bookings/:id/reject` |
 | GET | `/bookings/:id/safety-check` |
 | POST | `/bookings/:id/safety-check/respond` |
@@ -119,6 +124,7 @@
 | POST | `/drivers/me/payouts` |
 | GET | `/drivers/me/quests` |
 | GET | `/drivers/me/quests/history` |
+| GET | `/drivers/me/statement` |
 | GET | `/drivers/me/status` |
 | GET | `/drivers/me/vehicle-application` |
 | POST | `/drivers/me/vehicle-application` |
@@ -265,6 +271,9 @@
 | POST | `/admin/commissions/:id/approve` |
 | GET | `/admin/dashboard` |
 | GET | `/admin/dashboard/ops` |
+| GET | `/admin/demo` |
+| POST | `/admin/demo/clear` |
+| POST | `/admin/demo/load` |
 | GET | `/admin/deposits` |
 | GET | `/admin/digest` |
 | GET | `/admin/document-requirements` |
@@ -325,7 +334,11 @@
 | POST | `/admin/quests` |
 | PATCH | `/admin/quests/:id` |
 | GET | `/admin/quests/:id/awards` |
+| GET | `/admin/ratings` |
 | GET | `/admin/referrals` |
+| GET | `/admin/revenue` |
+| GET | `/admin/revenue/csv` |
+| GET | `/admin/revenue/report` |
 | GET | `/admin/review-queue` |
 | GET | `/admin/ride-schedules` |
 | GET | `/admin/risk-events` |

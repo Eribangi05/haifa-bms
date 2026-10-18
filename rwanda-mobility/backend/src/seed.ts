@@ -19,12 +19,14 @@ const SERVICES = [
   ['intercity', 'Intercity ride', 'Urugendo hagati y\'imijyi', ['car', 'minivan'], 1, false, 4, '3 bags', 3, false, 6],
   ['goods', 'Pickup / light goods', 'Gutwara ibintu bito', ['pickup'], 1, false, 2, 'Cargo bed', 3, false, 7],
   ['cargo', 'Truck / cargo', 'Ikamyo', ['truck'], 1, false, 2, 'Cargo', 3, false, 8],
+  ['courier', 'Parcel by moto', 'Gutwara ipaki kuri moto', ['moto'], 1, false, 1, 'Parcel up to 10 kg', 2, false, 11],
   ['abasare', 'Abasare: drive me home', 'Abasare: nshyire mu rugo', ['car', 'suv', 'minivan', 'pickup', 'moto'], 1, false, 4, 'Your own car', 1, true, 9],
   ['abasare_hourly', 'Abasare: driver by the hour', 'Abasare: umushoferi ku isaha', ['car', 'suv', 'minivan', 'pickup', 'moto'], 1, false, 4, 'Your own car', 1, true, 10],
 ] as const;
 
 // French names + descriptions (en/rw/fr) for the catalogue. Applied only where empty, so admin edits survive re-seeding.
 const SERVICE_TEXT: Record<string, [name_fr: string, d_en: string, d_rw: string, d_fr: string]> = {
+  courier: ['Colis en moto', 'Send a parcel across Kigali by moto. The recipient gets the driver and a tracking link by SMS.', 'Ohereza ipaki mu mujyi wa Kigali kuri moto. Uwakira abona umushoferi n\'urubuga rwo gukurikirana kuri SMS.', 'Envoyez un colis à travers Kigali en moto. Le destinataire reçoit le chauffeur et un lien de suivi par SMS.'],
   moto: ['Moto', 'Quick and affordable motorbike ride for one passenger.', 'Urugendo rwihuse kandi ruhendutse kuri moto ku muntu umwe.', 'Course rapide et économique en moto pour un passager.'],
   standard: ['Voiture standard', 'Everyday car ride for up to 4 passengers.', 'Urugendo rwa buri munsi mu modoka ku bagenzi bagera kuri 4.', 'Course quotidienne en voiture pour jusqu\'à 4 passagers.'],
   comfort: ['Voiture confort', 'A more comfortable car for up to 4 passengers.', 'Imodoka yisanzuye kurushaho ku bagenzi bagera kuri 4.', 'Une voiture plus confortable pour jusqu\'à 4 passagers.'],
@@ -59,6 +61,7 @@ const RULES: Record<string, Partial<Record<string, number>>> = {
   standard: { base_fare: 0, per_km: 1000, per_min: 0, minimum_fare: 2000, booking_fee: 0, wait_per_min: 50 },
   comfort: { base_fare: 0, per_km: 1300, per_min: 0, minimum_fare: 3000, booking_fee: 0, wait_per_min: 60 },
   family: { base_fare: 0, per_km: 1500, per_min: 0, minimum_fare: 4000, booking_fee: 0, wait_per_min: 80 },
+  courier: { base_fare: 0, per_km: 350, per_min: 0, minimum_fare: 1000, booking_fee: 0, wait_per_min: 20 },
   airport: { base_fare: 0, per_km: 1100, per_min: 0, minimum_fare: 4000, booking_fee: 0, wait_per_min: 60, airport_fee: 2000 },
 };
 
@@ -128,6 +131,7 @@ export async function seedCore() {
     await q(`insert into zone_services(zone_id,service_id,enabled) values ('kigali',$1,$2) on conflict do nothing`, [s[0], s[9]]);
   }
   await q("update service_categories set kind='abasare' where id like 'abasare%'");
+  await q("update service_categories set restrictions = restrictions || '{\"parcel\": true, \"max_distance_km\": 40}'::jsonb where id='courier' and not (restrictions ? 'parcel')");
   for (const [id, t] of Object.entries(SERVICE_TEXT))
     await q(`update service_categories set name_fr=coalesce(name_fr,$2), description_en=coalesce(description_en,$3), description_rw=coalesce(description_rw,$4), description_fr=coalesce(description_fr,$5) where id=$1`, [id, ...t]);
   for (const [sid, r] of Object.entries(RULES)) {

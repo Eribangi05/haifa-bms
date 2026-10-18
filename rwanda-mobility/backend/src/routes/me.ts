@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { requestEmailCode, verifyEmailCode } from '../services/emailVerify.js';
 import { referralSummary } from '../services/referrals.js';
 import { z } from 'zod';
 import { effectivePermissions, isStaff } from '../rbac.js';
@@ -26,7 +27,7 @@ export async function meRoutes(app: FastifyInstance) {
   });
 
   app.get('/users/me', pre, async (req) => {
-    const u = await q1<any>('select id, phone, email, display_name, preferred_language, notif_prefs, referral_code, status, (photo_key is not null) as has_photo, created_at from users where id=$1', [req.auth!.id]);
+    const u = await q1<any>('select id, phone, email, (email_verified_at is not null) as email_verified, display_name, preferred_language, notif_prefs, referral_code, status, (photo_key is not null) as has_photo, created_at from users where id=$1', [req.auth!.id]);
     return { ...u, roles: req.auth!.roles, ...(isStaff(req.auth!.roles) ? { permissions: effectivePermissions(req.auth!.roles) } : {}) };
   });
 
@@ -39,11 +40,18 @@ export async function meRoutes(app: FastifyInstance) {
     }).strict(), req.body);
     const cur = await q1<any>('select notif_prefs from users where id=$1', [req.auth!.id]);
     try {
-      await q(`update users set display_name=coalesce($2,display_name), email=coalesce($3,email), preferred_language=coalesce($4,preferred_language),
-               notif_prefs=$5, updated_at=now() where id=$1`,
+      await q(`update users set display_name=coalesce($2,display_name), email_verified_at = case when $3::text is not null and $3::text is distinct from email then null else email_verified_at end,
+               email=coalesce($3,email), preferred_language=coalesce($4,preferred_language), notif_prefs=$5, updated_at=now() where id=$1`,
         [req.auth!.id, b.display_name ?? null, b.email ?? null, b.preferred_language ?? null, JSON.stringify({ ...cur.notif_prefs, ...(b.notif_prefs ?? {}) })]);
     } catch (e: any) { if (e.code === '23505') throw conflict('email_in_use', 'Email already registered'); throw e; }
     return { ok: true };
+  });
+
+  // prove ownership of the email address: a code sent to it
+  app.post('/users/me/email/code', { ...pre, config: routeLimit('EMAIL_CODE_RATE_MAX', 10) }, async (req) => requestEmailCode(req.auth!.id));
+  app.post('/users/me/email/verify', { ...pre, config: routeLimit('EMAIL_CODE_RATE_MAX', 10) }, async (req) => {
+    const b = parse(z.object({ code: z.string().regex(/^\d{6}$/) }), req.body);
+    return verifyEmailCode(req.auth!.id, b.code);
   });
 
   // outstanding cancellation / no-show fees (added to the next fare as `previous_cancellation_fee`)

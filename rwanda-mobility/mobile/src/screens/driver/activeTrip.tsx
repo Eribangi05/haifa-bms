@@ -14,6 +14,7 @@ import { HandoverForm } from './handover';
 import { R1NavButtons } from '../trust/navHandoff';
 import { GuestContact } from '../growth/guestContact';
 import { RatePassenger } from './ratePassenger';
+import { parcelLine } from '../passenger/parcel';
 
 type LL = { lat: number; lng: number };
 
@@ -78,6 +79,7 @@ export function ActiveTrip({ trip, pos, reload, mapHeight }: { trip: Booking; po
         {trip.payment_method === 'cash' ? <><Field label={t('drv.collected.q')} value={cash} onChangeText={(x) => setCash(x.replace(/\D/g, ''))} keyboardType="number-pad" />
           <Btn title={t('drv.collect')} onPress={() => run(async () => { const r = await client.post<{ status: string; outstanding?: number }>(`/bookings/${trip.id}/cash-collected`, { amount: Number(cash) }, { retry: true }); if (r.status === 'PARTIAL') say(`${t('drv.collected.partial')}: ${r.outstanding} RWF`); reload(); })} loading={busy} disabled={!Number(cash)} big /></>
           : <Banner text={t('drv.wait.pay')} />}</View> : null}
+      {trip.parcel ? <Banner text={parcelLine(t, trip.parcel)} /> : null}
       {['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(st) ? <RatePassenger bookingId={trip.id} /> : null}
       <ChatModal id={trip.id} visible={chatOpen} onClose={() => { setChatOpen(false); reload(); }} role="driver" trip={trip} onChanged={reload} />
       <NavigationModal trip={trip} pos={pos} visible={navOpen} onClose={() => setNavOpen(false)} />

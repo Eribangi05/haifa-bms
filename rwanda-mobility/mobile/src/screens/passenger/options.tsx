@@ -6,6 +6,7 @@ import { ApiError, uuid } from '../../lib/net';
 import { fmtDateTime, fmtMin } from '../../lib/format';
 import type { Estimate, FareOption, Pt } from '../../lib/types';
 import { ProposePrice } from './negotiation';
+import { ParcelSection, emptyParcel, parcelBody, parcelOk } from './parcel';
 import { Banner, Btn, Card, Chip, Field, IconBadge, Money, Pill, Screen, SectionTitle, SkeletonCard, Text, useFormFocus } from '../../ui/components';
 import { C, R, S, SHADOW, SP } from '../../ui/theme';
 import { SwitchRow } from '../../ui/trustParts';
@@ -15,7 +16,7 @@ import { GuestSection, emptyGuest, type GuestState } from '../growth/guestRide';
 import { RepeatSection } from '../growth/repeatRides';
 
 type Params = { pickup: Pt; request_code?: string; dest?: Pt; note?: string; scheduled_for?: string; abasare?: { customer_vehicle_id: string; hours?: number }; guest?: boolean };
-const GLYPH: Record<string, string> = { moto: '🛵', car: '🚗', comfort: '🚙', minivan: '🚐', abasare: '🧑‍✈️' };
+const GLYPH: Record<string, string> = { moto: '🛵', courier: '🛵', car: '🚗', comfort: '🚙', minivan: '🚐', abasare: '🧑‍✈️' };
 
 export function Options({ params }: { params: Params }) {
   const { t, lang, client, nav, outbox, cfg, online, say, errMsg, me } = useApp();
@@ -37,18 +38,22 @@ export function Options({ params }: { params: Params }) {
 
   const opt = data?.options.find((o) => optKey(o) === sel);
   useEffect(() => { setProposal(null); }, [sel]);
-  const guestOn = guest.on && !params.abasare; const guestOk = !guestOn || checkGuest(guest, me?.phone).ok;
+  const guestOn = guest.on && !params.abasare && opt?.service_id !== 'courier'; const guestOk = !guestOn || checkGuest(guest, me?.phone).ok;
   const momo = cfg?.payment_methods.find((m) => m.id === 'mtn_momo');
   const [proposal, setProposal] = useState<number | null>(null);
+  const [parcel, setParcel] = useState(emptyParcel); const [showParcelErr, setShowParcelErr] = useState(false);
   const negCfg = cfg?.negotiation;
   const cc3 = useCreditChoice(opt?.fare?.total, method, !!corp);   // round 3: pay with credit (full / partial)
-  const canPropose = !!negCfg?.enabled && opt?.kind === 'ride' && !corp && !params.abasare && !guestOn && !opt?.fare?.discount && !(opt?.fare as { debt?: number } | undefined)?.debt && cc3.fields?.payment_method == null;
+  const isCourier = opt?.service_id === 'courier';
+  const canPropose = !!negCfg?.enabled && opt?.kind === 'ride' && !corp && !params.abasare && !guestOn && !opt?.fare?.discount && !(opt?.fare as { debt?: number } | undefined)?.debt && !['wallet', 'wallet_partial'].includes(String(cc3.fields?.payment_method));
   const confirm = () => run(async () => {
     if (!opt?.quote_id) return;
+    if (isCourier && !parcelOk(parcel, me?.phone)) { setShowParcelErr(true); return; }
     keyRef.current = keyRef.current ?? uuid();                         // same key on every retry of this tap: never a duplicate booking
     const body = { quote_id: opt.quote_id, payment_method: corp ? 'corporate' : method, ...(corp ? {} : cc3.fields), pickup_name: params.pickup.name, pickup_note: params.note || undefined, request_code: params.request_code, prefer_favourite: prefer, dest_name: params.dest?.name ?? params.pickup.name,
       ...(params.abasare ? { customer_vehicle_id: params.abasare.customer_vehicle_id, owner_attested: att } : {}),
       ...(canPropose && proposal ? { proposed_fare: proposal } : {}),
+      ...(isCourier ? { parcel: parcelBody(parcel, lang) } : {}),
       ...(guestOn ? { for_guest: guestBody(guest) } : {}),
       ...(corp ? { corporate_id: corp, cost_centre: cc || undefined, po_ref: po || undefined } : {}) };
     setGuestErr(null);
@@ -96,7 +101,7 @@ export function Options({ params }: { params: Params }) {
                 <View style={{ flex: 1 }}>
                   {o.fixed_price ? <View style={{ marginBottom: 4 }}><Pill tone="warn" glyph="🏷" text={t('r2.fixed.badge')} /></View> : null}
                   <Text style={S.h2}>{o.fixed_price && o.fixed_route ? pick(lang, o.fixed_route, 'name') : pick(lang, o, 'name')}</Text>
-                  <Text style={S.muted}>{o.kind === 'abasare' ? t('ab.trip.yourcar') : `${o.capacity} ${t('opt.seats')}`}{o.pickup_eta_s ? ` · ${t('opt.eta')} ${fmtMin(o.pickup_eta_s)} ${t('common.min')}` : ''}</Text>
+                  <Text style={S.muted}>{o.kind === 'abasare' ? t('ab.trip.yourcar') : o.service_id === 'courier' ? t('up.parcel') : `${o.capacity} ${t('opt.seats')}`}{o.pickup_eta_s ? ` · ${t('opt.eta')} ${fmtMin(o.pickup_eta_s)} ${t('common.min')}` : ''}</Text>
                   {o.per_km ? <Text style={[S.muted, { fontWeight: o.per_km_only ? '700' : '400' }]}>{o.per_km} {t('up.perkm')}</Text> : null}
                   {!o.available ? <Text style={{ color: C.danger, fontSize: 13 }}>{t('opt.unavailable')}</Text> : null}
                 </View>
@@ -123,7 +128,8 @@ export function Options({ params }: { params: Params }) {
           {biz.map((b) => <Chip key={b.id} glyph="🏢" text={`${t('opt.corporate')}: ${b.legal_name}`} on={corp === b.id} onPress={() => setCorp(b.id)} />)}
         </View>
         {corp ? <><Field {...f(0)} label={t('biz.cc')} value={cc} onChangeText={setCc} maxLength={60} /><Field {...f(1)} label={t('biz.po')} value={po} onChangeText={setPo} maxLength={60} /></> : null}
-        <GuestSection value={guest} onChange={(g) => { setGuest(g); setGuestErr(null); }} disabled={!!params.abasare} error={guestErr} />
+        {isCourier ? <ParcelSection value={parcel} onChange={setParcel} showErrors={showParcelErr} /> : null}
+        {isCourier ? null : <GuestSection value={guest} onChange={(g) => { setGuest(g); setGuestErr(null); }} disabled={!!params.abasare} error={guestErr} />}
         <RepeatSection canRepeat={!!(params.dest || params.abasare?.hours) && !!opt}
           build={(f) => opt ? { service_id: opt.service_id, pickup: params.pickup, dest: params.dest ?? params.pickup, days_of_week: f.days, local_time: f.time, start_date: f.start, end_date: f.end, payment_method: method === 'mtn_momo' && !corp ? 'mtn_momo' : 'cash', ...(params.abasare ? { customer_vehicle_id: params.abasare.customer_vehicle_id, hours: params.abasare.hours, owner_attested: att } : {}) } : null}
           onSaved={() => nav.replace('schedules')} />

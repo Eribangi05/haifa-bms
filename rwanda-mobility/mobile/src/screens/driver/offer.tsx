@@ -8,6 +8,7 @@ import { C, S } from '../../ui/theme';
 import { CountdownBar } from './workTools';
 import { stopOffer } from '../../lib/sound';
 import { counterChoices } from '../../lib/negotiation';
+import { parcelLine } from '../passenger/parcel';
 
 const secondsLeft = (iso: string) => Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
 const GONE = ['offer_no_longer_available', 'offer_expired', 'offer_not_found'];
@@ -34,6 +35,7 @@ export function OfferCard({ o, done }: { o: Offer; done: () => void }) {
   return (
     <Card style={{ borderColor: left > 0 ? C.primary : C.line, borderWidth: 2, opacity: left > 0 ? 1 : 0.6 }}>
       <View style={S.between}><Text style={S.muted}>{left > 0 ? `${t('drv.expires')} ${left}${t('unit.s')}` : t('drv.offer.expired')}</Text><View style={S.row}>{o.hire_mode ? <Pill text="ABASARE" tone="ok" /> : null}<View style={{ width: 6 }} /><Pill text={o.payment_method === 'wallet' ? t('cr.prepaid') : label(lang, 'pm', o.payment_method)} tone="warn" /></View></View>
+      {o.parcel ? <Banner text={parcelLine(t, o.parcel)} /> : null}
       {o.hire_mode ? <Text style={[S.body, { fontWeight: '700', marginTop: 6 }]}>{o.hire_mode === 'hourly' ? `${t('ab.offer.hourly')} · ${o.hours_booked} ${t('ab.h')}` : t('ab.offer.home')} · {t(('ab.cls.' + o.cv_class) as 'ab.cls.car')}, {o.cv_transmission === 'manual' ? t('ab.car.manual') : t('ab.car.auto')}</Text> : null}
       {prop && usual ? <Banner text={t('up.neg.rider.offers', { amount: prop, usual })} /> : null}
       <CountdownBar left={left} total={total.current} />

@@ -51,9 +51,9 @@ export async function guestNotify(row: BookingRow, kind: 'assigned' | 'arrived' 
         ? await q1<any>('select u.display_name, v.plate from users u join vehicles v on v.id=$2 where u.id=$1', [row.driver_id, row.vehicle_id])
         : await q1<any>('select display_name, null plate from users where id=$1', [row.driver_id]);
       const share = await createShare(row.passenger_id, row.id, 240);
-      Object.assign(params, { driver: (d?.display_name ?? '').split(' ')[0] || '-', plate: d?.plate ?? '-', pin: tripPin(row.id), link: share.url });
+      Object.assign(params, { driver: (d?.display_name ?? '').split(' ')[0] || '-', plate: d?.plate ?? '-', link: share.url, ...((row as any).parcel ? {} : { pin: tripPin(row.id) }) });
     }
-    const tpl = DEFAULT_TEMPLATES[`guest_${kind}`][lang];
+    const tpl = DEFAULT_TEMPLATES[`${(row as any).parcel ? 'parcel' : 'guest'}_${kind}`][lang];   // a parcel's recipient is told about the driver and the link, never given the trip PIN
     await q(`insert into guest_messages(booking_id, kind, dedupe_key, lang, body) values ($1,$2,$3,$4,$5) on conflict (booking_id, dedupe_key) do nothing`,
       [row.id, kind, `${kind}:${row.driver_id ?? '-'}`, lang, render(tpl.body, params)]);
   } catch (e: any) { if (process.env.QUIET !== '1') console.error('guestNotify failed', e.message); }

@@ -11,4 +11,10 @@ export const upRw: Record<keyof typeof upEn, string> = {
   'up.neg.counter': '{name} asubije {amount} RWF', 'up.neg.accept': 'Emera', 'up.neg.decline': 'Oya, murakoze', 'up.neg.agreed': 'Igiciro mwumvikanye: {amount} RWF',
   'up.neg.rider.offers': 'Umugenzi atanze {amount} RWF (igisanzwe {usual})', 'up.neg.accept.at': 'Emera {amount} RWF', 'up.neg.counter.btn': 'Subiza igiciro kindi', 'up.neg.counter.sent': 'Igisubizo cyawe cyoherejwe. Dutegereje umugenzi.', 'up.neg.counter.pick': 'Hitamo igiciro cyawe',
   'up.payout.speed': 'Amafaranga yemejwe yishyurwa mu masaha {h}.',
+  'up.parcel.title': 'Ibyerekeye ipaki', 'up.parcel.recipient': 'Izina ry\'uwakira', 'up.parcel.phone': 'Telefoni y\'uwakira', 'up.parcel.size': 'Ingano',
+  'up.parcel.small': 'Ntoya: impapuro, ibahasha', 'up.parcel.medium': 'Iringaniye: agasanduku k\'inkweto, kugeza kuri kg 5', 'up.parcel.large': 'Nini: kugeza kuri kg 10', 'up.parcel.desc': 'Ibirimo (si ngombwa)',
+  'up.parcel.note': 'Uwakira abona umushoferi, purake n\'urubuga rwo gukurikirana kuri SMS. Umushoferi aje gufata ipaki, muhe PIN y\'urugendo ubwawe. Ntukohereze amafaranga cyangwa ibintu bitemewe.',
+  'up.parcel.for': 'Ipaki ya {name} · {size}', 'up.parcel': 'Ipaki', 'up.parcel.invalid': 'Andika izina ry\'uwakira na nimero ya telefoni yemewe.',
+  'up.email.title': 'Imeri (si ngombwa)', 'up.email.hint': 'Ikoreshwa ku nyemezabwishyu no ku butumwa bwa konti. Turakoherereza kode kugira ngo tumenye ko ari iyawe.', 'up.email.save': 'Bika imeri', 'up.email.send': 'Ohereza kode',
+  'up.email.code': 'Kode y\'imibare 6', 'up.email.verify': 'Emeza', 'up.email.verified': 'Imeri yemejwe', 'up.email.unverified': 'Ntiremezwa', 'up.email.sent': 'Kode yoherejwe. Reba mu ibaruwa yawe.', 'up.email.ok': 'Imeri yawe yemejwe.',
 };

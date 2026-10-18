@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { EmailCard } from './trust/emailCard';
 import { AppState, Pressable, Switch, View } from 'react-native';
 import { useApp, useAsync } from '../lib/app';
 import { label } from '../lib/i18n';
@@ -45,6 +46,7 @@ export function Profile() {
         {push === 'denied' ? <Banner text={t('push.off')} action={<Btn kind="ghost" title={t('perm.settings')} onPress={openAppSettings} />} /> : null}
         <Btn title={t('common.save')} onPress={save} loading={busy} />
       </Card>
+      <EmailCard />
 
       <SectionTitle text={t('prof.places')} />
       <Card>

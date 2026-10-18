@@ -11,4 +11,10 @@ export const upFr: Record<keyof typeof upEn, string> = {
   'up.neg.counter': '{name} répond {amount} RWF', 'up.neg.accept': 'Accepter', 'up.neg.decline': 'Non merci', 'up.neg.agreed': 'Prix convenu : {amount} RWF',
   'up.neg.rider.offers': 'Le passager propose {amount} RWF (prix habituel {usual})', 'up.neg.accept.at': 'Accepter {amount} RWF', 'up.neg.counter.btn': 'Répondre avec un autre prix', 'up.neg.counter.sent': 'Votre réponse est envoyée. En attente du passager.', 'up.neg.counter.pick': 'Choisissez votre prix',
   'up.payout.speed': 'Les paiements approuvés sont versés sous {h} heures.',
+  'up.parcel.title': 'Détails du colis', 'up.parcel.recipient': 'Nom du destinataire', 'up.parcel.phone': 'Téléphone du destinataire', 'up.parcel.size': 'Taille',
+  'up.parcel.small': 'Petit : documents, enveloppe', 'up.parcel.medium': 'Moyen : boîte à chaussures, jusqu\'à 5 kg', 'up.parcel.large': 'Grand : jusqu\'à 10 kg', 'up.parcel.desc': 'Contenu (facultatif)',
+  'up.parcel.note': 'Le destinataire reçoit le chauffeur, la plaque et un lien de suivi par SMS. Quand le chauffeur prend le colis, donnez-lui vous-même le code PIN du trajet. N\'envoyez ni argent liquide ni objets interdits.',
+  'up.parcel.for': 'Colis pour {name} · {size}', 'up.parcel': 'Colis', 'up.parcel.invalid': 'Saisissez le nom du destinataire et un numéro de téléphone valide.',
+  'up.email.title': 'Email (facultatif)', 'up.email.hint': 'Utilisé pour les reçus et les messages du compte. Nous envoyons un code pour vérifier qu\'il est bien à vous.', 'up.email.save': 'Enregistrer l\'email', 'up.email.send': 'Envoyer le code',
+  'up.email.code': 'Code à 6 chiffres', 'up.email.verify': 'Vérifier', 'up.email.verified': 'Email vérifié', 'up.email.unverified': 'Pas encore vérifié', 'up.email.sent': 'Code envoyé. Consultez votre boîte de réception.', 'up.email.ok': 'Votre email est vérifié.',
 };
