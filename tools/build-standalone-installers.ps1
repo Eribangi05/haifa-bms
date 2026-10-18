@@ -1,0 +1,39 @@
+<#
+ Builds the two Windows setups on this laptop and copies them into one folder:
+   EduSmart-Lesson-Plan-Generator-Setup-<version>.exe
+   EduSmart-School-Timetable-Setup-<version>.exe
+   powershell -ExecutionPolicy Bypass -File .\tools\build-standalone-installers.ps1
+ Options: -Out "C:\Users\INGABIRE\StudioProjects\Timetable and Lesson Plan"   (where the .exe files are copied)
+          -Only lesson | timetable                                            (build just one)
+ Needs: Node.js LTS (winget install OpenJS.NodeJS.LTS) and about 4 GB free disk space. The first build downloads Electron (about 120 MB).
+ The setups are not code-signed, so Windows SmartScreen shows "More info > Run anyway" the first time.
+#>
+param([string]$Out = "C:\Users\INGABIRE\StudioProjects\Timetable and Lesson Plan", [ValidateSet('both','lesson','timetable')][string]$Only = 'both')
+$ErrorActionPreference = 'Continue'
+$repo = Split-Path -Parent $PSScriptRoot
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Write-Host "Node.js is not installed. Run: winget install OpenJS.NodeJS.LTS   then reopen PowerShell." -ForegroundColor Yellow; exit 1 }
+$free = [math]::Round((Get-PSDrive ($repo.Substring(0,1))).Free / 1GB, 1)
+if ($free -lt 4) { Write-Host ("Only {0} GB free on this drive. Free about 4 GB first (tools\laptop-cleanup.ps1 -Apply helps)." -f $free) -ForegroundColor Yellow; exit 1 }
+New-Item -ItemType Directory -Force $Out | Out-Null
+$apps = @()
+if ($Only -in 'both','lesson')    { $apps += [pscustomobject]@{ Name = 'Lesson Plan Generator'; Dir = (Join-Path $repo 'lessonplan-installer') } }
+if ($Only -in 'both','timetable') { $apps += [pscustomobject]@{ Name = 'School Timetable';      Dir = (Join-Path $repo 'timetable-installer') } }
+$ok = @(); $bad = @()
+foreach ($a in $apps) {
+  Write-Host ("`n=== {0} ===" -f $a.Name) -ForegroundColor Cyan
+  Push-Location $a.Dir
+  Write-Host "1/2 Installing packages ..."
+  npm.cmd install --no-audit --no-fund 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host ("  " + $_) }
+  Write-Host "2/2 Building the setup (a few minutes) ..."
+  Remove-Item -Recurse -Force (Join-Path $a.Dir 'dist') -ErrorAction SilentlyContinue
+  $env:CSC_IDENTITY_AUTO_DISCOVERY = 'false'
+  npx.cmd electron-builder --win nsis --publish never 2>&1 | ForEach-Object { Write-Host $_ }
+  $code = $LASTEXITCODE
+  Pop-Location
+  $exe = Get-ChildItem (Join-Path $a.Dir 'dist') -Filter '*Setup*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($code -eq 0 -and $exe) { Copy-Item $exe.FullName $Out -Force; $ok += ("{0}  ({1} MB)" -f $exe.Name, [math]::Round($exe.Length / 1MB)); Remove-Item -Recurse -Force (Join-Path $a.Dir 'dist\win-unpacked') -ErrorAction SilentlyContinue }
+  else { $bad += $a.Name }
+}
+""
+if ($ok.Count)  { Write-Host ("Ready in {0}:" -f $Out) -ForegroundColor Green; $ok | ForEach-Object { Write-Host ("  " + $_) -ForegroundColor Green } }
+if ($bad.Count) { Write-Host ("Failed: " + ($bad -join ', ') + ". Scroll up for the first red line, or paste it to Claude Code.") -ForegroundColor Red; exit 1 }
