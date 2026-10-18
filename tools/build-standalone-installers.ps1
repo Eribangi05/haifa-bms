@@ -22,12 +22,20 @@ $ok = @(); $bad = @()
 foreach ($a in $apps) {
   Write-Host ("`n=== {0} ===" -f $a.Name) -ForegroundColor Cyan
   Push-Location $a.Dir
-  Write-Host "1/2 Installing packages ..."
-  npm.cmd install --no-audit --no-fund 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host ("  " + $_) }
+  Write-Host "1/2 Installing packages (retries by itself if the connection drops) ..."
+  $eb = Join-Path $a.Dir 'node_modules\.bin\electron-builder.cmd'
+  for ($try = 1; $try -le 5 -and -not ((Test-Path $eb) -and (Test-Path (Join-Path $a.Dir 'node_modules\electron\dist'))); $try++) {
+    if ($try -gt 1) { Write-Host ("  attempt {0} of 5 ..." -f $try) -ForegroundColor Yellow; Start-Sleep -Seconds (10 * $try) }
+    npm.cmd install --no-audit --no-fund --fetch-retries=6 --fetch-retry-mintimeout=15000 --fetch-retry-maxtimeout=120000 --fetch-timeout=180000 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host ("  " + $_) }
+  }
+  if (-not ((Test-Path $eb) -and (Test-Path (Join-Path $a.Dir 'node_modules\electron\dist')))) {
+    Write-Host "  The packages could not be downloaded (network problem). Check the internet connection or try another network, then run this script again." -ForegroundColor Red
+    Pop-Location; $bad += $a.Name; continue
+  }
   Write-Host "2/2 Building the setup (a few minutes) ..."
   Remove-Item -Recurse -Force (Join-Path $a.Dir 'dist') -ErrorAction SilentlyContinue
   $env:CSC_IDENTITY_AUTO_DISCOVERY = 'false'
-  npx.cmd electron-builder --win nsis --publish never 2>&1 | ForEach-Object { Write-Host $_ }
+  & $eb --win nsis --publish never 2>&1 | ForEach-Object { Write-Host $_ }
   $code = $LASTEXITCODE
   Pop-Location
   $exe = Get-ChildItem (Join-Path $a.Dir 'dist') -Filter '*Setup*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
