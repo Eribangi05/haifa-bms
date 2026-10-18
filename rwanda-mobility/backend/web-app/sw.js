@@ -1,7 +1,7 @@
 // Abasare web app service worker: makes the app open fast and survive a short loss of signal.
 // Pages and the app shell are fetched from the network first (so a new release shows up at once) and kept for offline use.
 // Hashed files under /_expo/ and /assets/ never change, so they are served from the cache. The API, the console, share pages and the map are never touched.
-const VERSION = '20261017015052';
+const VERSION = '20261018222239';
 const SHELL = 'abasare-shell-' + VERSION, FILES = 'abasare-files';
 const KEEP = [SHELL, FILES];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon-192.png']).catch(() => {})).then(() => self.skipWaiting())); });
