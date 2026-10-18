@@ -29,7 +29,7 @@ rep(old_lang,"function lpLangSubject(p){ return p&&p.lang==='fr'?'french':p&&p.l
 rep("const fr=p.subject;","const fr=lpLangSubject(p);",1)
 # drop the node-only export line (module is undefined in a page, harmless, but keep the file clean)
 src=re.sub(r"\n// Node-testable pure helpers.*$","\n",src,flags=re.S)
-plus=''.join(open(f,encoding='utf-8').read() for f in ['plus1.js','plus2.js','plus3.js','plus4.js','plus5.js','plus6.js','plus7.js','plus8.js'])
+plus=''.join(open(f,encoding='utf-8').read() for f in ['plus1.js','plus2.js','plus3.js','plus4.js','plus5.js','plus6.js','plus7.js','plus8.js','plus9.js'])
 SEC=os.environ.get('SEC_DATA_JS') or os.path.join(HERE,'secondary','secondary-data.js')
 plus=(open(SEC,encoding='utf-8').read().replace('</','<\\/') if os.path.exists(SEC) else '')+plus
 src=src+'\n'+plus
