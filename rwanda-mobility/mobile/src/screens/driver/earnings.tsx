@@ -15,7 +15,7 @@ type Txn = { id: string; memo: string; credit?: number; debit?: number };
 export function Earnings() {
   const { t, lang, client } = useApp(); const { busy, run } = useAsync(); const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day'); const [amt, setAmt] = useState('');
   const e = usePoll(() => client.get<EarningsView>(`/drivers/me/earnings?period=${period}`), 20000, [period], true, `earnings:${period}`);
-  const w = usePoll(() => client.get<{ balance?: EarningsView['balance']; transactions?: Txn[] }>('/drivers/me/wallet'), 20000, [], true, 'driver:wallet');
+  const w = usePoll(() => client.get<{ balance?: EarningsView['balance']; transactions?: Txn[]; payout_target_hours?: number }>('/drivers/me/wallet'), 20000, [], true, 'driver:wallet');
   const po = usePoll(() => client.get<{ payouts?: Payout[] }>('/drivers/me/payouts'), 20000, [], true, 'driver:payouts');
   const d = e.data; const bal = d?.balance ?? w.data?.balance; const amount = Number(amt);
   const tooMuch = !!bal && amount > bal.eligible_payout;
@@ -33,6 +33,7 @@ export function Earnings() {
         <View style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{t('drv.eligible')}</Text><Money n={bal.eligible_payout} style={{ fontWeight: '800', color: C.primary }} /></View>
         {bal.owed_to_platform > 0 ? <View style={[S.between, { paddingVertical: 4 }]}><Text style={S.body}>{t('drv.owed')}</Text><Money n={bal.owed_to_platform} style={{ color: C.danger, fontWeight: '700' }} /></View> : null}
         <Field label={t('drv.payout.amount')} value={amt} onChangeText={(x) => setAmt(x.replace(/\D/g, ''))} keyboardType="number-pad" returnKeyType="done" error={tooMuch ? t('drv.payout.toomuch') : undefined} />
+        {w.data?.payout_target_hours ? <Text style={S.muted}>{t('up.payout.speed', { h: w.data.payout_target_hours })}</Text> : null}
         <Btn title={t('drv.payout.request')} loading={busy} disabled={!amount || tooMuch} onPress={() => run(async () => { await client.post('/drivers/me/payouts', { amount }); setAmt(''); w.reload(); po.reload(); e.reload(); })} /></Card> : null}
       <WeeklyStatement />
       {!d && !bal && e.error ? <EmptyState glyph="📡" title={t('common.error')} action={<Btn title={t('common.retry')} onPress={e.reload} />} /> : null}

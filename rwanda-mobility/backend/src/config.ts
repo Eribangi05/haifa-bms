@@ -113,6 +113,7 @@ export const SETTING_DEFAULTS = {
   'abasare.quick_hours': [2, 4, 8, 12],
   'payout.min_amount': 5000,
   'payout.fee': 0,
+  'payout.target_hours': 24,                // shown to drivers: approved payouts are paid within this many hours (an operations promise, not an automatic timer)
   'payout.large_threshold': 200000,
   'refund.large_threshold': 50000,
   'driver.expiry_reminder_days': [30, 14, 7, 1],

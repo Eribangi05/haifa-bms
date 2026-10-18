@@ -10,4 +10,5 @@ export const upRw: Record<keyof typeof upEn, string> = {
   'up.neg.usual': 'Igiciro gisanzwe', 'up.neg.yours': 'Igiciro cyawe', 'up.neg.off': 'Igiciro gisanzwe', 'up.neg.proposed': 'Watanze {amount} RWF. Dutegereje ko umushoferi asubiza.',
   'up.neg.counter': '{name} asubije {amount} RWF', 'up.neg.accept': 'Emera', 'up.neg.decline': 'Oya, murakoze', 'up.neg.agreed': 'Igiciro mwumvikanye: {amount} RWF',
   'up.neg.rider.offers': 'Umugenzi atanze {amount} RWF (igisanzwe {usual})', 'up.neg.accept.at': 'Emera {amount} RWF', 'up.neg.counter.btn': 'Subiza igiciro kindi', 'up.neg.counter.sent': 'Igisubizo cyawe cyoherejwe. Dutegereje umugenzi.', 'up.neg.counter.pick': 'Hitamo igiciro cyawe',
+  'up.payout.speed': 'Amafaranga yemejwe yishyurwa mu masaha {h}.',
 };

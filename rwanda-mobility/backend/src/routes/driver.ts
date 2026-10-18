@@ -1,3 +1,4 @@
+import { getSetting } from '../services/settings.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parse, lat, lng } from '../util/validate.js';
@@ -172,7 +173,7 @@ export async function driverRoutes(app: FastifyInstance) {
       totals: { trips: sum('trips'), fares: sum('fares'), commission: sum('commission'), fleet_share: sum('fleet_share'), net: sum('net'), cash: sum('cash') }, paid_out: paid, rating: { avg: Math.round(rt.avg * 100) / 100, count: rt.n } };
   });
   app.get('/drivers/me/wallet', drv, async (req) => ({
-    balance: await driverBalance(req.auth!.id),
+    balance: await driverBalance(req.auth!.id), payout_target_hours: await getSetting('payout.target_hours'),
     transactions: await q(`select e.id, e.account_code, e.debit, e.credit, e.memo, e.created_at from ledger_entries e where e.owner_user_id=$1 and e.account_code in ('DRIVER_PAYABLE','CASH_WITH_DRIVERS') order by e.id desc limit 100`, [req.auth!.id]),
   }));
   app.get('/drivers/me/payouts', drv, async (req) => ({ payouts: await q('select id, amount, fee, status, requested_at, paid_at from payouts where owner_user_id=$1 order by requested_at desc limit 50', [req.auth!.id]) }));

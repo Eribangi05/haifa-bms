@@ -64,6 +64,7 @@ export async function businessRoutes(app: FastifyInstance) {
     return tx(async (c) => {
       let u = await q1<any>('select id from users where phone=$1', [phone], c);
       if (!u) { u = await q1<any>('insert into users(phone, display_name) values ($1,$2) returning id', [phone, b.name ?? null], c); await q("insert into user_roles values ($1,'passenger')", [u.id], c); }
+      else if (b.name) await q('update users set display_name = coalesce(display_name, $2) where id=$1', [u.id, b.name], c);   // an existing account without a name gets the one the company knows them by
       await q(`insert into corporate_members(corporate_id,user_id,role,spending_limit,cost_centre) values ($1,$2,$3,$4,$5)
                on conflict (corporate_id,user_id) do update set role=excluded.role, spending_limit=excluded.spending_limit, cost_centre=excluded.cost_centre, active=true`, [id, u.id, b.role, b.spending_limit ?? null, b.cost_centre ?? null], c);
       if (b.role !== 'employee') await q("insert into user_roles values ($1,$2) on conflict do nothing", [u.id, b.role === 'admin' ? 'corporate_admin' : 'corporate_booker'], c);

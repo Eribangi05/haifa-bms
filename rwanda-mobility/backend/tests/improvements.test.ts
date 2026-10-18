@@ -112,3 +112,24 @@ test('proposed fares: off by default; rider proposes, driver accepts at the prop
   assert.equal((await t.api('POST', `/bookings/${b2}/counters/${c1.json.counter_id}/accept`, { token: p.token })).status, 409, 'answered once');
   await q("update feature_flags set enabled=false where key='pricing.negotiated'");
 });
+
+test('weekly driver digest: Monday morning only, once per week, only for drivers who earned last week; payout speed is promised in the wallet', async () => {
+  await t.reset();
+  const p = await t.register('passenger'), d = await t.driver(), idle = await t.driver({ online: false });
+  const { res } = await t.book(p.token, 'moto'); const id = res.json.booking.id as string;
+  const done = await t.runTrip(p, d, id);
+  const c = await t.api('POST', `/bookings/${id}/cash-collected`, { token: d.token, body: { amount: done.final_fare ?? res.json.booking.estimated_fare } }); assert.equal(c.status, 200, JSON.stringify(c.json));
+  // a Monday 08:00 in Kigali (06:00 UTC), the earnings dated the Saturday before
+  const mon = new Date(); mon.setUTCDate(mon.getUTCDate() - ((mon.getUTCDay() + 6) % 7)); mon.setUTCHours(6, 0, 0, 0);
+  await q("update driver_earnings set created_at=$2 where booking_id=$1", [id, new Date(mon.getTime() - 2 * 864e5)]);
+  const { weeklyDriverDigest } = await import('../src/services/weeklyDigest.ts');
+  await q("delete from system_settings where key='jobs.weekly_digest_week'");
+  assert.equal(await weeklyDriverDigest(new Date(mon.getTime() + 864e5)), 0, 'not on a Tuesday');
+  assert.equal(await weeklyDriverDigest(new Date(mon.getTime() - 3 * 3600e3)), 0, 'not before 07:00');
+  assert.equal(await weeklyDriverDigest(mon), 1, 'one driver earned last week');
+  assert.equal(await weeklyDriverDigest(mon), 0, 'once per week');
+  const n = await q<any>("select title, body from notifications where user_id=$1 and template_key='weekly_statement' and channel='in_app'", [d.id]);
+  assert.equal(n.length, 1); assert.match(n[0].body, /1980/);
+  assert.equal((await q("select 1 from notifications where user_id=$1 and template_key='weekly_statement'", [idle.id])).length, 0);
+  const w = await t.api('GET', '/drivers/me/wallet', { token: d.token }); assert.equal(w.json.payout_target_hours, 24);
+});

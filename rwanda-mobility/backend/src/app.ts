@@ -150,6 +150,12 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await app.register(fstatic, { root: adminDir, prefix: '/admin/', decorateReply: false });
     app.get('/admin', async (_r, reply) => reply.redirect('/admin/'));
   }
+  // Abasare Business: web portal for companies (team rides, budgets, statements) and fleets (drivers, vehicles, earnings). Same accounts and API as the app.
+  const bizDir = join(here, '..', 'business-web');
+  if (existsSync(bizDir)) {
+    await app.register(fstatic, { root: bizDir, prefix: '/business/', decorateReply: false, cacheControl: false, dotfiles: 'ignore', setHeaders: (res: any) => { res.header('cache-control', 'no-cache'); } });
+    app.get('/business', async (_r, reply) => reply.redirect('/business/'));
+  }
   // The Abasare web app (the same app as the phone, built for the browser by mobile/scripts: `npm run web:pwa`), installable on a phone or a laptop.
   // Served from the root so it shares the API's origin: no CORS, one address. Files with a hash in the name never change and are cached for a year; the page, the
   // service worker and the manifest are always revalidated so a new release shows at once.

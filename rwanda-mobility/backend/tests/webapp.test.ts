@@ -32,3 +32,13 @@ test('web app: the browser may use location and camera on its own origin only', 
   assert.match(r.headers['permissions-policy'] as string, /geolocation=\(self\)/);
   assert.doesNotMatch(r.headers['permissions-policy'] as string, /microphone=\(self/);
 });
+
+test('business portal: served at /business/ with its scripts, and the page cannot run anything but its own files', async () => {
+  const get = (url: string) => t.app.inject({ method: 'GET', url });
+  const page = await get('/business/');
+  assert.equal(page.statusCode, 200);
+  assert.match(page.payload, /script-src 'self'/);
+  assert.equal((await get('/business/app.js')).statusCode, 200);
+  assert.equal((await get('/business/i18n.js')).statusCode, 200);
+  assert.equal((await get('/business')).statusCode, 302);
+});

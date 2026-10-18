@@ -1,4 +1,5 @@
 import { keepDemoDriversAlive } from './services/demo.js';
+import { weeklyDriverDigest } from './services/weeklyDigest.js';
 import { dispatchSweep } from './services/dispatch.js';
 import { sweepPendingPayments } from './services/payments.js';
 import { flushSms } from './services/notify.js';
@@ -78,6 +79,7 @@ export function startJobs(log: (m: string) => void = console.log) {
   every('fraud_alerts', 5 * 60_000, fraudSweep);    // bursts of fraud signals / failed payments raise a staff alert
   every('claims', 5 * 60_000, claimsSweep);         // claim SLA warnings, reminders, auto-close
   every('demo-presence', 20_000, keepDemoDriversAlive);   // only touches demo drivers (none unless demo data is loaded)
+  every('weekly-digest', 30 * 60_000, () => weeklyDriverDigest());   // Monday morning push with last week's earnings
   every('push', 3_000, () => flushPush());
   every('push-receipts', 60_000, () => checkPushReceipts());
   const eligibility = every('eligibility', 60 * 60_000, async () => { await expiryReminders(); await refreshEligibility(); });

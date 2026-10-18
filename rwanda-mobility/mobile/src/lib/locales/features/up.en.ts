@@ -9,4 +9,5 @@ export const upEn = {
   'up.neg.usual': 'Usual price', 'up.neg.yours': 'Your price', 'up.neg.off': 'Usual price', 'up.neg.proposed': 'You proposed {amount} RWF. Waiting for a driver to answer.',
   'up.neg.counter': '{name} replies with {amount} RWF', 'up.neg.accept': 'Accept', 'up.neg.decline': 'No thanks', 'up.neg.agreed': 'Agreed price: {amount} RWF',
   'up.neg.rider.offers': 'Rider offers {amount} RWF (usual price {usual})', 'up.neg.accept.at': 'Accept {amount} RWF', 'up.neg.counter.btn': 'Reply with another price', 'up.neg.counter.sent': 'Your reply was sent. Waiting for the rider.', 'up.neg.counter.pick': 'Choose your price',
+  'up.payout.speed': 'Approved payouts are paid within {h} hours.',
 } as const;

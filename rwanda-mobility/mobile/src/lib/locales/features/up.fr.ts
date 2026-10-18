@@ -10,4 +10,5 @@ export const upFr: Record<keyof typeof upEn, string> = {
   'up.neg.usual': 'Prix habituel', 'up.neg.yours': 'Votre prix', 'up.neg.off': 'Prix habituel', 'up.neg.proposed': 'Vous avez proposé {amount} RWF. En attente de la réponse d\'un chauffeur.',
   'up.neg.counter': '{name} répond {amount} RWF', 'up.neg.accept': 'Accepter', 'up.neg.decline': 'Non merci', 'up.neg.agreed': 'Prix convenu : {amount} RWF',
   'up.neg.rider.offers': 'Le passager propose {amount} RWF (prix habituel {usual})', 'up.neg.accept.at': 'Accepter {amount} RWF', 'up.neg.counter.btn': 'Répondre avec un autre prix', 'up.neg.counter.sent': 'Votre réponse est envoyée. En attente du passager.', 'up.neg.counter.pick': 'Choisissez votre prix',
+  'up.payout.speed': 'Les paiements approuvés sont versés sous {h} heures.',
 };

@@ -84,6 +84,11 @@ export const DEFAULT_TEMPLATES: Record<string, Record<Lang, Tpl>> = {
     rw: { title: 'Kugarurirwa amafaranga byemejwe', body: 'Kugarurirwa {{amount}} RWF ku rugendo {{ref}} byemejwe.' },
     fr: { title: 'Remboursement approuvé', body: 'Un remboursement de {{amount}} RWF pour {{ref}} a été approuvé.' },
   },
+  weekly_statement: {
+    en: { title: 'Your week on Abasare', body: 'Last week: {{trips}} trip(s), {{net}} RWF earned. Open Earnings for the full statement.' },
+    rw: { title: 'Icyumweru cyawe kuri Abasare', body: 'Ingendo {{trips}}, wunguka {{net}} RWF icyumweru gishize. Fungura Amafaranga winjije urebe raporo yose.' },
+    fr: { title: 'Votre semaine sur Abasare', body: '{{trips}} courses, {{net}} RWF gagnés la semaine dernière. Ouvrez Revenus pour le relevé complet.' },
+  },
   doc_expiry: {
     en: { title: 'Document expiring', body: 'Your {{doc}} expires in {{days}} day(s). Upload a new one to keep receiving trips.' },
     rw: { title: 'Icyangombwa kigiye kurangira', body: 'Icyangombwa cyawe ({{doc}}) kirangira mu minsi {{days}}. Ohereza gishya kugira ngo ukomeze guhabwa ingendo.' },
