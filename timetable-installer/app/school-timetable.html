@@ -1134,7 +1134,7 @@ function upperTemplate(combo){ const t={entrepreneurship:3,pes:2}; (COMBOS[combo
 function refTemplate(level){ const t={}; Object.keys(REF[level]||{}).forEach(k=>t[k]=REF[level][k][0]); return t; }
 const LEVELS=[
  {id:'pre',name:'Pre-primary',grades:['Nursery 1','Nursery 2','Nursery 3'],periods:7,src:'news26',tmpl:()=>refTemplate('pre'),
-  note:'No official weekly table was available. These hours come from news reports of the 2026-27 REB pre-primary timetable (7 activity blocks a day of 20-30 minutes). Confirm with REB.'},
+  note:'Weekly blocks and times follow the 2026-27 REB pre-primary timetable as reported in the news (not an official REB file): welcome time 07:45, four 30-minute blocks, a break, three 20-minute blocks, closing time 11:40-12:00, 7 activity blocks a day. Pre-primary classes show these times in their own timetable. Confirm with REB.'},
  {id:'plow',name:'Lower primary (P1-P3)',grades:['Primary 1','Primary 2','Primary 3'],periods:5,src:'syl25',tmpl:()=>refTemplate('plow'),
   note:'REB 2026-2027 syllabi (English, Mathematics, PES and Social & Religious Education all print the same table): 25 periods a week (5 a day, 40 minutes each), stated for double-shift schools. If your school runs a full day, raise "Periods used each day" and adjust the lessons.'},
  {id:'primary',name:'Upper primary (P4-P6)',grades:['Primary 4','Primary 5','Primary 6'],periods:10,src:'syl25',tmpl:()=>refTemplate('primary'),
@@ -1193,7 +1193,10 @@ function doublesOf(cid){ if(!S.doubles[cid]) S.doubles[cid]={}; return S.doubles
 /* ---------- day layout ---------- */
 function toMins(hhmm){ const [h,m]=(hhmm||'08:00').split(':').map(Number); return h*60+(m||0); }
 function fmt(m){ return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
-function schedule(cfg){
+/* REB 2026-27 pre-primary day (news report of the REB timetable): welcome time, four 30-minute blocks, break, three 20-minute blocks, closing time */
+const PRE_SCHEDULE=[{type:'assembly',label:'Welcome time',start:465,end:480},{type:'period',period:1,start:480,end:510},{type:'period',period:2,start:510,end:540},{type:'period',period:3,start:540,end:570},{type:'period',period:4,start:570,end:600},{type:'break',label:'Break (lunch where provided)',start:600,end:640},{type:'period',period:5,start:640,end:660},{type:'period',period:6,start:660,end:680},{type:'period',period:7,start:680,end:700},{type:'assembly',label:'Closing time',start:700,end:720}];
+function schedule(cfg,level){
+  if(level==='pre') return PRE_SCHEDULE.map(x=>Object.assign({},x));
   const out=[]; let t=toMins(cfg.dayStart);
   if(cfg.assemblyMins>0){ out.push({type:'assembly',label:'Assembly',start:t,end:t+cfg.assemblyMins}); t+=cfg.assemblyMins; }
   for(let p=1;p<=cfg.periodsPerDay;p++){
@@ -1590,7 +1593,7 @@ function cellInfo(mode,id,key){
   const t=teacherSchedule(id)[key]; return t?{subj:t.subjectKey,top:subj(t.subjectKey).short,sub:[cls(t.classId)?cls(t.classId).name:'',(S.timetable[t.classId][key]||{}).roomId?rName(S.timetable[t.classId][key].roomId):''].filter(Boolean).join(' \u00b7 '),tid:id}:null;
 }
 function gridHTML(mode,id,interactive){
-  const cfg=S.cfg, sched=schedule(cfg);
+  const cfg=S.cfg, sched=schedule(cfg,mode==='class'?(cls(id)||{}).level:'');
   const rows=sched.map(x=>{
     if(x.type!=='period') return `<tr class="sp"><td class="tm">${fmt(x.start)}</td><td colspan="${cfg.days.length}">${esc(x.label)}</td></tr>`;
     return `<tr><td class="tm"><b>P${x.period}</b><br>${fmt(x.start)}&ndash;${fmt(x.end)}</td>${cfg.days.map(d=>{
@@ -1652,7 +1655,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
 /* ---------- print & export ---------- */
 function sheetHTML(mode,id){
-  const cfg=S.cfg, sched=schedule(cfg); const name=mode==='class'?cls(id).name:mode==='room'?room(id).name:teacher(id).name;
+  const cfg=S.cfg, sched=schedule(cfg,mode==='class'?(cls(id)||{}).level:''); const name=mode==='class'?cls(id).name:mode==='room'?room(id).name:teacher(id).name;
   const rows=sched.map(x=>{
     if(x.type!=='period') return `<tr class="sp"><td class="tm">${fmt(x.start)}</td><td colspan="${cfg.days.length}">${esc(x.label)}</td></tr>`;
     return `<tr><td class="tm">${fmt(x.start)}&ndash;${fmt(x.end)}<br>(P${x.period})</td>${cfg.days.map(d=>{ if(mode==='class'&&x.period>levelPeriods(id)) return '<td class="off"></td>'; const ci=cellInfo(mode,id,d+'_'+x.period); return `<td>${ci?`<b>${esc(ci.top)}</b><br>${esc(ci.sub)}`:''}</td>`; }).join('')}</tr>`; }).join('');
@@ -1664,10 +1667,10 @@ function printThis(){ doPrint(sheetHTML(VIEW.mode,VIEW.id)); }
 function printAll(mode){ const ids=mode==='class'?S.classes.map(c=>c.id):mode==='room'?S.rooms.filter(r=>Object.keys(roomSchedule(r.id)).length).map(r=>r.id):S.teachers.filter(t=>Object.keys(teacherSchedule(t.id)).length).map(t=>t.id); doPrint(ids.map(id=>sheetHTML(mode,id)).join('')); }
 function download(name,blob){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
 function exportCsv(){
-  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"', sched=schedule(S.cfg).filter(x=>x.type==='period'), time={}; sched.forEach(x=>time[x.period]=fmt(x.start)+' - '+fmt(x.end));
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"', sched=schedule(S.cfg).filter(x=>x.type==='period'), time={}, timePre={}; sched.forEach(x=>time[x.period]=fmt(x.start)+' - '+fmt(x.end)); schedule(S.cfg,'pre').filter(x=>x.type==='period').forEach(x=>timePre[x.period]=fmt(x.start)+' - '+fmt(x.end));
   const lines=[['Class','Day','Period','Time','Subject','Teacher','Room','Double period'].map(q).join(',')];
   S.classes.forEach(c=>{ const g=S.timetable[c.id]||{};
-    Object.keys(g).map(k=>({k,d:stSplitKey(k)})).sort((a,b)=>(S.cfg.days.indexOf(a.d[0])-S.cfg.days.indexOf(b.d[0]))||(a.d[1]-b.d[1])).forEach(({k,d})=>{ const x=g[k]; lines.push([c.name,DAY_LABELS[d[0]],d[1],time[d[1]]||'',subj(x.subjectKey).name,x.teacherId?tName(x.teacherId):'',x.roomId?rName(x.roomId):'',x.double?'Yes':''].map(q).join(',')); }); });
+    Object.keys(g).map(k=>({k,d:stSplitKey(k)})).sort((a,b)=>(S.cfg.days.indexOf(a.d[0])-S.cfg.days.indexOf(b.d[0]))||(a.d[1]-b.d[1])).forEach(({k,d})=>{ const x=g[k]; lines.push([c.name,DAY_LABELS[d[0]],d[1],(c.level==='pre'?timePre:time)[d[1]]||'',subj(x.subjectKey).name,x.teacherId?tName(x.teacherId):'',x.roomId?rName(x.roomId):'',x.double?'Yes':''].map(q).join(',')); }); });
   download('school-timetable-'+new Date().toISOString().slice(0,10)+'.csv',new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}));
 }
 function exportJson(){ download('school-timetable-backup-'+new Date().toISOString().slice(0,10)+'.json',new Blob([JSON.stringify(S,null,1)],{type:'application/json'})); toast('Backup saved to your Downloads.'); }
@@ -1748,7 +1751,7 @@ function vCover(){
     if(!les.length) h+='<div class="msg ok" style="margin-top:10px">This teacher has no lessons on the chosen day(s).</div>';
     else h+=`<div class="scroll"><table class="t" style="margin-top:8px"><thead><tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th>Cover teacher</th></tr></thead><tbody>${les.map(l=>{ const pk=l.key+'@'+l.cid, cands=coverCandidates(l), cur=COVER.picks[pk]||'';
       const opts=`<option value="">- nobody yet -</option>`+cands.map(c=>`<option value="${c.t.id}" ${cur===c.t.id?'selected':''}>${esc(c.t.name)}${c.teachesClass?' - teaches this class':c.teachesSubj?' - teaches this subject':''}</option>`).join('');
-      const tm=schedule(S.cfg).find(x=>x.type==='period'&&x.period===l.p);
+      const tm=schedule(S.cfg,cls(l.cid).level).find(x=>x.type==='period'&&x.period===l.p);
       return `<tr><td>${DAY_LABELS[l.d]}</td><td>P${l.p} &middot; ${fmt(tm.start)}</td><td>${esc(cls(l.cid).name)}</td><td>${esc(subj(l.subjectKey).name)}</td><td>${cands.length||cur?`<select onchange="COVER.picks['${pk}']=this.value;render()">${opts}</select>`:'<span style="color:var(--bad)">Nobody is free at this time</span>'}</td></tr>`; }).join('')}</tbody></table></div>`;
     h+='</div>'; }
   return h;
@@ -1769,7 +1772,7 @@ function coverCandidates(l){
   out.sort((a,b)=>b.score-a.score); return out;
 }
 function findCover(){ COVER.picks={}; coverLessons().forEach(l=>{ const c=coverCandidates(l); if(c.length) COVER.picks[l.key+'@'+l.cid]=c[0].t.id; }); COVER.found=true; render(); }
-function coverRows(){ const sched=schedule(S.cfg); return coverLessons().map(l=>{ const tm=sched.find(x=>x.type==='period'&&x.period===l.p), pick=COVER.picks[l.key+'@'+l.cid], cell=(S.timetable[l.cid]||{})[l.key]||{};
+function coverRows(){ return coverLessons().map(l=>{ const tm=schedule(S.cfg,cls(l.cid).level).find(x=>x.type==='period'&&x.period===l.p), pick=COVER.picks[l.key+'@'+l.cid], cell=(S.timetable[l.cid]||{})[l.key]||{};
   return {day:DAY_LABELS[l.d],time:`P${l.p} ${fmt(tm.start)}-${fmt(tm.end)}`,cls:cls(l.cid).name,subj:subj(l.subjectKey).name,cover:pick?tName(pick):'(none found)',room:cell.roomId?rName(cell.roomId):''}; }); }
 function printCover(){ const rows=coverRows();
   doPrint(`<div class="sheet">${sheetHead()}<div class="meta"><b>Cover sheet</b> &mdash; absent: ${esc(tName(COVER.tid))} (${COVER.days.map(d=>DAY_LABELS[d]).join(', ')})</div><table><thead><tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th>Cover teacher</th><th>Room</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.day}</td><td>${r.time}</td><td>${esc(r.cls)}</td><td>${esc(r.subj)}</td><td><b>${esc(r.cover)}</b></td><td>${esc(r.room)}</td></tr>`).join('')}</tbody></table>${sheetFoot()}</div>`); }
@@ -1804,7 +1807,7 @@ function delVersion(id){ S.versions=S.versions.filter(x=>x.id!==id); save(); $('
 /* ---- share as text (WhatsApp / SMS) ---- */
 function shareText(){
   if(!VIEW.id||!hasTimetable()){ toast('Open a timetable first (tab 7).'); return; }
-  const mode=VIEW.mode, id=VIEW.id, sched=schedule(S.cfg).filter(x=>x.type==='period'); const name=mode==='class'?cls(id).name:mode==='room'?room(id).name:teacher(id).name;
+  const mode=VIEW.mode, id=VIEW.id, sched=schedule(S.cfg,mode==='class'?(cls(id)||{}).level:'').filter(x=>x.type==='period'); const name=mode==='class'?cls(id).name:mode==='room'?room(id).name:teacher(id).name;
   let out=`*${S.school||'School'} - ${name}*${S.term?' ('+S.term+')':''}\n`;
   S.cfg.days.forEach(d=>{ const lines=[]; sched.forEach(x=>{ if(mode==='class'&&x.period>levelPeriods(id)) return; const ci=cellInfo(mode,id,d+'_'+x.period); if(ci) lines.push(`${fmt(x.start)} ${ci.top}${ci.sub?' ('+ci.sub+')':''}`); }); if(lines.length) out+=`\n*${DAY_LABELS[d]}*\n`+lines.join('\n')+'\n'; });
   copyText(out);

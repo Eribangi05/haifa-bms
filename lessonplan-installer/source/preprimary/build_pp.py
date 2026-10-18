@@ -9,7 +9,7 @@ def fix(t):
     t=re.sub(r'\s+',' ',t or '').strip(); t=t.replace('­','')
     for a,c in SPLIT: t=t.replace(a,c)
     return t
-SPLIT.extend([('insan ganyamatsiko','insanganyamatsiko'),('fit anye','fitanye')])
+SPLIT.extend([('imbamuti ma','imbamutima'),('Icungamutun go','Icungamutungo'),('icungamutun go','icungamutungo'),('insan ganyamatsiko','insanganyamatsiko'),('fit anye','fitanye')])
 def fixsplit_all(texts):
     from collections import Counter
     W=Counter(); B=Counter()
@@ -57,7 +57,7 @@ for y in (1,2,3):
             if k!=key:
                 key=k; units.append({'no':str(len(units)+1),'title':fix(r['theme']) or ('Term %d'%r['term']),'periods':'','term':r['term'],'keyComp':'','lessons':[]})
             u=units[-1]
-            title=fix(r['title']) or fix(joined(r['lessons'])[:80])
+            title=re.sub(r'^[-\u2022\s]+','',fix(r['title'])) or fix(joined(r['lessons'])[:80])
             wk=fix(r['week'])
             u['lessons'].append({'title':title,'periods':'','week':('Week %s'%wk) if wk else '',
               'objectives':joined(r['obj']),'content':joined(r['lessons']) or title,'activities':joined(r['act'],'. ')+'.' if r['act'] else '',
@@ -65,6 +65,20 @@ for y in (1,2,3):
         subs[area]={'name':NAMES[area][1],'local':NAMES[area][0],'units':units,'n':sum(len(u['lessons']) for u in units)}
     subs['social']={'name':NAMES['social'][1],'local':NAMES['social'][0],'units':[{'no':'1','title':'Social and emotional development (the whole year)','periods':'','term':None,'keyComp':'','lessons':[socrow(u) for u in soc]}],'n':len(soc)}
     out['classes']['N%d'%y]=subs
+
+def apply_split2(t,W):
+    """rejoin words the PDF broke into rare fragments: a rare word followed by a rare 1-3 letter piece, and runs of rare 1-3 letter pieces"""
+    ws=re.split(r'(\s+)',t); toks=[x for i,x in enumerate(ws) if i%2==0]; seps=[x for i,x in enumerate(ws) if i%2==1]
+    def rare(x): return bool(re.fullmatch(r"[A-Za-z\u2019']+",x)) and W[x.lower()]<=2
+    out=[]; i=0
+    while i<len(toks):
+        cur=toks[i]; j=i
+        while j+1<len(toks) and rare(cur) and rare(toks[j+1]) and (len(toks[j+1])<=3 or (len(cur)<=3 and len(toks[j+1])<=5 and toks[j+1][:1].islower())) and (len(cur)>=4 or len(toks[j+1])<=3):
+            cur+=toks[j+1]; j+=1
+        out.append(cur); 
+        if j+1<len(toks): out.append(seps[j] if j<len(seps) else ' ')
+        i=j+1
+    return ''.join(out)
 def walk(o,f):
     if isinstance(o,str): return f(o)
     if isinstance(o,list): return [walk(x,f) for x in o]
@@ -74,6 +88,9 @@ texts=[]; walk(out,lambda s:texts.append(s) or s)
 W,B=fixsplit_all(texts)
 before=sum(len(s.split()) for s in texts)
 out=walk(out,lambda s:apply_split(s,W,B))
+texts2=[]; walk(out,lambda s:texts2.append(s) or s)
+W2,_=fixsplit_all(texts2)
+out=walk(out,lambda s:apply_split2(s,W2))
 js='const PP_DATA='+json.dumps(out,ensure_ascii=False,separators=(',',':'))+';\n'
 open(os.path.join(HERE,'preprimary-data.js'),'w',encoding='utf-8').write(js)
 print(len(js),{c:{a:s['n'] for a,s in v.items()} for c,v in out['classes'].items()})

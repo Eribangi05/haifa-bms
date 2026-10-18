@@ -2025,6 +2025,222 @@
    "file": "teacher-docs/secondary/ScriptedLessons_S1-S3_Mathematics.pdf",
    "url": "https://elearning.reb.rw/pluginfile.php/38909/mod_resource/content/1/Sample%20scripted%20lessons-MATHEMATICS%20S1-S3.pdf?forcedownload=1",
    "mb": 5.9
+  },
+  {
+   "id": "pg_9728",
+   "type": "guide",
+   "subject": "maths",
+   "subjectName": "Mathematics",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Maths practical guides S1-S3",
+   "file": "teacher-docs/secondary/Practical_S1-S3_maths_9728.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38864/mod_resource/content/1/Experimental%20user%20guide-MATHEMATICS%20S1-S3-%2020092022.pdf?forcedownload=1",
+   "mb": 7.1
+  },
+  {
+   "id": "pg_9730",
+   "type": "guide",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Physics practical guides S1-S3",
+   "file": "teacher-docs/secondary/Practical_S1-S3_physics_9730.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38866/mod_resource/content/1/PHYSICS%20EXPERIMENTS%20USER%20GUIDE%20-%20S1-S3-%2020092022.pdf?forcedownload=1",
+   "mb": 34.1
+  },
+  {
+   "id": "pg_9731",
+   "type": "guide",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S1",
+    "S2",
+    "S3"
+   ],
+   "lang": "en",
+   "title": "Chemistry practical guides S1-S3",
+   "file": "teacher-docs/secondary/Practical_S1-S3_chemistry_9731.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/38867/mod_resource/content/1/CHEMISTRY%20EXPERIMENTS%20USER%20GUIDES%20S1-S3%2020092022.pdf?forcedownload=1",
+   "mb": 11.2
+  },
+  {
+   "id": "pg_12086",
+   "type": "guide",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Biology experiments user guide S4",
+   "file": "teacher-docs/secondary/Practical_S4_biology_12086.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62274/mod_resource/content/1/BIOLOG%20S4.PDF?forcedownload=1",
+   "mb": 15.0
+  },
+  {
+   "id": "pg_12087",
+   "type": "guide",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Biology experiments user guide S5",
+   "file": "teacher-docs/secondary/Practical_S5_biology_12087.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62275/mod_resource/content/1/BIOLOG%20S5.PDF?forcedownload=1",
+   "mb": 11.9
+  },
+  {
+   "id": "pg_12088",
+   "type": "guide",
+   "subject": "biology",
+   "subjectName": "Biology and Health Sciences",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Biology experiments user guide S6",
+   "file": "teacher-docs/secondary/Practical_S6_biology_12088.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62276/mod_resource/content/1/BIOLOG_S6.PDF?forcedownload=1",
+   "mb": 11.0
+  },
+  {
+   "id": "pg_12090",
+   "type": "guide",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Chemistry experiments user guide S4",
+   "file": "teacher-docs/secondary/Practical_S4_chemistry_12090.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62278/mod_resource/content/1/CHEMES%20S4.pdf?forcedownload=1",
+   "mb": 12.0
+  },
+  {
+   "id": "pg_12091",
+   "type": "guide",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Chemistry experiments user guide S5",
+   "file": "teacher-docs/secondary/Practical_S5_chemistry_12091.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62279/mod_resource/content/1/CHEMIS%20S5.pdf?forcedownload=1",
+   "mb": 10.1
+  },
+  {
+   "id": "pg_12241",
+   "type": "guide",
+   "subject": "chemistry",
+   "subjectName": "Chemistry",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Chemistry experiments user guide S6",
+   "file": "teacher-docs/secondary/Practical_S6_chemistry_12241.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/77412/mod_resource/content/1/CHEMISTRY%20S6%20EXP%20USER%20GUIDE%20%281%29.pdf?forcedownload=1",
+   "mb": 8.1
+  },
+  {
+   "id": "pg_12095",
+   "type": "guide",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Physics experiments user guide S4",
+   "file": "teacher-docs/secondary/Practical_S4_physics_12095.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62283/mod_resource/content/2/S4PHYS_1.PDF?forcedownload=1",
+   "mb": 26.3
+  },
+  {
+   "id": "pg_12096",
+   "type": "guide",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Physics experiments user guide S5",
+   "file": "teacher-docs/secondary/Practical_S5_physics_12096.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62284/mod_resource/content/1/S5PHYS_1.PDF?forcedownload=1",
+   "mb": 15.5
+  },
+  {
+   "id": "pg_12098",
+   "type": "guide",
+   "subject": "physics",
+   "subjectName": "Physics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Physics experiments user guide S6",
+   "file": "teacher-docs/secondary/Practical_S6_physics_12098.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/62286/mod_resource/content/1/S6PHYS_1.PDF?forcedownload=1",
+   "mb": 7.7
+  },
+  {
+   "id": "pg_12315",
+   "type": "guide",
+   "subject": "maths_core",
+   "subjectName": "Core Mathematics",
+   "classes": [
+    "S4"
+   ],
+   "lang": "en",
+   "title": "Mathematics experiments user guide S4",
+   "file": "teacher-docs/secondary/Practical_S4_maths_core_12315.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/77677/mod_resource/content/1/MATHEMATICS%20SENIOR%20FOUR%20%28S4%29%20%281%29.pdf?forcedownload=1",
+   "mb": 13.9
+  },
+  {
+   "id": "pg_12316",
+   "type": "guide",
+   "subject": "maths_core",
+   "subjectName": "Core Mathematics",
+   "classes": [
+    "S5"
+   ],
+   "lang": "en",
+   "title": "Mathematics experiments user guide S5",
+   "file": "teacher-docs/secondary/Practical_S5_maths_core_12316.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/77678/mod_resource/content/1/MATHEMATICS-%20SENIOR%20FIVE.pdf?forcedownload=1",
+   "mb": 31.3
+  },
+  {
+   "id": "pg_12318",
+   "type": "guide",
+   "subject": "maths_core",
+   "subjectName": "Core Mathematics",
+   "classes": [
+    "S6"
+   ],
+   "lang": "en",
+   "title": "Mathematics experiments user guide S6",
+   "file": "teacher-docs/secondary/Practical_S6_maths_core_12318.pdf",
+   "url": "https://elearning.reb.rw/pluginfile.php/77680/mod_resource/content/1/MATHEMATICS%20SENIOR%20SIX%20F.pdf?forcedownload=1",
+   "mb": 41.0
   }
  ]
 }
