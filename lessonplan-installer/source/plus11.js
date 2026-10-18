@@ -42,3 +42,19 @@
     return t+'\n('+w+String(f.st.title).replace(/^\d+(\.\d+)*\.?\s*/,'')+', '+pdf+')';
   };
 })();
+
+/* ---- the default REB approach follows the REB teacher-training text (Foundation of Education, Unit 8.2, "Parts of a lesson"):
+   discovery activity -> presentation and exploitation of learners' productions -> summary and application ---- */
+(function(){
+  PLUS_MODELS.reb.share=[30,40,30];
+  PLUS_MODELS.reb.steps={
+   en:[['Discovery activity','The teacher gives the task and clear instructions, lets the learners work in pairs or groups, and moves around to monitor and support those who are behind, without giving the knowledge directly.','Work together on the task, discuss, try out ideas and record their findings.'],
+       ['Presentation and exploitation of learners’ work','The teacher invites group representatives to present, then asks the class to judge which productions are correct, incomplete or false; the teacher corrects, completes and confirms.','Present their findings, listen to others and decide what is correct, incomplete or false.'],
+       ['Summary and application','The teacher summarises the key knowledge with examples, links it to the lesson objective, guides learners to note it down and gives application exercises from real life.','Note the summary and do the application exercises, linking what they learned to real life.']],
+   fr:[['Activité de découverte','L’enseignant(e) donne la tâche et les consignes, laisse les élèves travailler en binômes ou en groupes et circule pour suivre et aider ceux qui sont en retard, sans donner directement le savoir.','Travaillent ensemble sur la tâche, discutent, essaient des idées et notent leurs trouvailles.'],
+       ['Présentation et exploitation des productions','L’enseignant(e) invite des représentants des groupes à présenter, puis demande à la classe de juger quelles productions sont correctes, incomplètes ou fausses ; il corrige, complète et confirme.','Présentent leurs trouvailles, écoutent les autres et décident ce qui est correct, incomplet ou faux.'],
+       ['Synthèse et application','L’enseignant(e) résume les savoirs clés avec des exemples, les relie à l’objectif de la leçon, guide la prise de notes et propose des exercices d’application tirés de la vie réelle.','Notent la synthèse et font les exercices d’application en liant ce qu’ils ont appris à la vie réelle.']],
+   rw:[['Igikorwa cyo kuvumbura','Umwarimu atanga umurimo n’amabwiriza asobanutse, agaha abanyeshuri umwanya wo gukorera mu mpuzandengo cyangwa mu matsinda, akazenguruka akurikirana agafasha abasigaye inyuma, atabahaye ubumenyi mu buryo butaziguye.','Bakorera hamwe umurimo, baraganira, bagerageza ibitekerezo bakandika ibyo bavumbuye.'],
+       ['Kugaragaza no gusesengura ibyakozwe','Umwarimu asaba ababwira amatsinda kugaragaza ibyakozwe, hanyuma agasaba ishuri gusuzuma ibikozwe neza, ibituzuye n’ibitari byo; umwarimu arakosora, akuzuza kandi akemeza.','Bagaragaza ibyo bavumbuye, bakumva abandi bakemeza ibikozwe neza, ibituzuye n’ibitari byo.'],
+       ['Incamake no gushyira mu bikorwa','Umwarimu avuga incamake y’ubumenyi bw’ingenzi akoresheje ingero, akayihuza n’intego y’isomo, agafasha abanyeshuri kwandika, akanatanga imyitozo ijyanye n’ubuzima busanzwe.','Bandika incamake bagakora imyitozo, bahuza ibyo bize n’ubuzima busanzwe.']]};
+})();
