@@ -42,6 +42,30 @@ def socrow(u):
       'activities':'. '.join(a.rstrip('.') for a in acts)+'.' if acts else '','aids':u['res'].rstrip('.'),
       'assessment':('Assessment criteria: '+u['assess'].rstrip('.')+'.') if u['assess'] else '',
       'references':'REB Pre-primary curriculum 2015 (ages 3-6), Social and emotional development, Unit %s. Parents\u2019 role: %s'%(u['no'],u['parent'].rstrip('.')+'.' if u['parent'] else '')}
+
+# REB "English for pre-primary Rwandan schools, Teacher's guide, Grade 1-3" (2019): songs, rhymes and poems with the lesson objective and materials
+ENG=json.load(open(os.path.join(HERE,'eng-guide.json'),encoding='utf-8'))
+ENGSTOP=set('song songs poem poems rhyme rhymes game a the of in my and to is are an for with about'.split())
+def etoks(x): return {w for w in re.findall(r'[a-z]+',x.lower()) if w not in ENGSTOP and len(w)>2}
+def everse(g):
+    out=[]
+    for ln in g['verse']:
+        if re.match(r'^(\u2022|\u25aa|Learning|Teaching|Timing|Children|The teacher|correctly|showing|in front|Lesson)',ln): break
+        if re.fullmatch(r'\d+',ln) or re.fullmatch(r'[A-Z /]{12,}',ln): continue
+        out.append(ln)
+    ok=len(out)>=3 and all(len(x)<=70 for x in out) and not any(re.search(r'(?i)environment$|Natural source|vocabulary|learning|objective|children are able|instructions\.$|appropriate gestures',x) for x in out)
+    return out[:16] if ok else []
+def eprintedpage(g): return g['page']-8 if g['file']=='1-80' else g['page']+72
+def eng_attach(row,grade,y):
+    q=etoks(row['content']+' '+row['title']); picks=[]; seen=set()
+    for g in ENG:
+        if g['grade']!=grade or (g['file']=='1-80' and g['page'] in (33,34)): continue
+        tt=etoks(g['title'])
+        if not(tt and q and len(q&tt)/len(tt)>=0.6): continue
+        key=re.sub(r'\W+','',g['title'].lower())
+        if key in seen or not (everse(g) or g['obj']): continue
+        seen.add(key); picks.append(g)
+    return picks[:3]
 out={'classes':{}}
 for y in (1,2,3):
     rows=json.load(open(os.path.join(HERE,'pp%d.json'%y),encoding='utf-8'))
@@ -59,9 +83,20 @@ for y in (1,2,3):
             u=units[-1]
             title=re.sub(r'^[-\u2022\s]+','',fix(r['title'])) or fix(joined(r['lessons'])[:80])
             wk=fix(r['week'])
-            u['lessons'].append({'title':title,'periods':'','week':('Week %s'%wk) if wk else '',
+            _l={'title':title,'periods':'','week':('Week %s'%wk) if wk else '',
               'objectives':joined(r['obj']),'content':joined(r['lessons']) or title,'activities':joined(r['act'],'. ')+'.' if r['act'] else '',
-              'aids':fix(r['aids']).strip('- '),'assessment':'','references':'REB Pre-primary scheme of work, Year %d (%s), term %d, week %s'%(y,NAMES[area][1],r['term'],wk)})
+              'aids':fix(r['aids']).strip('- '),'assessment':'','references':'REB Pre-primary scheme of work, Year %d (%s), term %d, week %s'%(y,NAMES[area][1],r['term'],wk)}
+            if area=='english':
+                gp=eng_attach(_l,y,y)
+                if gp:
+                    texts=[]
+                    for g in gp:
+                        v=everse(g)
+                        texts.append(re.sub(r'^(?:A |An )?','',g['title'])+(': '+' / '.join(v) if v else '')+' [REB English teacher\u2019s guide, p. %d]'%eprintedpage(g))
+                    _l['activities']=(_l['activities']+' ' if _l['activities'] else '')+'From the REB English teacher\u2019s guide for pre-primary (2019): '+' | '.join(texts)
+                    if not _l['aids'] and gp[0]['mat']: _l['aids']=fix(gp[0]['mat'])
+                    _l['references']+='. REB English for pre-primary teacher\u2019s guide (2019), Grade %d'%y
+            u['lessons'].append(_l)
         subs[area]={'name':NAMES[area][1],'local':NAMES[area][0],'units':units,'n':sum(len(u['lessons']) for u in units)}
     subs['social']={'name':NAMES['social'][1],'local':NAMES['social'][0],'units':[{'no':'1','title':'Social and emotional development (the whole year)','periods':'','term':None,'keyComp':'','lessons':[socrow(u) for u in soc]}],'n':len(soc)}
     out['classes']['N%d'%y]=subs
