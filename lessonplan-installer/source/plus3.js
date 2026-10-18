@@ -19,7 +19,7 @@ function plusPrevNext(){
   return {prev,next};
 }
 function plusCleanObjective(){
-  let o=PLUS_ENG(LP.objectives).replace(/^[•*\-\s]+/,'');
+  let o=PLUS_ENG(LP.objectives).replace(/[\u2019\u2018]/g,"'").replace(/^[•*\-\s]+/,'');
   o=o.replace(/^(?:by the end of (?:the|this) lesson|given [^,]{3,80}),\s*/i,'').replace(/^(?:à la fin de la leçon|a la fin de la lecon|ku iherezo ry\'isomo),?\s*/i,'');
   o=o.replace(/^(?:the\s+)?(?:learners?|pupils?|students?)\s+(?:will|should)\s+be\s+able\s+to\s+/i,'').replace(/^les\s+[eé]l[eè]ves\s+seront\s+capables\s+(?:de|d\')\s*/i,'').replace(/^abanyeshuri\s+bazashobora\s+/i,'');
   return o;

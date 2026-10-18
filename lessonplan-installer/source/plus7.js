@@ -27,7 +27,8 @@ function plusClassIds(){ return ['P1','P2','P3','P4','P5','P6'].concat(typeof SE
       lessons:u.lessons.map(l=>{ const sb=cite(u,l,'sb',"Student's Book"), tg=cite(u,l,'tg',"Teacher's Guide"); const refs=[l.references||ref, sb, tg].filter(Boolean).join(' ');
         const aids=[sb?"Student's Book "+rng(u.sb[0],u.sb[1],bk.sb.off):'', l.aids||u.aids||''].filter(Boolean).join('; ');
         const act=(l.ea!=null&&u.acts)?u.acts[l.ea]:null, off=bk.sb&&bk.sb.off, pp=l.sbp?(off!=null&&l.sbp-off>=1?l.sbp-off:l.sbp):0, ap=act?(off!=null&&act.p-off>=1?act.p-off:act.p):0;
-        return Object.assign({},l,{aids:aids,assessment:l.assessment||u.assessment||'',references:refs,sbBook:sb?1:0,ex:act?act.q.map(exClean).filter(q=>q&&exOK(q)):[],exPage:ap,bookPage:pp}); })}))};
+        const content=(l.content&&!/^[\d.\s]+$/.test(l.content)&&String(l.content).replace(/[^\w\u00c0-\u024f]/g,'').length>=4)?l.content:l.title;
+        return Object.assign({},l,{content:content,aids:aids,assessment:l.assessment||u.assessment||'',references:refs,sbBook:sb?1:0,ex:act?act.q.map(exClean).filter(q=>q&&exOK(q)):[],exPage:ap,bookPage:pp}); })}))};
     return expanded[k];
   }
   function secSubjects(cls){ const cl=SEC_DATA.classes[cls]; if(!cl) return []; return Object.keys(cl.subjects).map(id=>({id,units:[],title:cl.subjects[id].name})).sort((a,b)=>metaFor(a.id).name.localeCompare(metaFor(b.id).name)); }
@@ -64,7 +65,7 @@ function plusClassIds(){ return ['P1','P2','P3','P4','P5','P6'].concat(typeof SE
   };
 
   /* ---- secondary drafting: the syllabus objectives are action statements, so they make good exit tasks ---- */
-  function secObjectives(){ return String(LP.objectives||'').split(/\s*;\s*|\n+/).map(x=>x.replace(/^[•*\-–\s]+/,'').replace(/[.\s]+$/,'')).filter(x=>x.length>8); }
+  function secObjectives(){ return String(plusCleanObjective()||'').split(/\s*;\s*|\n+/).map(x=>x.replace(/^[•*\-–\s]+/,'').replace(/[.\s]+$/,'')).filter(x=>x.length>8); }
   function secTask(o){ return o.charAt(0).toUpperCase()+o.slice(1)+'.'; }
   const _exit=plusExitDraft; plusExitDraft=function(){
     if(!(LP&&plusIsSec(LP.classId))) return _exit.apply(this,arguments);
