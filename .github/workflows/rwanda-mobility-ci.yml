@@ -86,7 +86,7 @@ jobs:
         with: { node-version: '${{ env.NODE_VERSION }}' }
       - name: Admin console JavaScript parses (each file, and all files together)
         run: |
-          for f in admin-web/*.js; do node --check "$f" || exit 1; done
+          for f in admin-web/*.js backend/business-web/*.js; do node --check "$f" || exit 1; done
           # The scripts share one global scope: a name declared in two files is a SyntaxError that silently breaks the later file in the browser.
           cat admin-web/core.js admin-web/views-ops.js admin-web/views-admin.js admin-web/business.js admin-web/app.js > /tmp/console-all.js
           node --check /tmp/console-all.js

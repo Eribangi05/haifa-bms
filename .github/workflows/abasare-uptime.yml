@@ -1,0 +1,26 @@
+name: abasare-uptime
+# Checks that the live API answers every 15 minutes. A failed run emails the people watching the repository, which is the cheapest alert there is.
+# It also keeps the free Render service from falling asleep between checks (a sleeping service wakes slowly and misses driver offers).
+# Set the repository variable ABASARE_API_URL (Settings > Secrets and variables > Actions > Variables) if the address is not the default below.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: /health answers, /ready proves the database, the app and the console load
+        env:
+          URL: ${{ vars.ABASARE_API_URL || 'https://abasare-api.onrender.com' }}
+        run: |
+          set -e
+          # a cold start can take a minute: allow it, then require a fast answer
+          curl -fsS --retry 6 --retry-delay 10 --retry-all-errors --max-time 60 "$URL/health" > /dev/null
+          curl -fsS --max-time 20 "$URL/ready" | grep -q '"ready":true'
+          curl -fsS --max-time 20 -o /dev/null "$URL/admin/"
+          curl -fsS --max-time 20 -o /dev/null "$URL/"
+          echo "ok: $URL"
