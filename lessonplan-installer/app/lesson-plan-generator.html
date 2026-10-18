@@ -1983,11 +1983,32 @@ function plusIsPP(c){ return /^N[1-3]$/.test(c||''); }
    rw:[['Kwicara mu ruziga no gutangira','Umwarimu yicaza abana mu ruziga, abasuhuza aririmba indirimbo cyangwa umuvugo, akabereka ishusho cyangwa ikintu cyo kuri uyu munsi akababaza ibibazo byoroheje.','Baririmba, basubiza ibibazo byoroheje berekana ibyo basanzwe bazi.'],
        ['Gukina no gukora igikorwa','Umwarimu ategura aho gukinira cyangwa ibikoresho, akereka abana inshuro imwe, hanyuma abareka bagashakashaka, bagakina kandi bagakora mu matsinda mato, we akazenguruka, abaza ibibazo kandi yitegereza.','Barakina, bakoresha ibikoresho, bavuga ibyo bakora kandi bagafashanya.'],
        ['Gusangira no gusoza','Umwarimu asaba abana kwerekana cyangwa kuvuga ibyo bakoze, akongera kuvuga ijambo ry\'ingenzi, indirimbo cyangwa umuvugo, agafatanya n\'abana gutunganya ibikoresho.','Berekana kandi bakabara, baririmba indirimbo yo gusoza bagasubiza ibikoresho aho biba.']]}};
+  PLUS_MODELS.playeng={ name:'Songs, rhymes and poems (REB English guide for pre-primary)', share:[25,50,25], steps:{
+   en:[['Show the materials and model','The teacher shows the picture or object, recites the first two lines of the song, rhyme or poem with gestures, and invites the children to listen.','Look, listen and touch the materials; listen to the first two lines.'],
+       ['Repeat and build up line by line','The teacher asks the children to repeat the first two lines in groups, then one by one, then adds the third line and the next, always with gestures.','Repeat in groups and one by one, adding a line each time and using gestures.'],
+       ['Recite the whole text','The teacher helps the children to say the whole song, rhyme or poem, then asks them to recite it one by one and in pairs with appropriate gestures.','Recite the whole text in groups, one by one and in pairs, with gestures.']],
+   fr:[['Montrer le mat\u00e9riel et mod\u00e9liser','L\u2019enseignant(e) montre l\u2019image ou l\u2019objet, dit les deux premi\u00e8res lignes avec des gestes et invite les enfants \u00e0 \u00e9couter.','Regardent, \u00e9coutent et touchent le mat\u00e9riel.'],
+       ['R\u00e9p\u00e9ter et ajouter ligne par ligne','Les enfants r\u00e9p\u00e8tent en groupes puis un par un ; l\u2019enseignant(e) ajoute la ligne suivante avec des gestes.','R\u00e9p\u00e8tent en groupes et un par un en ajoutant une ligne \u00e0 chaque fois.'],
+       ['R\u00e9citer le texte entier','Les enfants disent tout le texte, puis un par un et en bin\u00f4mes avec des gestes.','R\u00e9citent le texte entier avec des gestes.']],
+   rw:[['Kwerekana ibikoresho no kwigana','Umwarimu yereka ishusho cyangwa ikintu, avuga imirongo ibiri ya mbere y\u2019indirimbo, umuvugo cyangwa agakino akoresheje ibimenyetso, agasaba abana gutega amatwi.','Barareba, bateze amatwi kandi bakora ku bikoresho.'],
+       ['Gusubiramo wongeraho umurongo ku wundi','Umwarimu asaba abana gusubiramo mu matsinda hanyuma umwe umwe, akongeraho umurongo wa gatatu n\u2019ukurikiraho akoresheje ibimenyetso.','Basubiramo mu matsinda no umwe umwe, bongeraho umurongo buri gihe bakoresha ibimenyetso.'],
+       ['Kuvuga byose','Umwarimu afasha abana kuvuga byose, hanyuma bakabivuga umwe umwe no mu mpuzandengo bakoresha ibimenyetso bikwiye.','Bavuga byose mu matsinda, umwe umwe no mu mpuzandengo bakoresha ibimenyetso.']]}};
   const _after=plusAfterAutofill; plusAfterAutofill=function(){
-    if(LP&&plusIsPP(LP.classId)&&!LP._ppApp){ LP.approach='play'; LP._ppApp=1; }
+    if(LP&&plusIsPP(LP.classId)){
+      /* session length from the REB pre-primary timetable; introduction / development / conclusion + evaluation as in the REB guide's sample plan (3 + 10 + 3 + 4 of 20 minutes) */
+      if(!LP._ppDur){ LP.duration=/^(pp_arts|pp_health|pp_social)$/.test(LP.subject||'')?20:30; LP._ppDur=1; }
+      const d=+LP.duration||30; LP.introMin=Math.max(3,Math.round(d*0.13)); LP.concMin=Math.max(3,Math.round(d*0.2)); LP.devMin=Math.max(8,d-LP.introMin-LP.concMin);
+      if(!LP._ppApp){ LP.approach=LP.subject==='english'?'playeng':'play'; LP._ppApp=1; }
+    }
     const r=_after.apply(this,arguments);
     if(LP&&plusIsPP(LP.classId)){
-      if(!LP._ppDur){ LP.duration=/^(pp_arts|pp_health|pp_social)$/.test(LP.subject||'')?20:30; LP._ppDur=1; }
+      {
+        const en=plusLang()==='en';
+        LP.introTeacher=en?'The teacher and the children sing a song or play a short game related to the lesson ('+LP.introMin+' min).':'Umwarimu n\u2019abana baririmba indirimbo cyangwa bakina umukino ujyanye n\u2019isomo ('+LP.introMin+' min).';
+        LP.introLearner=en?'Children sing the song or play the game.':'Abana baririmba cyangwa bakina.';
+        LP.concTeacher=en?'The teacher asks the children one by one to show or repeat what they learned, and suggests a short activity to repeat at home ('+LP.concMin+' min).':'Umwarimu asaba abana umwe umwe kwerekana cyangwa gusubiramo ibyo bize, akabaha igikorwa cyoroheje cyo gusubiramo mu rugo ('+LP.concMin+' min).';
+        LP.concLearner=en?'Children show or recite what they learned; at home they repeat it with the family.':'Abana berekana cyangwa basubiramo ibyo bize; mu rugo babisubiramo n\u2019umuryango.';
+      }
       if(typeof LP_TEXT_KEYS!=='undefined') LP_TEXT_KEYS.forEach(k=>{ if(typeof LP[k]==='string') LP[k]=kids(LP[k]); });
       const o=String(LP.objectives||'').replace(/^(?:By the end of the (?:lesson|session), |Ku iherezo ry[’']isomo, )(?:learners|pupils|children|abana|abanyeshuri)\s+(?:will be able to|bazashobora)\s+/i,'').trim().replace(/;\s+(\S)/g,(m,c)=>', '+c.toLowerCase());
       if(o){ const en=plusLang()==='en'; const body=o.charAt(0).toLowerCase()+o.slice(1);
