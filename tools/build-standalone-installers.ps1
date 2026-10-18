@@ -24,11 +24,11 @@ foreach ($a in $apps) {
   Push-Location $a.Dir
   Write-Host "1/2 Installing packages (retries by itself if the connection drops) ..."
   $eb = Join-Path $a.Dir 'node_modules\.bin\electron-builder.cmd'
-  for ($try = 1; $try -le 5 -and -not ((Test-Path $eb) -and (Test-Path (Join-Path $a.Dir 'node_modules\electron\dist'))); $try++) {
+  for ($try = 1; $try -le 5 -and -not (Test-Path $eb); $try++) {
     if ($try -gt 1) { Write-Host ("  attempt {0} of 5 ..." -f $try) -ForegroundColor Yellow; Start-Sleep -Seconds (10 * $try) }
     npm.cmd install --no-audit --no-fund --fetch-retries=6 --fetch-retry-mintimeout=15000 --fetch-retry-maxtimeout=120000 --fetch-timeout=180000 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host ("  " + $_) }
   }
-  if (-not ((Test-Path $eb) -and (Test-Path (Join-Path $a.Dir 'node_modules\electron\dist')))) {
+  if (-not (Test-Path $eb)) {
     Write-Host "  The packages could not be downloaded (network problem). Check the internet connection or try another network, then run this script again." -ForegroundColor Red
     Pop-Location; $bad += $a.Name; continue
   }
