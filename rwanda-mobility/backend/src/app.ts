@@ -23,6 +23,7 @@ import { supportRoutes } from './routes/support.js';
 import { shareRoutes } from './routes/share.js';
 import { businessRoutes } from './routes/business.js';
 import { adminRoutes } from './routes/admin.js';
+import { realtimeRoutes } from './routes/realtime.js';
 import { adminPulseRoutes } from './routes/adminPulse.js';
 import { adminRevenueRoutes } from './routes/adminRevenue.js';
 import { adminFinanceRoutes } from './routes/adminFinance.js';
@@ -136,7 +137,7 @@ export async function buildApp(opts: { onRoute?: (r: { method: string | string[]
     await api.register(abasareRoutes); await api.register(staffInviteRoutes); await api.register(adminStaffRoutes); await api.register(adminRoleRoutes); await api.register(adminConfigRoutes); await api.register(diagnosticsRoutes); await api.register(requestCodeRoutes); await api.register(adminRoutes); await api.register(adminPulseRoutes); await api.register(adminRevenueRoutes); await api.register(adminFinanceRoutes); await api.register(opsRoutes); await api.register(driverGrowthRoutes);
     await api.register(moneyRoutes); await api.register(claimRoutes); await api.register(ussdAdminRoutes);   // round 3: credit/loyalty/deposit, claims, USSD admin views
     await api.register(safetyRoutes); await api.register(trustRoutes);   // round 1: safety checks / live share, tips / tags / favourites / badges
-    await api.register(growthRoutes); await api.register(growthAdminRoutes); await api.register(partnerRoutes);   // round 2: guest rides, schedules, quests, heat map, campaigns, partners
+    await api.register(realtimeRoutes); await api.register(growthRoutes); await api.register(growthAdminRoutes); await api.register(partnerRoutes);   // round 2: guest rides, schedules, quests, heat map, campaigns, partners
   }, { prefix: '/api/v1' });
   // public trip-share page lives outside /api
   await app.register(shareRoutes);

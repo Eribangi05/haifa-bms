@@ -11,6 +11,7 @@ import { errorText } from './errors';
 import { appearance, useAppearance } from './appearance';
 import { cacheClear, cacheLoad, cacheSave } from './cache';
 import { setFlags, restoreFlags, resetFlags } from './flags';
+import { startRealtime, useRtOk, useRtTick } from './realtime';
 
 export type Route = { name: string; params?: any };
 export type Me = { id: string; phone: string; display_name?: string | null; email?: string | null; preferred_language: string; roles: string[]; referral_code?: string; notif_prefs?: Record<string, boolean> };
@@ -150,6 +151,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { unsub(); sub.remove(); off(); clearInterval(iv); };
   }, [outbox, refreshMe]);
 
+  // instant updates (held request); screens that poll quickly refresh at once when it reports a change
+  useEffect(() => { if (!me) return; return startRealtime(client); }, [me?.id, client]);
+
   // remote feature switches: restore the last answer at start, refresh once a minute while signed in
   useEffect(() => { void restoreFlags(); }, []);
   useEffect(() => {
@@ -168,8 +172,12 @@ export function usePoll<T>(fn: () => Promise<T>, ms: number, deps: unknown[] = [
   const [cachedAt, setCachedAt] = useState<number | null>(null);          // set while the data shown is the saved copy (no fresh answer yet)
   const fnRef = useRef(fn); fnRef.current = fn;
   const uid = useContext(AppCtx)?.me?.id ?? null;
+  const rtTick = useRtTick(), rtOk = useRtOk();
+  const live = ms <= 5000;                          // quick pollers (offers, active trip) are the ones realtime speeds up
+  if (live && rtOk) ms = 10000;                      // updates arrive by themselves; this is only the safety net
   if (useAppearance().lowData) ms = ms * 2.5;   // low-data mode: poll less often
   const [tick, setTick] = useState(0);
+  useEffect(() => { if (live && rtTick > 0) setTick((x) => x + 1); }, [rtTick]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [fg, setFg] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
   useEffect(() => { const s = AppState.addEventListener('change', (st) => setFg(st === 'active')); return () => s.remove(); }, []);
   // offline cache: show the last saved copy at once; a fresh answer replaces it

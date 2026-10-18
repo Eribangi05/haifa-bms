@@ -1,3 +1,4 @@
+import { emit } from './realtime.js';
 import { q, q1, type Db, pool } from '../db.js';
 import { DEFAULT_TEMPLATES, render, localizeParams, type Lang } from './i18n.js';
 import { sms } from '../providers/sms.js';
@@ -13,6 +14,7 @@ export async function notify(userId: string, key: string, params: Record<string,
   const u = await q1<{ preferred_language: string; phone: string | null; notif_prefs: any }>(
     'select preferred_language, phone, notif_prefs from users where id=$1', [userId], db);
   if (!u) return;
+  emit(userId, key);   // wake the phone's held request so the screen refreshes at once (offers, chat, trip steps)
   // A booking made over USSD has no app: its updates use the SMS-first `<key>_ussd` template (when one exists) and are always texted.
   let tkey = key, viaUssd = false;
   if (typeof params.ref === 'string' && DEFAULT_TEMPLATES[`${key}_ussd`] && (await q1("select 1 from bookings where ref=$1 and channel='ussd'", [params.ref], db))) { tkey = `${key}_ussd`; viaUssd = true; }

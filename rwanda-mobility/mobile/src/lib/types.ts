@@ -10,7 +10,7 @@ export type Fare = { subtotal?: number; tax?: number; total: number; discount?: 
 export type FareOption = {
   service_id: string; kind: 'ride' | 'abasare'; available: boolean; reason?: string; quote_id?: string; capacity?: number; fare?: Fare;
   fixed_price?: boolean; fixed_route?: { id: string; name_en: string; name_rw?: string; name_fr?: string };
-  name_en: string; name_rw?: string; name_fr?: string; pickup_eta_s?: number | null; route_source?: string; promo?: { discount?: number } | null;
+  name_en: string; name_rw?: string; name_fr?: string; pickup_eta_s?: number | null; per_km?: number | null; per_km_only?: boolean; route_source?: string; promo?: { discount?: number } | null;
 };
 export type Estimate = { options: FareOption[]; alternatives: unknown[] };
 

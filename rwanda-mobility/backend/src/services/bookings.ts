@@ -158,7 +158,7 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
     }
     options.push({
       service_id: s.id, kind: s.kind, hours: inp.abasare?.hours ?? null, name_en: s.name_en, name_rw: s.name_rw, name_fr: s.name_fr ?? s.name_en, capacity: s.passenger_capacity, luggage: s.luggage,
-      available, reason, quote_id: quoteId, fare: bd, distance_m: rt.distance_m, duration_s: rt.duration_s, route_source: rt.source,
+      available, reason, quote_id: quoteId, fare: bd, per_km: rule.billing === 'hourly' ? null : rule.per_km, per_km_only: rule.billing !== 'hourly' && rule.base_fare === 0 && rule.per_min === 0, distance_m: rt.distance_m, duration_s: rt.duration_s, route_source: rt.source,
       pickup_eta_s: near.length ? Math.round((Math.min(...near) * 1.5) / 1000 / 24 * 3600) : null, nearby_drivers: scheduled ? undefined : near.length,
       promo: promo ? (promo.ok ? { code: promo.code, discount: promo.discount } : { error: promo.reason }) : undefined,
       is_estimate: true,

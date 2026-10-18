@@ -129,7 +129,7 @@ V.pricing = async (el) => {
   el.append(h('h2', {}, 'Current prices'),
     manage && h('div', { class: 'row' }, h('button', { class: 'b', onclick: () => { $('#view').replaceChildren(); priceEditor($('#view'), d, null); } }, 'Add or change a price')),
     table([{ h: 'Service', f: (r) => svcName(d, r.service_id) }, { h: 'Zone', f: (r) => zoneName(d, r.zone_id) }, { h: 'Version', f: (r) => 'v' + r.version },
-      { h: 'Headline', f: (r) => r.billing === 'hourly' ? `${fmt(r.hourly_rate)} RWF per hour (${r.min_hours}-${r.max_hours} h)` : `${fmt(r.base_fare)} + ${fmt(r.per_km)}/km + ${fmt(r.per_min)}/min, min ${fmt(r.minimum_fare)}` },
+      { h: 'Headline', f: (r) => r.billing === 'hourly' ? `${fmt(r.hourly_rate)} RWF per hour (${r.min_hours}-${r.max_hours} h)` : (r.base_fare === 0 && r.per_min === 0 ? `${fmt(r.per_km)} RWF per km, min ${fmt(r.minimum_fare)}` : `${fmt(r.base_fare)} + ${fmt(r.per_km)}/km + ${fmt(r.per_min)}/min, min ${fmt(r.minimum_fare)}`) },
       { h: 'Extras', f: (r) => [r.booking_fee ? `booking ${fmt(r.booking_fee)}` : '', r.night_fee ? `night +${fmt(r.night_fee)} (${r.night_start_hour}-${r.night_end_hour}h)` : '', r.tax_bps ? `tax ${r.tax_bps / 100}%` : '', r.time_multipliers?.length ? `${r.time_multipliers.length} peak/off-peak window(s)` : ''].filter(Boolean).join(' · ') || '-' },
       { h: 'Live since', f: (r) => when(r.effective_from) },
       { h: '', f: (r) => manage ? h('button', { class: 'b sec', onclick: () => { $('#view').replaceChildren(); priceEditor($('#view'), d, r); } }, 'Edit') : '' }],
@@ -190,6 +190,14 @@ function priceEditor(el, d, startRule) {
     const box = h('div', { class: 'card fsec' }, h('h2', {}, sec), h('div', { class: 'fgrid' }, PRICE_FIELDS.filter((f) => f.section === sec).map(buildField)));
     sectionEls[sec] = box; body.append(box);
   }
+  // One-click "price per kilometre only": no base fare and no per-minute charge, so the trip costs rate x distance (minimum fare still applies)
+  const stdBox = sectionEls['Standard fare'];
+  stdBox.insertBefore(h('div', { class: 'row', style: 'margin:0 0 8px' },
+    h('button', { class: 'b sec', type: 'button', onclick: () => {
+      for (const k of ['base_fare', 'per_min']) { ctl[k].set(0); ctl[k].input.dispatchEvent(new Event('input', { bubbles: true })); }
+      toast('Base fare and per-minute charge set to 0: the fare is now price per kilometre only.');
+    } }, 'Use price per kilometre only'),
+    h('span', { class: 'hint' }, 'Sets the base fare and the per-minute charge to 0. The rider pays the rate x kilometres, never less than the minimum fare.')), stdBox.children[1]);
   // Abasare billing choice sits inside its section
   const abSec = sectionEls['Abasare: driver for the customer\'s car'];
   abSec.insertBefore(h('div', { class: 'fgrid' }, h('label', { class: 'field' }, h('span', { class: 'flabel' }, 'Billing method'), billingSel, h('span', { class: 'hint' }, 'Drive-me-home trips are billed by distance; hourly hire by the booked hours.'))), abSec.children[1]);

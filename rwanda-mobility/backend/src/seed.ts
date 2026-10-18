@@ -53,13 +53,13 @@ const PLACE_FR: Record<string, string> = {
   'Kicukiro Centre': 'Centre de Kicukiro',
 };
 
-// Placeholder tariffs (ASSUMPTION: must be replaced by the approved/regulated fare schedule before launch).
+// Placeholder tariffs, priced per kilometre only (no base fare, no per-minute charge; the minimum fare still applies) (ASSUMPTION: must be replaced by the approved/regulated fare schedule before launch).
 const RULES: Record<string, Partial<Record<string, number>>> = {
-  moto: { base_fare: 400, per_km: 250, per_min: 20, minimum_fare: 800, booking_fee: 0, wait_per_min: 20 },
-  standard: { base_fare: 1000, per_km: 700, per_min: 40, minimum_fare: 2000, booking_fee: 0, wait_per_min: 50 },
-  comfort: { base_fare: 1500, per_km: 900, per_min: 50, minimum_fare: 3000, booking_fee: 0, wait_per_min: 60 },
-  family: { base_fare: 2000, per_km: 1000, per_min: 60, minimum_fare: 4000, booking_fee: 0, wait_per_min: 80 },
-  airport: { base_fare: 1500, per_km: 750, per_min: 40, minimum_fare: 4000, booking_fee: 0, wait_per_min: 60, airport_fee: 2000 },
+  moto: { base_fare: 0, per_km: 400, per_min: 0, minimum_fare: 800, booking_fee: 0, wait_per_min: 20 },
+  standard: { base_fare: 0, per_km: 1000, per_min: 0, minimum_fare: 2000, booking_fee: 0, wait_per_min: 50 },
+  comfort: { base_fare: 0, per_km: 1300, per_min: 0, minimum_fare: 3000, booking_fee: 0, wait_per_min: 60 },
+  family: { base_fare: 0, per_km: 1500, per_min: 0, minimum_fare: 4000, booking_fee: 0, wait_per_min: 80 },
+  airport: { base_fare: 0, per_km: 1100, per_min: 0, minimum_fare: 4000, booking_fee: 0, wait_per_min: 60, airport_fee: 2000 },
 };
 
 const PLACES: [string, string, number, number, boolean][] = [

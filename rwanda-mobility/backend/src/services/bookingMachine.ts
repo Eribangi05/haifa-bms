@@ -1,3 +1,4 @@
+import { emit } from './realtime.js';
 import type { PoolClient } from 'pg';
 import { q, q1 } from '../db.js';
 import { conflict, notFound } from '../errors.js';
@@ -59,6 +60,7 @@ export async function transition(
   const row = (await q<BookingRow>(`update bookings set ${sets.join(', ')} where id=$1 returning *`, [bookingId, to, ...keys.map((k) => patch[k])], c))[0];
   await q(`insert into booking_events(booking_id,type,from_status,to_status,actor_id,actor_role,reason,meta) values ($1,'status_change',$2,$3,$4,$5,$6,$7)`,
     [bookingId, cur.status, to, actor.id, actor.role, opts.reason ?? null, JSON.stringify(opts.meta ?? {})], c);
+  emit(row.passenger_id, 'booking'); if (row.driver_id) emit(row.driver_id, 'booking'); if (cur.driver_id && cur.driver_id !== row.driver_id) emit(cur.driver_id, 'booking');   // instant refresh on the phones
   // a booking that ends unpaid (cancelled, or no driver found) hands any carried cancellation fee back to the passenger's open balance
   if (CANCELS.includes(to) || to === 'NO_DRIVER_FOUND') await releaseDebts(c, bookingId);
   if (CANCELS.includes(to) || to === 'NO_DRIVER_FOUND') await releasePrepaid(c, bookingId);   // reserved credit and a paid deposit go back to the customer as credit

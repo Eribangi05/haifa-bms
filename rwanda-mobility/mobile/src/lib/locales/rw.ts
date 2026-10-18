@@ -5,6 +5,7 @@ import { moneyRw } from './features/money.rw';
 import { tabsRw } from './features/tabs.rw';
 import { driversRw } from './features/drivers.rw';
 import { brandRw } from './features/brand.rw';
+import { upRw } from './features/up.rw';
 import { socialRw } from './features/social.rw';
 import { pickRw } from './features/pick.rw';
 // Kinyarwanda. Typed against English keys so a missing string is a compile error.
@@ -284,4 +285,4 @@ const base: Record<BaseK, string> = {
   'prof.export.done': 'Twakiriye ubusabe bwawe, tuzakoherereza kopi y\'amakuru yawe.',
   'prof.signout.confirm': 'Wifuza gusohoka kuri iyi telefone?',
 };
-export const rw: Record<K, string> = { ...base, ...trustRw, ...growthRw, ...moneyRw, ...tabsRw, ...driversRw, ...brandRw, ...socialRw, ...pickRw };
+export const rw: Record<K, string> = { ...base, ...trustRw, ...growthRw, ...moneyRw, ...tabsRw, ...driversRw, ...brandRw, ...socialRw, ...pickRw, ...upRw };

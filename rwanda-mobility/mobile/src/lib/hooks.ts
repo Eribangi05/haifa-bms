@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Linking } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import { useApp, usePoll } from './app';
 import type { Booking } from './types';
@@ -12,6 +12,8 @@ export type Fix = { lat: number; lng: number; accuracy: number | null };
 
 const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> => new Promise<T>((res, rej) => { const id = setTimeout(() => rej(new Error('timeout')), ms); p.then((v) => { clearTimeout(id); res(v); }, (e) => { clearTimeout(id); rej(e); }); });
 export const openAppSettings = () => { void Linking.openSettings().catch(() => {}); };
+/** In a browser there is no settings screen to open, so explain the padlock steps instead. */
+export const openSettingsOrHelp = (t: (k: TKey) => string) => () => { if (Platform.OS === 'web') showAlert(t('up.web.loc.title'), t('up.web.loc.body'), [{ text: t('common.close'), style: 'cancel' }]); else openAppSettings(); };
 
 /** Foreground location with explicit permission states, recovery (re-check when the user returns from settings) and a timeout so a missing GPS fix never hangs the UI. */
 export function useLocate() {
@@ -54,7 +56,8 @@ export function useLocate() {
     try { if (!(await Location.hasServicesEnabledAsync())) { set('off'); return false; } } catch { /* web */ }
     return true;
   }, [request, set]);
-  return { perm, busy, check, request, ensure, locate, openSettings: openAppSettings };
+  const { t } = useApp();
+  return { perm, busy, check, request, ensure, locate, openSettings: openSettingsOrHelp(t) };
 }
 
 /**

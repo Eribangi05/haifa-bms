@@ -91,12 +91,14 @@ export function Options({ params }: { params: Params }) {
                   {o.fixed_price ? <View style={{ marginBottom: 4 }}><Pill tone="warn" glyph="🏷" text={t('r2.fixed.badge')} /></View> : null}
                   <Text style={S.h2}>{o.fixed_price && o.fixed_route ? pick(lang, o.fixed_route, 'name') : pick(lang, o, 'name')}</Text>
                   <Text style={S.muted}>{o.kind === 'abasare' ? t('ab.trip.yourcar') : `${o.capacity} ${t('opt.seats')}`}{o.pickup_eta_s ? ` · ${t('opt.eta')} ${fmtMin(o.pickup_eta_s)} ${t('common.min')}` : ''}</Text>
+                  {o.per_km ? <Text style={[S.muted, { fontWeight: o.per_km_only ? '700' : '400' }]}>{o.per_km} {t('up.perkm')}</Text> : null}
                   {!o.available ? <Text style={{ color: C.danger, fontSize: 13 }}>{t('opt.unavailable')}</Text> : null}
                 </View>
                 {o.fare ? <View style={{ alignItems: 'flex-end' }}><Money n={o.fare.total} style={[S.h2, { color: C.primary }]} />{o.fare.discount ? <Text style={{ color: C.primary, fontSize: 12 }}>−{o.fare.discount}</Text> : null}</View> : null}
               </View>
             </Card>
           </Pressable>))}
+        {opt?.service_id === 'moto' ? <Banner text={`${t('up.moto.title')}: ${t('up.moto.body')}`} /> : null}
         {opt?.fare ? <Card>
           <Text style={S.h2}>{t('opt.breakdown')}</Text>
           {opt.fare.lines.map((l, i) => <View key={i} style={[S.between, { paddingVertical: 3 }]}><Text style={[S.body, { flex: 1, paddingRight: 8 }]}>{pick(lang, l, 'label')}</Text><Money n={l.amount} /></View>)}

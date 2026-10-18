@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useApp, useAsync, usePoll } from '../../lib/app';
 import { DICTS, label, type TKey } from '../../lib/i18n';
 import { useLocate } from '../../lib/hooks';
@@ -68,6 +68,7 @@ export function Working({ status, reload }: { status: DriverStatus; reload: () =
     <Screen title={t('drv.mode')} right={trip ? <SosButton bookingId={trip.id} /> : <LinkBtn title={t('home.help')} color={C.onHeader} onPress={() => nav.push('support')} />}
       onRefresh={async () => { reload(); active.reload(); offers.reload(); await new Promise((r) => setTimeout(r, 500)); }}>
       {!online ? <Banner kind="bad" text={t('net.offline')} /> : null}
+      {Platform.OS === 'web' && isOnline ? <Banner text={t('up.web.driver.note')} /> : null}
       <>
         <StatusStrip online={isOnline} />
         <Card>
