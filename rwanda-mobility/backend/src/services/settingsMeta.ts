@@ -14,6 +14,8 @@ export const SETTING_META: Record<keyof typeof SETTING_DEFAULTS, SettingMeta> = 
   ...TRUST_META,
   ...GROWTH_META,
   'pricing.self_approval': { group: 'Pricing & approvals', label: 'Allow self-approval of price changes', desc: 'Off (recommended): a second person must approve every fare or commission change. On: the proposer may approve their own change (for very small teams). Every self-approval is flagged in the audit log.', type: 'bool', superAdminOnly: true },
+  'negotiation.max_discount_pct': { group: 'Pricing & approvals', label: 'Proposed fares: largest discount', desc: 'Only when the "Passenger-proposed fares" switch is on. The lowest price a rider may propose, as a percentage below the platform price.', unit: '%', min: 5, max: 50 },
+  'negotiation.counter_wait_s': { group: 'Pricing & approvals', label: 'Proposed fares: time to answer a counter-offer', desc: 'How long the rider has to accept or decline a driver\'s counter-offer before it lapses.', unit: 'seconds', min: 20, max: 300 },
   'dispatch.offer_timeout_s': { group: 'Dispatch', label: 'Driver offer timeout', desc: 'How long a driver has to accept a trip offer before it moves to the next driver.', unit: 'seconds', min: 5, max: 120 },
   'dispatch.max_rounds': { group: 'Dispatch', label: 'Maximum search rounds', desc: 'How many times the search widens before the passenger is told no driver was found.', unit: 'rounds', min: 1, max: 10 },
   'dispatch.group_size': { group: 'Dispatch', label: 'Drivers offered at once', desc: '1 = offer to one driver at a time. Higher numbers broadcast to a small group, first to accept wins.', unit: 'drivers', min: 1, max: 10 },

@@ -9,6 +9,7 @@ export type Rule = {
   long_distance_km: number | null; long_distance_per_km: number | null;
   tax_bps: number; rounding: number; surge_enabled: boolean; surge_cap_bps: number; version: number;
   // Abasare (driver for the customer's own car)
+  pickup_free_km?: number; pickup_per_km?: number; pickup_max?: number;   // optional charge for a long drive to the pickup (all 0 = off)
   billing?: 'distance' | 'hourly'; return_per_km?: number; night_start_hour?: number | null; night_end_hour?: number | null; night_fee?: number;
   time_multipliers?: TimeWindow[];
   hourly_rate?: number; min_hours?: number; max_hours?: number; long_hire_hours?: number | null; long_hire_rate?: number | null; overtime_per_30min?: number; overtime_grace_min?: number;
@@ -25,6 +26,7 @@ export type FareInput = {
   distance_m: number; duration_s: number; airport?: boolean; scheduled?: boolean;
   extras?: { code: string; label: string; amount: number; passthrough?: boolean }[];
   surge_bps?: number;                 // only honoured if rule.surge_enabled; capped
+  pickup_m?: number;                  // driver's distance to the pickup (metres), for the optional pickup-distance charge
   hours?: number;                     // hourly billing: booked hours
   local_hour?: number;                // hour of day (Africa/Kigali) the service starts, for the night band and time windows
   local_dow?: number;                 // day of week (0=Sunday) in Africa/Kigali, for time windows
@@ -94,6 +96,10 @@ export function computeFare(rule: Rule, inp: FareInput): Breakdown {
   addFee('booking_fee', 'Booking fee', 'Amafaranga yo gutumiza', 'Frais de réservation', rule.booking_fee);
   if (inp.airport) addFee('airport_fee', 'Airport fee', 'Amafaranga y\'ikibuga cy\'indege', 'Frais d\'aéroport', rule.airport_fee);
   if (inp.scheduled) addFee('scheduled_fee', 'Scheduled booking', 'Urugendo rwateguwe', 'Réservation à l\'avance', rule.scheduled_fee);
+  if (rule.pickup_per_km && inp.pickup_m != null) {
+    const over = inp.pickup_m / 1000 - (rule.pickup_free_km ?? 0);
+    if (over > 0) { const amt = Math.min(rule.pickup_max || Infinity, Math.round(over * rule.pickup_per_km)); addFee('pickup', `Long pickup (${(inp.pickup_m / 1000).toFixed(1)} km away)`, `Umushoferi ari kure (${(inp.pickup_m / 1000).toFixed(1)} km)`, `Prise en charge éloignée (${(inp.pickup_m / 1000).toFixed(1)} km)`, amt); }
+  }
   if (rule.return_per_km) addFee('return_allowance', 'Driver return allowance', 'Amafaranga yo kugaruka k\'umushoferi', 'Indemnité de retour du chauffeur', Math.round((rule.return_per_km * inp.distance_m) / 1000));
   if (inp.local_hour != null && inNightBand(inp.local_hour, rule.night_start_hour, rule.night_end_hour)) addFee('night_fee', 'Night service', 'Serivisi y\'ijoro', 'Service de nuit', rule.night_fee ?? 0);
 

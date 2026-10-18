@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { applyAgreed } from './negotiation.js';
 import { depositBlocks } from './prepaidGuard.js';
 import { q, q1, tx } from '../db.js';
 import { conflict, notFound, AppError } from '../errors.js';
@@ -134,8 +135,9 @@ export async function runRound(bookingId: string): Promise<{ offered: number; st
     await q('update bookings set dispatch_round=$2, last_round_at=now() where id=$1', [bookingId, round], c);
     const quote = (await q1<any>('select breakdown from fare_quotes where id=$1', [b.quote_id], c))!;
     for (const x of chosen) {
-      const comm = calcCommission(await resolveCommission(b.service_id, x.d.user_id, x.d.fleet_id, new Date(), c), quote.breakdown.commissionable);
-      const net = quote.breakdown.subtotal - comm;
+      const comm = calcCommission(await resolveCommission(b.service_id, x.d.user_id, x.d.fleet_id, new Date(), c), quote.breakdown.commissionable - (b.proposed_fare ? quote.breakdown.total - b.proposed_fare : 0));
+      const cut = b.proposed_fare ? quote.breakdown.total - b.proposed_fare : 0;   // a proposed price lowers the fare the driver is paid on
+      const net = quote.breakdown.subtotal - cut - comm;
       await q(`insert into dispatch_offers(booking_id, driver_id, round, eta_s, distance_m, driver_net, expires_at)
                values ($1,$2,$3,$4,$5,$6, now() + make_interval(secs => $7))`, [bookingId, x.d.user_id, round, x.eta, x.dist, net, timeout], c);
       await q('update driver_profiles set offers_count = offers_count + 1 where user_id=$1', [x.d.user_id], c);
@@ -151,7 +153,7 @@ export async function runRound(bookingId: string): Promise<{ offered: number; st
   return { offered: out.offered, status: out.status };
 }
 
-export async function acceptOffer(driverId: string, bookingId: string) {
+export async function acceptOffer(driverId: string, bookingId: string, counter?: { counterId: string; amount: number }) {
   const res = await tx(async (c) => {
     const b = await q1<BookingRow>('select * from bookings where id=$1 for update', [bookingId], c);
     if (!b) throw notFound('booking');
@@ -171,6 +173,13 @@ export async function acceptOffer(driverId: string, bookingId: string) {
       const row = await transition(c, bookingId, 'DRIVER_ASSIGNED', { id: driverId, role: 'driver' }, {
         patch: { driver_id: driverId, vehicle_id: veh?.id ?? null, assigned_at: new Date() }, meta: { offer_id: offer.id },
       });
+      // negotiated price: the driver accepting a proposal, or the rider accepting this driver's counter, is the agreement; both sides have then confirmed the same number
+      const agreed = counter?.amount ?? b.proposed_fare;
+      if (agreed) {
+        await applyAgreed(c, b, agreed, counter ? 'passenger_accepted_counter' : 'driver_accepted_proposal');
+        if (counter) await q("update fare_offers set status='accepted', decided_at=now() where id=$1 and status='open'", [counter.counterId], c);
+        else await q("update fare_offers set status='withdrawn', decided_at=now() where offer_id=$1 and status='open'", [offer.id], c);
+      }
       return { row, dp, veh };
     } catch (e: any) {
       if (e.code === '23505') throw conflict('driver_busy', 'You already have an active trip');
@@ -209,6 +218,7 @@ export async function rejectOffer(driverId: string, bookingId: string, reason?: 
 
 /** Background sweep: expire offers, advance searches, release scheduled bookings. Safe to run concurrently. */
 export async function dispatchSweep() {
+  await q("update fare_offers set status='expired', decided_at=now() where status='open' and offer_id in (select id from dispatch_offers where status='pending' and expires_at < now())");
   const expired = await q<{ booking_id: string }>("update dispatch_offers set status='expired', responded_at=now() where status='pending' and expires_at < now() returning booking_id");
   const ids = new Set(expired.map((e) => e.booking_id));
   const stalled = await q<{ id: string }>(

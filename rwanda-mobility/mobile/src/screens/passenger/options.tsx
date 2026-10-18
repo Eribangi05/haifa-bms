@@ -5,6 +5,7 @@ import { pick } from '../../lib/i18n';
 import { ApiError, uuid } from '../../lib/net';
 import { fmtDateTime, fmtMin } from '../../lib/format';
 import type { Estimate, FareOption, Pt } from '../../lib/types';
+import { ProposePrice } from './negotiation';
 import { Banner, Btn, Card, Chip, Field, IconBadge, Money, Pill, Screen, SectionTitle, SkeletonCard, Text, useFormFocus } from '../../ui/components';
 import { C, R, S, SHADOW, SP } from '../../ui/theme';
 import { SwitchRow } from '../../ui/trustParts';
@@ -35,14 +36,19 @@ export function Options({ params }: { params: Params }) {
   useEffect(() => { void load(); client.get('/users/me/drivers').then((r) => setFavs((r.drivers ?? []).filter((d: { kind: string }) => d.kind === 'favourite').length)).catch(() => {}); client.get('/businesses/mine').then((r) => setBiz(r.businesses.filter((b: { status: string }) => b.status === 'active'))).catch(() => {}); }, [load, client]);
 
   const opt = data?.options.find((o) => optKey(o) === sel);
+  useEffect(() => { setProposal(null); }, [sel]);
   const guestOn = guest.on && !params.abasare; const guestOk = !guestOn || checkGuest(guest, me?.phone).ok;
   const momo = cfg?.payment_methods.find((m) => m.id === 'mtn_momo');
+  const [proposal, setProposal] = useState<number | null>(null);
+  const negCfg = cfg?.negotiation;
   const cc3 = useCreditChoice(opt?.fare?.total, method, !!corp);   // round 3: pay with credit (full / partial)
+  const canPropose = !!negCfg?.enabled && opt?.kind === 'ride' && !corp && !params.abasare && !guestOn && !opt?.fare?.discount && !(opt?.fare as { debt?: number } | undefined)?.debt && cc3.fields?.payment_method == null;
   const confirm = () => run(async () => {
     if (!opt?.quote_id) return;
     keyRef.current = keyRef.current ?? uuid();                         // same key on every retry of this tap: never a duplicate booking
     const body = { quote_id: opt.quote_id, payment_method: corp ? 'corporate' : method, ...(corp ? {} : cc3.fields), pickup_name: params.pickup.name, pickup_note: params.note || undefined, request_code: params.request_code, prefer_favourite: prefer, dest_name: params.dest?.name ?? params.pickup.name,
       ...(params.abasare ? { customer_vehicle_id: params.abasare.customer_vehicle_id, owner_attested: att } : {}),
+      ...(canPropose && proposal ? { proposed_fare: proposal } : {}),
       ...(guestOn ? { for_guest: guestBody(guest) } : {}),
       ...(corp ? { corporate_id: corp, cost_centre: cc || undefined, po_ref: po || undefined } : {}) };
     setGuestErr(null);
@@ -106,6 +112,7 @@ export function Options({ params }: { params: Params }) {
           {opt.fixed_price ? <Text style={[S.muted, { marginTop: 8 }]}>{t('r2.fixed.note')}</Text> : null}
           <Text style={[S.muted, { marginTop: 8 }]}>{params.abasare ? t('ab.fare.note') : t('opt.estimate') + (opt.route_source === 'estimate' ? ' ' + t('opt.route.estimate') : '')}</Text>
         </Card> : null}
+        {canPropose && opt?.fare ? <ProposePrice total={opt.fare.total} maxPct={negCfg!.max_discount_pct} step={negCfg!.step} value={proposal} onChange={setProposal} /> : null}
         <View style={[S.row, { alignItems: 'flex-start' }]}><View style={{ flex: 1 }}><Field value={promo} onChangeText={setPromo} placeholder={t('opt.promo')} autoCapitalize="characters" autoCorrect={false} returnKeyType="done" onSubmitEditing={applyPromo} /></View><View style={{ width: 8 }} /><Btn kind="ghost" title={t('opt.apply')} onPress={applyPromo} disabled={!promo.trim()} /></View>
         {opt?.promo ? (opt.promo.discount ? <Banner kind="ok" text={`${t('opt.promo.ok')}: −${opt.promo.discount} RWF`} /> : <Banner kind="bad" text={t('opt.promo.bad')} />) : null}
         <Card><SwitchRow testID="opt-prefer-fav" label={t('r1.opt.prefer')} hint={favs ? t('r1.opt.prefer.hint') : t('r1.opt.prefer.none')} value={prefer} onChange={setPrefer} /></Card>

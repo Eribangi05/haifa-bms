@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { NegotiationCard } from './negotiation';
 import { usePingOnChange, usePingOnIncrease } from '../../lib/offerAlert';
 import { View } from 'react-native';
 import { useApp, useAsync } from '../../lib/app';
@@ -72,6 +73,7 @@ export function Track({ params }: { params: { id?: string; pending?: boolean; sa
 
         {isSearching(st) && !b.awaiting_deposit ? <View style={{ alignItems: 'center' }}><Spinner /><Text style={[S.body, { textAlign: 'center' }]}>{t('trip.searching.sub')}</Text>{waited > 90 ? <Text style={[S.muted, { textAlign: 'center', marginTop: 6 }]}>{t('trip.searching.slow')}</Text> : null}<View style={{ height: 10, alignSelf: 'stretch' }} /><View style={{ alignSelf: 'stretch' }}><Btn kind="ghost" title={t('trip.cancel')} onPress={cancel} loading={busy} /></View></View> : null}
 
+        {b.negotiation ? <NegotiationCard b={b} reload={reload} /> : null}
         {st === 'SCHEDULED' ? <View><Text style={S.body}>{b.scheduled_for ? fmtDateTime(b.scheduled_for) : ''}</Text><View style={{ height: 8 }} /><Btn kind="ghost" title={t('trip.cancel')} onPress={cancel} loading={busy} /></View> : null}
         {st === 'NO_DRIVER_FOUND' ? <View><Text style={S.body}>{t('opt.alt')}</Text><View style={{ height: 8 }} /><Btn title={t('trip.alt.other')} onPress={home} /><View style={{ height: 8 }} /><Btn kind="ghost" title={t('trip.alt.later')} onPress={home} /></View> : null}
 

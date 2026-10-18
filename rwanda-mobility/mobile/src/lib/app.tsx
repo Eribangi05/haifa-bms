@@ -15,7 +15,7 @@ import { startRealtime, useRtOk, useRtTick } from './realtime';
 
 export type Route = { name: string; params?: any };
 export type Me = { id: string; phone: string; display_name?: string | null; email?: string | null; preferred_language: string; roles: string[]; referral_code?: string; notif_prefs?: Record<string, boolean> };
-export type AppConfig = { payment_methods: { id: string; enabled: boolean; simulated?: boolean }[]; emergency_numbers: { police: string; ambulance: string }; features: Record<string, boolean>;
+export type AppConfig = { negotiation?: { enabled: boolean; max_discount_pct: number; step: number }; payment_methods: { id: string; enabled: boolean; simulated?: boolean }[]; emergency_numbers: { police: string; ambulance: string }; features: Record<string, boolean>;
   abasare?: { enabled: boolean; packages: number[]; min_hours: number; max_hours: number; min_photos: number } };
 export type Nav = { stack: Route[]; push: (name: string, params?: any) => void; pop: () => void; reset: (name: string, params?: any) => void; replace: (name: string, params?: any) => void };
 

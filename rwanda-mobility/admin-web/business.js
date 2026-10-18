@@ -49,6 +49,9 @@ const PRICE_FIELDS = [
   ['Fees and tax', 'airport_fee', 'Airport fee', 'RWF', 'Added to airport trips only.', 0, 1e5, { when: 'distance' }],
   ['Fees and tax', 'scheduled_fee', 'Scheduled booking fee', 'RWF', 'Added when the trip is booked in advance.', 0, 1e5],
   ['Fees and tax', 'tax_pct', 'Tax', '%', 'Added on top of the fare. 0 = no tax.', 0, 50, { decimal: true }],
+  ['Long pickup (optional)', 'pickup_free_km', 'Free pickup distance', 'km', 'The driver may be this far from the pickup at no charge. 0 together with the rate below switches this charge off.', 0, 100, { when: 'distance' }],
+  ['Long pickup (optional)', 'pickup_per_km', 'Charge per extra km', 'RWF / km', 'For each km beyond the free distance, based on the nearest available driver when the price is shown. Shown to the rider as its own line.', 0, 1e5, { when: 'distance' }],
+  ['Long pickup (optional)', 'pickup_max', 'Most this charge can be', 'RWF', 'Upper limit so a far-away driver never makes the fare jump. 0 = no limit.', 0, 1e6, { when: 'distance' }],
   ['Waiting time', 'free_wait_min', 'Free waiting time', 'minutes', 'The driver waits this long at pickup at no charge.', 0, 60],
   ['Waiting time', 'wait_per_min', 'Waiting charge after that', 'RWF / min', 'Billed at the end of the trip, so it is not in the preview.', 0, 1e4],
   ['Night service', 'night_start_hour', 'Night starts at', 'hour 0-23', 'Leave both hours empty for no night fee. Trips that start inside this window pay the night fee.', 0, 23, { nullable: true }],
@@ -63,7 +66,7 @@ const PRICE_FIELDS = [
   ['Abasare: driver for the customer\'s car', 'overtime_per_30min', 'Overtime per 30 minutes', 'RWF', 'Charged for each started half hour beyond the booked time.', 0, 1e5, { when: 'hourly' }],
   ['Abasare: driver for the customer\'s car', 'overtime_grace_min', 'Overtime grace period', 'minutes', 'No overtime is charged within this many minutes of the booked end.', 0, 120, { when: 'hourly' }],
 ].map(([section, key, label, unit, help, min, max, extra]) => ({ section, key, label, unit, help, min, max, ...(extra || {}) }));
-const PRICE_DEFAULTS = { model: 'platform', billing: 'distance', base_fare: 0, per_km: 0, per_min: 0, minimum_fare: 0, rounding: 50, booking_fee: 0, airport_fee: 0, scheduled_fee: 0, tax_pct: 0, free_wait_min: 3, wait_per_min: 0,
+const PRICE_DEFAULTS = { model: 'platform', billing: 'distance', base_fare: 0, per_km: 0, per_min: 0, minimum_fare: 0, rounding: 50, booking_fee: 0, airport_fee: 0, scheduled_fee: 0, tax_pct: 0, free_wait_min: 3, wait_per_min: 0, pickup_free_km: 0, pickup_per_km: 0, pickup_max: 0,
   night_start_hour: null, night_end_hour: null, night_fee: 0, return_per_km: 0, hourly_rate: 0, min_hours: 2, max_hours: 12, long_hire_hours: null, long_hire_rate: null, overtime_per_30min: 0, overtime_grace_min: 10, time_multipliers: [] };
 
 const ruleToState = (r) => {

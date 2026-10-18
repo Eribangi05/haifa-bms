@@ -102,7 +102,7 @@ const FLAGS: [string, boolean, string][] = [
   ['payments.mtn_momo', true, 'MTN MoMo payments (sandbox/simulator until live credentials)'],
   ['payments.airtel_money', false, 'Airtel Money (adapter skeleton, PENDING INTEGRATION)'],
   ['payments.wallet', false, 'Prepaid wallet (needs legal/financial review)'],
-  ['pricing.negotiated', false, 'Passenger-proposed fares (check legality)'],
+  ['pricing.negotiated', false, 'Passenger-proposed fares: the rider proposes a lower price, the driver accepts, declines or counters once (check legality before switching on)'],
   ['pricing.surge', false, 'Demand-based pricing (disabled until approved)'],
   ['booking.scheduled', true, 'Scheduled rides'],
   ['booking.requests', true, 'New ride requests (turn off to pause every new request, e.g. for maintenance; riders see the message)'],
@@ -171,7 +171,7 @@ export async function seedCore() {
   for (const [c, n, t] of LEDGER) await q('insert into ledger_accounts values ($1,$2,$3) on conflict do nothing', [c, n, t]);
   for (const [k, e, d] of FLAGS) await q('insert into feature_flags(key,enabled,description) values ($1,$2,$3) on conflict do nothing', [k, e, d]);
   // flags the apps read through GET /config/flags (the rest stay server-side)
-  await q("update feature_flags set client_visible=true where key = any($1) and client_visible=false and updated_by is null", [['booking.requests', 'chat.enabled', 'map.nearby_drivers', 'navigation.enabled', 'referral.rewards', 'abasare.enabled', 'booking.scheduled', 'corporate.enabled', 'promotions.enabled']]);
+  await q("update feature_flags set client_visible=true where key = any($1) and client_visible=false and updated_by is null", [['booking.requests', 'pricing.negotiated', 'chat.enabled', 'map.nearby_drivers', 'navigation.enabled', 'referral.rewards', 'abasare.enabled', 'booking.scheduled', 'corporate.enabled', 'promotions.enabled']]);
   for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
     await q('insert into roles(name, builtin, is_staff) values ($1, true, $2) on conflict do nothing', [role, STAFF_ROLES.includes(role)]);
     // Rows mirror the code defaults for roles nobody has customised (informational: the code defaults apply anyway). A customised role is never overwritten.

@@ -12,6 +12,7 @@ import { turnByTurn } from '../services/navigation.js';
 import { can } from '../rbac.js';
 import { pickLang, reqLang } from '../services/errmsg.js';
 import { receiptLink } from '../services/receipts.js';
+import * as N from '../services/negotiation.js';
 import { isLite, liteBooking, liteOffers, sendConditional } from '../services/lowdata.js';
 
 const idp = z.object({ id: z.string().uuid() });
@@ -27,6 +28,7 @@ export async function bookingRoutes(app: FastifyInstance) {
       corporate_id: z.string().uuid().optional(), cost_centre: z.string().max(60).optional(), po_ref: z.string().max(60).optional(),
       rider_name: z.string().max(80).optional(), rider_phone: z.string().max(20).optional(),
       customer_vehicle_id: z.string().uuid().optional(), owner_attested: z.boolean().optional(), prefer_favourite: z.boolean().optional(), request_code: z.string().trim().max(12).optional(),
+      proposed_fare: z.number().int().positive().optional(),
       for_guest: z.object({ name: z.string().trim().min(1).max(60), phone: z.string().max(20), language: z.enum(['rw', 'fr', 'en']).optional() }).optional(),
     }), req.body);
     const { booking, replay } = await B.createBooking(req.auth!.id, { ...b, idempotency_key: key });
@@ -96,6 +98,16 @@ export async function bookingRoutes(app: FastifyInstance) {
     if (b.as === 'driver' && !req.auth!.roles.includes('driver')) throw badRequest('not_a_driver');
     return B.bookingView(await B.cancelBooking(req.auth!.id, id, b.reason, b.as), b.as);
   });
+  // proposed fares (flag pricing.negotiated): the driver's single counter-offer and the rider's answer to it
+  app.post('/bookings/:id/counter', { preHandler: requireRole('driver'), config: routeLimit('COUNTER_RATE_MAX', 30) }, async (req) => {
+    const { id } = parse(idp, req.params);
+    const b = parse(z.object({ amount: z.number().int().positive() }), req.body);
+    return N.counter(req.auth!.id, id, b.amount);
+  });
+  app.post('/bookings/:id/counters/:cid/:answer', { preHandler: anyAuth, config: routeLimit('COUNTER_RATE_MAX', 30) }, async (req) => {
+    const p = parse(z.object({ id: z.string().uuid(), cid: z.string().uuid(), answer: z.enum(['accept', 'decline']) }), req.params);
+    return N.answerCounter(req.auth!.id, p.id, p.cid, p.answer === 'accept');
+  });
   app.post('/bookings/:id/ratings', { preHandler: anyAuth }, async (req) => {
     const { id } = parse(idp, req.params);
     const b = parse(z.object({ score: z.number().int().min(1).max(5), comment: z.string().max(500).optional(), tags: z.array(z.string().max(30)).max(6).optional(),
@@ -132,8 +144,8 @@ export async function bookingRoutes(app: FastifyInstance) {
   app.get('/drivers/me/offers', drv, async (req, reply) => {
     const rows = await q<any>(`select o.booking_id, o.expires_at, o.eta_s, o.distance_m, o.driver_net, b.pickup_lat, b.pickup_lng, b.pickup_name, b.pickup_note, b.dest_lat, b.dest_lng, b.dest_name, b.service_id, b.payment_method,
         b.distance_m trip_distance_m, b.duration_s trip_duration_s, b.estimated_fare, b.ref,
-        b.hire_mode, b.hours_booked, cv.vehicle_class cv_class, cv.transmission cv_transmission, cv.make cv_make, cv.model cv_model, cv.color cv_color
-      from dispatch_offers o join bookings b on b.id=o.booking_id left join customer_vehicles cv on cv.id=b.customer_vehicle_id where o.driver_id=$1 and o.status='pending' and o.expires_at > now() and b.status='SEARCHING_DRIVER'`, [req.auth!.id]);
+        b.hire_mode, b.hours_booked, cv.vehicle_class cv_class, cv.transmission cv_transmission, cv.make cv_make, cv.model cv_model, cv.color cv_color, b.proposed_fare, o.counter_amount, pu.passenger_rating_avg passenger_rating, pu.passenger_rating_count passenger_rating_count
+      from dispatch_offers o join bookings b on b.id=o.booking_id join users pu on pu.id=b.passenger_id left join customer_vehicles cv on cv.id=b.customer_vehicle_id where o.driver_id=$1 and o.status='pending' and o.expires_at > now() and b.status='SEARCHING_DRIVER'`, [req.auth!.id]);
     const out = { offers: isLite(req) ? liteOffers(rows) : rows };
     if (sendConditional(req, reply, out, isLite(req) ? 'lite' : 'full').notModified) return reply.send();
     return out;

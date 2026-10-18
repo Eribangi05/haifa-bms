@@ -31,6 +31,7 @@ const ruleSchema = z.object({
       airport_fee: z.number().int().min(0).max(10_000_000).default(0), scheduled_fee: z.number().int().min(0).max(10_000_000).default(0), tax_bps: z.number().int().min(0).max(10_000_000).max(5000).default(0), rounding: z.number().int().min(1).max(1000).default(50),
       effective_from: z.string().datetime().optional(),
       // Abasare
+      pickup_free_km: z.number().int().min(0).max(100).default(0), pickup_per_km: z.number().int().min(0).max(100000).default(0), pickup_max: z.number().int().min(0).max(1000000).default(0),
       billing: z.enum(['distance', 'hourly']).default('distance'), return_per_km: z.number().int().min(0).max(10_000_000).default(0),
       night_start_hour: z.number().int().min(0).max(10_000_000).max(23).nullable().default(null), night_end_hour: z.number().int().min(0).max(10_000_000).max(24).nullable().default(null), night_fee: z.number().int().min(0).max(10_000_000).default(0),
       hourly_rate: z.number().int().min(0).max(10_000_000).default(0), min_hours: z.number().int().min(1).default(2), max_hours: z.number().int().min(1).default(12),
@@ -242,10 +243,10 @@ export async function adminRoutes(app: FastifyInstance) {
     const b = parse(ruleSchema, req.body);
     const prev = await q1<any>('select coalesce(max(version),0) v from pricing_rules where service_id=$1', [b.service_id]);
     const r = await q1<any>(`insert into pricing_rules(service_id,zone_id,model,base_fare,per_km,per_min,minimum_fare,booking_fee,wait_per_min,free_wait_min,airport_fee,scheduled_fee,tax_bps,rounding,version,effective_from,status,created_by,
-        billing,return_per_km,night_start_hour,night_end_hour,night_fee,hourly_rate,min_hours,max_hours,long_hire_hours,long_hire_rate,overtime_per_30min,overtime_grace_min,time_multipliers)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,coalesce($16, now()),'pending_approval',$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30) returning *`,
+        billing,return_per_km,night_start_hour,night_end_hour,night_fee,hourly_rate,min_hours,max_hours,long_hire_hours,long_hire_rate,overtime_per_30min,overtime_grace_min,time_multipliers,pickup_free_km,pickup_per_km,pickup_max)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,coalesce($16, now()),'pending_approval',$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33) returning *`,
       [b.service_id, b.zone_id, b.model, b.base_fare, b.per_km, b.per_min, b.minimum_fare, b.booking_fee, b.wait_per_min, b.free_wait_min, b.airport_fee, b.scheduled_fee, b.tax_bps, b.rounding, prev.v + 1, b.effective_from ?? null, req.auth!.id,
-       b.billing, b.return_per_km, b.night_start_hour, b.night_end_hour, b.night_fee, b.hourly_rate, b.min_hours, b.max_hours, b.long_hire_hours, b.long_hire_rate, b.overtime_per_30min, b.overtime_grace_min, JSON.stringify(b.time_multipliers)]);
+       b.billing, b.return_per_km, b.night_start_hour, b.night_end_hour, b.night_fee, b.hourly_rate, b.min_hours, b.max_hours, b.long_hire_hours, b.long_hire_rate, b.overtime_per_30min, b.overtime_grace_min, JSON.stringify(b.time_multipliers), b.pickup_free_km, b.pickup_per_km, b.pickup_max]);
     await audit(actorOf(req), 'pricing.proposed', 'pricing_rule', r.id, undefined, r);
     return r;
   });

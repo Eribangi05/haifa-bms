@@ -85,6 +85,8 @@ export const SETTING_DEFAULTS = {
   ...MONEY_DEFAULTS,                        // round 3: credit, loyalty, deposit, claims, USSD (services/moneySettings.ts)
   ...TRUST_DEFAULTS,                        // round 5: fraud checks, staff alerts, referrals, number privacy (services/trustSettings.ts)
   ...GROWTH_DEFAULTS,                       // growth round: guest rides, schedules, quests, heat map, campaigns, partners (services/growthSettings.ts)
+  'negotiation.max_discount_pct': 20,       // proposed fares: the lowest price a rider may propose, as a percentage below the platform price
+  'negotiation.counter_wait_s': 60,         // proposed fares: how long a rider has to answer a driver's counter-offer
   'dispatch.offer_timeout_s': 20,
   'dispatch.max_rounds': 4,
   'dispatch.group_size': 1,                 // 1 = sequential offers, N = small-group broadcast

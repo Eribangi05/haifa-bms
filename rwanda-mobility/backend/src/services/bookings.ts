@@ -13,6 +13,7 @@ import { checkPromo } from './promos.js';
 import { getSetting, flagFor } from './settings.js';
 import { transition, logEvent, ACTIVE_TRIP, type BookingRow, type Status } from './bookingMachine.js';
 import { startSearch } from './dispatch.js';
+import { checkProposal, negotiationView } from './negotiation.js';
 import { reserveForBooking } from './credit.js';
 import { requireDeposit, prepaidView } from './deposit.js';
 import { retainDepositFee } from './prepaid.js';
@@ -133,20 +134,21 @@ export async function estimate(passengerId: string, inp: EstimateIn) {
     const rt = s.id === 'abasare_hourly' ? { distance_m: 0, duration_s: 0, source: 'estimate' as const } : await route(inp.pickup, dest, vt);
     if (maxKm && rt.distance_m > maxKm * 1000) { options.push({ service_id: s.id, available: false, reason: 'too_far_for_service' }); continue; }
     const rule = await activeRule(s.id, pz.id, scheduled ?? new Date());
-    const promo = inp.promo_code ? await (async () => {
-      const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()), local_dow: kigaliDow(scheduled ?? new Date()) });
-      return checkPromo(inp.promo_code!, passengerId, s.id, pz.id, pre.subtotal);
-    })() : null;
-    const bd: Breakdown = withDebt(computeFare(rule, {
-      distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()), local_dow: kigaliDow(scheduled ?? new Date()),
-      promo: promo?.ok ? { code: promo.code, discount: promo.discount } : undefined,
-    }), owed);
     let available: boolean, near: number[] = [], reason: string | undefined;
     if (s.kind === 'abasare') {
       if (scheduled) { available = (await abasareSupply(cv)) > 0; if (!available) reason = 'no_abasare_for_this_car'; }
       else { near = await nearbyAbasare(cv, pz.id, inp.pickup, radius * 1000, hb, passengerId); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
     } else if (scheduled) { available = (await schedulableSupply(s)) > 0; if (!available) reason = 'no_vehicles_for_service'; }
     else { near = await nearbyAvailable(s, pz.id, inp.pickup, radius * 1000, hb, passengerId); available = near.length > 0; if (!available) reason = 'no_drivers_nearby'; }
+    const pickupM = near.length ? Math.min(...near) : undefined;   // nearest driver, for the optional pickup-distance charge
+    const promo = inp.promo_code ? await (async () => {
+      const pre = computeFare(rule, { distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, pickup_m: pickupM, local_hour: kigaliHour(scheduled ?? new Date()), local_dow: kigaliDow(scheduled ?? new Date()) });
+      return checkPromo(inp.promo_code!, passengerId, s.id, pz.id, pre.subtotal);
+    })() : null;
+    const bd: Breakdown = withDebt(computeFare(rule, {
+      distance_m: rt.distance_m, duration_s: rt.duration_s, airport: s.id === 'airport', scheduled: !!scheduled, hours: inp.abasare?.hours, local_hour: kigaliHour(scheduled ?? new Date()), local_dow: kigaliDow(scheduled ?? new Date()), pickup_m: pickupM,
+      promo: promo?.ok ? { code: promo.code, discount: promo.discount } : undefined,
+    }), owed);
     let quoteId: string | null = null;
     if (available) {
       quoteId = (await q1<{ id: string }>(
@@ -174,6 +176,7 @@ export type CreateIn = {
   corporate_id?: string; cost_centre?: string; po_ref?: string; rider_name?: string; rider_phone?: string;
   customer_vehicle_id?: string; owner_attested?: boolean; request_code?: string; prefer_favourite?: boolean;
   for_guest?: GuestIn; partner_id?: string; partner_billed?: boolean;
+  proposed_fare?: number;   // passenger-proposed price (flag pricing.negotiated)
   wallet_amount?: number; remainder_method?: string; channel?: 'app' | 'ussd' | 'web';   // credit: payment_method 'wallet' | 'wallet_partial'
 };
 
@@ -279,6 +282,10 @@ export async function createBooking(passengerId: string, inp: CreateIn) {
          quote.dest_lat, quote.dest_lng, inp.dest_name ?? null, quote.id, fareTotal, quote.distance_m, quote.duration_s, inp.payment_method,
          inp.corporate_id ? 'corporate' : 'passenger', inp.corporate_id ?? null, inp.cost_centre ?? null, inp.po_ref ?? null, inp.rider_name ?? null, inp.rider_phone ?? null,
          quote.scheduled_for, inp.idempotency_key, JSON.stringify(bdoc)], c))[0];
+      if (inp.proposed_fare != null) {
+        const prop = await checkProposal(c, passengerId, svc, bdoc, inp.proposed_fare, { corporate: !!inp.corporate_id, partner: !!inp.partner_billed, guest: !!inp.for_guest, wallet: !!walletMode });
+        if (prop) { await q('update bookings set proposed_fare=$2 where id=$1', [b.id, prop], c); b.proposed_fare = prop; await logEvent(c, b.id, 'fare_proposed', { id: passengerId, role: 'passenger' }, { amount: prop, platform_price: bdoc.total }); }
+      }
       if (inp.prefer_favourite === false) await q('update bookings set prefer_favourite=false where id=$1', [b.id], c);
       if (reqCode) await q('update bookings set request_code_id=$2, partner_id=$3 where id=$1', [b.id, reqCode.id, (reqCode as any).partner_id ?? null], c);
       if (inp.partner_billed) await q('update bookings set partner_billed=true, partner_id=$2 where id=$1', [b.id, inp.partner_id], c);
@@ -346,6 +353,7 @@ export async function bookingView(b: BookingRow, as: Perspective) {
     pickup: { lat: b.pickup_lat, lng: b.pickup_lng, name: b.pickup_name, note: b.pickup_note },
     destination: { lat: b.dest_lat, lng: b.dest_lng, name: b.dest_name },
     estimated_fare: b.estimated_fare, final_fare: b.final_fare, fare_is_final: b.final_fare != null,
+    negotiation: await negotiationView(b),
     fare_breakdown: b.fare_breakdown, payment_method: b.payment_method, scheduled_for: b.scheduled_for,
     requested_at: b.requested_at, assigned_at: b.assigned_at, started_at: b.started_at, completed_at: b.completed_at,
     cancelled_at: b.cancelled_at, cancel_by: b.cancel_by, cancel_reason: b.cancel_reason, cancel_fee: b.cancel_fee,
@@ -584,13 +592,16 @@ export async function rateBooking(userId: string, bookingId: string, score: numb
     if (!b || (b.passenger_id !== userId && b.driver_id !== userId)) throw notFound('booking');
     if (!['COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'DISPUTED', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(b.status)) throw conflict('not_ratable', 'Only completed trips can be rated');
     const reviewee = userId === b.passenger_id ? b.driver_id! : b.passenger_id;
-    if (tags?.length) { const bad = invalidTags(tags, !!b.customer_vehicle_id); if (bad.length) throw badRequest('invalid_tag', 'Unknown rating tag', { tags: bad }); }
+    if (tags?.length) { const bad = invalidTags(tags, !!b.customer_vehicle_id, userId === b.driver_id); if (bad.length) throw badRequest('invalid_tag', 'Unknown rating tag', { tags: bad }); }
     if (tip && userId !== b.passenger_id) throw forbidden();
     try {
       await q('insert into ratings(booking_id, reviewer_id, reviewee_id, score, comment, tags) values ($1,$2,$3,$4,$5,$6)', [bookingId, userId, reviewee, score, comment ?? null, tags ?? null], c);
     } catch (e: any) { if (e.code === '23505') throw conflict('already_rated', 'You already rated this trip'); throw e; }
     if (userId === b.passenger_id) {
       await q(`update driver_profiles set rating_avg = (select round(avg(score)::numeric,2) from ratings where reviewee_id=$1), rating_count = (select count(*) from ratings where reviewee_id=$1) where user_id=$1`, [reviewee], c);
+    }
+    if (userId === b.driver_id) {
+      await q(`update users set passenger_rating_avg = (select round(avg(score)::numeric,2) from ratings where reviewee_id=$1), passenger_rating_count = (select count(*) from ratings where reviewee_id=$1) where id=$1`, [reviewee], c);
     }
     return { ok: true } as { ok: boolean; tip?: unknown };
   });

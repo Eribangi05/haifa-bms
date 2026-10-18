@@ -1,6 +1,6 @@
 // Rating tag catalogue (served by GET /config). Labels exist in all three languages; the API stores only the stable ids.
 import type { Lang } from './i18n.js';
-export type Tag = { id: string; kind: 'positive' | 'negative'; scope: 'ride' | 'abasare'; label: Record<Lang, string> };
+export type Tag = { id: string; kind: 'positive' | 'negative'; scope: 'ride' | 'abasare' | 'passenger'; label: Record<Lang, string> };
 const T = (id: string, kind: Tag['kind'], scope: Tag['scope'], en: string, rw: string, fr: string): Tag => ({ id, kind, scope, label: { en, rw, fr } });
 
 export const RIDE_TAGS: Tag[] = [
@@ -23,6 +23,17 @@ export const ABASARE_TAGS: Tag[] = [
   T('respectful', 'positive', 'abasare', 'Respectful', 'Yubaha', 'Respectueux'),
   ...RIDE_TAGS.filter((t) => ['unsafe', 'rude', 'late'].includes(t.id)).map((t) => ({ ...t, scope: 'abasare' as const })),
 ];
+// What a driver can say about a passenger (shown to other drivers only as an average, never the tags)
+export const PASSENGER_TAGS: Tag[] = [
+  T('polite_rider', 'positive', 'passenger', 'Polite', 'Yubaha', 'Courtois'),
+  T('ready_on_time', 'positive', 'passenger', 'Ready on time', 'Yiteguye ku gihe', 'Prêt à l\'heure'),
+  T('clear_directions', 'positive', 'passenger', 'Clear directions', 'Yasobanuye neza aho ajya', 'Indications claires'),
+  T('helmet_worn', 'positive', 'passenger', 'Wore the helmet', 'Yambaye ingofero', 'A porté le casque'),
+  T('rude_rider', 'negative', 'passenger', 'Rude', 'Afite imvugo mbi', 'Impoli'),
+  T('made_wait', 'negative', 'passenger', 'Made me wait', 'Yantegereje', 'M\'a fait attendre'),
+  T('unsafe_behaviour', 'negative', 'passenger', 'Unsafe behaviour', 'Imyitwarire iteza ibyago', 'Comportement dangereux'),
+  T('messy', 'negative', 'passenger', 'Left the car dirty', 'Yasize imodoka yanduye', 'A laissé la voiture sale'),
+];
 export const tagsFor = (abasare: boolean) => (abasare ? ABASARE_TAGS : RIDE_TAGS);
-export const tagCatalogue = () => ({ ride: RIDE_TAGS, abasare: ABASARE_TAGS });
-export const invalidTags = (ids: string[], abasare: boolean) => ids.filter((i) => !tagsFor(abasare).some((t) => t.id === i));
+export const tagCatalogue = () => ({ ride: RIDE_TAGS, abasare: ABASARE_TAGS, passenger: PASSENGER_TAGS });
+export const invalidTags = (ids: string[], abasare: boolean, passenger = false) => ids.filter((i) => !(passenger ? PASSENGER_TAGS : tagsFor(abasare)).some((t) => t.id === i));
