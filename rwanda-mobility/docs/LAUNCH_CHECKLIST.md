@@ -1,29 +1,39 @@
 # Launch checklist (what is left, in order)
 
-Status words follow `FEATURE_STATUS.md`. Items marked **YOU** need accounts, money or legal decisions that only the owner/client can provide.
+Status words follow `FEATURE_STATUS.md`. Items marked **YOU** need accounts, money or legal decisions that only the owner or the client can provide. Do the stages in order: a later stage assumes the earlier ones are done.
 
-## A. Before any real user
-- [ ] **Install and test the APK on real phones** (a cheap low-RAM Android 8-10 phone, a mid-range one, one emulator). Walk: sign-up, booking, tracking, SOS, driver online with screen locked, Abasare handover with real camera. Fix what breaks. (Not yet done: only the browser build of the screens has been exercised.)
-- [ ] **Deploy** with `deploy/docker-compose.yml` (HTTPS via Caddy; copy `deploy/.env.example`, fill every value), real secrets, `TRUST_PROXY=1`, a persistent volume for uploaded documents, nightly `deploy/backup.sh` copied off-host, and a **restore drill that you have actually run** ([`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md)). `APP_ENV` and `OTP_DEV_ECHO` must not be set. Keep `DATA_ENC_KEY` in a separate password manager entry.
-- [ ] Remove `BOOTSTRAP_ADMIN_PASSWORD` after the first start, add real staff through **Staff -> Invite staff member**, and write down who holds the recovery procedure for a lost authenticator (runbook section 4).
-- [ ] Set up the alerts in runbook section 8 (uptime on `/ready`, stuck payments, failed SMS, open SOS).
-- [ ] Build the release with `EXPO_PUBLIC_API_URL=https://<your api>`; cleartext HTTP is off by default.
-- [ ] **YOU** Create the release keystore / Play App Signing (the APK is debug-signed).
-- [ ] **YOU** Rotate the MySQL password in the legacy `index.php` (treat it as leaked) and remove the file from the repository history if the repo is shared.
-- [ ] **YOU** SMS gateway account (OTP cannot reach real phones until `SMS_PROVIDER` is configured).
-- [ ] **YOU** MTN MoMo sandbox then production credentials; Airtel later.
-- [ ] **YOU** Firebase project / EAS `projectId` so push notifications can be delivered (backend and app code are ready).
-- [ ] **YOU** Map tiles: free OpenStreetMap tiles are not allowed for production-scale use. Choose a paid tile provider or Google Maps (key needed; integration is a small change in `mapHtml.ts`/`MapView`). The operations console's Live map uses the same free tiles (`admin-web/views-ops.js`, plus the `img-src` rule in `admin-web/index.html`): change both when you switch provider.
+## Stage 0. Where things stand (staging)
+The service on Render runs in **staging mode**: `APP_ENV=staging`, `OTP_DEV_ECHO=true` (the sign-in code is returned in the API reply and shown in the app), MoMo in `sandbox` (test money, labelled "test mode" in the apps), SMS and push simulated, free hosting that sleeps, and a free database that expires 30 days after creation. This is right for demos with demo data. It is **not safe for real riders**: anyone who knows a phone number can sign in as that person.
 
-## B. Business and legal (**YOU**)
-- [ ] Transport / RURA licensing for moto, taxi and hire-with-driver; data-protection registration; terms and privacy notice (final text, three languages).
-- [ ] Insurance and liability model for Abasare drivers driving owners' cars (open questions in `ABASARE.md` section 6).
-- [ ] Final tariffs, commission, night window, cancellation fees (current numbers are placeholders).
-- [ ] Police-clearance and licence-check process for Abasare applicants; support staff roster and escalation numbers.
+## Stage 1. Get ready (no real users yet)
+- [ ] **YOU** Hosting: paid Render web service (always on) and a paid Postgres with automatic backups. Or the `deploy/docker-compose.yml` stack with HTTPS. Back up the documents store too (`STORAGE_DIR` or the database when `STORAGE_DRIVER=db`).
+- [ ] **YOU** SMS gateway account. Set `SMS_PROVIDER=http`, `SMS_HTTP_URL`, `SMS_HTTP_TOKEN`, then send a real test code to your own phone.
+- [ ] **YOU** Push: a Firebase project and an Expo `projectId`, then `PUSH_PROVIDER=expo`. Test with the app closed.
+- [ ] **YOU** Real tariffs, commission, night window and cancellation fees in the console (Pricing, Settings). Done for tariffs: check commission and thresholds too.
+- [ ] **YOU** Legal: transport and RURA licensing, insurance for owners' cars (Abasare), data-protection registration, final terms and privacy notice in three languages, tax receipts. Proposed fares (`pricing.negotiated`) and parcels stay off until this is settled.
+- [ ] **YOU** Rotate the MySQL password in the old `index.php` and remove the file from the repository history if the repo is shared.
+- [ ] **YOU** Map tiles: free OpenStreetMap tiles are not allowed at production scale. Choose a paid provider (small change in `mapHtml.ts`) or keep the own PMTiles map.
+- [ ] Test the 0.9.9 APK on **three real phones** (low, mid, high end): sign-up, booking, SOS, a driver online for a full shift with the screen locked, battery, offline recovery, camera, map.
 
-## C. Pilot
-- [ ] Closed pilot: ~20 drivers + ~50 riders/owners in one zone, ops staff on the console, daily review of support cases and client errors (`GET /admin/client-errors`; no console page yet).
-- [ ] Collect: time-to-match, cancellation reasons, payment failures, handover disputes.
+## Stage 2. Switch to production (do these together, in this order)
+1. Take a backup of the staging database.
+2. In Render, set `NODE_ENV=production` and a strong `JWT_SECRET` and `FILE_SIGNING_SECRET`; set `PUBLIC_BASE_URL` to the real address.
+3. Set the SMS variables from Stage 1 and confirm a real code arrives.
+4. **Remove `OTP_DEV_ECHO` and `APP_ENV=staging`.** After this the code is only sent by SMS. Do not do this before step 3 or nobody can sign in.
+5. Remove `BOOTSTRAP_ADMIN_PASSWORD`. Add real staff through Staff, Invite staff member, and write down who holds the lost-authenticator recovery (runbook section 4).
+6. Set `TRUST_PROXY=1` behind the host's proxy. Make sure `CORS_ORIGINS` lists only your own addresses.
+7. Clear the demo data (console, Demo data, Remove) before real users arrive.
+8. MoMo: set `MOMO_MODE=live`, `MOMO_CURRENCY=RWF`, the MTN production keys and a secret `MOMO_CALLBACK_TOKEN` of at least 16 characters, and `MOMO_CALLBACK_URL`. The apps drop the "test mode" label by themselves. Make one small real payment and one refund before opening to riders.
+9. Build the release APK with `EXPO_PUBLIC_API_URL=https://<your api>` and sign it with your own key (**YOU** create the release keystore or use Play App Signing; today the APK is debug-signed).
+10. Turn on the uptime workflow variable `ABASARE_API_URL` if the address changed, and set up the alerts in runbook section 8.
 
-## D. Play Store
-- [ ] Privacy policy URL, data-safety form, background-location / foreground-service declaration (see `ANDROID_BUILD.md`), real-device screenshots, listing copy (`store/LISTING.md`), assets (`store/`).
+## Stage 3. Closed pilot
+- [ ] One district, about 20 to 100 drivers and 50 or more riders, support staff on the console, a daily look at support cases and client errors.
+- [ ] Measure: time to first driver, fulfilment rate, cancellation reasons, payment success, driver earnings per hour, payout time. Compare with the targets in `FINAL_REVIEW.md`.
+- [ ] Decide, from the pilot, whether to switch on parcels and proposed fares.
+
+## Stage 4. Public launch
+- [ ] Play Store: privacy policy URL, data-safety form, background-location declaration (`ANDROID_BUILD.md`), real-device screenshots, listing copy (`store/LISTING.md`).
+- [ ] Native iPhone app: Apple Developer account, then `IOS_BUILD.md`. Until then iPhone users use the web app.
+- [ ] Native-speaker review of Kinyarwanda and French texts.
+- [ ] Airtel Money, once approved.
