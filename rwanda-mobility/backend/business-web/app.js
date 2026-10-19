@@ -53,7 +53,7 @@ const input = (o = {}) => h('input', o);
 
 function table(cols, rows) {
   if (!rows.length) return h('p', { class: 'muted' }, t('none'));
-  return h('table', {}, h('thead', {}, h('tr', {}, cols.map((c) => h('th', {}, c.h)))), h('tbody', {}, rows.map((r) => h('tr', {}, cols.map((c) => h('td', {}, c.f(r)))))));
+  return h('div', { class: 'tw' }, h('table', {}, h('thead', {}, h('tr', {}, cols.map((c) => h('th', {}, c.h)))), h('tbody', {}, rows.map((r) => h('tr', {}, cols.map((c) => h('td', {}, c.f(r))))))));
 }
 function csv(name, headers, rows) {
   const cell = (v) => { const s = String(v ?? ''); const safe = /^[=+\-@]/.test(s) ? "'" + s : s; return /[",\n]/.test(safe) ? '"' + safe.replace(/"/g, '""') + '"' : safe; };   // a leading = + - @ would run as a spreadsheet formula
@@ -198,7 +198,7 @@ function fleetTrips(id) {
 function fleetEarnings(id, a) {
   const e = load('fe:' + id, () => api('GET', `/fleets/${id}/earnings`)); if (!e) return h('p', { class: 'muted' }, t('loading'));
   const amt = input({ inputmode: 'numeric' });
-  return h('div', {}, h('div', { class: 'kpi' }, [['trips.n', e.trips], ['gross', fmt(e.gross) + ' RWF'], ['commission', fmt(e.commission) + ' RWF'], ['fleet.share', fmt(e.fleet_share) + ' RWF'], ['driver.net', fmt(e.driver_net) + ' RWF'], e.fleet_balance != null ? ['fleet.balance', fmt(e.fleet_balance) + ' RWF'] : null].filter(Boolean).map(([k, v]) => h('div', { class: 'card' }, h('span', {}, t(k)), h('b', {}, v)))),
+  return h('div', {}, h('div', { class: 'kpi' }, [['trips.n', e.trips], ['gross', fmt(e.gross) + ' RWF'], ['commission', fmt(e.commission) + ' RWF'], ['fleet.share', fmt(e.fleet_share) + ' RWF'], ['driver.net', fmt(e.driver_net) + ' RWF'], e.fleet_balance != null ? ['fleet.balance', fmt(typeof e.fleet_balance === 'object' ? e.fleet_balance.eligible_payout : e.fleet_balance) + ' RWF'] : null].filter(Boolean).map(([k, v]) => h('div', { class: 'card' }, h('span', {}, t(k)), h('b', {}, v)))),
     a.role === 'owner' ? h('div', { class: 'card' }, h('div', { class: 'row' }, field(t('amount'), amt), h('button', { class: 'b', onclick: () => act(async () => { await api('POST', `/fleets/${id}/payouts`, { amount: Number(amt.value.replace(/\D/g, '')) }, { 'idempotency-key': (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) }); delete cache['fe:' + id]; }, t('payout.sent')) }, t('payout')))) : null);
 }
 function fleetInvite(id) {

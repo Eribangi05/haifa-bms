@@ -73,7 +73,7 @@ export function computeFare(rule: Rule, inp: FareInput): Breakdown {
   const dist = Math.round((rule.per_km * inp.distance_m) / 1000);
   const time = Math.round((rule.per_min * inp.duration_s) / 60);
   let core = rule.base_fare + dist + time;
-  lines.push(L('base', 'Base fare', 'Igiciro fatizo', 'Prix de base', rule.base_fare));
+  if (rule.base_fare > 0) lines.push(L('base', 'Base fare', 'Igiciro fatizo', 'Prix de base', rule.base_fare));   // price per kilometre only: no empty line
   lines.push(L('distance', `Distance (${(inp.distance_m / 1000).toFixed(1)} km x ${rule.per_km} RWF)`, `Intera (${(inp.distance_m / 1000).toFixed(1)} km x ${rule.per_km} RWF)`, `Distance (${(inp.distance_m / 1000).toFixed(1)} km x ${rule.per_km} RWF)`, dist));
   if (rule.per_min > 0) lines.push(L('time', `Time (${Math.round(inp.duration_s / 60)} min)`, `Igihe (${Math.round(inp.duration_s / 60)} min)`, `Durée (${Math.round(inp.duration_s / 60)} min)`, time));
   if (rule.long_distance_km && rule.long_distance_per_km != null && inp.distance_m > rule.long_distance_km * 1000) {

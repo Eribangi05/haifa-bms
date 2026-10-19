@@ -73,7 +73,7 @@ await step('fleet: drivers, vehicles, trips, earnings and an invitation', async 
   await page.getByText('Back', { exact: true }).first().click(); await page.getByText('Kigali Cabs', { exact: true }).waitFor();
   await page.locator('tr:has-text("Kigali Cabs") button').click(); await page.getByRole('button', { name: 'Vehicles', exact: true }).click(); await page.getByText('Plate').waitFor({ timeout: 8000 }).catch(() => {});
   for (const n of ['Drivers', 'Trips', 'Earnings']) { await page.getByRole('button', { name: n, exact: true }).click(); await page.waitForTimeout(400); }
-  await page.getByText('Gross fares').waitFor({ timeout: 8000 });
+  await page.getByText('Gross fares').waitFor({ timeout: 8000 }); if (/NaN/.test(await text())) throw new Error('a number shows as NaN');
   await page.getByRole('button', { name: 'Invite a driver', exact: true }).click(); await page.getByPlaceholder('07xx xxx xxx').fill('0788777666'); await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
   await page.getByText('Invitation sent').waitFor({ timeout: 8000 }); await page.screenshot({ path: `${OUT}/biz-fleet.png` });
 });

@@ -100,7 +100,7 @@ const D = {
   'commission': ['Platform commission', 'Komisiyo ya porogaramu', 'Commission de la plateforme'],
   'fleet.share': ['Fleet share', 'Umugabane w\'ikipe', 'Part de la flotte'],
   'driver.net': ['Paid to drivers', 'Yahawe abashoferi', 'Versé aux chauffeurs'],
-  'fleet.balance': ['Fleet balance', 'Amafaranga y\'ikipe ahari', 'Solde de la flotte'],
+  'fleet.balance': ['Available for payout', 'Amafaranga ashobora kubikuzwa', 'Disponible pour un paiement'],
   'payout': ['Request payout', 'Saba kubikuza', 'Demander un paiement'],
   'payout.sent': ['Payout requested. Our team reviews it.', 'Gusaba kubikuza byoherejwe. Itsinda ryacu rirabyigaho.', 'Paiement demandé. Notre équipe l\'examine.'],
   'invite.sub': ['The driver receives an invitation by phone and joins your fleet when they accept.', 'Umushoferi abona ubutumire kuri telefoni, akinjira mu ikipe yawe amaze kubwemera.', 'Le chauffeur reçoit une invitation par téléphone et rejoint votre flotte en l\'acceptant.'],
