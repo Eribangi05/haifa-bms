@@ -20,7 +20,7 @@ export async function catalogRoutes(app: FastifyInstance) {
     app_name: 'Abasare', currency: 'RWF', languages: ['rw', 'fr', 'en'], country_code: '+250',
     payment_methods: [
       { id: 'cash', enabled: true },
-      { id: 'mtn_momo', enabled: await flag('payments.mtn_momo'), simulated: config.momo.mode === 'simulator' },
+      { id: 'mtn_momo', enabled: await flag('payments.mtn_momo'), simulated: config.momo.mode !== 'live' },
       { id: 'airtel_money', enabled: await flag('payments.airtel_money') },
     ],
     emergency_numbers: { police: '112', ambulance: '912', traffic_police: '113' },

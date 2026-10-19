@@ -14,7 +14,7 @@ export async function paymentRoutes(app: FastifyInstance) {
   const view = (p: any) => ({
     id: p.id, booking_id: p.booking_id, method: p.method, status: p.status, amount: p.amount, currency: p.currency, reference: p.reference,
     failure_reason: p.failure_reason, msisdn: p.msisdn_masked, completed_at: p.completed_at,
-    simulated: p.method === 'mtn_momo' && config.momo.mode === 'simulator',
+    simulated: p.method === 'mtn_momo' && config.momo.mode !== 'live',
   });
 
   app.post('/payments', { config: routeLimit('PAYMENT_RATE_MAX', 10), preHandler: anyAuth }, async (req) => {
