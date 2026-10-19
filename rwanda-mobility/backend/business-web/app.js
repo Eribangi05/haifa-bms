@@ -67,10 +67,12 @@ function loginView() {
   const code = input({ type: 'text', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' });
   const card = h('div', { class: 'card login' }, h('h1', {}, t('signin.title')), h('p', { class: 'muted' }, t('signin.sub')));
   if (state.stage === 'phone') {
-    card.append(field(t('phone'), ph), h('div', { class: 'row' }, h('button', { class: 'b', onclick: () => act(async () => { state.phone = ph.value.trim(); await api('POST', '/auth/otp/request', { phone: state.phone, language: lang }); state.stage = 'code'; }) }, t('send.code'))));
+    card.append(field(t('phone'), ph), h('div', { class: 'row' }, h('button', { class: 'b', onclick: () => act(async () => { state.phone = ph.value.trim(); const r = await api('POST', '/auth/otp/request', { phone: state.phone, language: lang }); state.devCode = r.dev_code || null; state.stage = 'code'; }) }, t('send.code'))));
   } else {
+    // Test build only: while no SMS provider is connected the server returns the code, so it is shown here (and filled in). A production server never returns it.
+    if (state.devCode) { code.value = state.devCode; card.append(h('div', { class: 'banner ok', role: 'status' }, t('test.code') + ' ' + state.devCode)); }
     card.append(field(t('code'), code), h('div', { class: 'row' },
-      h('button', { class: 'b', onclick: () => act(async () => { const j = await api('POST', '/auth/otp/verify', { phone: state.phone, code: code.value.trim(), role: 'passenger', language: lang }); store.set('biz.token', j.access_token); store.set('biz.refresh', j.refresh_token); state.stage = 'phone'; state.accounts = null; }) }, t('verify')),
+      h('button', { class: 'b', onclick: () => act(async () => { const j = await api('POST', '/auth/otp/verify', { phone: state.phone, code: code.value.trim(), role: 'passenger', language: lang }); store.set('biz.token', j.access_token); store.set('biz.refresh', j.refresh_token); state.stage = 'phone'; state.devCode = null; state.accounts = null; }) }, t('verify')),
       h('button', { class: 'b sec', onclick: () => { state.stage = 'phone'; render(); } }, t('back'))));
   }
   return card;

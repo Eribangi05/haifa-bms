@@ -20,7 +20,8 @@ await step('sign in with a phone code', async () => {
   await page.fill('input[type=tel]', phone);
   const [resp] = await Promise.all([page.waitForResponse((r) => r.url().includes('/auth/otp/request')), page.getByText('Send code', { exact: true }).click()]);
   const code = (await resp.json()).dev_code; if (!code) throw new Error('no dev code (start the API with OTP_DEV_ECHO=true)');
-  await page.fill('input[inputmode=numeric]', code); await page.getByText('Verify and sign in', { exact: true }).click();
+  await page.waitForSelector('.banner.ok'); if ((await page.inputValue('input[inputmode=numeric]')) !== code) throw new Error('the test code is not shown and filled in');
+  await page.getByText('Verify and sign in', { exact: true }).click();
   await page.getByText('Your accounts', { exact: true }).waitFor({ timeout: 10000 });
 });
 await step('register a company and a fleet; both wait for verification', async () => {

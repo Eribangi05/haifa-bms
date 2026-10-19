@@ -9,6 +9,7 @@ const D = {
   'phone.ph': ['07xx xxx xxx', '07xx xxx xxx', '07xx xxx xxx'],
   'send.code': ['Send code', 'Ohereza kode', 'Envoyer le code'],
   'code': ['6-digit code', 'Kode y\'imibare 6', 'Code à 6 chiffres'],
+  'test.code': ['Test build: code:', 'Ikizamini: kode:', 'Version de test : code :'],
   'verify': ['Verify and sign in', 'Emeza ugere', 'Valider et se connecter'],
   'signout': ['Sign out', 'Sohoka', 'Déconnexion'],
   'back': ['Back', 'Subira inyuma', 'Retour'],

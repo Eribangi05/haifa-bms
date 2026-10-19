@@ -31,7 +31,7 @@ Drivers (status, online now, rating, completed and cancelled counts, vehicle), v
 
 ## Safety notes
 
-- Sign-in is the same phone code as the app. Tokens live in the tab's session storage and are dropped when the tab closes.
+- Sign-in is the same phone code as the app. On a test server that has no SMS provider yet (the server returns the code), the portal shows the code in a green box and fills it in, so a tester can get in; a production server never returns it. Tokens live in the tab's session storage and are dropped when the tab closes.
 - The page loads only its own scripts (`script-src 'self'`) and builds every element with text nodes, never HTML strings.
 - CSV downloads prefix any cell that starts with `=`, `+`, `-` or `@` so a name cannot run as a spreadsheet formula.
 - What is typed in a form survives a background refresh of the same screen and is cleared after a successful save.
